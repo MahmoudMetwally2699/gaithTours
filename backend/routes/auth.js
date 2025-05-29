@@ -6,6 +6,15 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Test route for debugging
+router.get('/test', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Auth routes are working',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Register user
 router.post('/register', [
   body('name').isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters long'),

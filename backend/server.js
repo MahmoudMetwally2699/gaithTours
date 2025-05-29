@@ -50,6 +50,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Handle preflight requests
 app.options('*', cors());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  next();
+});
+
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtours', {
   useNewUrlParser: true,
@@ -62,10 +70,44 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtour
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/hotels', require('./routes/hotels'));
-app.use('/api/reservations', require('./routes/reservations'));
+console.log('Setting up routes...');
+try {
+  app.use('/api/auth', require('./routes/auth'));
+  console.log('Auth routes loaded successfully');
+} catch (error) {
+  console.error('Error loading auth routes:', error);
+}
+
+try {
+  app.use('/api/users', require('./routes/users'));
+  console.log('Users routes loaded successfully');
+} catch (error) {
+  console.error('Error loading users routes:', error);
+}
+
+try {
+  app.use('/api/hotels', require('./routes/hotels'));
+  console.log('Hotels routes loaded successfully');
+} catch (error) {
+  console.error('Error loading hotels routes:', error);
+}
+
+try {
+  app.use('/api/reservations', require('./routes/reservations'));
+  console.log('Reservations routes loaded successfully');
+} catch (error) {
+  console.error('Error loading reservations routes:', error);
+}
+
+// Test route to verify deployment
+app.get('/api/test', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Backend API is working',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
