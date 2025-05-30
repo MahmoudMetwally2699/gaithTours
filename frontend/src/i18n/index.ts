@@ -272,8 +272,7 @@ const resources = {
         },
         off: 'OFF',
         perNight: 'per night',
-        viewAll: 'View All Hotels',
-        booking: {
+        viewAll: 'View All Hotels',        booking: {
           title: 'Book Your Stay',
           summary: 'Booking Summary',
           details: 'Booking Details',
@@ -289,7 +288,41 @@ const resources = {
           success: {
             title: 'Booking Confirmed!',
             message: 'Your reservation has been successfully created.'
-          }
+          },
+          expectedCheckInTime: 'Expected Check-in Time',
+          expectedCheckInTimePlaceholder: 'Select expected check-in time',
+          roomType: 'Room Type',
+          roomTypePlaceholder: 'Select room type',
+          roomTypes: {
+            single: 'Single Room',
+            double: 'Double Room',
+            twin: 'Twin Room',
+            triple: 'Triple Room',
+            quad: 'Quad Room',
+            suite: 'Suite',
+            family: 'Family Room',
+            deluxe: 'Deluxe Room'
+          },
+          stayType: 'Stay Type',
+          stayTypePlaceholder: 'Select stay type',
+          stayTypes: {
+            room_only: 'Room Only',
+            bed_breakfast: 'Bed & Breakfast',
+            half_board: 'Half Board',
+            full_board: 'Full Board',
+            all_inclusive: 'All Inclusive'
+          },
+          paymentMethod: 'Payment Method',
+          paymentMethodPlaceholder: 'Enter payment method',
+          guestInformation: 'Guest Information',
+          addGuest: 'Add Guest',
+          removeGuest: 'Remove Guest',
+          guestFullName: 'Guest Full Name',
+          guestFullNamePlaceholder: 'Enter guest full name',
+          guestPhoneNumber: 'Guest Phone Number',
+          guestPhoneNumberPlaceholder: 'Enter guest phone number',
+          noGuests: 'No additional guests added',
+          guestNumber: 'Guest {{number}}'
         }
       },
 
@@ -380,13 +413,12 @@ const resources = {
         yes: 'Yes',
         no: 'No',
         or: 'or',        and: 'and'
-      },
-
-      // Validation
+      },      // Validation
       validation: {
         required: 'This field is required',
         invalidEmail: 'Please enter a valid email address',
-        invalidPhone: 'Please enter a valid phone number',
+        invalidPhone: 'Please enter a valid phone number with country code (e.g., +966)',
+        phoneHint: 'Include country code (e.g., {{example}})',
         passwordTooShort: 'Password must be at least 8 characters',
         passwordsDoNotMatch: 'Passwords do not match',
         minLength: 'Must be at least {{min}} characters',
@@ -665,8 +697,7 @@ const resources = {
         },
         off: 'خصم',
         perNight: 'لكل ليلة',
-        viewAll: 'عرض جميع الفنادق',
-        booking: {
+        viewAll: 'عرض جميع الفنادق',        booking: {
           title: 'احجز إقامتك',
           summary: 'ملخص الحجز',
           details: 'تفاصيل الحجز',
@@ -682,7 +713,41 @@ const resources = {
           success: {
             title: 'تم تأكيد الحجز!',
             message: 'تم إنشاء حجزك بنجاح.'
-          }
+          },
+          expectedCheckInTime: 'وقت الوصول المتوقع',
+          expectedCheckInTimePlaceholder: 'اختر وقت الوصول المتوقع',
+          roomType: 'نوع الغرفة',
+          roomTypePlaceholder: 'اختر نوع الغرفة',
+          roomTypes: {
+            single: 'غرفة مفردة',
+            double: 'غرفة مزدوجة',
+            twin: 'غرفة توأم',
+            triple: 'غرفة ثلاثية',
+            quad: 'غرفة رباعية',
+            suite: 'جناح',
+            family: 'غرفة عائلية',
+            deluxe: 'غرفة ديلوكس'
+          },
+          stayType: 'نوع الإقامة',
+          stayTypePlaceholder: 'اختر نوع الإقامة',
+          stayTypes: {
+            room_only: 'الغرفة فقط',
+            bed_breakfast: 'سرير وإفطار',
+            half_board: 'نصف إقامة',
+            full_board: 'إقامة كاملة',
+            all_inclusive: 'شامل جميع الوجبات'
+          },
+          paymentMethod: 'طريقة الدفع',
+          paymentMethodPlaceholder: 'أدخل طريقة الدفع',
+          guestInformation: 'معلومات الضيوف',
+          addGuest: 'إضافة ضيف',
+          removeGuest: 'إزالة ضيف',
+          guestFullName: 'الاسم الكامل للضيف',
+          guestFullNamePlaceholder: 'أدخل الاسم الكامل للضيف',
+          guestPhoneNumber: 'رقم هاتف الضيف',
+          guestPhoneNumberPlaceholder: 'أدخل رقم هاتف الضيف',
+          noGuests: 'لم يتم إضافة ضيوف إضافيين',
+          guestNumber: 'الضيف {{number}}'
         }
       },
 
@@ -768,13 +833,12 @@ const resources = {
         no: 'لا',
         or: 'أو',
         and: 'و'
-      },
-
-      // Validation
+      },      // Validation
       validation: {
         required: 'هذا الحقل مطلوب',
         invalidEmail: 'يرجى إدخال عنوان بريد إلكتروني صالح',
-        invalidPhone: 'يرجى إدخال رقم هاتف صالح',
+        invalidPhone: 'يرجى إدخال رقم هاتف صالح مع رمز البلد (مثل +966)',
+        phoneHint: 'اشمل رمز البلد (مثل {{example}})',
         passwordTooShort: 'يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل',
         passwordsDoNotMatch: 'كلمات المرور غير متطابقة',
         minLength: 'يجب أن يحتوي على {{min}} أحرف على الأقل',
@@ -784,6 +848,7 @@ const resources = {
   }
 };
 
+// Initialize i18n with configuration
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)

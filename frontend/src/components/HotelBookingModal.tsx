@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
 import { reservationsAPI } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 interface HotelBookingModalProps {
   hotel: Hotel;
@@ -13,6 +13,16 @@ interface HotelBookingModalProps {
     checkOut: string;
     guests: number;
     rooms: number;
+    expectedCheckInTime: string;
+    roomType: string;
+    stayType: string;
+    paymentMethod: string;
+    touristName: string;
+    phone: string;
+    nationality: string;
+    email: string;
+    guests_list: Array<{ fullName: string; phoneNumber: string }>;
+    notes: string;
   };
   onClose: () => void;
 }
@@ -21,18 +31,72 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
   hotel,
   searchParams,
   onClose
-}) => {
-  const { t } = useTranslation();
-  const { user } = useAuth();
+}) => {  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    touristName: user?.name || '',
-    phone: user?.phone || '',
-    nationality: user?.nationality || '',
-    email: user?.email || '',
-    notes: ''
-  });
-  const calculateNights = () => {
+  // Custom stylish toast notification
+  const showBookingSuccessToast = () => {
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? 'animate-enter' : 'animate-leave'
+        } max-w-md w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 border border-white/20 backdrop-blur-md overflow-hidden relative`}
+        style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%)',
+          boxShadow: '0 25px 50px -12px rgba(102, 126, 234, 0.5), 0 0 0 1px rgba(255,255,255,0.1)',
+        }}
+      >
+        {/* Shimmer effect */}
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+            animation: 'shimmer 2s infinite',
+            transform: 'translateX(-100%)'
+          }}
+        />
+
+        <div className="flex-1 w-0 p-6 relative z-10">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <CheckCircleIcon className="h-7 w-7 text-white animate-bounce" />
+              </div>
+            </div>
+            <div className="ml-4 flex-1">
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl animate-bounce" style={{ animationDelay: '0.1s' }}>🎉</span>
+                <p className="text-lg font-bold text-white" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                  Booking Submitted!
+                </p>
+              </div>
+              <p className="mt-2 text-sm text-white/90 leading-relaxed" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                Your hotel reservation request has been successfully submitted. Our team will contact you within 24 hours to confirm your booking.
+              </p>
+              <div className="mt-4 flex items-center space-x-2">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+                </div>
+                <span className="text-xs text-white/80 font-medium uppercase tracking-wide">Processing your request...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex border-l border-white/20">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="w-full border border-transparent rounded-r-2xl p-4 flex items-center justify-center text-sm font-medium text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50 transition-colors duration-200"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 8000,
+      position: 'top-center',
+    });
+  };const calculateNights = () => {
     if (searchParams.checkIn && searchParams.checkOut) {
       const startDate = new Date(searchParams.checkIn);
       const endDate = new Date(searchParams.checkOut);
@@ -43,16 +107,20 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
   };
 
   const nights = calculateNights();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConfirmBooking = async () => {
     setLoading(true);
 
-    try {      const reservationData = {
-        touristName: formData.touristName,
-        phone: formData.phone,
-        nationality: formData.nationality,
-        email: formData.email,
+    try {
+      const reservationData = {
+        touristName: searchParams.touristName,
+        phone: searchParams.phone,
+        nationality: searchParams.nationality,
+        email: searchParams.email,
+        expectedCheckInTime: searchParams.expectedCheckInTime,
+        roomType: searchParams.roomType,
+        stayType: searchParams.stayType,
+        paymentMethod: searchParams.paymentMethod,
+        guests: searchParams.guests_list,
         hotel: {
           name: hotel.name,
           address: hotel.address,
@@ -66,28 +134,59 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         checkInDate: searchParams.checkIn,
         checkOutDate: searchParams.checkOut,
         numberOfGuests: searchParams.guests,
-        notes: formData.notes
+        notes: searchParams.notes
       };
 
       console.log('=== FRONTEND RESERVATION DATA ===');
       console.log('Sending reservation data:', JSON.stringify(reservationData, null, 2));
       console.log('=================================');
 
+      // Create the reservation (this will show the default toast from API)
       await reservationsAPI.create(reservationData);
-      onClose();
+
+      // Show our custom stylish toast
+      showBookingSuccessToast();
+
+      // Close the modal after a short delay to let the user see the toast
+      setTimeout(() => {
+        onClose();
+      }, 1000);
     } catch (error) {
       console.error('Error creating reservation:', error);
     } finally {
       setLoading(false);
     }
   };
+  const getRoomTypeLabel = (type: string) => {
+    const typeMap: Record<string, string> = {
+      single: t('hotels.booking.roomTypes.single', 'Single Room'),
+      double: t('hotels.booking.roomTypes.double', 'Double Room'),
+      twin: t('hotels.booking.roomTypes.twin', 'Twin Room'),
+      triple: t('hotels.booking.roomTypes.triple', 'Triple Room'),
+      quad: t('hotels.booking.roomTypes.quad', 'Quad Room'),
+      suite: t('hotels.booking.roomTypes.suite', 'Suite'),
+      family: t('hotels.booking.roomTypes.family', 'Family Room'),
+      deluxe: t('hotels.booking.roomTypes.deluxe', 'Deluxe Room')
+    };
+    return typeMap[type] || type;
+  };
 
+  const getStayTypeLabel = (type: string) => {
+    const typeMap: Record<string, string> = {
+      room_only: t('hotels.booking.stayTypes.roomOnly', 'Room Only'),
+      bed_breakfast: t('hotels.booking.stayTypes.bedBreakfast', 'Bed & Breakfast'),
+      half_board: t('hotels.booking.stayTypes.halfBoard', 'Half Board'),
+      full_board: t('hotels.booking.stayTypes.fullBoard', 'Full Board'),
+      all_inclusive: t('hotels.booking.stayTypes.allInclusive', 'All Inclusive')
+    };
+    return typeMap[type] || type;
+  };
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white p-6 border-b">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">{t('hotels.booking.title', 'Book Hotel')}</h3>
+            <h3 className="text-lg font-semibold">{t('hotels.booking.confirmTitle', 'Confirm Your Booking')}</h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
@@ -97,8 +196,10 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6">          <div className="mb-6">
-            <h4 className="font-medium text-lg">{hotel.name}</h4>
+        <div className="p-6">
+          {/* Hotel Information */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium text-lg text-gray-800">{hotel.name}</h4>
             <p className="text-gray-600">{hotel.address}, {hotel.city}</p>
             <div className="flex items-center mt-2">
               <span className="text-yellow-400">★</span>
@@ -106,110 +207,149 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <h5 className="font-medium mb-3">{t('hotels.booking.summary', 'Booking Summary')}</h5>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>{t('hotels.checkIn', 'Check-in')}:</span>
-                <span>{searchParams.checkIn || 'Not set'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>{t('hotels.checkOut', 'Check-out')}:</span>
-                <span>{searchParams.checkOut || 'Not set'}</span>
-              </div>              <div className="flex justify-between">
-                <span>{t('hotels.guests', 'Guests')}:</span>
-                <span>{searchParams.guests}</span>
-              </div>
-              {nights > 0 && (
+          {/* Booking Details */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Travel Details */}
+            <div className="space-y-4">
+              <h5 className="font-semibold text-gray-800 border-b pb-2">
+                {t('hotels.booking.travelDetails', 'Travel Details')}
+              </h5>
+
+              <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span>{nights} {t('hotels.booking.nights', 'nights')}</span>
+                  <span className="text-gray-600">{t('hotels.checkIn', 'Check-in')}:</span>
+                  <span className="font-medium">{searchParams.checkIn}</span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t('hotels.checkOut', 'Check-out')}:</span>
+                  <span className="font-medium">{searchParams.checkOut}</span>
+                </div>
+                {searchParams.expectedCheckInTime && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t('hotels.booking.expectedCheckInTime', 'Expected Check-in Time')}:</span>
+                    <span className="font-medium">{searchParams.expectedCheckInTime}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t('hotels.guests', 'Guests')}:</span>
+                  <span className="font-medium">{searchParams.guests}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t('hotels.rooms', 'Rooms')}:</span>
+                  <span className="font-medium">{searchParams.rooms}</span>
+                </div>
+                {nights > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t('hotels.booking.nights', 'Nights')}:</span>
+                    <span className="font-medium">{nights}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Room & Stay Details */}
+            <div className="space-y-4">
+              <h5 className="font-semibold text-gray-800 border-b pb-2">
+                {t('hotels.booking.roomStayDetails', 'Room & Stay Details')}
+              </h5>
+
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t('hotels.booking.roomType', 'Room Type')}:</span>
+                  <span className="font-medium">{getRoomTypeLabel(searchParams.roomType)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t('hotels.booking.stayType', 'Stay Type')}:</span>
+                  <span className="font-medium">{getStayTypeLabel(searchParams.stayType)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t('hotels.booking.paymentMethod', 'Payment Method')}:</span>
+                  <span className="font-medium">{searchParams.paymentMethod}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('common.name', 'Full Name')} *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.touristName}
-                onChange={(e) => setFormData(prev => ({ ...prev, touristName: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+          {/* Personal Information */}
+          <div className="mt-6 space-y-4">
+            <h5 className="font-semibold text-gray-800 border-b pb-2">
+              {t('hotels.booking.personalInfo', 'Personal Information')}
+            </h5>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('common.email', 'Email')} *
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('common.name', 'Full Name')}:</span>
+                <span className="font-medium">{searchParams.touristName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('common.email', 'Email')}:</span>
+                <span className="font-medium">{searchParams.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('common.phone', 'Phone')}:</span>
+                <span className="font-medium">{searchParams.phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('common.nationality', 'Nationality')}:</span>
+                <span className="font-medium">{searchParams.nationality}</span>
+              </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('common.phone', 'Phone')} *
-              </label>
-              <input
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+          {/* Additional Guests */}
+          {searchParams.guests_list && searchParams.guests_list.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h5 className="font-semibold text-gray-800 border-b pb-2">
+                {t('hotels.booking.additionalGuests', 'Additional Guests')}
+              </h5>
+
+              <div className="space-y-2">
+                {searchParams.guests_list.map((guest, index) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded-md">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('hotels.booking.guestFullName', "Guest's Name")}:</span>
+                      <span className="font-medium">{guest.fullName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('hotels.booking.guestPhone', "Phone")}:</span>
+                      <span className="font-medium">{guest.phoneNumber}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('common.nationality', 'Nationality')} *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.nationality}
-                onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+          {/* Special Requests */}
+          {searchParams.notes && (
+            <div className="mt-6 space-y-4">
+              <h5 className="font-semibold text-gray-800 border-b pb-2">
                 {t('hotels.booking.specialRequests', 'Special Requests')}
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder={t('hotels.booking.specialRequestsPlaceholder', 'Any special requests or notes...')}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={3}
-              />
+              </h5>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <p className="text-gray-700">{searchParams.notes}</p>
+              </div>
             </div>
+          )}
 
-            <div className="flex gap-3 pt-4">              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 font-medium"
-              >
-                {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-medium"
-              >
-                {loading ? t('common.loading', 'Loading...') : t('hotels.booking.confirm', 'Confirm Booking')}
-              </button>
-            </div>
-          </form>
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-6 border-t mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-md hover:bg-gray-50 font-medium"
+            >
+              {t('common.goBack', 'Go Back')}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmBooking}
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-medium"
+            >
+              {loading ? t('common.loading', 'Processing...') : t('hotels.booking.confirmBooking', 'Confirm Booking')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

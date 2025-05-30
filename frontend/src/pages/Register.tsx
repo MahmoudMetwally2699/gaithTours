@@ -180,6 +180,9 @@ export const Register: React.FC = () => {  const { t } = useTranslation();
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   placeholder={t('auth.phonePlaceholder')}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  {t('validation.phoneHint', { example: '+966' })}
+                </p>
               </div>
             </div>
 

@@ -314,8 +314,7 @@ export const usersAPI = {
 };
 
 // Reservations API
-export const reservationsAPI = {
-  create: async (reservationData: {
+export const reservationsAPI = {  create: async (reservationData: {
     touristName: string;
     phone: string;
     nationality: string;
@@ -337,7 +336,8 @@ export const reservationsAPI = {
   }): Promise<ApiResponse<{ reservation: Reservation }>> => {
     try {
       const response = await api.post('/reservations', reservationData);
-      toast.success('Reservation created successfully!');
+      // Note: Custom toast is handled in HotelBookingModal component
+      // toast.success('Reservation created successfully!');
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to create reservation';

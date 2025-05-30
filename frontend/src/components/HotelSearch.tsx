@@ -14,6 +14,16 @@ interface SearchParams {
   checkOut: string;
   guests: number;
   rooms: number;
+  expectedCheckInTime: string;
+  roomType: string;
+  stayType: string;
+  paymentMethod: string;
+  touristName: string;
+  phone: string;
+  nationality: string;
+  email: string;
+  guests_list: Array<{ fullName: string; phoneNumber: string }>;
+  notes: string;
 }
 
 interface HotelSearchProps {
@@ -27,12 +37,62 @@ export const HotelSearch: React.FC<HotelSearchProps> = ({ onSearch }) => {
     checkIn: '',
     checkOut: '',
     guests: 2,
-    rooms: 1
+    rooms: 1,
+    expectedCheckInTime: '',
+    roomType: 'double',
+    stayType: 'room_only',
+    paymentMethod: '',
+    touristName: '',
+    phone: '',
+    nationality: '',
+    email: '',
+    guests_list: [],
+    notes: ''
   });
-
+  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchParams);
+    if (currentStep === 1) {
+      // Validate step 1 fields
+      if (!searchParams.destination || !searchParams.checkIn || !searchParams.checkOut) {
+        alert(t('hotels.search.fillRequired', 'Please fill in all required fields'));
+        return;
+      }
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      // Validate step 2 fields
+      if (!searchParams.touristName || !searchParams.email || !searchParams.phone || !searchParams.nationality || !searchParams.paymentMethod) {
+        alert(t('hotels.booking.fillRequired', 'Please fill in all required booking details'));
+        return;
+      }
+      onSearch(searchParams);
+    }
+  };
+
+  const addGuest = () => {
+    const nameInput = document.getElementById('guestName') as HTMLInputElement;
+    const phoneInput = document.getElementById('guestPhone') as HTMLInputElement;
+
+    if (nameInput.value && phoneInput.value) {
+      setSearchParams(prev => ({
+        ...prev,
+        guests_list: [...prev.guests_list, {
+          fullName: nameInput.value,
+          phoneNumber: phoneInput.value
+        }]
+      }));
+      nameInput.value = '';
+      phoneInput.value = '';
+      setShowGuestForm(false);
+    }
+  };
+
+  const removeGuest = (index: number) => {
+    setSearchParams(prev => ({
+      ...prev,
+      guests_list: prev.guests_list.filter((_, i) => i !== index)
+    }));
   };
 
   const handleChange = (field: keyof SearchParams, value: string | number) => {

@@ -78,8 +78,7 @@ const reservationSchema = new mongoose.Schema({
       type: String,
       required: false // RapidAPI hotel ID
     }
-  },
-  checkInDate: {
+  },  checkInDate: {
     type: Date,
     required: false
   },
@@ -87,11 +86,52 @@ const reservationSchema = new mongoose.Schema({
     type: Date,
     required: false
   },
+  expectedCheckInTime: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  roomType: {
+    type: String,
+    required: [true, 'Room type is required'],
+    enum: ['single', 'double', 'twin', 'triple', 'quad', 'suite', 'family', 'deluxe'],
+    trim: true
+  },
+  stayType: {
+    type: String,
+    required: [true, 'Stay type is required'],
+    enum: ['room_only', 'bed_breakfast', 'half_board', 'full_board', 'all_inclusive'],
+    trim: true
+  },
+  paymentMethod: {
+    type: String,
+    required: [true, 'Payment method is required'],
+    trim: true,
+    maxlength: [100, 'Payment method cannot exceed 100 characters']
+  },
   numberOfGuests: {
     type: Number,
     default: 1,
     min: 1
   },
+  guests: [{
+    fullName: {
+      type: String,
+      required: [true, 'Guest full name is required'],
+      trim: true,
+      minlength: [2, 'Guest name must be at least 2 characters long']
+    },
+    phoneNumber: {
+      type: String,
+      required: [true, 'Guest phone number is required'],
+      validate: {
+        validator: function(phone) {
+          return /^\+?[1-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
+        },
+        message: 'Please enter a valid guest phone number'
+      }
+    }
+  }],
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],

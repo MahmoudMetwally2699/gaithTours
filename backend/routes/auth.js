@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken, sendEmail, sanitizeInput, successResponse, errorResponse } = require('../utils/helpers');
+const { sendWelcomeEmail } = require('../utils/emailService');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -79,24 +80,12 @@ router.post('/register', [
     });
     console.log('User created successfully:', user._id);    // Generate token
     const token = generateToken(user._id);
-    console.log('Token generated successfully');
-
-    // Send welcome email
+    console.log('Token generated successfully');    // Send welcome email
     try {
       console.log('Attempting to send welcome email to:', user.email);
-      await sendEmail({
+      await sendWelcomeEmail({
         email: user.email,
-        subject: 'Welcome to Gaith Tours!',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;">Welcome to Gaith Tours!</h2>
-            <p>Dear ${user.name},</p>
-            <p>Thank you for registering with Gaith Tours. We're excited to help you plan your next adventure!</p>
-            <p>You can now browse and book hotels through our platform.</p>
-            <p>Happy travels!</p>
-            <p>Best regards,<br>The Gaith Tours Team</p>
-          </div>
-        `
+        name: user.name
       });
       console.log('Welcome email sent successfully');
     } catch (emailError) {

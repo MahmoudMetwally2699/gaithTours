@@ -132,23 +132,255 @@ body {
 
 /* Toast customization */
 .Toastify__toast {
-  @apply rounded-lg;
+  @apply rounded-xl border-0 shadow-2xl backdrop-blur-md;
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  padding: 16px 20px;
 }
 
 .Toastify__toast--success {
-  @apply bg-green-500;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
 }
 
 .Toastify__toast--error {
-  @apply bg-red-500;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 20px 40px rgba(239, 68, 68, 0.3);
 }
 
 .Toastify__toast--info {
-  @apply bg-blue-500;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
 }
 
 .Toastify__toast--warning {
-  @apply bg-yellow-500;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.3);
+}
+
+/* Custom hotel booking toast */
+.hotel-booking-toast {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+  color: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(102, 126, 234, 0.5),
+              0 0 0 1px rgba(255,255,255,0.1),
+              0 10px 25px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hotel-booking-toast::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.hotel-booking-toast:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 60px -12px rgba(102, 126, 234, 0.6),
+              0 0 0 1px rgba(255,255,255,0.15),
+              0 15px 35px rgba(0,0,0,0.2);
+}
+
+.hotel-booking-toast .toast-icon {
+  font-size: 28px;
+  margin-right: 16px;
+  animation: bounce-gentle 2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.hotel-booking-toast .toast-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.hotel-booking-toast .toast-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  letter-spacing: 0.5px;
+}
+
+.hotel-booking-toast .toast-message {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.95;
+  margin: 0;
+  line-height: 1.5;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.hotel-booking-toast .toast-progress {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hotel-booking-toast .progress-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.hotel-booking-toast .progress-dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 50%;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.hotel-booking-toast .progress-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.hotel-booking-toast .progress-dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+.hotel-booking-toast .progress-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes toast-enter {
+  0% {
+    transform: translateY(-50px) scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-leave {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* Custom toast animations */
+@keyframes animate-enter {
+  0% {
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0px);
+    opacity: 1;
+  }
+}
+
+@keyframes animate-leave {
+  0% {
+    transform: scale(1) translateY(0px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9) translateY(-20px);
+    opacity: 0;
+  }
+}
+
+.animate-enter {
+  animation: animate-enter 0.4s ease-out;
+}
+
+.animate-leave {
+  animation: animate-leave 0.3s ease-in;
+}
+
+/* Pulse animation for the processing indicator */
+@keyframes pulse-custom {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse {
+  animation: pulse-custom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Modal customization */
@@ -221,6 +453,15 @@ body {
 
   .text-responsive-3xl {
     @apply text-3xl sm:text-4xl lg:text-5xl;
+  }
+
+  /* Toast animation utilities */
+  .animate-enter {
+    animation: toast-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-leave {
+    animation: toast-leave 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
