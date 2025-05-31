@@ -39,9 +39,13 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Stripe webhook route MUST be before express.json() middleware
+// This route needs the raw body for signature verification
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -54,7 +58,9 @@ app.options('*', cors());
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
+  if (req.path !== '/api/payments/webhook') {
+    console.log('Body:', req.body);
+  }
   next();
 });
 
@@ -97,6 +103,20 @@ try {
   console.log('Reservations routes loaded successfully');
 } catch (error) {
   console.error('Error loading reservations routes:', error);
+}
+
+try {
+  app.use('/api/admin', require('./routes/admin'));
+  console.log('Admin routes loaded successfully');
+} catch (error) {
+  console.error('Error loading admin routes:', error);
+}
+
+try {
+  app.use('/api/payments', require('./routes/payments'));
+  console.log('Payments routes loaded successfully');
+} catch (error) {
+  console.error('Error loading payments routes:', error);
 }
 
 // Test route to verify deployment

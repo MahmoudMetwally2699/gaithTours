@@ -14,13 +14,13 @@ const resources = {
   }
 };
 
+// Initialize i18n with configuration
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
     fallbackLng: 'en',
-
     debug: process.env.NODE_ENV === 'development',
 
     interpolation: {

@@ -80,9 +80,7 @@ export const Navbar: React.FC = () => {  const { t, i18n } = useTranslation();
                 >
                   <UserIcon className="h-5 w-5 mr-1" />
                   {user.name}
-                </button>
-
-                {isProfileMenuOpen && (
+                </button>                {isProfileMenuOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -96,6 +94,15 @@ export const Navbar: React.FC = () => {  const { t, i18n } = useTranslation();
                     >
                       {t('nav.profile')}
                     </Link>
+                    {user.role === 'admin' && (
+                      <Link
+                        to="/admin/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

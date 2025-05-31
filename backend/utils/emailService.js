@@ -549,9 +549,307 @@ const sendCancellationEmail = async (reservationData) => {
   }
 };
 
+// Send invoice email
+const sendInvoiceEmail = async (invoiceData) => {
+  try {
+    const transporter = createTransporter();
+    const { email, name, invoice, booking } = invoiceData;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: `📄 Invoice #${invoice.invoiceId} - Gaith Tours`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Invoice</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); font-family: 'Plus+Jakarta Sans', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); padding: 45px 30px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
+              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
+                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">📄 Invoice Ready</p>
+              </div>
+            </div>
+
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Hello ${name}!</h2>
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                Your booking has been approved! Please find your invoice details below and proceed with payment to confirm your reservation.
+              </p>
+
+              <div style="background: #f8fafc; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #4f46e5;">
+                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Invoice Details</h3>
+                <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${invoice.hotelName}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Amount:</strong> ${invoice.amount} ${invoice.currency}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Issue Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
+              </div>              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL}/profile?tab=invoices&invoice=${invoice._id}" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3); margin-right: 15px;">
+                  💳 Pay Now (${invoice.amount} ${invoice.currency})
+                </a>
+                <a href="${process.env.FRONTEND_URL}/profile" style="background: #6b7280; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);">
+                  View Invoice
+                </a>
+              </div>
+
+              <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
+                Please log in to your account to view the invoice and make payment.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Invoice email sent successfully:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Failed to send invoice email:', error);
+    throw error;
+  }
+};
+
+// Send booking denial email
+const sendBookingDenialEmail = async (denialData) => {
+  try {
+    const transporter = createTransporter();
+    const { email, name, booking, reason } = denialData;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: '❌ Booking Request Update - Gaith Tours',
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Booking Update</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); font-family: 'Plus Jakarta Sans', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+            <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 45px 30px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
+              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
+                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">❌ Booking Update</p>
+              </div>
+            </div>
+
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Hello ${name}!</h2>
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                We regret to inform you that your booking request for ${booking.hotel.name} has been declined.
+              </p>
+
+              <div style="background: #fef2f2; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #ef4444;">
+                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Reason</h3>
+                <p style="color: #374151; margin: 0;">${reason}</p>
+              </div>
+
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 25px 0;">
+                Don't worry! You can browse our other available hotels and submit a new booking request. Our team is here to help you find the perfect accommodation.
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL}/hotels" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);">
+                  Browse Hotels
+                </a>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Booking denial email sent successfully:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Failed to send booking denial email:', error);
+    throw error;
+  }
+};
+
+// Send booking confirmation email (when payment is completed)
+const sendBookingConfirmationEmail = async (confirmationData) => {
+  try {
+    const transporter = createTransporter();
+    const { email, name, booking, invoice } = confirmationData;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: '🎉 Booking Confirmed - Gaith Tours',
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Booking Confirmed</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); font-family: 'Plus Jakarta Sans', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 45px 30px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
+              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
+                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">🎉 Booking Confirmed!</p>
+              </div>
+            </div>
+
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Congratulations ${name}!</h2>
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                Your payment has been successfully processed and your booking is now confirmed!
+              </p>
+
+              <div style="background: #f0fdf4; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #10b981;">
+                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Booking Details</h3>
+                <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${booking.hotel.name}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Address:</strong> ${booking.hotel.address}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Amount Paid:</strong> ${invoice.amount} ${invoice.currency}</p>
+              </div>
+
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 25px 0;">
+                You will receive your booking confirmation details soon. Have a wonderful trip!
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL}/profile" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);">
+                  View Booking
+                </a>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Booking confirmation email sent successfully:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Failed to send booking confirmation email:', error);
+    throw error;
+  }
+};
+
+// Send payment confirmation email
+const sendPaymentConfirmationEmail = async (paymentData) => {
+  try {
+    const transporter = createTransporter();
+    const { email, name, invoice, payment } = paymentData;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: `💳 Payment Confirmed - Invoice #${invoice.invoiceId} - Gaith Tours`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payment Confirmation</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-family: 'Plus Jakarta Sans', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 45px 30px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
+              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
+                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">💳 Payment Confirmed</p>
+              </div>
+            </div>
+
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Hello ${name}!</h2>
+
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                Great news! Your payment has been successfully processed and your booking is now confirmed!
+              </p>
+
+              <div style="background: #f0fdf4; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #10b981;">
+                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Payment Details</h3>
+                <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${invoice.hotelName}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Amount Paid:</strong> ${invoice.amount} ${invoice.currency}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Payment Date:</strong> ${new Date(payment.processedAt).toLocaleDateString()}</p>
+                <p style="margin: 8px 0; color: #374151;"><strong>Transaction ID:</strong> ${payment.transactionId}</p>
+              </div>
+
+              <div style="background: #fef3c7; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+                <h3 style="color: #92400e; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Next Steps</h3>
+                <ul style="color: #92400e; margin: 0; padding-left: 20px;">
+                  <li>You will receive your booking confirmation details within 24 hours</li>
+                  <li>Our team will contact you for any additional arrangements</li>
+                  <li>Please keep this payment confirmation for your records</li>
+                  <li>Check your email for booking vouchers and travel documents</li>
+                </ul>
+              </div>
+
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 25px 0;">
+                Thank you for choosing Gaith Tours. We can't wait to make your travel experience unforgettable!
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL}/profile" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
+                  View My Bookings
+                </a>
+              </div>
+
+              <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
+                Need help? Contact us at ${process.env.EMAIL_FROM || process.env.EMAIL_USER}
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Payment confirmation email sent successfully:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Failed to send payment confirmation email:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendReservationConfirmation,
   sendAgencyNotification,
   sendWelcomeEmail,
-  sendCancellationEmail
+  sendCancellationEmail,
+  sendInvoiceEmail,
+  sendBookingDenialEmail,
+  sendBookingConfirmationEmail,
+  sendPaymentConfirmationEmail
 };

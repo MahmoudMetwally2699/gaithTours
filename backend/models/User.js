@@ -42,11 +42,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Nationality is required'],
     minlength: [2, 'Nationality must be at least 2 characters long']
-  },
-  preferredLanguage: {
+  },  preferredLanguage: {
     type: String,
     enum: ['en', 'ar'],
     default: 'en'
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   isEmailVerified: {
     type: Boolean,

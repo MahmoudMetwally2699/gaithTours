@@ -90,24 +90,26 @@ const reservationSchema = new mongoose.Schema({
     type: String,
     required: false,
     trim: true
-  },
-  roomType: {
+  },  roomType: {
     type: String,
-    required: [true, 'Room type is required'],
+    required: false, // Changed to false for backward compatibility
     enum: ['single', 'double', 'twin', 'triple', 'quad', 'suite', 'family', 'deluxe'],
-    trim: true
+    trim: true,
+    default: 'double' // Default value
   },
   stayType: {
     type: String,
-    required: [true, 'Stay type is required'],
+    required: false, // Changed to false for backward compatibility
     enum: ['room_only', 'bed_breakfast', 'half_board', 'full_board', 'all_inclusive'],
-    trim: true
+    trim: true,
+    default: 'room_only' // Default value
   },
   paymentMethod: {
     type: String,
-    required: [true, 'Payment method is required'],
+    required: false, // Changed to false for backward compatibility
     trim: true,
-    maxlength: [100, 'Payment method cannot exceed 100 characters']
+    maxlength: [100, 'Payment method cannot exceed 100 characters'],
+    default: 'pending' // Default value
   },
   numberOfGuests: {
     type: Number,
@@ -131,10 +133,9 @@ const reservationSchema = new mongoose.Schema({
         message: 'Please enter a valid guest phone number'
       }
     }
-  }],
-  status: {
+  }],  status: {
     type: String,
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    enum: ['pending', 'approved', 'denied', 'invoiced', 'paid', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'
   },
   notes: {

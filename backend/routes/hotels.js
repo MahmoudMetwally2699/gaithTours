@@ -118,7 +118,7 @@ router.get('/search', protect, async (req, res) => {
             room_qty: 1,
             page_number: String(page),
             languagecode: 'en-us',
-            currency_code: 'USD'
+            currency_code: 'SAR'
           },
           headers: {
             'x-rapidapi-key': process.env.RAPIDAPI_KEY,

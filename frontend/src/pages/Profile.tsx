@@ -6,12 +6,18 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   CalendarIcon,
-  MapPinIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  DocumentTextIcon,
+  CreditCardIcon,
+  ClockIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI, reservationsAPI, Reservation as APIReservation } from '../services/api';
+import { reservationsAPI, Reservation as APIReservation } from '../services/api';
+import paymentsAPI, { Invoice } from '../services/paymentsAPI';
+import { toast } from 'react-hot-toast';
+import InvoiceDetailModal from '../components/InvoiceDetailModal';
 
 interface Reservation {
   _id: string;
@@ -29,19 +35,37 @@ interface Reservation {
 export const Profile: React.FC = () => {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
+
+  // Get tab from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabFromUrl = urlParams.get('tab') || 'reservations';
+
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isEditing, setIsEditing] = useState(false);  const [loading, setLoading] = useState(true);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || ''
   });
+  // Check for tab parameter from URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get('tab');
+    if (tabFromUrl && ['reservations', 'invoices'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchReservations = async () => {
       try {
-        const response = await reservationsAPI.getByUser();
-        if (response.data?.reservations) {
+        const response = await reservationsAPI.getByUser();        if (response.data?.reservations) {
           // Transform API reservations to local reservation interface
           const transformedReservations: Reservation[] = response.data.reservations.map((apiRes: APIReservation) => ({
             _id: apiRes._id,
@@ -53,38 +77,14 @@ export const Profile: React.FC = () => {
             totalPrice: 0, // API doesn't have total price
             currency: 'USD', // Default currency
             status: apiRes.status === 'confirmed' ? 'confirmed' :
-                   apiRes.status === 'pending' ? 'pending' : 'cancelled',
+                   apiRes.status === 'pending' ? 'pending' :
+                   apiRes.status === 'cancelled' ? 'cancelled' : 'pending', // Default to pending instead of cancelled
             createdAt: apiRes.createdAt
-          }));          setReservations(transformedReservations);
+          }));
+          setReservations(transformedReservations);
         }
       } catch (error) {
         console.error('Error fetching reservations:', error);
-        // Sample reservations for demo
-        setReservations([
-          {
-            _id: '1',
-            hotelName: 'Burj Al Arab Jumeirah',
-            checkIn: '2024-06-15',
-            checkOut: '2024-06-20',
-            guests: 2,
-            rooms: 1,
-            totalPrice: 2500,
-            currency: 'USD',
-            status: 'confirmed',
-            createdAt: '2024-05-01T10:00:00Z'
-          },
-          {
-            _id: '2',
-            hotelName: 'The Ritz-Carlton',
-            checkIn: '2024-07-10',
-            checkOut: '2024-07-15',
-            guests: 4,
-            rooms: 2,
-            totalPrice: 1800,
-            currency: 'USD',
-            status: 'pending',
-            createdAt: '2024-05-15T14:30:00Z'
-          }        ]);
       } finally {
         setLoading(false);
       }
@@ -92,6 +92,65 @@ export const Profile: React.FC = () => {
 
     fetchReservations();
   }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      setInvoiceLoading(true);
+      const response = await paymentsAPI.getInvoices();
+      setInvoices(response.data.data.invoices);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      toast.error('Failed to load invoices');
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (activeTab === 'invoices') {
+      fetchInvoices();
+    }
+  }, [activeTab]);
+
+  const handleViewInvoice = async (invoiceId: string) => {
+    try {
+      const response = await paymentsAPI.getInvoice(invoiceId);
+      setSelectedInvoice(response.data.data.invoice);
+      setIsInvoiceModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching invoice details:', error);
+      toast.error('Failed to load invoice details');
+    }
+  };
+
+  const handleDownloadReceipt = async (invoiceId: string) => {
+    try {
+      await paymentsAPI.downloadReceipt(invoiceId);
+      toast.success('Receipt downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+      toast.error('Failed to download receipt');
+    }
+  };
+
+  const handleCloseInvoiceModal = () => {
+    setIsInvoiceModalOpen(false);
+    setSelectedInvoice(null);
+  };
+
+  const handlePayNow = async (invoiceId: string) => {
+    try {
+      setPaymentLoading(invoiceId);
+      const response = await paymentsAPI.createSession(invoiceId);
+
+      // Redirect to Stripe Checkout
+      window.location.href = response.url;
+    } catch (error) {
+      console.error('Error creating payment session:', error);
+      toast.error('Failed to create payment session');
+    } finally {
+      setPaymentLoading(null);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,9 +215,7 @@ export const Profile: React.FC = () => {
           <p className="text-gray-600">
             {t('profile.subtitle')}
           </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        </motion.div>        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Information */}
           <motion.div
             initial={{ x: -30, opacity: 0 }}
@@ -257,89 +314,344 @@ export const Profile: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Reservations */}
+          {/* Tabs Content */}
           <motion.div
             initial={{ x: 30, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                {t('profile.reservations')}
-              </h2>
+            <div className="bg-white rounded-lg shadow-lg">
+              {/* Tab Navigation */}
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-8 px-6 pt-6">
+                  <button
+                    onClick={() => setActiveTab('reservations')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'reservations'
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <CalendarIcon className="h-5 w-5" />
+                      <span>{t('profile.reservations')}</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('invoices')}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'invoices'
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <DocumentTextIcon className="h-5 w-5" />
+                      <span>{t('profile.invoices')}</span>
+                    </div>
+                  </button>
+                </nav>
+              </div>
 
-              {reservations.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-6xl mb-4">🏨</div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {t('profile.noReservations')}
-                  </h3>
-                  <p className="text-gray-600">
-                    {t('profile.startBooking')}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {reservations.map((reservation) => (
-                    <div
-                      key={reservation._id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            {reservation.hotelName}
-                          </h3>
+              {/* Tab Content */}
+              <div className="p-6">
+                {activeTab === 'reservations' && (
+                  <div>
+                    {reservations.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-6xl mb-4">🏨</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {t('profile.noReservations')}
+                        </h3>
+                        <p className="text-gray-600">
+                          {t('profile.startBooking')}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reservations.map((reservation) => (
+                          <div
+                            key={reservation._id}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                  {reservation.hotelName}
+                                </h3>                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-3">
+                                  <div>
+                                    <span className="text-sm text-gray-500">{t('hotels.checkIn')}</span>
+                                    <p className="font-medium">{formatDate(reservation.checkIn)}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-sm text-gray-500">{t('hotels.checkOut')}</span>
+                                    <p className="font-medium">{formatDate(reservation.checkOut)}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-sm text-gray-500">{t('hotels.guests')}</span>
+                                    <p className="font-medium">{reservation.guests} {t('hotels.guests')}</p>
+                                  </div>
+                                </div>
 
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-                            <div>
-                              <span className="text-sm text-gray-500">{t('hotels.checkIn')}</span>
-                              <p className="font-medium">{formatDate(reservation.checkIn)}</p>
-                            </div>
-                            <div>
-                              <span className="text-sm text-gray-500">{t('hotels.checkOut')}</span>
-                              <p className="font-medium">{formatDate(reservation.checkOut)}</p>
-                            </div>
-                            <div>
-                              <span className="text-sm text-gray-500">{t('hotels.guests')}</span>
-                              <p className="font-medium">{reservation.guests} {t('hotels.guests')}</p>
-                            </div>
-                            <div>
-                              <span className="text-sm text-gray-500">{t('hotels.totalPrice')}</span>
-                              <p className="font-medium">{reservation.totalPrice} {reservation.currency}</p>
+                                <div className="flex items-center justify-between">
+                                  <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(reservation.status)}`}>
+                                    {t(`reservations.status.${reservation.status}`)}
+                                  </span>
+
+                                  <div className="text-sm text-gray-500">
+                                    {t('profile.bookedOn')} {formatDate(reservation.createdAt)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {reservation.status !== 'cancelled' && (
+                                <button
+                                  onClick={() => handleCancelReservation(reservation._id)}
+                                  className="ml-4 text-red-600 hover:text-red-700 p-2"
+                                  title={t('profile.cancelReservation')}
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              )}
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    )}                  </div>
+                )}
 
-                          <div className="flex items-center justify-between">
-                            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(reservation.status)}`}>
-                              {t(`reservations.status.${reservation.status}`)}
-                            </span>
-
-                            <div className="text-sm text-gray-500">
-                              {t('profile.bookedOn')} {formatDate(reservation.createdAt)}
+                {activeTab === 'invoices' && (
+                  <div>
+                    {invoiceLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                        <p className="text-gray-600 mt-2">{t('profile.loadingInvoices')}</p>
+                      </div>
+                    ) : invoices.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-6xl mb-4">📄</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {t('profile.noInvoices')}
+                        </h3>
+                        <p className="text-gray-600">
+                          {t('profile.invoicesWillAppear')}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        {/* Invoice Summary Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center">
+                              <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
+                              <div>
+                                <p className="text-sm font-medium text-green-600">{t('profile.paidInvoices')}</p>
+                                <p className="text-2xl font-bold text-green-900">
+                                  {invoices.filter(inv => inv.paymentStatus === 'paid').length}
+                                </p>
+                              </div>
                             </div>
                           </div>
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div className="flex items-center">
+                              <ClockIcon className="h-8 w-8 text-yellow-600 mr-3" />
+                              <div>
+                                <p className="text-sm font-medium text-yellow-600">{t('profile.pendingInvoices')}</p>
+                                <p className="text-2xl font-bold text-yellow-900">
+                                  {invoices.filter(inv => inv.paymentStatus === 'pending' || inv.paymentStatus === 'unpaid').length}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center">
+                              <DocumentTextIcon className="h-8 w-8 text-blue-600 mr-3" />
+                              <div>
+                                <p className="text-sm font-medium text-blue-600">{t('profile.totalAmount')}</p>
+                                <p className="text-2xl font-bold text-blue-900">
+                                  {invoices.reduce((sum, inv) => sum + inv.amount, 0).toFixed(2)} {invoices[0]?.currency || 'SAR'}
+                                </p>
+                              </div>
+                            </div>                          </div>
                         </div>
 
-                        {reservation.status !== 'cancelled' && (
-                          <button
-                            onClick={() => handleCancelReservation(reservation._id)}
-                            className="ml-4 text-red-600 hover:text-red-700 p-2"
-                            title={t('profile.cancelReservation')}
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        )}
+                        {/* Invoices List */}
+                        <div className="space-y-4">
+                          {invoices.map((invoice) => (
+                            <div
+                              key={invoice._id}
+                              className={`border rounded-lg p-6 transition-all duration-200 ${
+                                invoice.paymentStatus === 'paid'
+                                  ? 'border-green-200 bg-green-50 hover:shadow-md'
+                                  : 'border-gray-200 hover:shadow-md'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center space-x-3">
+                                      <h3 className="text-xl font-semibold text-gray-900">
+                                        {t('profile.invoiceNumber')} #{invoice.invoiceNumber}
+                                      </h3>
+                                      {invoice.paymentStatus === 'paid' && (
+                                        <div className="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-full">
+                                          <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                                          <span className="text-sm font-medium text-green-800">
+                                            {t('profile.completed')}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                                      invoice.paymentStatus === 'paid'
+                                        ? 'text-green-700 bg-green-100 border border-green-200'
+                                        : invoice.paymentStatus === 'pending'
+                                        ? 'text-yellow-700 bg-yellow-100 border border-yellow-200'
+                                        : 'text-red-700 bg-red-100 border border-red-200'
+                                    }`}>
+                                      {t(`profile.paymentStatusValues.${invoice.paymentStatus}`)}
+                                    </span>
+                                  </div>
+
+                                  {/* Hotel and Booking Details */}
+                                  <div className="bg-white rounded-lg p-4 mb-4 border border-gray-100">
+                                    <h4 className="font-semibold text-gray-900 mb-2">{t('profile.bookingDetails')}</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div>
+                                        <span className="text-sm text-gray-500">{t('profile.hotelName')}</span>
+                                        <p className="font-medium text-gray-900">{invoice.hotelName}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-sm text-gray-500">{t('profile.guestName')}</span>
+                                        <p className="font-medium text-gray-900">{invoice.clientName}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Payment Details */}
+                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                      <span className="text-sm text-gray-500">{t('profile.amount')}</span>
+                                      <p className="font-bold text-xl text-primary-600">
+                                        {invoice.amount.toFixed(2)} {invoice.currency}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <span className="text-sm text-gray-500">{t('profile.issueDate')}</span>
+                                      <p className="font-medium">{formatDate(invoice.issueDate)}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-sm text-gray-500">{t('profile.dueDate')}</span>
+                                      <p className="font-medium">{formatDate(invoice.dueDate)}</p>
+                                    </div>
+                                    {invoice.paymentStatus === 'paid' && invoice.paymentDetails?.paidAt && (
+                                      <div>
+                                        <span className="text-sm text-gray-500">{t('profile.paidOn')}</span>                                        <p className="font-medium text-green-600">
+                                          {formatDate(invoice.paymentDetails.paidAt.toString())}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {invoice.description && (
+                                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                      <span className="text-sm font-medium text-gray-700">{t('profile.description')}</span>
+                                      <p className="text-gray-900 mt-1">{invoice.description}</p>
+                                    </div>
+                                  )}
+
+                                  {/* Payment Method and Transaction Details */}
+                                  {invoice.paymentStatus === 'paid' && invoice.paymentDetails && (
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                      <h4 className="font-semibold text-green-800 mb-2 flex items-center">
+                                        <CheckCircleIcon className="h-5 w-5 mr-2" />
+                                        {t('profile.paymentComplete')}
+                                      </h4>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {invoice.paymentDetails.paymentMethod && (
+                                          <div>
+                                            <span className="text-sm text-green-600">{t('profile.paymentMethod')}</span>
+                                            <p className="font-medium text-green-800 capitalize">
+                                              {invoice.paymentDetails.paymentMethod}
+                                            </p>
+                                          </div>
+                                        )}
+                                        {invoice.paymentDetails.stripePaymentIntentId && (
+                                          <div>
+                                            <span className="text-sm text-green-600">{t('profile.transactionId')}</span>
+                                            <p className="font-mono text-sm text-green-800">
+                                              {invoice.paymentDetails.stripePaymentIntentId.substring(0, 20)}...
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-sm text-gray-500">
+                                      <ClockIcon className="h-4 w-4 inline mr-1" />
+                                      {t('profile.created')} {formatDate(invoice.createdAt)}
+                                    </div>
+
+                                    <div className="flex space-x-3">
+                                      {invoice.paymentStatus === 'unpaid' && (
+                                        <button
+                                          onClick={() => handlePayNow(invoice._id)}
+                                          disabled={paymentLoading === invoice._id}
+                                          className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                        >
+                                          {paymentLoading === invoice._id ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                          ) : (
+                                            <CreditCardIcon className="h-5 w-5" />
+                                          )}
+                                          <span>
+                                            {paymentLoading === invoice._id
+                                              ? t('profile.processing')
+                                              : `${t('profile.payNow')} ${invoice.amount.toFixed(2)} ${invoice.currency}`
+                                            }
+                                          </span>
+                                        </button>
+                                      )}                                      <button
+                                        onClick={() => handleViewInvoice(invoice._id)}
+                                        className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
+                                      >
+                                        <DocumentTextIcon className="h-4 w-4" />
+                                        <span>{t('profile.viewInvoice')}</span>
+                                      </button>
+                                      {invoice.paymentStatus === 'paid' && (
+                                        <button
+                                          onClick={() => handleDownloadReceipt(invoice._id)}
+                                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2"
+                                        >
+                                          <DocumentTextIcon className="h-4 w-4" />
+                                          <span>{t('profile.downloadReceipt')}</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </motion.div>
-        </div>
+          </motion.div>        </div>
       </div>
+
+      {/* Invoice Detail Modal */}
+      <InvoiceDetailModal
+        isOpen={isInvoiceModalOpen}
+        onClose={handleCloseInvoiceModal}
+        invoice={selectedInvoice}
+        onDownloadReceipt={handleDownloadReceipt}
+      />
     </div>
   );
 };

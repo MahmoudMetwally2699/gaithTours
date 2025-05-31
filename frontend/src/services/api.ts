@@ -56,6 +56,7 @@ export interface User {
   phone: string;
   nationality: string;
   preferredLanguage: 'en' | 'ar';
+  role: 'user' | 'admin';
   isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
