@@ -5,6 +5,7 @@ const stripeService = require('../utils/stripeService');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const { sendPaymentConfirmationEmail } = require('../utils/emailService');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const router = express.Router();
 
@@ -46,15 +47,55 @@ router.post('/create-session', protect, async (req, res) => {
 });
 
 /**
+ * Debug route to check webhook configuration
+ * GET /api/payments/webhook-debug
+ */
+router.get('/webhook-debug', (req, res) => {
+  res.json({
+    message: 'Webhook endpoint is accessible',
+    timestamp: new Date().toISOString(),
+    webhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+    environment: process.env.NODE_ENV,
+    stripePublishableKey: !!process.env.STRIPE_PUBLISHABLE_KEY,
+    stripeSecretKey: !!process.env.STRIPE_SECRET_KEY
+  });
+});
+
+/**
  * Stripe webhook handler (no authentication required)
  * POST /api/payments/webhook
  */
 router.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  console.log('Webhook received');
+  console.log('Signature exists:', !!sig);
+  console.log('Endpoint secret exists:', !!endpointSecret);
+  console.log('Raw body type:', typeof req.body);
+  console.log('Raw body is Buffer:', Buffer.isBuffer(req.body));
+  console.log('Raw body length:', req.body ? req.body.length : 'undefined');
+
+  if (!endpointSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET is not set');
+    return res.status(500).json({ error: 'Webhook secret not configured' });
+  }
+
+  if (!sig) {
+    console.error('No stripe-signature header found');
+    return res.status(400).json({ error: 'No signature header' });
+  }
+  let event;
+  try {
+    // Use Stripe's direct webhook verification instead of custom wrapper
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    console.log('Webhook verified successfully:', event.type);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
   try {
-    const event = stripeService.constructWebhookEvent(req.body, sig);    console.log('Received webhook event:', event.type);
-
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object;
@@ -107,13 +148,11 @@ router.post('/webhook', async (req, res) => {
 
       default:
         console.log('Unhandled webhook event type:', event.type);
-    }
-
-    res.json({ received: true });
+    }    res.json({ received: true });
   } catch (err) {
-    console.error('Webhook error:', err.message);
-    console.error('Webhook error stack:', err.stack);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error('Webhook processing error:', err.message);
+    console.error('Webhook processing error stack:', err.stack);
+    return res.status(500).send(`Webhook Processing Error: ${err.message}`);
   }
 });
 
