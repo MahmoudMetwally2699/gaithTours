@@ -44,10 +44,36 @@ interface Booking {
   };
   touristName: string;
   email: string;
+  phone: string;
+  nationality: string;
   hotel: {
     name: string;
     address: string;
+    city: string;
+    country: string;
+    rating?: number;
+    image?: string;
   };
+  checkInDate?: string;
+  checkOutDate?: string;
+  expectedCheckInTime?: string;
+  roomType?: string;
+  stayType?: string;
+  paymentMethod?: string;
+  numberOfGuests?: number;
+  guests?: Array<{
+    fullName: string;
+    phoneNumber: string;
+  }>;
+  attachments?: Array<{
+    fileName: string;
+    fileUrl: string;
+    fileType: 'pdf' | 'image';
+    publicId: string;
+    size: number;
+    uploadedAt: string;
+  }>;
+  notes?: string;
   status: string;
   createdAt: string;
 }
@@ -55,6 +81,20 @@ interface Booking {
 interface Invoice {
   _id: string;
   invoiceId: string;
+  booking: {
+    _id: string;
+    touristName: string;
+    hotel: {
+      name: string;
+      address: string;
+      city: string;
+      country: string;
+    };
+    checkInDate?: string;
+    checkOutDate?: string;
+    roomType?: string;
+    numberOfGuests?: number;
+  };
   user: {
     name: string;
     email: string;
@@ -64,15 +104,39 @@ interface Invoice {
   hotelName: string;
   amount: number;
   currency: string;
+  taxAmount?: number;
+  totalAmount?: number;
+  dueDate?: string;
+  items?: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+  notes?: string;
   status: string;
+  issuedAt: string;
+  paidAt?: string;
   createdAt: string;
 }
 
 interface Payment {
   _id: string;
+  paymentId?: string;
   invoice: {
+    _id: string;
     invoiceId: string;
     amount: number;
+    booking: {
+      _id: string;
+      touristName: string;
+      hotel: {
+        name: string;
+        address: string;
+        city: string;
+        country: string;
+      };
+    };
   };
   user: {
     name: string;
@@ -80,8 +144,16 @@ interface Payment {
   };
   amount: number;
   currency: string;
+  paymentMethod?: string;
+  paymentGateway?: string;
+  transactionId?: string;
+  gatewayResponse?: any;
+  fees?: number;
+  netAmount?: number;
   status: string;
-  processedAt: string;
+  failureReason?: string;
+  processedAt?: string;
+  confirmedAt?: string;
   createdAt: string;
 }
 
@@ -113,12 +185,16 @@ export const AdminDashboard: React.FC = () => {
   // Payments state
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentStatus, setPaymentStatus] = useState('');
-  const [paymentPage] = useState(1); // TODO: Implement pagination
-  // Selected items for actions
+  const [paymentPage] = useState(1); // TODO: Implement pagination  // Selected items for actions
   const [selectedClient, setSelectedClient] = useState<Client | null>(null); // TODO: Implement client details
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showDenialModal, setShowDenialModal] = useState(false);
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [showInvoiceDetailsModal, setShowInvoiceDetailsModal] = useState(false);
+  const [showPaymentDetailsModal, setShowPaymentDetailsModal] = useState(false);
   const [denialReason, setDenialReason] = useState('');
   const [approvalAmount, setApprovalAmount] = useState('1000');
   const fetchStats = useCallback(async () => {
@@ -550,32 +626,43 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(booking.status, 'booking')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {booking.status === 'pending' && (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => {
-                                  setSelectedBooking(booking);
-                                  setShowApprovalModal(true);
-                                }}
-                                className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200"
-                              >
-                                <CheckIcon className="w-4 h-4 inline mr-1" />
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedBooking(booking);
-                                  setShowDenialModal(true);
-                                }}
-                                className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200"
-                              >
-                                <XMarkIcon className="w-4 h-4 inline mr-1" />
-                                Deny
-                              </button>
-                            </div>
-                          )}
+                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedBooking(booking);
+                                setShowBookingDetailsModal(true);
+                              }}
+                              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200"
+                            >
+                              <EyeIcon className="w-4 h-4 inline mr-1" />
+                              View Details
+                            </button>
+                            {booking.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedBooking(booking);
+                                    setShowApprovalModal(true);
+                                  }}
+                                  className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200"
+                                >
+                                  <CheckIcon className="w-4 h-4 inline mr-1" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedBooking(booking);
+                                    setShowDenialModal(true);
+                                  }}
+                                  className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200"
+                                >
+                                  <XMarkIcon className="w-4 h-4 inline mr-1" />
+                                  Deny
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -623,9 +710,11 @@ export const AdminDashboard: React.FC = () => {
                       </th>
                       <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
                         Status
+                      </th>                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
+                        Issue Date
                       </th>
                       <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Issue Date
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -649,9 +738,20 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(invoice.status, 'invoice')}
+                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(invoice.createdAt).toLocaleDateString()}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setShowInvoiceDetailsModal(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors duration-200 flex items-center space-x-1"
+                          >
+                            <EyeIcon className="w-4 h-4" />
+                            <span>View Details</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -697,16 +797,17 @@ export const AdminDashboard: React.FC = () => {
                       </th>
                       <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
                         Status
+                      </th>                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
+                        Payment Date
                       </th>
                       <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Payment Date
+                        Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {payments.map((payment) => (
-                      <tr key={payment._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={payment._id} className="hover:bg-gray-50">                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {payment.invoice.invoiceId}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -720,9 +821,20 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(payment.status, 'payment')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {payment.processedAt ? new Date(payment.processedAt).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => {
+                              setSelectedPayment(payment);
+                              setShowPaymentDetailsModal(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors duration-200 flex items-center space-x-1"
+                          >
+                            <EyeIcon className="w-4 h-4" />
+                            <span>View Details</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -807,10 +919,626 @@ export const AdminDashboard: React.FC = () => {
                   onClick={handleDenyBooking}
                   disabled={loading || !denialReason}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                >
-                  {loading ? 'Denying...' : 'Deny & Send Notification'}
+                >                  {loading ? 'Denying...' : 'Deny & Send Notification'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Details Modal */}
+      {showBookingDetailsModal && selectedBooking && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-0 border max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-md">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">Booking Details</h3>
+                <button
+                  onClick={() => setShowBookingDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+              {/* Hotel Information */}
+              <div className="mb-6">
+                <div className="flex items-start space-x-4">
+                  {selectedBooking.hotel.image && (
+                    <img
+                      src={selectedBooking.hotel.image}
+                      alt={selectedBooking.hotel.name}
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-900">{selectedBooking.hotel.name}</h4>
+                    <p className="text-gray-600">{selectedBooking.hotel.address}</p>
+                    <p className="text-gray-600">{selectedBooking.hotel.city}, {selectedBooking.hotel.country}</p>
+                    {selectedBooking.hotel.rating && (
+                      <div className="flex items-center mt-2">
+                        <span className="text-yellow-400">★</span>
+                        <span className="ml-1 text-sm">{selectedBooking.hotel.rating}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Information */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                {/* Travel Details */}
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">Travel Details</h5>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Booking ID:</span>
+                      <span className="font-medium font-mono text-sm">{selectedBooking._id}</span>
+                    </div>
+                    {selectedBooking.checkInDate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Check-in:</span>
+                        <span className="font-medium">{new Date(selectedBooking.checkInDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {selectedBooking.checkOutDate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Check-out:</span>
+                        <span className="font-medium">{new Date(selectedBooking.checkOutDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Guests:</span>
+                      <span className="font-medium">{selectedBooking.numberOfGuests || 1}</span>
+                    </div>
+                    {selectedBooking.expectedCheckInTime && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Expected Check-in Time:</span>
+                        <span className="font-medium">{selectedBooking.expectedCheckInTime}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Room & Stay Details */}
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">Room & Stay Details</h5>
+                  <div className="space-y-3">
+                    {selectedBooking.roomType && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Room Type:</span>
+                        <span className="font-medium capitalize">{selectedBooking.roomType.replace('_', ' ')}</span>
+                      </div>
+                    )}
+                    {selectedBooking.stayType && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Stay Type:</span>
+                        <span className="font-medium capitalize">{selectedBooking.stayType.replace('_', ' ')}</span>
+                      </div>
+                    )}
+                    {selectedBooking.paymentMethod && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Payment Method:</span>
+                        <span className="font-medium">{selectedBooking.paymentMethod}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span className="font-medium">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          selectedBooking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          selectedBooking.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          selectedBooking.status === 'denied' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {selectedBooking.status}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Submission Date:</span>
+                      <span className="font-medium">{new Date(selectedBooking.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Information */}
+              <div className="mb-6">
+                <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Personal Information</h5>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Full Name:</span>
+                    <span className="font-medium">{selectedBooking.touristName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Email:</span>
+                    <span className="font-medium">{selectedBooking.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Phone:</span>
+                    <span className="font-medium">{selectedBooking.phone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Nationality:</span>
+                    <span className="font-medium">{selectedBooking.nationality}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Guests */}
+              {selectedBooking.guests && selectedBooking.guests.length > 0 && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Additional Guests</h5>
+                  <div className="space-y-2">
+                    {selectedBooking.guests.map((guest, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded-md">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Guest's Name:</span>
+                          <span className="font-medium">{guest.fullName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Phone:</span>
+                          <span className="font-medium">{guest.phoneNumber}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {selectedBooking.attachments && selectedBooking.attachments.length > 0 && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Attachments ({selectedBooking.attachments.length})</h5>
+                  <div className="space-y-2">
+                    {selectedBooking.attachments.map((attachment, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center space-x-3">
+                          {attachment.fileType === 'pdf' ? (
+                            <div className="text-red-500">📄</div>
+                          ) : (
+                            <div className="text-blue-500">🖼️</div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{attachment.fileName}</p>
+                            <p className="text-xs text-gray-500">
+                              {attachment.fileType.toUpperCase()} • {(attachment.size / 1024 / 1024).toFixed(2)} MB •
+                              Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => window.open(attachment.fileUrl, '_blank')}
+                          className="text-blue-600 hover:text-blue-500 text-sm font-medium"
+                        >
+                          View
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Special Requests */}
+              {selectedBooking.notes && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Special Requests</h5>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <p className="text-gray-700">{selectedBooking.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              {selectedBooking.status === 'pending' && (
+                <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      setShowBookingDetailsModal(false);
+                      setShowApprovalModal(true);
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    Approve Booking
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowBookingDetailsModal(false);
+                      setShowDenialModal(true);
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Deny Booking
+                  </button>
+                </div>
+              )}
+            </div>          </div>
+        </div>
+      )}
+
+      {/* Invoice Details Modal */}
+      {showInvoiceDetailsModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-0 border max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-md">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">Invoice Details</h3>
+                <button
+                  onClick={() => setShowInvoiceDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+              {/* Invoice Header */}
+              <div className="mb-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-2xl font-bold text-gray-900">Invoice #{selectedInvoice.invoiceId}</h4>
+                    <p className="text-gray-600 mt-1">
+                      Status: <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedInvoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                        selectedInvoice.status === 'invoiced' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedInvoice.status.charAt(0).toUpperCase() + selectedInvoice.status.slice(1)}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Issue Date</p>
+                    <p className="font-medium">{new Date(selectedInvoice.issuedAt || selectedInvoice.createdAt).toLocaleDateString()}</p>
+                    {selectedInvoice.dueDate && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">Due Date</p>
+                        <p className="font-medium">{new Date(selectedInvoice.dueDate).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Client & Hotel Information */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">Bill To</h5>
+                  <div className="space-y-2">
+                    <p className="font-medium text-gray-900">{selectedInvoice.clientName}</p>
+                    <p className="text-gray-600">{selectedInvoice.clientEmail}</p>
+                    <p className="text-sm text-gray-500">Client ID: {selectedInvoice.user.name}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">Service Details</h5>
+                  <div className="space-y-2">
+                    <p className="font-medium text-gray-900">{selectedInvoice.hotelName}</p>
+                    {selectedInvoice.booking && (
+                      <>
+                        <p className="text-gray-600">{selectedInvoice.booking.hotel.address}</p>
+                        <p className="text-gray-600">{selectedInvoice.booking.hotel.city}, {selectedInvoice.booking.hotel.country}</p>
+                        {selectedInvoice.booking.checkInDate && selectedInvoice.booking.checkOutDate && (
+                          <p className="text-sm text-gray-500">
+                            {new Date(selectedInvoice.booking.checkInDate).toLocaleDateString()} - {new Date(selectedInvoice.booking.checkOutDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Details */}
+              {selectedInvoice.booking && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Booking Information</h5>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Booking ID</p>
+                        <p className="font-mono text-sm">{selectedInvoice.booking._id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Guest Name</p>
+                        <p className="font-medium">{selectedInvoice.booking.touristName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Number of Guests</p>
+                        <p className="font-medium">{selectedInvoice.booking.numberOfGuests || 1}</p>
+                      </div>
+                      {selectedInvoice.booking.roomType && (
+                        <div>
+                          <p className="text-sm text-gray-600">Room Type</p>
+                          <p className="font-medium capitalize">{selectedInvoice.booking.roomType.replace('_', ' ')}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Invoice Items */}
+              <div className="mb-6">
+                <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Invoice Items</h5>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {selectedInvoice.items && selectedInvoice.items.length > 0 ? (
+                        selectedInvoice.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-4 py-2 text-sm text-gray-900">{item.description}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600 text-right">{item.quantity}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600 text-right">{item.unitPrice} {selectedInvoice.currency}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 text-right font-medium">{item.total} {selectedInvoice.currency}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="px-4 py-2 text-sm text-gray-900">Hotel Booking Service</td>
+                          <td className="px-4 py-2 text-sm text-gray-600 text-right">1</td>
+                          <td className="px-4 py-2 text-sm text-gray-600 text-right">{selectedInvoice.amount} {selectedInvoice.currency}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900 text-right font-medium">{selectedInvoice.amount} {selectedInvoice.currency}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Invoice Summary */}
+              <div className="flex justify-end mb-6">
+                <div className="w-64">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-medium">{selectedInvoice.amount} {selectedInvoice.currency}</span>
+                    </div>
+                    {selectedInvoice.taxAmount && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tax:</span>
+                        <span className="font-medium">{selectedInvoice.taxAmount} {selectedInvoice.currency}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2">
+                      <div className="flex justify-between text-lg font-bold">
+                        <span>Total:</span>
+                        <span>{selectedInvoice.totalAmount || selectedInvoice.amount} {selectedInvoice.currency}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedInvoice.notes && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Notes</h5>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <p className="text-gray-700">{selectedInvoice.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Information */}
+              {selectedInvoice.status === 'paid' && selectedInvoice.paidAt && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Payment Information</h5>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <CheckIcon className="w-5 h-5 text-green-500" />
+                      <span className="text-green-800 font-medium">Payment Received</span>
+                    </div>
+                    <p className="text-green-700 text-sm mt-1">
+                      Paid on {new Date(selectedInvoice.paidAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Details Modal */}
+      {showPaymentDetailsModal && selectedPayment && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-0 border max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-md">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-900">Payment Details</h3>
+                <button
+                  onClick={() => setShowPaymentDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+              {/* Payment Header */}
+              <div className="mb-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-2xl font-bold text-gray-900">
+                      Payment {selectedPayment.paymentId ? `#${selectedPayment.paymentId}` : `#${selectedPayment._id.slice(-8)}`}
+                    </h4>
+                    <p className="text-gray-600 mt-1">
+                      Status: <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedPayment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        selectedPayment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        selectedPayment.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedPayment.status.charAt(0).toUpperCase() + selectedPayment.status.slice(1)}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Payment Date</p>
+                    <p className="font-medium">{new Date(selectedPayment.createdAt).toLocaleDateString()}</p>
+                    {selectedPayment.processedAt && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">Processed Date</p>
+                        <p className="font-medium">{new Date(selectedPayment.processedAt).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment & Invoice Information */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">Payment Information</h5>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-medium text-lg">{selectedPayment.amount} {selectedPayment.currency}</span>
+                    </div>
+                    {selectedPayment.fees && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Processing Fees:</span>
+                        <span className="font-medium">{selectedPayment.fees} {selectedPayment.currency}</span>
+                      </div>
+                    )}
+                    {selectedPayment.netAmount && (
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-gray-600 font-medium">Net Amount:</span>
+                        <span className="font-bold">{selectedPayment.netAmount} {selectedPayment.currency}</span>
+                      </div>
+                    )}
+                    {selectedPayment.paymentMethod && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Payment Method:</span>
+                        <span className="font-medium capitalize">{selectedPayment.paymentMethod}</span>
+                      </div>
+                    )}
+                    {selectedPayment.paymentGateway && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Gateway:</span>
+                        <span className="font-medium capitalize">{selectedPayment.paymentGateway}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">Invoice Information</h5>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Invoice ID:</span>
+                      <span className="font-medium">{selectedPayment.invoice.invoiceId}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Invoice Amount:</span>
+                      <span className="font-medium">{selectedPayment.invoice.amount} {selectedPayment.currency}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Customer:</span>
+                      <span className="font-medium">{selectedPayment.user.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="font-medium">{selectedPayment.user.email}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Information */}
+              {selectedPayment.invoice.booking && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Related Booking</h5>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Booking ID</p>
+                        <p className="font-mono text-sm">{selectedPayment.invoice.booking._id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Guest Name</p>
+                        <p className="font-medium">{selectedPayment.invoice.booking.touristName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Hotel</p>
+                        <p className="font-medium">{selectedPayment.invoice.booking.hotel.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Location</p>
+                        <p className="font-medium">{selectedPayment.invoice.booking.hotel.city}, {selectedPayment.invoice.booking.hotel.country}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction Details */}
+              {selectedPayment.transactionId && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Transaction Details</h5>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Transaction ID:</span>
+                        <span className="font-mono text-sm">{selectedPayment.transactionId}</span>
+                      </div>
+                      {selectedPayment.confirmedAt && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Confirmed At:</span>
+                          <span className="font-medium">{new Date(selectedPayment.confirmedAt).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Failure Information */}
+              {selectedPayment.status === 'failed' && selectedPayment.failureReason && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Failure Information</h5>
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <XMarkIcon className="w-5 h-5 text-red-500" />
+                      <span className="text-red-800 font-medium">Payment Failed</span>
+                    </div>
+                    <p className="text-red-700 text-sm mt-1">{selectedPayment.failureReason}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Success Information */}
+              {selectedPayment.status === 'completed' && (
+                <div className="mb-6">
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <CheckIcon className="w-5 h-5 text-green-500" />
+                      <span className="text-green-800 font-medium">Payment Completed Successfully</span>
+                    </div>
+                    {selectedPayment.processedAt && (
+                      <p className="text-green-700 text-sm mt-1">
+                        Processed on {new Date(selectedPayment.processedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

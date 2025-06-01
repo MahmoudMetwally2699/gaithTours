@@ -45,15 +45,14 @@ export const Profile: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isEditing, setIsEditing] = useState(false);  const [loading, setLoading] = useState(true);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
-  const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState<string | null>(null);  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || ''
-  });
-  // Check for tab parameter from URL
+    phone: user?.phone || '',
+    nationality: user?.nationality || ''
+  });  // Check for tab parameter from URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
@@ -61,6 +60,18 @@ export const Profile: React.FC = () => {
       setActiveTab(tabFromUrl);
     }
   }, []);
+
+  // Auto-populate form data when user data is available
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        nationality: user.nationality || ''
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -151,11 +162,20 @@ export const Profile: React.FC = () => {
       setPaymentLoading(null);
     }
   };
-
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateUser(formData);
+      // Import the usersAPI
+      const { usersAPI } = await import('../services/api');
+
+      // Call API to update profile
+      const response = await usersAPI.updateProfile(formData);
+
+      // Update the user context with the updated data
+      if (response.data?.user) {
+        updateUser(response.data.user);
+      }
+
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -259,8 +279,7 @@ export const Profile: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     />
-                  </div>
-                  <div>
+                  </div>                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {t('auth.phone')}
                     </label>
@@ -268,6 +287,17 @@ export const Profile: React.FC = () => {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('auth.nationality')}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nationality}
+                      onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+                      placeholder={t('auth.nationalityPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
@@ -296,11 +326,18 @@ export const Profile: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                     <span className="text-gray-900">{user?.email}</span>
-                  </div>
-                  {user?.phone && (
+                  </div>                  {user?.phone && (
                     <div className="flex items-center space-x-3">
                       <PhoneIcon className="h-5 w-5 text-gray-400" />
                       <span className="text-gray-900">{user.phone}</span>
+                    </div>
+                  )}
+                  {user?.nationality && (
+                    <div className="flex items-center space-x-3">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-gray-900">{user.nationality}</span>
                     </div>
                   )}
                   <div className="flex items-center space-x-3">

@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HotelSelectionModal } from '../components/HotelSelectionModal';
 import { HotelBookingModal } from '../components/HotelBookingModal';
+import { FileUpload, UploadedFile } from '../components/FileUpload';
 import { Hotel } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { CalendarIcon, UserGroupIcon, MapPinIcon, StarIcon } from '@heroicons/react/24/outline';
 
 export const Hotels: React.FC = () => {
+  const { user } = useAuth();
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [showHotelSelection, setShowHotelSelection] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);  const [formData, setFormData] = useState({
@@ -18,15 +21,30 @@ export const Hotels: React.FC = () => {
     roomType: 'double',
     stayType: 'room_only',
     paymentMethod: '',
-    touristName: '',
-    phone: '',
-    nationality: '',
-    email: '',
-    guests_list: [] as Array<{ fullName: string; phoneNumber: string }>
-  });  const [loading] = useState(false);
+    touristName: user?.name || '',
+    phone: user?.phone || '',
+    nationality: user?.nationality || '',
+    email: user?.email || '',
+    guests_list: [] as Array<{ fullName: string; phoneNumber: string }>,
+    attachments: [] as UploadedFile[]  });
+
+  const [loading] = useState(false);
   const [error, setError] = useState('');
   const [showGuestForm, setShowGuestForm] = useState(false);
   const [newGuest, setNewGuest] = useState({ fullName: '', phoneNumber: '' });
+
+  // Auto-populate personal information when user data is available
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        touristName: user.name || prev.touristName,
+        phone: user.phone || prev.phone,
+        nationality: user.nationality || prev.nationality,
+        email: user.email || prev.email
+      }));
+    }
+  }, [user]);
 
   const handleHotelSelect = (hotel: Hotel) => {
     setSelectedHotel(hotel);
@@ -74,13 +92,20 @@ export const Hotels: React.FC = () => {
       guests_list: formData.guests_list.filter((_, i) => i !== index)
     });
   };
-
   const handleNewGuestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewGuest({
       ...newGuest,
       [e.target.name]: e.target.value
     });
   };
+
+  const handleFilesChange = (files: UploadedFile[]) => {
+    setFormData({
+      ...formData,
+      attachments: files
+    });
+  };
+
   const handleCloseModal = () => {
     setShowBookingModal(false);
   };
@@ -451,9 +476,7 @@ export const Hotels: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Special Requests */}
+            </div>            {/* Special Requests */}
             <div className="border-t pt-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Special Requests
@@ -465,6 +488,23 @@ export const Hotels: React.FC = () => {
                 rows={4}
                 placeholder="Any special requests or preferences (optional)..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* File Attachments */}
+            <div className="border-t pt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Attachments (Optional)
+              </label>
+              <p className="text-sm text-gray-600 mb-4">
+                Upload documents such as identification, visa, or any other relevant files for your booking.
+              </p>
+              <FileUpload
+                files={formData.attachments}
+                onFilesChange={handleFilesChange}
+                maxFiles={5}
+                maxSize={10}
+                acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']}
               />
             </div>
 
@@ -512,7 +552,8 @@ export const Hotels: React.FC = () => {
             nationality: formData.nationality,
             email: formData.email,
             guests_list: formData.guests_list,
-            notes: formData.specialRequests
+            notes: formData.specialRequests,
+            attachments: formData.attachments
           }}
           onClose={handleCloseModal}
         />

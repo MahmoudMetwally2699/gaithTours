@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
+import { UploadedFile } from './FileUpload';
 import { reservationsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -23,6 +24,7 @@ interface HotelBookingModalProps {
     email: string;
     guests_list: Array<{ fullName: string; phoneNumber: string }>;
     notes: string;
+    attachments?: UploadedFile[];
   };
   onClose: () => void;
 }
@@ -110,8 +112,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
   const handleConfirmBooking = async () => {
     setLoading(true);
 
-    try {
-      const reservationData = {
+    try {      const reservationData = {
         touristName: searchParams.touristName,
         phone: searchParams.phone,
         nationality: searchParams.nationality,
@@ -134,7 +135,8 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         checkInDate: searchParams.checkIn,
         checkOutDate: searchParams.checkOut,
         numberOfGuests: searchParams.guests,
-        notes: searchParams.notes
+        notes: searchParams.notes,
+        attachments: searchParams.attachments || []
       };
 
       console.log('=== FRONTEND RESERVATION DATA ===');
@@ -318,9 +320,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Special Requests */}
+          )}          {/* Special Requests */}
           {searchParams.notes && (
             <div className="mt-6 space-y-4">
               <h5 className="font-semibold text-gray-800 border-b pb-2">
@@ -328,6 +328,62 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
               </h5>
               <div className="bg-gray-50 p-4 rounded-md">
                 <p className="text-gray-700">{searchParams.notes}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {searchParams.attachments && searchParams.attachments.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h5 className="font-semibold text-gray-800 border-b pb-2">
+                {t('hotels.booking.attachments', 'Attachments')}
+              </h5>
+              <div className="space-y-3">
+                {searchParams.attachments.map((file, index) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-md border-l-4 border-blue-500">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          {file.fileType === 'pdf' ? (
+                            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {file.fileName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {file.fileType.toUpperCase()} • {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <a
+                          href={file.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          {t('common.view', 'View')}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

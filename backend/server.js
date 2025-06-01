@@ -119,6 +119,13 @@ try {
   console.error('Error loading payments routes:', error);
 }
 
+try {
+  app.use('/api/uploads', require('./routes/uploads'));
+  console.log('Uploads routes loaded successfully');
+} catch (error) {
+  console.error('Error loading uploads routes:', error);
+}
+
 // Test route to verify deployment
 app.get('/api/test', (req, res) => {
   res.status(200).json({

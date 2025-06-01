@@ -132,8 +132,35 @@ const reservationSchema = new mongoose.Schema({
         },
         message: 'Please enter a valid guest phone number'
       }
+    }  }],  // Attachments field for PDF and image uploads
+  attachments: [{
+    fileName: {
+      type: String,
+      required: true
+    },
+    fileUrl: {
+      type: String,
+      required: true
+    },
+    fileType: {
+      type: String,
+      enum: ['pdf', 'image'],
+      required: true
+    },
+    publicId: {
+      type: String,
+      required: true // Cloudinary public_id for deletion
+    },
+    size: {
+      type: Number,
+      required: true // File size in bytes
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
     }
-  }],  status: {
+  }],
+  status: {
     type: String,
     enum: ['pending', 'approved', 'denied', 'invoiced', 'paid', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'

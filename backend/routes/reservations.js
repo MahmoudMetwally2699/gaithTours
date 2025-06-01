@@ -58,9 +58,7 @@ router.post('/', protect, [
     if (!errors.isEmpty()) {
       console.error('Validation errors:', errors.array());
       return errorResponse(res, 'Validation failed', 400, errors.array());
-    }
-
-    const {
+    }    const {
       touristName,
       phone,
       nationality,
@@ -74,7 +72,8 @@ router.post('/', protect, [
       checkInDate,
       checkOutDate,
       numberOfGuests,
-      notes
+      notes,
+      attachments
     } = req.body;
 
     // Sanitize inputs
@@ -114,11 +113,11 @@ router.post('/', protect, [
         rating: hotel.rating,
         image: hotel.image,
         hotelId: hotel.hotelId
-      },
-      checkInDate: checkInDate ? new Date(checkInDate) : undefined,
+      },      checkInDate: checkInDate ? new Date(checkInDate) : undefined,
       checkOutDate: checkOutDate ? new Date(checkOutDate) : undefined,
       numberOfGuests: numberOfGuests || 1,
-      notes: sanitizedData.notes
+      notes: sanitizedData.notes,
+      attachments: attachments || []
     };
 
     console.log('Data being sent to MongoDB:', JSON.stringify(reservationData, null, 2));
