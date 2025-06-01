@@ -78,20 +78,27 @@ export const Profile: React.FC = () => {
       try {
         const response = await reservationsAPI.getByUser();        if (response.data?.reservations) {
           // Transform API reservations to local reservation interface
-          const transformedReservations: Reservation[] = response.data.reservations.map((apiRes: APIReservation) => ({
-            _id: apiRes._id,
-            hotelName: apiRes.hotel.name,
-            checkIn: apiRes.checkInDate || '',
-            checkOut: apiRes.checkOutDate || '',
-            guests: apiRes.numberOfGuests,
-            rooms: 1, // Default value as API doesn't have rooms
-            totalPrice: 0, // API doesn't have total price
-            currency: 'USD', // Default currency
-            status: apiRes.status === 'confirmed' ? 'confirmed' :
-                   apiRes.status === 'pending' ? 'pending' :
-                   apiRes.status === 'cancelled' ? 'cancelled' : 'pending', // Default to pending instead of cancelled
-            createdAt: apiRes.createdAt
-          }));
+          console.log('🔍 Raw API Response:', response.data.reservations);
+          const transformedReservations: Reservation[] = response.data.reservations.map((apiRes: APIReservation) => {
+            console.log('📍 API Reservation Status:', apiRes.status, 'for reservation ID:', apiRes._id);
+            const mappedStatus = (apiRes.status === 'confirmed' || apiRes.status === 'paid' || apiRes.status === 'completed') ? 'confirmed' :
+                   (apiRes.status === 'cancelled') ? 'cancelled' :
+                   'pending' as const;
+            console.log('📍 Mapped Status:', mappedStatus, 'for reservation ID:', apiRes._id);
+            return {
+              _id: apiRes._id,
+              hotelName: apiRes.hotel.name,
+              checkIn: apiRes.checkInDate || '',
+              checkOut: apiRes.checkOutDate || '',
+              guests: apiRes.numberOfGuests,
+              rooms: 1, // Default value as API doesn't have rooms
+              totalPrice: 0, // API doesn't have total price
+              currency: 'USD', // Default currency
+              status: mappedStatus,
+              createdAt: apiRes.createdAt
+            };
+          });
+          console.log('✅ Final transformed reservations:', transformedReservations);
           setReservations(transformedReservations);
         }
       } catch (error) {

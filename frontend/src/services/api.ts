@@ -100,7 +100,7 @@ export interface Reservation {
   checkInDate?: string;
   checkOutDate?: string;
   numberOfGuests: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'approved' | 'denied' | 'invoiced' | 'paid' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string;
   createdAt: string;
   updatedAt: string;

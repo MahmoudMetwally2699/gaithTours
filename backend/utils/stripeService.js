@@ -2,6 +2,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const Reservation = require('../models/Reservation');
 
 /**
  * Create a Stripe Checkout Session for invoice payment
@@ -102,7 +103,15 @@ const handlePaymentSuccess = async (sessionId) => {
 
     if (!invoice || !payment) {
       throw new Error('Invoice or payment not found');
-    }    // Update invoice status
+    }
+
+    console.log('🔍 Invoice found:', {
+      id: invoice._id,
+      status: invoice.status,
+      reservationId: invoice.reservation
+    });
+
+    // Update invoice status
     invoice.status = 'paid';
     invoice.paymentStatus = 'paid';
     invoice.paymentDetails = {
@@ -116,13 +125,35 @@ const handlePaymentSuccess = async (sessionId) => {
     payment.status = 'completed';
     payment.stripePaymentIntentId = session.payment_intent.id;
     payment.transactionId = session.payment_intent.id;
-    payment.processedAt = new Date();
-    payment.metadata = {
+    payment.processedAt = new Date();    payment.metadata = {
       ...payment.metadata,
       sessionId: sessionId,
       paymentIntentId: session.payment_intent.id
     };
-    await payment.save();
+    await payment.save();    // Update reservation status to confirmed when payment is completed
+    console.log('🔄 Checking reservation update:', {
+      hasReservation: !!invoice.reservation,
+      reservationId: invoice.reservation
+    });
+
+    if (invoice.reservation) {
+      const reservation = await Reservation.findById(invoice.reservation);
+      console.log('📋 Found reservation:', {
+        id: reservation?._id,
+        currentStatus: reservation?.status
+      });
+
+      if (reservation) {
+        const oldStatus = reservation.status;
+        reservation.status = 'confirmed';
+        await reservation.save();
+        console.log(`✅ Reservation ${reservation._id} status updated from ${oldStatus} to confirmed`);
+      } else {
+        console.log('❌ Reservation not found with ID:', invoice.reservation);
+      }
+    } else {
+      console.log('❌ Invoice has no reservation reference');
+    }
 
     return {
       invoice,
