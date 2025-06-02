@@ -6,6 +6,42 @@ import { UploadedFile } from './FileUpload';
 import { reservationsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
+// Helper function to get calling code from country code
+const getCallingCodeFromCountry = (countryCode: string): string => {
+  const countryToPhone: { [key: string]: string } = {
+    'SA': '966', // Saudi Arabia
+    'AE': '971', // UAE
+    'KW': '965', // Kuwait
+    'BH': '973', // Bahrain
+    'QA': '974', // Qatar
+    'OM': '968', // Oman
+    'EG': '20',  // Egypt
+    'JO': '962', // Jordan
+    'LB': '961', // Lebanon
+    'SY': '963', // Syria
+    'IQ': '964', // Iraq
+    'YE': '967', // Yemen
+    'US': '1',   // United States
+    'GB': '44',  // United Kingdom
+    'FR': '33',  // France
+    'DE': '49',  // Germany
+    'IT': '39',  // Italy
+    'ES': '34',  // Spain
+    'IN': '91',  // India
+    'PK': '92',  // Pakistan
+    'BD': '880', // Bangladesh
+    'MY': '60',  // Malaysia
+    'SG': '65',  // Singapore
+    'TH': '66',  // Thailand
+    'VN': '84',  // Vietnam
+    'CN': '86',  // China
+    'JP': '81',  // Japan
+    'KR': '82',  // South Korea
+  };
+
+  return countryToPhone[countryCode] || '966'; // Default to Saudi Arabia
+};
+
 interface HotelBookingModalProps {
   hotel: Hotel;
   searchParams: {
@@ -22,7 +58,7 @@ interface HotelBookingModalProps {
     phone: string;
     nationality: string;
     email: string;
-    guests_list: Array<{ fullName: string; phoneNumber: string }>;
+    guests_list: Array<{ fullName: string; phoneNumber: string; phoneCountryCode: string }>;
     notes: string;
     attachments?: UploadedFile[];
   };
@@ -108,11 +144,19 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
     return 0;
   };
 
-  const nights = calculateNights();
-  const handleConfirmBooking = async () => {
+  const nights = calculateNights();  const handleConfirmBooking = async () => {
     setLoading(true);
 
-    try {      const reservationData = {
+    try {
+      // Format guest phone numbers with country codes
+      const formattedGuests = searchParams.guests_list.map(guest => ({
+        fullName: guest.fullName,
+        phoneNumber: guest.phoneCountryCode && guest.phoneNumber
+          ? `+${getCallingCodeFromCountry(guest.phoneCountryCode)}${guest.phoneNumber.replace(/^0+/, '')}`
+          : guest.phoneNumber
+      }));
+
+      const reservationData = {
         touristName: searchParams.touristName,
         phone: searchParams.phone,
         nationality: searchParams.nationality,
@@ -121,7 +165,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         roomType: searchParams.roomType,
         stayType: searchParams.stayType,
         paymentMethod: searchParams.paymentMethod,
-        guests: searchParams.guests_list,
+        guests: formattedGuests,
         hotel: {
           name: hotel.name,
           address: hotel.address,
@@ -311,10 +355,9 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                     <div className="flex justify-between">
                       <span className="text-gray-600">{t('hotels.booking.guestFullName', "Guest's Name")}:</span>
                       <span className="font-medium">{guest.fullName}</span>
-                    </div>
-                    <div className="flex justify-between">
+                    </div>                    <div className="flex justify-between">
                       <span className="text-gray-600">{t('hotels.booking.guestPhone', "Phone")}:</span>
-                      <span className="font-medium">{guest.phoneNumber}</span>
+                      <span className="font-medium">{`${guest.phoneCountryCode} ${guest.phoneNumber}`}</span>
                     </div>
                   </div>
                 ))}

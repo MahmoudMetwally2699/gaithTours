@@ -4,16 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import ReactCountryDropdown from 'react-country-dropdown';
 
 export const Register: React.FC = () => {  const { t } = useTranslation();
   const { register } = useAuth();
-  const history = useHistory();
-  const [formData, setFormData] = useState({
+  const history = useHistory();  const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
     phone: '',
+    phoneCountryCode: '+966', // Default to Saudi Arabia
     nationality: '',
     agreeToTerms: false
   });
@@ -53,13 +54,15 @@ export const Register: React.FC = () => {  const { t } = useTranslation();
     if (!validateForm()) return;
 
     setIsLoading(true);
-    setError('');
+    setError('');    try {
+      // Combine country code with phone number
+      const fullPhoneNumber = formData.phoneCountryCode + formData.phone;
 
-    try {      await register({
+      await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        phone: formData.phone,
+        phone: fullPhoneNumber,
         nationality: formData.nationality
       });
       setSuccess(true);
@@ -169,38 +172,47 @@ export const Register: React.FC = () => {  const { t } = useTranslation();
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                 {t('auth.phone')}
               </label>
-              <div className="mt-1">
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder={t('auth.phonePlaceholder')}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  {t('validation.phoneHint', { example: '+966' })}
-                </p>
+              <div className="mt-1 flex space-x-2">
+                {/* Country Code Dropdown */}
+                <div className="w-32">                  <ReactCountryDropdown
+                    defaultCountry="SA"
+                    onSelect={(country) => {
+                      setFormData({
+                        ...formData,
+                        phoneCountryCode: `+${country.callingCodes[0]}`
+                      });
+                    }}
+                  />
+                </div>
+                {/* Phone Number Input */}
+                <div className="flex-1">
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="123456789"
+                  />
+                </div>
               </div>
-            </div>
-
-            <div>
+              <p className="mt-1 text-xs text-gray-500">
+                {t('validation.phoneHint', { example: formData.phoneCountryCode })}
+              </p>
+            </div>            <div>
               <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">
                 {t('auth.nationality')}
               </label>
-              <div className="mt-1">
-                <input
-                  id="nationality"
-                  name="nationality"
-                  type="text"
-                  autoComplete="country"
-                  required
-                  value={formData.nationality}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder={t('auth.nationalityPlaceholder')}
+              <div className="mt-1">                <ReactCountryDropdown
+                  defaultCountry="SA"
+                  onSelect={(country) => {
+                    setFormData({
+                      ...formData,
+                      nationality: country.citizen
+                    });
+                  }}
                 />
               </div>
             </div>

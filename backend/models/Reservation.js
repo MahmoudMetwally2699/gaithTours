@@ -11,13 +11,13 @@ const reservationSchema = new mongoose.Schema({
     required: [true, 'Tourist name is required'],
     trim: true,
     minlength: [2, 'Tourist name must be at least 2 characters long']
-  },
-  phone: {
+  },  phone: {
     type: String,
     required: [true, 'Phone number is required'],
     validate: {
       validator: function(phone) {
-        return /^\+?[1-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
+        // Allow phone numbers with or without country codes, including those starting with 0
+        return /^\+?[0-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
       },
       message: 'Please enter a valid phone number'
     }
@@ -115,8 +115,7 @@ const reservationSchema = new mongoose.Schema({
     type: Number,
     default: 1,
     min: 1
-  },
-  guests: [{
+  },  guests: [{
     fullName: {
       type: String,
       required: [true, 'Guest full name is required'],
@@ -128,11 +127,12 @@ const reservationSchema = new mongoose.Schema({
       required: [true, 'Guest phone number is required'],
       validate: {
         validator: function(phone) {
-          return /^\+?[1-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
+          // Allow phone numbers with or without country codes, including those starting with 0
+          return /^\+?[0-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
         },
         message: 'Please enter a valid guest phone number'
       }
-    }  }],  // Attachments field for PDF and image uploads
+    }  }],// Attachments field for PDF and image uploads
   attachments: [{
     fileName: {
       type: String,

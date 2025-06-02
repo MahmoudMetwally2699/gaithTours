@@ -6,12 +6,113 @@ import { FileUpload, UploadedFile } from '../components/FileUpload';
 import { Hotel } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { CalendarIcon, UserGroupIcon, MapPinIcon, StarIcon } from '@heroicons/react/24/outline';
+import ReactCountryDropdown from 'react-country-dropdown';
+
+
+
+// Helper function to get country code from phone number
+const getCountryFromPhone = (phone: string): string => {
+  if (!phone) return 'SA'; // Default fallback
+    // Remove any spaces, dashes, or plus signs to get just the country code
+  const cleanPhone = phone.replace(/[\s\-+]/g, '');
+
+  // Map common country codes to country abbreviations
+  const phoneToCountry: { [key: string]: string } = {
+    '966': 'SA', // Saudi Arabia
+    '971': 'AE', // UAE
+    '965': 'KW', // Kuwait
+    '973': 'BH', // Bahrain
+    '974': 'QA', // Qatar
+    '968': 'OM', // Oman
+    '20': 'EG',  // Egypt
+    '962': 'JO', // Jordan
+    '961': 'LB', // Lebanon
+    '963': 'SY', // Syria
+    '964': 'IQ', // Iraq
+    '967': 'YE', // Yemen
+    '1': 'US',   // United States
+    '44': 'GB',  // United Kingdom
+    '33': 'FR',  // France
+    '49': 'DE',  // Germany
+    '39': 'IT',  // Italy
+    '34': 'ES',  // Spain
+    '91': 'IN',  // India
+    '92': 'PK',  // Pakistan
+    '880': 'BD', // Bangladesh
+    '60': 'MY',  // Malaysia
+    '65': 'SG',  // Singapore
+    '66': 'TH',  // Thailand
+    '84': 'VN',  // Vietnam
+    '86': 'CN',  // China
+    '81': 'JP',  // Japan
+    '82': 'KR',  // South Korea
+  };
+
+  // Check for country codes of different lengths
+  for (let i = 1; i <= 4; i++) {
+    const code = cleanPhone.substring(0, i);
+    if (phoneToCountry[code]) {
+      return phoneToCountry[code];
+    }
+  }
+
+  return 'SA'; // Default fallback
+};
+
+// Helper function to get country code from nationality
+const getCountryFromNationality = (nationality: string): string => {
+  if (!nationality) return 'SA'; // Default fallback
+
+  const nationalityLower = nationality.toLowerCase();
+
+  // Map nationalities to country codes
+  const nationalityToCountry: { [key: string]: string } = {
+    'saudi': 'SA',
+    'saudi arabian': 'SA',
+    'emirati': 'AE',
+    'uae': 'AE',
+    'kuwaiti': 'KW',
+    'bahraini': 'BH',
+    'qatari': 'QA',
+    'omani': 'OM',
+    'egyptian': 'EG',
+    'jordanian': 'JO',
+    'lebanese': 'LB',
+    'syrian': 'SY',
+    'iraqi': 'IQ',
+    'yemeni': 'YE',
+    'american': 'US',
+    'british': 'GB',
+    'french': 'FR',
+    'german': 'DE',
+    'italian': 'IT',
+    'spanish': 'ES',
+    'indian': 'IN',
+    'pakistani': 'PK',
+    'bangladeshi': 'BD',
+    'malaysian': 'MY',
+    'singaporean': 'SG',
+    'thai': 'TH',
+    'vietnamese': 'VN',
+    'chinese': 'CN',
+    'japanese': 'JP',
+    'korean': 'KR',
+  };
+
+  for (const [key, value] of Object.entries(nationalityToCountry)) {
+    if (nationalityLower.includes(key)) {
+      return value;
+    }
+  }
+
+  return 'SA'; // Default fallback
+};
 
 export const Hotels: React.FC = () => {
   const { user } = useAuth();
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [showHotelSelection, setShowHotelSelection] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);  const [formData, setFormData] = useState({
+  const [showBookingModal, setShowBookingModal] = useState(false);const [formData, setFormData] = useState({
     checkIn: '',
     checkOut: '',
     guests: 2,
@@ -23,24 +124,27 @@ export const Hotels: React.FC = () => {
     paymentMethod: '',
     touristName: user?.name || '',
     phone: user?.phone || '',
+    phoneCountryCode: user?.phone ? getCountryFromPhone(user.phone) || 'SA' : 'SA',
     nationality: user?.nationality || '',
+    nationalityCountry: user?.nationality ? getCountryFromNationality(user.nationality) || 'SA' : 'SA',
     email: user?.email || '',
-    guests_list: [] as Array<{ fullName: string; phoneNumber: string }>,
-    attachments: [] as UploadedFile[]  });
+    guests_list: [] as Array<{ fullName: string; phoneNumber: string; phoneCountryCode: string }>,
+    attachments: [] as UploadedFile[]
+  });
 
   const [loading] = useState(false);
   const [error, setError] = useState('');
   const [showGuestForm, setShowGuestForm] = useState(false);
-  const [newGuest, setNewGuest] = useState({ fullName: '', phoneNumber: '' });
-
-  // Auto-populate personal information when user data is available
+  const [newGuest, setNewGuest] = useState({ fullName: '', phoneNumber: '', phoneCountryCode: 'SA' });  // Auto-populate personal information when user data is available
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
         ...prev,
         touristName: user.name || prev.touristName,
         phone: user.phone || prev.phone,
+        phoneCountryCode: user.phone ? (getCountryFromPhone(user.phone) || 'SA') : prev.phoneCountryCode,
         nationality: user.nationality || prev.nationality,
+        nationalityCountry: user.nationality ? (getCountryFromNationality(user.nationality) || 'SA') : prev.nationalityCountry,
         email: user.email || prev.email
       }));
     }
@@ -67,21 +171,19 @@ export const Hotels: React.FC = () => {
     }
 
     setShowBookingModal(true);
-  };
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  };  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
-
   const handleAddGuest = () => {
     if (newGuest.fullName.trim() && newGuest.phoneNumber.trim()) {
       setFormData({
         ...formData,
         guests_list: [...formData.guests_list, { ...newGuest }]
       });
-      setNewGuest({ fullName: '', phoneNumber: '' });
+      setNewGuest({ fullName: '', phoneNumber: '', phoneCountryCode: 'SA' });
       setShowGuestForm(false);
     }
   };
@@ -271,32 +373,51 @@ export const Hotels: React.FC = () => {
                     placeholder="Enter your full name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
-                </div>
-                <div>                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number * <span className="text-xs text-gray-500">(include country code e.g., +966)</span>
+                </div>                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your phone number with country code"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
+                  <div className="flex gap-2">
+                    <div className="w-1/3">
+                      <ReactCountryDropdown
+                        defaultCountry={formData.phoneCountryCode || 'SA'}
+                        onSelect={(country) => {
+                          if (country && country.callingCodes && country.callingCodes[0]) {
+                            setFormData({
+                              ...formData,
+                              phoneCountryCode: country.code
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="w-2/3">
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Enter your phone number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nationality *
                   </label>
-                  <input
-                    type="text"
-                    name="nationality"
-                    value={formData.nationality}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Enter your nationality"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  <ReactCountryDropdown
+                    defaultCountry={formData.nationalityCountry || 'SA'}
+                    onSelect={(country) => {
+                      if (country && country.citizen && country.code) {
+                        setFormData({
+                          ...formData,
+                          nationalityCountry: country.code,
+                          nationality: country.citizen
+                        });
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -371,20 +492,25 @@ export const Hotels: React.FC = () => {
                     <option value="full_board">Full Board</option>
                     <option value="all_inclusive">All Inclusive</option>
                   </select>
-                </div>
-                <div>
+                </div>                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Method *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="paymentMethod"
                     value={formData.paymentMethod}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., Credit Card, Bank Transfer, Cash"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  >
+                    <option value="">Select Payment Method</option>
+                    <option value="credit_card">Credit Card</option>
+                    <option value="debit_card">Debit Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cash_on_arrival">Cash on Arrival</option>
+                    <option value="digital_wallet">Digital Wallet</option>
+                    <option value="check">Check</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -442,17 +568,34 @@ export const Hotels: React.FC = () => {
                       />
                     </div>                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Guest's Phone Number * <span className="text-xs text-gray-500">(include country code e.g., +966)</span>
+                        Guest's Phone Number *
                       </label>
-                      <input
-                        type="tel"
-                        name="phoneNumber"
-                        value={newGuest.phoneNumber}
-                        onChange={handleNewGuestChange}
-                        required
-                        placeholder="Enter guest's phone number with country code"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      />
+                      <div className="flex gap-2">
+                        <div className="w-1/3">
+                          <ReactCountryDropdown
+                            defaultCountry={newGuest.phoneCountryCode || 'SA'}
+                            onSelect={(country) => {
+                              if (country && country.code) {
+                                setNewGuest({
+                                  ...newGuest,
+                                  phoneCountryCode: country.code
+                                });
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="w-2/3">
+                          <input
+                            type="tel"
+                            name="phoneNumber"
+                            value={newGuest.phoneNumber}
+                            onChange={handleNewGuestChange}
+                            required
+                            placeholder="Enter guest's phone number"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="flex space-x-3">
@@ -464,10 +607,9 @@ export const Hotels: React.FC = () => {
                       Add Guest
                     </button>
                     <button
-                      type="button"
-                      onClick={() => {
+                      type="button"                      onClick={() => {
                         setShowGuestForm(false);
-                        setNewGuest({ fullName: '', phoneNumber: '' });
+                        setNewGuest({ fullName: '', phoneNumber: '', phoneCountryCode: 'SA' });
                       }}
                       className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors"
                     >
