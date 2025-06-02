@@ -24,6 +24,7 @@ const allowedOrigins = [
   'http://localhost:3001',
   'https://gaithtours.vercel.app',
   'https://gaith-tours.vercel.app',
+  'https://gaith-tours-six.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -40,7 +41,9 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 
 // Stripe webhook route MUST be before express.json() middleware
