@@ -74,6 +74,25 @@ const reservationSchema = new mongoose.Schema({
       type: String,
       required: false
     },
+    url: {
+      type: String,
+      required: false,
+      trim: true,
+      validate: {
+        validator: function(v) {
+          // Only validate if URL is provided
+          if (!v) return true;
+          // Basic URL validation
+          return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(v);
+        },
+        message: 'Please enter a valid URL'
+      }
+    },
+    price: {
+      type: Number,
+      required: false,
+      min: [0, 'Price cannot be negative']
+    },
     hotelId: {
       type: String,
       required: false // RapidAPI hotel ID

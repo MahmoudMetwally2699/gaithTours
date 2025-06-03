@@ -45,14 +45,15 @@ interface Booking {
   touristName: string;
   email: string;
   phone: string;
-  nationality: string;
-  hotel: {
+  nationality: string;  hotel: {
     name: string;
     address: string;
     city: string;
     country: string;
     rating?: number;
     image?: string;
+    url?: string;
+    price?: number;
   };
   checkInDate?: string;
   checkOutDate?: string;
@@ -957,11 +958,29 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex-1">
                     <h4 className="text-lg font-semibold text-gray-900">{selectedBooking.hotel.name}</h4>
                     <p className="text-gray-600">{selectedBooking.hotel.address}</p>
-                    <p className="text-gray-600">{selectedBooking.hotel.city}, {selectedBooking.hotel.country}</p>
-                    {selectedBooking.hotel.rating && (
+                    <p className="text-gray-600">{selectedBooking.hotel.city}, {selectedBooking.hotel.country}</p>                    {selectedBooking.hotel.rating && (
                       <div className="flex items-center mt-2">
                         <span className="text-yellow-400">★</span>
                         <span className="ml-1 text-sm">{selectedBooking.hotel.rating}</span>
+                      </div>
+                    )}
+                    {selectedBooking.hotel.url && (
+                      <div className="mt-2">
+                        <a
+                          href={selectedBooking.hotel.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm underline"
+                        >
+                          🔗 Visit Hotel Website
+                        </a>
+                      </div>
+                    )}
+                    {selectedBooking.hotel.price && (
+                      <div className="mt-2">
+                        <span className="text-green-600 font-medium text-sm">
+                          💰 Expected Price: {selectedBooking.hotel.price} SAR
+                        </span>
                       </div>
                     )}
                   </div>

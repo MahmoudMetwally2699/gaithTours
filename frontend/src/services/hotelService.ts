@@ -1,16 +1,5 @@
 // filepath: e:\gaithgroup\frontend\src\services\hotelService.ts
-// Simple hotel search service - only requires destination
-import { Hotel } from '../services/api';
-
-interface HotelSearchResponse {
-  hotels: Hotel[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  destinationsSearched: number;
-  totalDestinationsFound: number;
-}
+import { Hotel, HotelSearchResponse } from '../types/hotel';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 

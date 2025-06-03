@@ -179,11 +179,12 @@ const sendReservationConfirmation = async (reservationData) => {
                   🏢 Hotel Information
                 </h3>
                 <div style="background: rgba(255,255,255,0.3); border-radius: 12px; padding: 20px;">
-                  <h4 style="color: #3c1361; font-size: 18px; font-weight: 700; margin: 0 0 15px 0;">${hotel.name}</h4>
-                  <div style="display: grid; gap: 8px;">
+                  <h4 style="color: #3c1361; font-size: 18px; font-weight: 700; margin: 0 0 15px 0;">${hotel.name}</h4>                  <div style="display: grid; gap: 8px;">
                     <p style="color: #581c87; margin: 0; font-weight: 500;">📍 ${hotel.address}</p>
                     <p style="color: #581c87; margin: 0; font-weight: 500;">🌍 ${hotel.city}, ${hotel.country}</p>
                     ${hotel.rating ? `<p style="color: #581c87; margin: 0; font-weight: 500;">⭐ Rating: ${hotel.rating}/10</p>` : ''}
+                    ${hotel.url ? `<p style="color: #581c87; margin: 0; font-weight: 500;">🔗 <a href="${hotel.url}" target="_blank" style="color: #7c3aed; text-decoration: none; font-weight: 600;">Visit Hotel Website</a></p>` : ''}
+                    ${hotel.price ? `<p style="color: #581c87; margin: 0; font-weight: 500;">💰 Expected Price: ${hotel.price} SAR</p>` : ''}
                   </div>
                 </div>
               </div>
@@ -388,8 +389,7 @@ const sendAgencyNotification = async (reservationData) => {
                   🏢 Hotel Details
                 </h3>
                 <div style="background: rgba(255,255,255,0.4); border-radius: 12px; padding: 20px;">
-                  <h4 style="color: #3c1361; font-size: 22px; font-weight: 800; margin: 0 0 15px 0; text-align: center; background: rgba(255,255,255,0.6); padding: 15px; border-radius: 10px;">${hotel.name}</h4>
-                  <div style="display: grid; gap: 12px;">
+                  <h4 style="color: #3c1361; font-size: 22px; font-weight: 800; margin: 0 0 15px 0; text-align: center; background: rgba(255,255,255,0.6); padding: 15px; border-radius: 10px;">${hotel.name}</h4>                  <div style="display: grid; gap: 12px;">
                     <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; display: flex; align-items: center;">
                       <span style="margin-right: 10px; font-size: 18px;">📍</span>
                       <span style="color: #581c87; font-weight: 600;">${hotel.address}, ${hotel.city}, ${hotel.country}</span>
@@ -398,6 +398,18 @@ const sendAgencyNotification = async (reservationData) => {
                       <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                         <span style="margin-right: 10px; font-size: 18px;">⭐</span>
                         <span style="color: #581c87; font-weight: 700; font-size: 16px;">Rating: ${hotel.rating}/10</span>
+                      </div>
+                    ` : ''}
+                    ${hotel.url ? `
+                      <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; display: flex; align-items: center;">
+                        <span style="margin-right: 10px; font-size: 18px;">🔗</span>
+                        <a href="${hotel.url}" target="_blank" style="color: #7c3aed; text-decoration: none; font-weight: 600;">Visit Hotel Website</a>
+                      </div>
+                    ` : ''}
+                    ${hotel.price ? `
+                      <div style="background: rgba(255,255,255,0.6); padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <span style="margin-right: 10px; font-size: 18px;">💰</span>
+                        <span style="color: #581c87; font-weight: 700; font-size: 16px;">Expected Price: ${hotel.price} SAR</span>
                       </div>
                     ` : ''}
                   </div>

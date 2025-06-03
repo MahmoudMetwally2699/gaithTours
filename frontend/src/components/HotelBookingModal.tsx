@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { Hotel } from '../services/api';
+import { Hotel } from '../types/hotel';
 import { UploadedFile } from './FileUpload';
 import { reservationsAPI } from '../services/api';
 import toast from 'react-hot-toast';
@@ -58,6 +58,8 @@ interface HotelBookingModalProps {
     phone: string;
     nationality: string;
     email: string;
+    hotelUrl: string;
+    hotelPrice: string;
     guests_list: Array<{ fullName: string; phoneNumber: string; phoneCountryCode: string }>;
     notes: string;
     attachments?: UploadedFile[];
@@ -154,9 +156,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         phoneNumber: guest.phoneCountryCode && guest.phoneNumber
           ? `+${getCallingCodeFromCountry(guest.phoneCountryCode)}${guest.phoneNumber.replace(/^0+/, '')}`
           : guest.phoneNumber
-      }));
-
-      const reservationData = {
+      }));      const reservationData = {
         touristName: searchParams.touristName,
         phone: searchParams.phone,
         nationality: searchParams.nationality,
@@ -165,15 +165,16 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         roomType: searchParams.roomType,
         stayType: searchParams.stayType,
         paymentMethod: searchParams.paymentMethod,
-        guests: formattedGuests,
-        hotel: {
+        guests: formattedGuests,        hotel: {
           name: hotel.name,
           address: hotel.address,
           city: hotel.city,
           country: hotel.country,
           coordinates: hotel.coordinates,
           rating: hotel.rating,
-          image: hotel.image,
+          image: hotel.image || undefined,
+          url: searchParams.hotelUrl || undefined,
+          price: searchParams.hotelPrice ? parseFloat(searchParams.hotelPrice) : undefined,
           hotelId: hotel.id
         },
         checkInDate: searchParams.checkIn,
@@ -242,8 +243,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6">
-          {/* Hotel Information */}
+        <div className="p-6">          {/* Hotel Information */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <h4 className="font-medium text-lg text-gray-800">{hotel.name}</h4>
             <p className="text-gray-600">{hotel.address}, {hotel.city}</p>
@@ -251,6 +251,25 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
               <span className="text-yellow-400">★</span>
               <span className="ml-1 text-sm">{hotel.rating}</span>
             </div>
+            {searchParams.hotelUrl && (
+              <div className="mt-2">
+                <a
+                  href={searchParams.hotelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 text-sm underline"
+                >
+                  🔗 Visit Hotel Website
+                </a>
+              </div>
+            )}
+            {searchParams.hotelPrice && (
+              <div className="mt-2">
+                <span className="text-green-600 font-medium">
+                  💰 Expected Price: {searchParams.hotelPrice} SAR/night
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Booking Details */}

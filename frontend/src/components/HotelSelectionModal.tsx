@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { XMarkIcon, MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
+import {
+  XMarkIcon,
+  MagnifyingGlassIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MapPinIcon,
+  StarIcon,
+  BuildingOfficeIcon,
+  SparklesIcon
+} from '@heroicons/react/24/outline';
 import { searchHotels } from '../services/hotelService';
-import { Hotel } from '../services/api';
+import { Hotel } from '../types/hotel';
 
 interface HotelSelectionModalProps {
   isOpen: boolean;
@@ -90,122 +100,302 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
     setTotalPages(0);
     setTotalHotels(0);
   };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">{t('hotels.selectHotel', 'Select Hotel')}</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-        <div className="p-6">
-          <div className="relative mb-4">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder={t('hotels.searchHotels', 'Search for hotels...')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+      {/* Modal */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header with Gradient */}
+          <div className="relative bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-8 py-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-600/90 via-amber-600/90 to-yellow-600/90"></div>
+            <div className="absolute inset-0 opacity-20"
+                 style={{
+                   backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                 }}></div>
 
-          <div className="max-h-96 overflow-y-auto">
-            {loading && (
-              <div className="flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            )}
-
-            {error && (
-              <div className="text-center py-8 text-red-600">
-                {error}
-              </div>
-            )}
-
-            {!loading && !error && searchQuery.length >= 2 && hotels.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                {t('hotels.noHotelsFound', 'No hotels found')}
-              </div>
-            )}
-
-            {!loading && searchQuery.length < 2 && (
-              <div className="text-center py-8 text-gray-500">
-                {t('hotels.typeToSearch', 'Type at least 2 characters to search')}
-              </div>
-            )}            {hotels.map((hotel) => (
-              <div
-                key={hotel.id}
-                onClick={() => handleSelectHotel(hotel)}
-                className="flex items-center p-4 border border-gray-200 rounded-lg mb-3 cursor-pointer hover:bg-gray-50 transition-colors"
-              >                <div className="w-16 h-16 flex-shrink-0 mr-4">
-                  {hotel.image ? (
-                    <img
-                      src={hotel.image}
-                      alt={hotel.name}
-                      className="w-full h-full object-cover rounded-md"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                      <span className="text-gray-400 text-xs">No Image</span>
-                    </div>
-                  )}
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
+                  <BuildingOfficeIcon className="h-7 w-7 text-white" />
                 </div>
-
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{hotel.name}</h4>
-                  <p className="text-sm text-gray-600">
-                    {hotel.address}, {hotel.city}, {hotel.country}
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-1">
+                    {t('hotels.selectHotel', 'Select Hotel')}
+                  </h3>
+                  <p className="text-white/90 text-sm">
+                    Discover your perfect accommodation from thousands of options
                   </p>
-                  {hotel.rating && (
-                    <div className="flex items-center mt-1">
-                      <span className="text-yellow-400">★</span>
-                      <span className="ml-1 text-sm text-gray-600">{hotel.rating}</span>
-                    </div>
-                  )}
                 </div>
               </div>
-            ))}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  Showing {hotels.length} of {totalHotels} hotels (Page {currentPage} of {totalPages})
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage <= 1 || loading}
-                    className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeftIcon className="h-4 w-4" />
-                  </button>
-                  <span className="px-3 py-1 bg-blue-500 text-white rounded-md text-sm">
-                    {currentPage}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages || loading}
-                    className="p-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onClose}
+                className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 transition-all duration-200"
+              >
+                <XMarkIcon className="h-5 w-5 text-white" />
+              </motion.button>
+            </div>
           </div>
-        </div>
+
+          {/* Search Section */}
+          <div className="p-8 bg-gradient-to-b from-orange-50/30 to-white">
+            <div className="relative">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="absolute inset-0 bg-gradient-to-r from-orange-100/50 to-amber-100/50 rounded-2xl"
+              />
+
+              <div className="relative flex items-center">
+                <div className="absolute left-4 z-10">
+                  <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder={t('hotels.searchHotels', 'Search for hotels by city, country, or hotel name...')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-16 pr-6 py-4 bg-white/80 backdrop-blur-sm border-2 border-orange-200/60 rounded-2xl focus:ring-4 focus:ring-orange-200/50 focus:border-orange-400 transition-all duration-200 text-gray-900 placeholder-gray-500 text-lg shadow-lg"
+                />
+
+                {searchQuery && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 w-8 h-8 bg-gray-400 hover:bg-gray-500 rounded-lg flex items-center justify-center transition-all duration-200"
+                  >
+                    <XMarkIcon className="h-4 w-4 text-white" />
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          </div>          {/* Results Section */}
+          <div className="px-8 pb-8">
+            <div className="max-h-[50vh] overflow-y-auto">              {loading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center justify-center py-16"
+                >
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-orange-200 rounded-full animate-spin border-t-orange-500"></div>
+                    <div className="absolute inset-0 w-16 h-16 border-4 border-transparent rounded-full animate-ping border-t-orange-300"></div>
+                  </div>
+                  <p className="mt-4 text-gray-600 font-medium">Searching for perfect hotels...</p>
+                  <div className="flex space-x-1 mt-2">
+                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </motion.div>
+              )}
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <XMarkIcon className="h-10 w-10 text-red-500" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Search Error</h4>
+                  <p className="text-red-600">{error}</p>
+                </motion.div>
+              )}
+
+              {!loading && !error && searchQuery.length >= 2 && hotels.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <BuildingOfficeIcon className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">No Hotels Found</h4>
+                  <p className="text-gray-600">Try searching with different keywords or location</p>
+                </motion.div>
+              )}
+
+              {!loading && searchQuery.length < 2 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="text-center py-16"
+                >
+                  <div className="w-20 h-20 bg-gradient-to-r from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <SparklesIcon className="h-10 w-10 text-orange-500" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Start Your Search</h4>
+                  <p className="text-gray-600">Type at least 2 characters to discover amazing hotels</p>
+                </motion.div>
+              )}
+
+              {/* Hotel Results */}
+              <div className="space-y-4">
+                {hotels.map((hotel, index) => (
+                  <motion.div
+                    key={hotel.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleSelectHotel(hotel)}
+                    className="group relative bg-gradient-to-r from-white to-orange-50/30 border-2 border-orange-100/60 rounded-2xl p-6 cursor-pointer hover:border-orange-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                  >
+                    {/* Hover gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+
+                      <div className="relative flex items-center space-x-6">
+                        {/* Hotel Image */}
+                        <div className="relative w-24 h-24 flex-shrink-0">
+                          {hotel.image ? (
+                            <img
+                              src={hotel.image}
+                              alt={hotel.name}
+                              className="w-full h-full object-cover rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl flex items-center justify-center shadow-lg">
+                              <BuildingOfficeIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+
+                          {/* Rating badge */}
+                          {hotel.rating && (
+                            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-amber-400 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg flex items-center space-x-1">
+                              <StarIcon className="h-3 w-3 fill-current" />
+                              <span>{hotel.rating}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Hotel Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors duration-200 truncate">
+                            {hotel.name}
+                          </h4>
+
+                          <div className="flex items-center text-gray-600 mb-3">
+                            <MapPinIcon className="h-4 w-4 mr-2 text-orange-500" />
+                            <p className="text-sm truncate">
+                              {hotel.address}, {hotel.city}, {hotel.country}
+                            </p>
+                          </div>
+
+                          {hotel.description && (
+                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                              {hotel.description}
+                            </p>
+                          )}                          {/* Hotel features */}
+                          <div className="flex items-center space-x-4 text-xs">
+                            {hotel.reviewCount && (
+                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                {hotel.reviewCount} reviews
+                              </span>
+                            )}
+                            {hotel.reviewScoreWord && (
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                {hotel.reviewScoreWord}
+                              </span>
+                            )}
+                            {hotel.propertyClass && (
+                              <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                {hotel.propertyClass} star{hotel.propertyClass !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                          </div>
+                        </div>                        {/* Select Button */}
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-110">
+                            <motion.div
+                              whileHover={{ rotate: 180 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <SparklesIcon className="h-6 w-6 text-white" />
+                            </motion.div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-center justify-between mt-8 pt-6 border-t border-orange-100"
+                >
+                  <div className="text-sm text-gray-600 bg-orange-50/50 px-4 py-2 rounded-xl">
+                    Showing {hotels.length} of {totalHotels} hotels (Page {currentPage} of {totalPages})
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage <= 1 || loading}
+                      className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl flex items-center justify-center shadow-lg disabled:shadow-none transition-all duration-200 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeftIcon className="h-5 w-5" />
+                    </motion.button>
+
+                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-2 rounded-xl font-bold min-w-[3rem] text-center shadow-lg">
+                      {currentPage}
+                    </div>
+
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage >= totalPages || loading}
+                      className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl flex items-center justify-center shadow-lg disabled:shadow-none transition-all duration-200 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRightIcon className="h-5 w-5" />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

@@ -47,7 +47,9 @@ router.post('/', protect, [
   body('hotel.name').trim().isLength({ min: 2 }).withMessage('Hotel name is required'),
   body('hotel.address').trim().isLength({ min: 5 }).withMessage('Hotel address is required'),
   body('hotel.city').trim().isLength({ min: 2 }).withMessage('Hotel city is required'),
-  body('hotel.country').trim().isLength({ min: 2 }).withMessage('Hotel country is required')
+  body('hotel.country').trim().isLength({ min: 2 }).withMessage('Hotel country is required'),
+  body('hotel.url').optional().isURL().withMessage('Please enter a valid URL'),
+  body('hotel.price').optional().isNumeric().withMessage('Price must be a valid number')
 ], async (req, res) => {
   try {
     // Log the incoming request data for debugging
@@ -103,8 +105,7 @@ router.post('/', protect, [
       roomType: sanitizedData.roomType,
       stayType: sanitizedData.stayType,
       paymentMethod: sanitizedData.paymentMethod,
-      guests: sanitizedData.guests,
-      hotel: {
+      guests: sanitizedData.guests,      hotel: {
         name: sanitizeInput(hotel.name),
         address: sanitizeInput(hotel.address),
         city: sanitizeInput(hotel.city),
@@ -112,8 +113,10 @@ router.post('/', protect, [
         coordinates: hotel.coordinates,
         rating: hotel.rating,
         image: hotel.image,
-        hotelId: hotel.hotelId
-      },      checkInDate: checkInDate ? new Date(checkInDate) : undefined,
+        hotelId: hotel.hotelId,
+        url: hotel.url ? sanitizeInput(hotel.url) : undefined,
+        price: hotel.price ? parseFloat(hotel.price) : undefined
+      },checkInDate: checkInDate ? new Date(checkInDate) : undefined,
       checkOutDate: checkOutDate ? new Date(checkOutDate) : undefined,
       numberOfGuests: numberOfGuests || 1,
       notes: sanitizedData.notes,
