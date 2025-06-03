@@ -13,7 +13,11 @@ const createTransporter = () => {
     },
     tls: {
       rejectUnauthorized: false
-    }
+    },
+    // Add timeout configurations to prevent hanging
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 5000,    // 5 seconds
+    socketTimeout: 15000      // 15 seconds
   });
 
   return transporter;

@@ -51,16 +51,24 @@ router.post('/', protect, [
   body('hotel.url').optional().isURL().withMessage('Please enter a valid URL'),
   body('hotel.price').optional().isNumeric().withMessage('Price must be a valid number')
 ], async (req, res) => {
+  const startTime = Date.now();
+  console.log('🚀 ===== BACKEND: Starting reservation creation =====');
+  console.log('⏰ Request start time:', new Date().toISOString());
+  console.log('👤 User ID:', req.user?.id);
+  console.log('📍 Request IP:', req.ip || req.connection.remoteAddress);
+
   try {
     // Log the incoming request data for debugging
-    console.log('Reservation request body:', JSON.stringify(req.body, null, 2));
+    console.log('📥 Incoming request body:', JSON.stringify(req.body, null, 2));
 
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('Validation errors:', errors.array());
+      console.error('❌ Validation errors:', errors.array());
       return errorResponse(res, 'Validation failed', 400, errors.array());
-    }    const {
+    }
+
+    console.log('✅ Validation passed, proceeding with reservation creation');const {
       touristName,
       phone,
       nationality,
@@ -121,78 +129,131 @@ router.post('/', protect, [
       numberOfGuests: numberOfGuests || 1,
       notes: sanitizedData.notes,
       attachments: attachments || []
-    };
+    };    console.log('📊 Data being sent to MongoDB:', JSON.stringify(reservationData, null, 2));
 
-    console.log('Data being sent to MongoDB:', JSON.stringify(reservationData, null, 2));
+    console.log('💾 Creating reservation in database...');
+    const dbStartTime = Date.now();
 
     // Create reservation
     const reservation = await Reservation.create(reservationData);
 
-    // Populate user data for email
-    await reservation.populate('user', 'email phone nationality');    // Send confirmation email to user
-    try {
-      await sendReservationConfirmation({
-        reservation,
-        touristName: sanitizedData.touristName,
-        email: sanitizedData.email,
-        phone: sanitizedData.phone,
-        nationality: sanitizedData.nationality,
-        expectedCheckInTime: sanitizedData.expectedCheckInTime,
-        roomType: sanitizedData.roomType,
-        stayType: sanitizedData.stayType,
-        paymentMethod: sanitizedData.paymentMethod,
-        numberOfGuests: numberOfGuests || 1,
-        guests: sanitizedData.guests,
-        hotel,
-        checkInDate,
-        checkOutDate,
-        notes: sanitizedData.notes
-      });
-    } catch (emailError) {
-      console.error('User confirmation email failed:', emailError);
-    }
+    const dbEndTime = Date.now();
+    const dbDuration = dbEndTime - dbStartTime;
+    console.log(`✅ Reservation created in database in ${dbDuration}ms`);
+    console.log('📝 Created reservation ID:', reservation._id);
 
-    // Send notification email to agency
-    try {
-      await sendAgencyNotification({
-        reservation,
-        touristName: sanitizedData.touristName,
-        email: sanitizedData.email,
-        phone: sanitizedData.phone,
-        nationality: sanitizedData.nationality,
-        expectedCheckInTime: sanitizedData.expectedCheckInTime,
-        roomType: sanitizedData.roomType,
-        stayType: sanitizedData.stayType,
-        paymentMethod: sanitizedData.paymentMethod,
-        numberOfGuests: numberOfGuests || 1,
-        guests: sanitizedData.guests,
-        hotel,
-        checkInDate,
-        checkOutDate,
-        notes: sanitizedData.notes
-      });
-    } catch (emailError) {
-      console.error('Agency notification email failed:', emailError);
-    }
+    console.log('🔄 Populating user data...');
+    const populateStartTime = Date.now();
 
     // Populate user data for response
     await reservation.populate('user', 'email phone nationality');
 
+    const populateEndTime = Date.now();
+    const populateDuration = populateEndTime - populateStartTime;
+    console.log(`✅ User data populated in ${populateDuration}ms`);
+
+    console.log('📤 Sending response to client...');
+    const responseStartTime = Date.now();
+
+    // Send response immediately to prevent timeout
     successResponse(res, { reservation }, 'Reservation created successfully', 201);
+
+    const responseEndTime = Date.now();
+    const responseDuration = responseEndTime - responseStartTime;
+    const totalDuration = responseEndTime - startTime;
+    console.log(`✅ Response sent in ${responseDuration}ms`);
+    console.log(`🎯 Total request processing time: ${totalDuration}ms`);    // Send emails in background (non-blocking)
+    setImmediate(async () => {
+      console.log('📧 Starting background email processing...');
+      const emailStartTime = Date.now();
+
+      // Send confirmation email to user
+      try {
+        console.log('📬 Sending user confirmation email...');
+        const userEmailStartTime = Date.now();
+
+        await sendReservationConfirmation({
+          reservation,
+          touristName: sanitizedData.touristName,
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          nationality: sanitizedData.nationality,
+          expectedCheckInTime: sanitizedData.expectedCheckInTime,
+          roomType: sanitizedData.roomType,
+          stayType: sanitizedData.stayType,
+          paymentMethod: sanitizedData.paymentMethod,
+          numberOfGuests: numberOfGuests || 1,          guests: sanitizedData.guests,
+          hotel,
+          checkInDate,
+          checkOutDate,
+          notes: sanitizedData.notes
+        });
+
+        const userEmailEndTime = Date.now();
+        const userEmailDuration = userEmailEndTime - userEmailStartTime;
+        console.log(`✅ User confirmation email sent successfully in ${userEmailDuration}ms`);
+      } catch (emailError) {
+        const userEmailEndTime = Date.now();
+        const userEmailDuration = userEmailEndTime - userEmailStartTime;
+        console.error(`❌ User confirmation email failed after ${userEmailDuration}ms:`, emailError);
+      }
+
+      // Send notification email to agency
+      try {
+        console.log('📬 Sending agency notification email...');
+        const agencyEmailStartTime = Date.now();
+
+        await sendAgencyNotification({
+          reservation,
+          touristName: sanitizedData.touristName,
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          nationality: sanitizedData.nationality,
+          expectedCheckInTime: sanitizedData.expectedCheckInTime,
+          roomType: sanitizedData.roomType,
+          stayType: sanitizedData.stayType,
+          paymentMethod: sanitizedData.paymentMethod,
+          numberOfGuests: numberOfGuests || 1,
+          guests: sanitizedData.guests,
+          hotel,
+          checkInDate,
+          checkOutDate,
+          notes: sanitizedData.notes        });
+
+        const agencyEmailEndTime = Date.now();
+        const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
+        console.log(`✅ Agency notification email sent successfully in ${agencyEmailDuration}ms`);
+
+        const totalEmailTime = Date.now() - emailStartTime;
+        console.log(`📧 All background emails completed in ${totalEmailTime}ms`);
+      } catch (emailError) {
+        const agencyEmailEndTime = Date.now();
+        const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
+        console.error(`❌ Agency notification email failed after ${agencyEmailDuration}ms:`, emailError);
+
+        const totalEmailTime = Date.now() - emailStartTime;
+        console.log(`📧 Background email processing completed (with errors) in ${totalEmailTime}ms`);
+      }
+    });
   } catch (error) {
-    console.error('Create reservation error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
+    const errorTime = Date.now();
+    const totalErrorTime = errorTime - startTime;
+    console.error('❌ ===== BACKEND: Reservation creation failed =====');
+    console.error('⏰ Error occurred after:', totalErrorTime, 'ms');
+    console.error('🔍 Error details:', error);
+    console.error('📝 Error name:', error.name);
+    console.error('💬 Error message:', error.message);
+    console.error('📚 Error stack:', error.stack);
 
     // If it's a MongoDB validation error, log the details
     if (error.name === 'ValidationError') {
-      console.error('MongoDB validation errors:', error.errors);
+      console.error('💾 MongoDB validation errors:', error.errors);
       const validationErrors = Object.values(error.errors).map(err => ({
         field: err.path,
         message: err.message,
         value: err.value
       }));
-      console.error('Formatted validation errors:', validationErrors);
+      console.error('📋 Formatted validation errors:', validationErrors);
       return errorResponse(res, 'Validation failed', 400, validationErrors);
     }
 

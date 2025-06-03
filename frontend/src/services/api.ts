@@ -3,7 +3,7 @@ import { toast } from 'react-hot-toast';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -333,15 +333,112 @@ export const reservationsAPI = {  create: async (reservationData: {
     checkInDate?: string;
     checkOutDate?: string;
     numberOfGuests?: number;
-    notes?: string;
-  }): Promise<ApiResponse<{ reservation: Reservation }>> => {
-    try {
-      const response = await api.post('/reservations', reservationData);
+    notes?: string;  }): Promise<ApiResponse<{ reservation: Reservation }>> => {    console.log('🚀 Starting reservation creation process...');
+    console.log('📊 Reservation data:', JSON.stringify(reservationData, null, 2));    console.log('🌐 API Base URL from env:', process.env.REACT_APP_API_URL);
+    console.log('🌐 Fallback API Base URL:', 'http://localhost:5001/api');
+    console.log('🌐 Final API Base URL will be:', process.env.REACT_APP_API_URL || 'http://localhost:5001/api');
+
+    const startTime = Date.now();    try {      // Create a separate axios instance with longer timeout for reservation creation
+      const reservationApi = axios.create({
+        baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
+        timeout: 120000, // 2 minutes timeout for reservation creation
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });console.log('🔧 Reservation API instance created with baseURL:', reservationApi.defaults.baseURL);
+      console.log('⏰ Timeout set to:', reservationApi.defaults.timeout, 'ms');
+
+      // Add request interceptor to debug the actual request
+      reservationApi.interceptors.request.use(
+        (config) => {
+          console.log('📤 Request interceptor - Final request config:', {
+            url: config.url,
+            baseURL: config.baseURL,
+            method: config.method,
+            timeout: config.timeout,
+            headers: config.headers
+          });
+          return config;
+        },
+        (error) => {
+          console.error('📤 Request interceptor error:', error);
+          return Promise.reject(error);
+        }
+      );
+
+      // Add response interceptor to debug the response
+      reservationApi.interceptors.response.use(
+        (response) => {
+          console.log('📥 Response interceptor - Success:', {
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data
+          });
+          return response;
+        },
+        (error) => {
+          console.error('📥 Response interceptor - Error:', {
+            message: error.message,
+            code: error.code,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data
+          });
+          return Promise.reject(error);
+        }
+      );
+
+      // Add auth token to the request
+      const token = localStorage.getItem('token');
+      if (token) {
+        reservationApi.defaults.headers.Authorization = `Bearer ${token}`;
+        console.log('🔐 Auth token added to request');
+      } else {
+        console.warn('⚠️ No auth token found');
+      }
+
+      console.log('📡 Making POST request to /reservations...');
+
+      const response = await reservationApi.post('/reservations', reservationData);
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.log(`✅ Reservation created successfully in ${duration}ms`);
+      console.log('📥 Response data:', response.data);
+
       // Note: Custom toast is handled in HotelBookingModal component
       // toast.success('Reservation created successfully!');
-      return response.data;
-    } catch (error: any) {
+      return response.data;    } catch (error: any) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.error('❌ Reservation creation failed');
+      console.error('⏱️ Error occurred after:', duration, 'ms');
+      console.error('🔍 Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        stack: error.stack
+      });
+
+      // Handle specific timeout errors
+      if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
+        console.error('⏰ Timeout error detected - request exceeded 120 seconds');
+        toast.error('Reservation is taking longer than expected. Please check your reservations in your profile to see if it was created successfully.');
+        throw new Error('Request timeout - please check your reservations');
+      }
+
+      // Handle network errors
+      if (error.code === 'ERR_NETWORK') {
+        console.error('🌐 Network error detected');
+        toast.error('Network error - please check your internet connection');
+        throw new Error('Network error - please check your connection');
+      }
+
       const message = error.response?.data?.message || 'Failed to create reservation';
+      console.error('📝 Error message:', message);
       toast.error(message);
       throw error;
     }

@@ -73,8 +73,7 @@ const reservationSchema = new mongoose.Schema({
     image: {
       type: String,
       required: false
-    },
-    url: {
+    },    url: {
       type: String,
       required: false,
       trim: true,
@@ -82,8 +81,15 @@ const reservationSchema = new mongoose.Schema({
         validator: function(v) {
           // Only validate if URL is provided
           if (!v) return true;
-          // Basic URL validation
-          return /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(v);
+
+          // More permissive URL validation that accepts query parameters and fragments
+          // This will accept booking.com and other complex URLs with many query parameters
+          try {
+            new URL(v);
+            return true;
+          } catch (err) {
+            return false;
+          }
         },
         message: 'Please enter a valid URL'
       }
@@ -134,24 +140,28 @@ const reservationSchema = new mongoose.Schema({
     type: Number,
     default: 1,
     min: 1
-  },  guests: [{
-    fullName: {
-      type: String,
-      required: [true, 'Guest full name is required'],
-      trim: true,
-      minlength: [2, 'Guest name must be at least 2 characters long']
-    },
-    phoneNumber: {
-      type: String,
-      required: [true, 'Guest phone number is required'],
-      validate: {
-        validator: function(phone) {
-          // Allow phone numbers with or without country codes, including those starting with 0
-          return /^\+?[0-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
-        },
-        message: 'Please enter a valid guest phone number'
+  },  guests: {
+    type: [{
+      fullName: {
+        type: String,
+        required: [true, 'Guest full name is required'],
+        trim: true,
+        minlength: [2, 'Guest name must be at least 2 characters long']
+      },
+      phoneNumber: {
+        type: String,
+        required: [true, 'Guest phone number is required'],
+        validate: {
+          validator: function(phone) {
+            // Allow phone numbers with or without country codes, including those starting with 0
+            return /^\+?[0-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
+          },
+          message: 'Please enter a valid guest phone number'
+        }
       }
-    }  }],// Attachments field for PDF and image uploads
+    }],
+    default: [] // Allow empty array by default
+  },// Attachments field for PDF and image uploads
   attachments: [{
     fileName: {
       type: String,
