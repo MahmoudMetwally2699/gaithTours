@@ -150,13 +150,19 @@ export const ar = {
     destinations: 'وجهات',
     yearsExperience: 'سنوات خبرة',
     support: 'دعم 24/7'
-  },
-  // Footer
+  },  // Footer
   footer: {
     description: 'شريكك الموثوق لتجارب سفر لا تُنسى في جميع أنحاء العالم',
     about: 'عن الشركة',
     services: 'الخدمات',
+    home: 'الرئيسية',
+    hotels: 'الفنادق',
     hotelBooking: 'حجز الفنادق',
+    flightReservation: 'حجز الطيران',
+    carRental: 'تأجير السيارات',
+    tourGuides: 'أدلاء سياحيون',
+    visaAssistance: 'مساعدة التأشيرة',
+    travelInsurance: 'تأمين السفر',
     travelPackages: 'باقات السفر',
     groupTours: 'جولات جماعية',
     customItineraries: 'مسارات مخصصة',
@@ -166,6 +172,7 @@ export const ar = {
       line2: 'دبي، الإمارات العربية المتحدة'
     },
     rights: 'جميع الحقوق محفوظة.',
+    allRightsReserved: 'جميع الحقوق محفوظة.',
     privacy: 'سياسة الخصوصية',
     terms: 'شروط الخدمة',
     quickLinks: 'روابط سريعة',
@@ -176,22 +183,12 @@ export const ar = {
     copyright: '© 2024 غيث تورز. جميع الحقوق محفوظة.',
     privacyPolicy: 'سياسة الخصوصية',
     termsOfService: 'شروط الخدمة',
-    // Missing footer translations
-    home: 'الرئيسية',
-    hotels: 'الفنادق',
-    flightReservation: 'حجز الطيران',
-    carRental: 'تأجير السيارات',
-    tourGuides: 'أدلاء سياحيون',
-    visaAssistance: 'مساعدة التأشيرة',
-    travelInsurance: 'تأمين السفر',
+    madeWith: 'صُنع بحب في المملكة العربية السعودية',
     newsletter: {
       title: 'اشترك في نشرتنا الإخبارية',
-      description: 'احصل على عروض السفر الحصرية وأدلة الوجهات والعروض المتميزة في صندوق الوارد الخاص بك.',
+      description: 'احصل على عروض السفر الحصرية وأدلة الوجهات والعروض المميزة في صندوق الوارد الخاص بك.',
       placeholder: 'أدخل عنوان بريدك الإلكتروني',
-      subscribe: 'اشترك'
-    },
-    madeWith: 'صُنع بحب في المملكة العربية السعودية',
-    allRightsReserved: 'جميع الحقوق محفوظة.'
+      subscribe: 'اشترك'    }
   },
 
   // Authentication
@@ -229,8 +226,7 @@ export const ar = {
       signUp: 'إنشاء حساب',
       invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
       error: 'فشل في تسجيل الدخول. يرجى المحاولة مرة أخرى.'
-    },
-    register: {
+    },    register: {
       title: 'إنشاء حساب',
       subtitle: 'انضم إلى غيث تورز اليوم',
       email: 'عنوان البريد الإلكتروني',
@@ -252,7 +248,9 @@ export const ar = {
         message: 'يرجى التحقق من بريدك الإلكتروني لتفعيل حسابك.',
         redirect: 'جاري توجيهك إلى صفحة تسجيل الدخول...'
       }
-    }
+    },
+    secureEncryption: 'تشفير آمن',
+    globalAccess: 'وصول عالمي'
   },
   // Hotels
   hotels: {

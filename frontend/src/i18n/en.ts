@@ -151,13 +151,19 @@ export const en = {
     yearsExperience: 'Years Experience',
     support: '24/7 Support'
   },
-
   // Footer
   footer: {
     description: 'Your trusted partner for unforgettable travel experiences worldwide',
     about: 'About Us',
     services: 'Services',
+    home: 'Home',
+    hotels: 'Hotels',
     hotelBooking: 'Hotel Booking',
+    flightReservation: 'Flight Reservation',
+    carRental: 'Car Rental',
+    tourGuides: 'Tour Guides',
+    visaAssistance: 'Visa Assistance',
+    travelInsurance: 'Travel Insurance',
     travelPackages: 'Travel Packages',
     groupTours: 'Group Tours',
     customItineraries: 'Custom Itineraries',
@@ -167,6 +173,7 @@ export const en = {
       line2: 'Dubai, UAE'
     },
     rights: 'All rights reserved.',
+    allRightsReserved: 'All rights reserved.',
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
     quickLinks: 'Quick Links',
@@ -176,7 +183,14 @@ export const en = {
     followUs: 'Follow Us',
     copyright: '© 2024 Gaith Tours. All rights reserved.',
     privacyPolicy: 'Privacy Policy',
-    termsOfService: 'Terms of Service'
+    termsOfService: 'Terms of Service',
+    madeWith: 'Made with love in Saudi Arabia',
+    newsletter: {
+      title: 'Subscribe to Our Newsletter',
+      description: 'Get exclusive travel deals, destination guides, and premium offers delivered to your inbox.',
+      placeholder: 'Enter your email address',
+      subscribe: 'Subscribe'
+    }
   },
 
   // Authentication
@@ -214,8 +228,7 @@ export const en = {
       signUp: 'Sign Up',
       invalidCredentials: 'Invalid email or password',
       error: 'Login failed. Please try again.'
-    },
-    register: {
+    },    register: {
       title: 'Create Account',
       subtitle: 'Join Gaith Tours today',
       email: 'Email Address',
@@ -237,7 +250,9 @@ export const en = {
         message: 'Please check your email to verify your account.',
         redirect: 'Redirecting to login page...'
       }
-    }
+    },
+    secureEncryption: 'Secure Encryption',
+    globalAccess: 'Global Access'
   },
   // Hotels
   hotels: {

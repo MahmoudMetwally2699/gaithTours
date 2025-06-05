@@ -217,9 +217,8 @@ export const Profile: React.FC = () => {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
-  }
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/20 via-amber-50/30 to-yellow-50/20">
+  }  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50/20 via-amber-50/30 to-yellow-50/20 pt-16">
       {/* Hero Header Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-orange-100/40 via-amber-100/50 to-yellow-100/40"></div>
