@@ -404,11 +404,10 @@ export const Navbar: React.FC = () => {
                         </Link>
                       </motion.div>
                     );
-                  })}
+                  })}                  <div className="border-t border-gray-200 my-4"></div>
 
-                  <div className="border-t border-gray-200 my-4"></div>
-
-                  {/* Language Toggle Mobile */}                  <motion.button
+                  {/* Language Toggle Mobile */}
+                  <motion.button
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
@@ -424,12 +423,12 @@ export const Navbar: React.FC = () => {
                   </motion.button>
 
                   {user ? (
-                    <>
-                      <motion.div
+                    <>                      <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 }}
-                      >                        <Link
+                      >
+                        <Link
                           to="/profile"
                           className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                           onClick={() => setIsMenuOpen(false)}
@@ -444,14 +443,13 @@ export const Navbar: React.FC = () => {
                             <p className="text-sm text-gray-500">{user.name}</p>
                           </div>
                         </Link>
-                      </motion.div>
-
-                      {user.role === 'admin' && (
+                      </motion.div>                      {user.role === 'admin' && (
                         <motion.div
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.5 }}
-                        >                          <Link
+                        >
+                          <Link
                             to="/admin/dashboard"
                             className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                             onClick={() => setIsMenuOpen(false)}
@@ -464,7 +462,7 @@ export const Navbar: React.FC = () => {
                             </span>
                           </Link>
                         </motion.div>
-                      )}                      <motion.button
+                      )}<motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.6 }}
@@ -478,14 +476,14 @@ export const Navbar: React.FC = () => {
                           {t('nav.logout')}
                         </span>
                       </motion.button>
-                    </>
-                  ) : (
+                    </>                  ) : (
                     <>
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 }}
-                      >                        <Link
+                      >
+                        <Link
                           to="/login"
                           className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                           onClick={() => setIsMenuOpen(false)}
@@ -503,9 +501,10 @@ export const Navbar: React.FC = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.5 }}
-                      >                        <Link
+                      >
+                        <Link
                           to="/register"
-                          className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg`}
+                          className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg relative`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
