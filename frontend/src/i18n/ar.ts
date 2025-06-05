@@ -151,7 +151,6 @@ export const ar = {
     yearsExperience: 'سنوات خبرة',
     support: 'دعم 24/7'
   },
-
   // Footer
   footer: {
     description: 'شريكك الموثوق لتجارب سفر لا تُنسى في جميع أنحاء العالم',
@@ -176,7 +175,23 @@ export const ar = {
     followUs: 'تابعنا',
     copyright: '© 2024 غيث تورز. جميع الحقوق محفوظة.',
     privacyPolicy: 'سياسة الخصوصية',
-    termsOfService: 'شروط الخدمة'
+    termsOfService: 'شروط الخدمة',
+    // Missing footer translations
+    home: 'الرئيسية',
+    hotels: 'الفنادق',
+    flightReservation: 'حجز الطيران',
+    carRental: 'تأجير السيارات',
+    tourGuides: 'أدلاء سياحيون',
+    visaAssistance: 'مساعدة التأشيرة',
+    travelInsurance: 'تأمين السفر',
+    newsletter: {
+      title: 'اشترك في نشرتنا الإخبارية',
+      description: 'احصل على عروض السفر الحصرية وأدلة الوجهات والعروض المتميزة في صندوق الوارد الخاص بك.',
+      placeholder: 'أدخل عنوان بريدك الإلكتروني',
+      subscribe: 'اشترك'
+    },
+    madeWith: 'صُنع بحب في المملكة العربية السعودية',
+    allRightsReserved: 'جميع الحقوق محفوظة.'
   },
 
   // Authentication
@@ -239,11 +254,92 @@ export const ar = {
       }
     }
   },
-
   // Hotels
   hotels: {
-    title: 'ابحث عن فندقك المثالي',
-    subtitle: 'اكتشف مجموعتنا المختارة بعناية من أماكن الإقامة الفاخرة',
+    title: 'اكتشف',
+    perfectStay: 'إقامتك المثالية',
+    subtitle: 'استمتع بالفخامة والراحة مع مجموعتنا المختارة بعناية من الفنادق الفاخرة في جميع أنحاء العالم',
+    premiumBooking: 'حجز فنادق فاخرة',
+    selectYourHotel: 'اختر فندقك',
+    chooseYourHotel: 'اختر فندقك',
+    clickToBrowse: 'اضغط هنا للتصفح والاختيار من مجموعة فنادقنا الفاخرة',
+    bookingForm: {
+      title: 'نموذج حجز الفندق',
+      subtitle: 'املأ تفاصيلك لحجز إقامتك المثالية'
+    },
+    hotelWebsiteDescription: 'أضف رابطًا مباشرًا لموقع الفندق أو صفحة الحجز',
+    hotelWebsitePlaceholder: 'https://hotel-website.com',
+    expectedPrice: 'السعر المتوقع',
+    expectedPriceDescription: 'السعر المتوقع لكل ليلة بالريال السعودي',
+    travelDates: 'تواريخ السفر',
+    checkInDate: 'تاريخ تسجيل الوصول',
+    checkOutDate: 'تاريخ تسجيل المغادرة',
+    accommodationDetails: 'تفاصيل الإقامة',
+    numberOfGuests: 'عدد الضيوف',
+    numberOfRooms: 'عدد الغرف',
+    bookingDetails: 'تفاصيل الحجز',
+    expectedCheckInTime: 'وقت الوصول المتوقع',
+    roomType: 'نوع الغرفة',
+    roomTypes: {
+      single: 'غرفة مفردة',
+      double: 'غرفة مزدوجة',
+      twin: 'غرفة توأم',
+      triple: 'غرفة ثلاثية',
+      quad: 'غرفة رباعية',
+      suite: 'جناح',
+      family: 'غرفة عائلية',
+      deluxe: 'غرفة ديلوكس'
+    },
+    stayType: 'نوع الإقامة',
+    stayTypes: {
+      roomOnly: 'الغرفة فقط',
+      bedBreakfast: 'سرير وإفطار',
+      halfBoard: 'نصف إقامة',
+      fullBoard: 'إقامة كاملة',
+      allInclusive: 'شامل جميع الوجبات'
+    },
+    paymentMethod: 'طريقة الدفع',
+    selectPaymentMethod: 'اختر طريقة الدفع',
+    paymentMethods: {
+      creditCard: 'بطاقة ائتمان',
+      debitCard: 'بطاقة مدين',
+      bankTransfer: 'حوالة مصرفية',
+      cashOnArrival: 'دفع نقدي عند الوصول',
+      digitalWallet: 'محفظة رقمية',
+      check: 'شيك'
+    },
+    additionalGuests: 'ضيوف إضافيون',
+    addGuest: 'إضافة ضيف',
+    addGuestInformation: 'إضافة معلومات الضيف',
+    guestFullName: 'الاسم الكامل للضيف',
+    enterGuestFullName: 'أدخل الاسم الكامل للضيف',
+    guestPhoneNumber: 'رقم هاتف الضيف',
+    enterGuestPhoneNumber: 'أدخل رقم هاتف الضيف',
+    noAdditionalGuests: 'لم يتم إضافة ضيوف إضافيين بعد',
+    clickAddGuest: 'اضغط "إضافة ضيف" لإدراج رفاق السفر',
+    specialRequests: 'طلبات خاصة',
+    specialRequestsPlaceholder: 'أخبرنا عن أي تسهيلات خاصة أو احتياجات غذائية أو متطلبات إمكانية الوصول أو تفضيلات لجعل إقامتك مثالية...',
+    specialRequestTags: {
+      wheelchairAccessible: 'مناسب للكراسي المتحركة',
+      quietRoom: 'غرفة هادئة',
+      highFloor: 'طابق عالي',
+      earlyCheckIn: 'تسجيل وصول مبكر',
+      lateCheckOut: 'تسجيل مغادرة متأخر',
+      airportTransfer: 'نقل من المطار'
+    },
+    documentAttachments: 'مرفقات المستندات',
+    uploadDocumentsDescription: 'قم بتحميل المستندات ذات الصلة لدعم طلب الحجز الخاص بك',
+    documentTypes: {
+      idPassport: 'نسخ الهوية/جواز السفر',
+      visa: 'وثائق التأشيرة',
+      insurance: 'تأمين السفر',
+      medical: 'شهادات طبية'
+    },
+    processingBooking: 'جاري معالجة حجزك...',
+    proceedToConfirmation: 'المتابعة لتأكيد الحجز',
+    secureBookingGuarantee: 'حجز آمن • تأكيد فوري • ضمان أفضل سعر',
+    selectHotelFirst: 'يرجى اختيار فندق أولاً',
+    fillRequiredFields: 'يرجى ملء جميع الحقول المطلوبة',
     searchPlaceholder: 'ابحث عن الفنادق أو المدن أو الوجهات...',
     search: 'بحث',
     filters: 'المرشحات',
@@ -256,6 +352,7 @@ export const ar = {
     guests: 'الضيوف',
     adult: 'بالغ',
     adults: 'البالغين',
+    totalPrice: 'السعر الإجمالي',
     bookNow: 'احجز الآن',
     viewDetails: 'عرض التفاصيل',
     selectDates: 'اختر التواريخ',
@@ -329,6 +426,18 @@ export const ar = {
       noGuests: 'لم يتم إضافة ضيوف إضافيين',
       guestNumber: 'الضيف {{number}}'
     }
+  },
+
+  // Personal Information
+  personalInformation: {
+    title: 'المعلومات الشخصية',
+    touristName: 'اسم السائح',
+    enterFullName: 'أدخل اسمك الكامل',
+    phoneNumber: 'رقم الهاتف',
+    enterPhoneNumber: 'أدخل رقم هاتفك',
+    nationality: 'الجنسية',
+    emailAddress: 'عنوان البريد الإلكتروني',
+    enterEmailAddress: 'أدخل عنوان بريدك الإلكتروني'
   },
 
   // Booking
@@ -460,7 +569,6 @@ export const ar = {
       cancelled: 'ملغى'
     }
   },
-
   // Common
   common: {
     loading: 'جاري التحميل...',
@@ -487,7 +595,11 @@ export const ar = {
     yes: 'نعم',
     no: 'لا',
     or: 'أو',
-    and: 'و'
+    and: 'و',
+    instantConfirmation: 'تأكيد فوري',
+    clickToChange: 'اضغط للتغيير',
+    hotelWebsite: 'موقع الفندق',
+    addGuest: 'إضافة ضيف'
   },
 
   // Validation

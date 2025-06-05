@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useDirection } from '../hooks/useDirection';
 import { motion } from 'framer-motion';
 import {
   Bars3Icon,
@@ -18,12 +19,11 @@ import {
 export const Navbar: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const { isRTL } = useDirection();
   const history = useHistory();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  const isRTL = i18n.language === 'ar';
 
   // Handle scroll effect
   useEffect(() => {
@@ -158,9 +158,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="absolute bottom-2 -right-1 w-2 h-2 bg-amber-300 rounded-full shadow-lg shadow-amber-300/50 pointer-events-none"
                     ></motion.div>
-                  </div>
-
-                  <div className={`${isRTL ? 'mr-4' : 'ml-4'} relative z-20`}>
+                  </div>                  <div className={`${isRTL ? 'mr-4' : 'ml-4'} relative z-20`}>
                     <motion.h1
                       className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent group-hover:from-orange-700 group-hover:via-amber-700 group-hover:to-yellow-700 transition-all duration-300 select-none"
                       whileHover={{ scale: 1.02 }}
@@ -174,8 +172,8 @@ export const Navbar: React.FC = () => {
                 </div>
               </motion.div>
             </Link>
-          </motion.div>          {/* Desktop Navigation - Premium Design with proper spacing */}
-          <div className="hidden md:flex items-center space-x-6 relative z-40">
+          </motion.div>          {/* Desktop Navigation - Premium Design with proper RTL spacing */}
+          <div className={`hidden md:flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-6 relative z-40`}>
             {navigationItems.map((item, index) => {
               const IconComponent = item.icon;
               return (
@@ -190,7 +188,7 @@ export const Navbar: React.FC = () => {
                 >
                   <Link
                     to={item.href}
-                    className="group relative flex items-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50"
+                    className={`group relative flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50`}
                   >
                     <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <IconComponent className="h-4 w-4 text-white" />
@@ -202,7 +200,7 @@ export const Navbar: React.FC = () => {
                   </Link>
                 </motion.div>
               );
-            })}            {/* Language Toggle - Consistent Style with proper isolation */}
+            })}            {/* Language Toggle - Consistent Style with proper RTL isolation */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -213,7 +211,7 @@ export const Navbar: React.FC = () => {
             >
               <button
                 onClick={toggleLanguage}
-                className="group relative flex items-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50"
+                className={`group relative flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50`}
               >
                 <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                   <LanguageIcon className="h-4 w-4 text-white" />
@@ -223,24 +221,23 @@ export const Navbar: React.FC = () => {
                 </span>
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-400/10 to-amber-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
-            </motion.div>            {/* User Menu - Premium Design with proper isolation */}
+            </motion.div>{/* User Menu - Premium Design with proper isolation */}
             {user ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.6 }}
                 className="relative z-40"
-              >
-                <motion.button
+              >                <motion.button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="group relative flex items-center space-x-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50"
+                  className={`group relative flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50`}
                 >
                   <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                     <UserIcon className="h-4 w-4 text-white" />
                   </div>
-                  <div className="text-left">
+                  <div className={`text-${isRTL ? 'right' : 'left'}`}>
                     <p className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors duration-300 truncate max-w-[120px]">
                       {user.name}
                     </p>
@@ -258,8 +255,8 @@ export const Navbar: React.FC = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.2 }}
                     className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-3 w-64 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-orange-100/50 overflow-hidden z-50`}
-                  ><div className="bg-gradient-to-r from-orange-400 to-amber-400 px-6 py-4">
-                        <div className="flex items-center space-x-3">
+                  >                    <div className="bg-gradient-to-r from-orange-400 to-amber-400 px-6 py-4">
+                        <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
                           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
                             <UserIcon className="h-6 w-6 text-white" />
                           </div>
@@ -273,7 +270,7 @@ export const Navbar: React.FC = () => {
                       <div className="p-2">
                         <Link
                           to="/profile"
-                          className="flex items-center space-x-3 px-4 py-3 rounded-2xl hover:bg-orange-50 transition-all duration-200 group"
+                          className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 px-4 py-3 rounded-2xl hover:bg-orange-50 transition-all duration-200 group`}
                           onClick={() => setIsProfileMenuOpen(false)}
                         >
                           <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center group-hover:shadow-lg transition-shadow duration-200">
@@ -285,7 +282,7 @@ export const Navbar: React.FC = () => {
                         {user.role === 'admin' && (
                           <Link
                             to="/admin/dashboard"
-                            className="flex items-center space-x-3 px-4 py-3 rounded-2xl hover:bg-purple-50 transition-all duration-200 group"
+                            className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 px-4 py-3 rounded-2xl hover:bg-purple-50 transition-all duration-200 group`}
                             onClick={() => setIsProfileMenuOpen(false)}
                           >
                             <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl flex items-center justify-center group-hover:shadow-lg transition-shadow duration-200">
@@ -299,7 +296,7 @@ export const Navbar: React.FC = () => {
 
                         <button
                           onClick={handleLogout}
-                          className="flex items-center space-x-3 px-4 py-3 rounded-2xl hover:bg-red-50 transition-all duration-200 group w-full"
+                          className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 px-4 py-3 rounded-2xl hover:bg-red-50 transition-all duration-200 group w-full`}
                         >
                           <div className="w-8 h-8 bg-gradient-to-r from-red-400 to-pink-400 rounded-xl flex items-center justify-center group-hover:shadow-lg transition-shadow duration-200">
                             <ArrowRightOnRectangleIcon className="h-4 w-4 text-white" />
@@ -309,19 +306,17 @@ export const Navbar: React.FC = () => {
                     </motion.div>
                   )}
               </motion.div>
-            ) : (
-              <motion.div
+            ) : (              <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.6 }}
-                className="flex items-center space-x-3"
-              >                <motion.div
+                className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}
+              ><motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                >
-                  <Link
+                >                  <Link
                     to="/login"
-                    className="group flex items-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg"
+                    className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                   >
                     <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <UserIcon className="h-4 w-4 text-white" />
@@ -336,10 +331,9 @@ export const Navbar: React.FC = () => {
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                >
-                  <Link
+                >                  <Link
                     to="/register"
-                    className="group flex items-center space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg"
+                    className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg`}
                   >
                     <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <UserIcon className="h-4 w-4 text-white" />
@@ -397,7 +391,7 @@ export const Navbar: React.FC = () => {
                         transition={{ delay: index * 0.1 }}
                       >                        <Link
                           to={item.href}
-                          className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg"
+                          className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
@@ -418,7 +412,7 @@ export const Navbar: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
                     onClick={toggleLanguage}
-                    className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg w-full"
+                    className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg w-full`}
                   >
                     <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <LanguageIcon className="h-4 w-4 text-white" />
@@ -436,7 +430,7 @@ export const Navbar: React.FC = () => {
                         transition={{ delay: 0.4 }}
                       >                        <Link
                           to="/profile"
-                          className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg"
+                          className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
@@ -458,7 +452,7 @@ export const Navbar: React.FC = () => {
                           transition={{ delay: 0.5 }}
                         >                          <Link
                             to="/admin/dashboard"
-                            className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg"
+                            className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                             onClick={() => setIsMenuOpen(false)}
                           >
                             <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
@@ -474,7 +468,7 @@ export const Navbar: React.FC = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.6 }}
                         onClick={handleLogout}
-                        className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100 border border-red-200/50 hover:border-red-300/50 transition-all duration-300 shadow-md hover:shadow-lg w-full"
+                        className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100 border border-red-200/50 hover:border-red-300/50 transition-all duration-300 shadow-md hover:shadow-lg w-full`}
                       >
                         <div className="w-8 h-8 bg-gradient-to-r from-red-400 to-pink-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                           <ArrowRightOnRectangleIcon className="h-4 w-4 text-white" />
@@ -492,7 +486,7 @@ export const Navbar: React.FC = () => {
                         transition={{ delay: 0.4 }}
                       >                        <Link
                           to="/login"
-                          className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg"
+                          className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
@@ -510,7 +504,7 @@ export const Navbar: React.FC = () => {
                         transition={{ delay: 0.5 }}
                       >                        <Link
                           to="/register"
-                          className="group flex items-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg"
+                          className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 p-4 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg`}
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">

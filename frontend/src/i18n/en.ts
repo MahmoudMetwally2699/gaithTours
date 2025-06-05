@@ -239,11 +239,92 @@ export const en = {
       }
     }
   },
-
   // Hotels
   hotels: {
-    title: 'Find Your Perfect Hotel',
-    subtitle: 'Discover our handpicked selection of premium accommodations',
+    title: 'Discover Your',
+    perfectStay: 'Perfect Stay',
+    subtitle: 'Experience luxury and comfort with our carefully curated selection of premium hotels worldwide',
+    premiumBooking: 'Premium Hotel Booking',
+    selectYourHotel: 'Select Your Hotel',
+    chooseYourHotel: 'Choose Your Hotel',
+    clickToBrowse: 'Click here to browse and select from our premium hotel collection',
+    bookingForm: {
+      title: 'Hotel Booking Form',
+      subtitle: 'Fill in your details to reserve your perfect stay'
+    },
+    hotelWebsiteDescription: 'Add a direct link to the hotel\'s website or booking page',
+    hotelWebsitePlaceholder: 'https://hotel-website.com',
+    expectedPrice: 'Expected Price',
+    expectedPriceDescription: 'Expected price per night in Saudi Riyal',
+    travelDates: 'Travel Dates',
+    checkInDate: 'Check-in Date',
+    checkOutDate: 'Check-out Date',
+    accommodationDetails: 'Accommodation Details',
+    numberOfGuests: 'Number of Guests',
+    numberOfRooms: 'Number of Rooms',
+    bookingDetails: 'Booking Details',
+    expectedCheckInTime: 'Expected Check-in Time',
+    roomType: 'Room Type',
+    roomTypes: {
+      single: 'Single Room',
+      double: 'Double Room',
+      twin: 'Twin Room',
+      triple: 'Triple Room',
+      quad: 'Quad Room',
+      suite: 'Suite',
+      family: 'Family Room',
+      deluxe: 'Deluxe Room'
+    },
+    stayType: 'Stay Type',
+    stayTypes: {
+      roomOnly: 'Room Only',
+      bedBreakfast: 'Bed & Breakfast',
+      halfBoard: 'Half Board',
+      fullBoard: 'Full Board',
+      allInclusive: 'All Inclusive'
+    },
+    paymentMethod: 'Payment Method',
+    selectPaymentMethod: 'Select Payment Method',
+    paymentMethods: {
+      creditCard: 'Credit Card',
+      debitCard: 'Debit Card',
+      bankTransfer: 'Bank Transfer',
+      cashOnArrival: 'Cash on Arrival',
+      digitalWallet: 'Digital Wallet',
+      check: 'Check'
+    },
+    additionalGuests: 'Additional Guests',
+    addGuest: 'Add Guest',
+    addGuestInformation: 'Add Guest Information',
+    guestFullName: 'Guest\'s Full Name',
+    enterGuestFullName: 'Enter guest\'s full name',
+    guestPhoneNumber: 'Guest\'s Phone Number',
+    enterGuestPhoneNumber: 'Enter guest\'s phone number',
+    noAdditionalGuests: 'No additional guests added yet',
+    clickAddGuest: 'Click "Add Guest" to include travel companions',
+    specialRequests: 'Special Requests',
+    specialRequestsPlaceholder: 'Tell us about any special accommodations, dietary requirements, accessibility needs, or preferences to make your stay perfect...',
+    specialRequestTags: {
+      wheelchairAccessible: 'Wheelchair Accessible',
+      quietRoom: 'Quiet Room',
+      highFloor: 'High Floor',
+      earlyCheckIn: 'Early Check-in',
+      lateCheckOut: 'Late Check-out',
+      airportTransfer: 'Airport Transfer'
+    },
+    documentAttachments: 'Document Attachments',
+    uploadDocumentsDescription: 'Upload relevant documents to support your booking request',
+    documentTypes: {
+      idPassport: 'ID/Passport copies',
+      visa: 'Visa documents',
+      insurance: 'Travel insurance',
+      medical: 'Medical certificates'
+    },
+    processingBooking: 'Processing Your Booking...',
+    proceedToConfirmation: 'Proceed to Booking Confirmation',
+    secureBookingGuarantee: 'Secure booking • Instant confirmation • Best price guarantee',
+    selectHotelFirst: 'Please select a hotel first',
+    fillRequiredFields: 'Please fill in all required fields',
     searchPlaceholder: 'Search for hotels, cities, or destinations...',
     search: 'Search',
     filters: 'Filters',
@@ -461,7 +542,6 @@ export const en = {
       cancelled: 'Cancelled'
     }
   },
-
   // Common
   common: {
     loading: 'Loading...',
@@ -488,7 +568,11 @@ export const en = {
     yes: 'Yes',
     no: 'No',
     or: 'or',
-    and: 'and'
+    and: 'and',
+    instantConfirmation: 'Instant Confirmation',
+    clickToChange: 'Click to change',
+    hotelWebsite: 'Hotel Website',
+    addGuest: 'Add Guest'
   },
 
   // Validation

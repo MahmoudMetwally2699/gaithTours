@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { HotelSelectionModal } from '../components/HotelSelectionModal';
 import { HotelBookingModal } from '../components/HotelBookingModal';
 import { FileUpload, UploadedFile } from '../components/FileUpload';
 import { Hotel } from '../types/hotel';
 import { useAuth } from '../contexts/AuthContext';
+import { useDirection } from '../hooks/useDirection';
 import {
   CalendarIcon,
   UserGroupIcon,
@@ -129,7 +131,9 @@ const getCountryFromNationality = (nationality: string): string => {
 };
 
 export const Hotels: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
+  const { isRTL } = useDirection();
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [showHotelSelection, setShowHotelSelection] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);const [formData, setFormData] = useState({
@@ -180,7 +184,7 @@ export const Hotels: React.FC = () => {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedHotel) {
-      setError('Please select a hotel first');
+      setError(t('hotels.selectHotelFirst', 'Please select a hotel first'));
       return;
     }
 
@@ -188,7 +192,7 @@ export const Hotels: React.FC = () => {
     if (!formData.touristName || !formData.phone || !formData.nationality ||
         !formData.email || !formData.roomType || !formData.stayType ||
         !formData.paymentMethod) {
-      setError('Please fill in all required fields');
+      setError(t('hotels.fillRequiredFields', 'Please fill in all required fields'));
       return;
     }
 
@@ -249,33 +253,28 @@ export const Hotels: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
             className="text-center"
-          >            <div className="flex justify-center mb-6">
-              <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30">
+          >            <div className={`flex justify-center mb-6`}>              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30`}>
                 <SparklesIcon className="h-5 w-5 text-amber-400" />
-                <span className="text-gray-700 font-medium">Premium Hotel Booking</span>
+                <span className="text-gray-700 font-medium">{t('hotels.premiumBooking', 'Premium Hotel Booking')}</span>
               </div>
-            </div>
-
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-gray-800">
-              Discover Your
-              <span className="block text-orange-600">Perfect Stay</span>
+            </div>            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-gray-800">
+              {t('hotels.title', 'Discover Your')}
+              <span className="block text-orange-600">{t('hotels.perfectStay', 'Perfect Stay')}</span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Experience luxury and comfort with our carefully curated selection of premium hotels worldwide
-            </p>
-
-            <div className="flex justify-center space-x-8 text-gray-600">
-              <div className="flex items-center space-x-2">
+              {t('hotels.subtitle', 'Experience luxury and comfort with our carefully curated selection of premium hotels worldwide')}
+            </p>            <div className={`flex justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-8 text-gray-600`}>
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                 <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
-                <span>Best Price Guarantee</span>
+                <span>{t('whyChooseUs.bestPrice.title', 'Best Price Guarantee')}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                 <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
-                <span>24/7 Customer Support</span>
+                <span>{t('whyChooseUs.support.title', '24/7 Customer Support')}</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                 <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
-                <span>Instant Confirmation</span>
+                <span>{t('common.instantConfirmation', 'Instant Confirmation')}</span>
               </div>
             </div>
           </motion.div>
@@ -289,35 +288,30 @@ export const Hotels: React.FC = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
-        >          {/* Form Header */}
-          <div className="bg-gradient-to-r from-orange-50/50 to-amber-50/50 px-8 py-6 border-b border-orange-100/50">
-            <div className="flex items-center space-x-3">
+        >          {/* Form Header */}          <div className={`bg-gradient-to-r from-orange-50/50 to-amber-50/50 px-8 py-6 border-b border-orange-100/50`}>
+            <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
               <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg">
                 <HomeIcon className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Hotel Booking Form</h2>
-                <p className="text-gray-600">Fill in your details to reserve your perfect stay</p>
+              </div>              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{t('hotels.bookingForm.title', 'Hotel Booking Form')}</h2>
+                <p className="text-gray-600">{t('hotels.bookingForm.subtitle', 'Fill in your details to reserve your perfect stay')}</p>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleFormSubmit} className="p-8 space-y-8">            {/* Hotel Selection Card */}
-            <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 rounded-2xl p-6 border border-orange-200/60">
-              <div className="flex items-center space-x-3 mb-4">
+          <form onSubmit={handleFormSubmit} className="p-8 space-y-8">            {/* Hotel Selection Card */}            <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 rounded-2xl p-6 border border-orange-200/60">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-4`}>
                 <div className="w-10 h-10 bg-orange-400 rounded-xl flex items-center justify-center shadow-sm">
                   <MapPinIcon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Select Your Hotel</h3>
+                </div>                <h3 className="text-lg font-semibold text-gray-900">{t('hotels.selectYourHotel', 'Select Your Hotel')}</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>
 
               <div
                 onClick={() => setShowHotelSelection(true)}
                 className="border-2 border-dashed border-orange-300/70 rounded-xl p-6 cursor-pointer hover:border-orange-400 hover:bg-orange-50/50 transition-all duration-300 group"
-              >
-                {selectedHotel ? (
-                  <div className="flex items-center space-x-6">
+              >                {selectedHotel ? (
+                  <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-6`}>
                     <div className="relative">
                       <img
                         src={selectedHotel.image || '/placeholder-hotel.jpg'}
@@ -331,8 +325,8 @@ export const Hotels: React.FC = () => {
                     <div className="flex-1">
                       <h4 className="text-xl font-bold text-gray-900 mb-1">{selectedHotel.name}</h4>
                       <p className="text-gray-600 mb-2">{selectedHotel.address}, {selectedHotel.city}</p>
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-1">
+                      <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-4`}>
+                        <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-1`}>
                           {[...Array(5)].map((_, i) => (
                             <StarIcon
                               key={i}
@@ -343,61 +337,54 @@ export const Hotels: React.FC = () => {
                               }`}
                             />
                           ))}
-                          <span className="text-sm font-medium text-gray-700 ml-1">
+                          <span className={`text-sm font-medium text-gray-700 ${isRTL ? 'mr-1' : 'ml-1'}`}>
                             {selectedHotel.rating?.toFixed(1) || 'N/A'}
                           </span>
                         </div>
                       </div>
-                    </div>                    <div className="text-orange-600 group-hover:text-orange-700">
-                      <span className="text-sm font-medium">Click to change</span>
+                    </div><div className="text-orange-600 group-hover:text-orange-700">
+                      <span className="text-sm font-medium">{t('common.clickToChange', 'Click to change')}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <MapPinIcon className="h-8 w-8 text-orange-500" />
-                    </div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Choose Your Hotel</h4>
-                    <p className="text-gray-600">Click here to browse and select from our premium hotel collection</p>
+                    </div>                    <h4 className="text-lg font-semibold text-gray-900 mb-2">{t('hotels.chooseYourHotel', 'Choose Your Hotel')}</h4>
+                    <p className="text-gray-600">{t('hotels.clickToBrowse', 'Click here to browse and select from our premium hotel collection')}</p>
                   </div>
                 )}
               </div>
             </div>            {/* Hotel Details Card */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Hotel URL */}
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
-                <div className="flex items-center space-x-3 mb-4">
+              {/* Hotel URL */}              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+                <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-4`}>
                   <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
                     <GlobeAltIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Hotel Website</h3>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Optional</span>
+                  </div>                  <h3 className="text-lg font-semibold text-gray-900">{t('common.hotelWebsite', 'Hotel Website')}</h3>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{t('common.optional', 'Optional')}</span>
                 </div>
                 <input
                   type="url"
                   name="hotelUrl"
                   value={formData.hotelUrl}
                   onChange={handleInputChange}
-                  placeholder="https://hotel-website.com"
+                  placeholder={t('hotels.hotelWebsitePlaceholder', 'https://hotel-website.com')}
                   className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
-                />
-                <p className="text-xs text-gray-600 mt-2 flex items-center">
-                  <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
-                  Add a direct link to the hotel's website or booking page
+                />                <p className={`text-xs text-gray-600 mt-2 flex items-center`}>
+                  <span className={`w-2 h-2 bg-emerald-400 rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
+                  {t('hotels.hotelWebsiteDescription', 'Add a direct link to the hotel\'s website or booking page')}
                 </p>
               </div>
 
-              {/* Expected Price */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100">
-                <div className="flex items-center space-x-3 mb-4">
+              {/* Expected Price */}              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100">
+                <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-4`}>
                   <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
                     <CurrencyDollarIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Expected Price</h3>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Optional</span>
+                  </div>                  <h3 className="text-lg font-semibold text-gray-900">{t('hotels.expectedPrice', 'Expected Price')}</h3>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{t('common.optional', 'Optional')}</span>
                 </div>
-                <div className="relative">
-                  <input
+                <div className="relative">                  <input
                     type="number"
                     name="hotelPrice"
                     value={formData.hotelPrice}
@@ -405,78 +392,71 @@ export const Hotels: React.FC = () => {
                     min="0"
                     step="0.01"
                     placeholder="0.00"
-                    className="w-full px-4 py-3 pl-12 border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                    className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                   />
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-600 font-medium">SAR</span>
-                </div>
-                <p className="text-xs text-gray-600 mt-2 flex items-center">
-                  <span className="w-2 h-2 bg-amber-400 rounded-full mr-2"></span>
-                  Expected price per night in Saudi Riyal
+                  <span className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 text-amber-600 font-medium`}>SAR</span>
+                </div>                <p className={`text-xs text-gray-600 mt-2 flex items-center`}>
+                  <span className={`w-2 h-2 bg-amber-400 rounded-full ${isRTL ? 'ml-2' : 'mr-2'}`}></span>
+                  {t('hotels.expectedPriceDescription', 'Expected price per night in Saudi Riyal')}
                 </p>
               </div>
-            </div>            {/* Travel Dates Card */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-              <div className="flex items-center space-x-3 mb-6">
+            </div>            {/* Travel Dates Card */}            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-6`}>
                 <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
                   <CalendarIcon className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Travel Dates</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('hotels.travelDates', 'Travel Dates')}</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Check-in Date
+                <div className="space-y-2">                  <label className="block text-sm font-medium text-gray-700">
+                    {t('hotels.checkInDate', 'Check-in Date')}
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="date"
                       name="checkIn"
                       value={formData.checkIn}
                       onChange={handleInputChange}
                       required
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 pl-12 border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <CalendarIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-500" />
+                    <CalendarIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-500`} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Check-out Date
+                    {t('hotels.checkOutDate', 'Check-out Date')}
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="date"
                       name="checkOut"
                       value={formData.checkOut}
                       onChange={handleInputChange}
                       required
                       min={formData.checkIn || new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 pl-12 border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <CalendarIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-500" />
+                    <CalendarIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-500`} />
                   </div>
                 </div>
               </div>
-            </div>            {/* Guests & Rooms Card */}
-            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-2xl p-6 border border-cyan-100">
-              <div className="flex items-center space-x-3 mb-6">
+            </div>            {/* Guests & Rooms Card */}            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-2xl p-6 border border-cyan-100">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-6`}>
                 <div className="w-10 h-10 bg-cyan-500 rounded-xl flex items-center justify-center">
                   <UserGroupIcon className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Accommodation Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('hotels.accommodationDetails', 'Accommodation Details')}</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Number of Guests
+                    {t('hotels.numberOfGuests', 'Number of Guests')}
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="number"
                       name="guests"
                       value={formData.guests}
@@ -484,17 +464,16 @@ export const Hotels: React.FC = () => {
                       min="1"
                       max="10"
                       required
-                      className="w-full px-4 py-3 pl-12 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <UserGroupIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500" />
+                    <UserGroupIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500`} />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Number of Rooms
+                    {t('hotels.numberOfRooms', 'Number of Rooms')}
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="number"
                       name="rooms"
                       value={formData.rooms}
@@ -502,47 +481,43 @@ export const Hotels: React.FC = () => {
                       min="1"
                       max="5"
                       required
-                      className="w-full px-4 py-3 pl-12 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <HomeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500" />
+                    <HomeIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500`} />
                   </div>
                 </div>
               </div>
-            </div>{/* Personal Information Card */}
-            <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl p-6 border border-rose-100">
-              <div className="flex items-center space-x-3 mb-6">
+            </div>{/* Personal Information Card */}            <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl p-6 border border-rose-100">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-6`}>
                 <div className="w-10 h-10 bg-rose-500 rounded-xl flex items-center justify-center">
                   <UserIcon className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('personalInformation.title', 'Personal Information')}</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Tourist Name *
+                    {t('personalInformation.touristName', 'Tourist Name')} *
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="text"
                       name="touristName"
                       value={formData.touristName}
                       onChange={handleInputChange}
                       required
-                      placeholder="Enter your full name"
-                      className="w-full px-4 py-3 pl-12 border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      placeholder={t('personalInformation.enterFullName', 'Enter your full name')}
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <UserIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500" />
+                    <UserIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500`} />
                   </div>
-                </div>
-
-                <div className="space-y-2">
+                </div>                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Phone Number *
+                    {t('personalInformation.phoneNumber', 'Phone Number')} *
                   </label>
-                  <div className="flex gap-3">
-                    <div className="w-1/3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="w-full sm:w-1/3">
                       <ReactCountryDropdown
                         defaultCountry={formData.phoneCountryCode || 'SA'}
                         onSelect={(country) => {
@@ -555,24 +530,23 @@ export const Hotels: React.FC = () => {
                         }}
                       />
                     </div>
-                    <div className="w-2/3 relative">
-                      <input
-                        type="tel"
+                    <div className="w-full sm:w-2/3 relative">
+                      <input                        type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
                         required
-                        placeholder="Enter your phone number"
-                        className="w-full px-4 py-3 pl-12 border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                        placeholder={t('personalInformation.enterPhoneNumber', 'Enter your phone number')}
+                        className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                       />
-                      <PhoneIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500" />
+                      <PhoneIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500`} />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Nationality *
+                    {t('personalInformation.nationality', 'Nationality')} *
                   </label>
                   <div className="relative">
                     <ReactCountryDropdown
@@ -592,52 +566,49 @@ export const Hotels: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Email Address *
+                    {t('personalInformation.emailAddress', 'Email Address')} *
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      placeholder="Enter your email address"
-                      className="w-full px-4 py-3 pl-12 border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      placeholder={t('personalInformation.enterEmailAddress', 'Enter your email address')}
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <EnvelopeIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500" />
+                    <EnvelopeIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500`} />
                   </div>
                 </div>
               </div>
-            </div>            {/* Booking Details Card */}
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-6 border border-indigo-100">
-              <div className="flex items-center space-x-3 mb-6">
+            </div>            {/* Booking Details Card */}            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-6 border border-indigo-100">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-6`}>
                 <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
                   <CreditCardIcon className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Booking Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('hotels.bookingDetails', 'Booking Details')}</h3>
                 <span className="text-red-500 text-sm">*</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Expected Check-in Time
+                    {t('hotels.expectedCheckInTime', 'Expected Check-in Time')}
                   </label>
-                  <div className="relative">
-                    <input
+                  <div className="relative">                    <input
                       type="time"
                       name="expectedCheckInTime"
                       value={formData.expectedCheckInTime}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 pl-12 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                     />
-                    <ClockIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-500" />
+                    <ClockIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-500`} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Room Type *
+                    {t('hotels.roomType', 'Room Type')} *
                   </label>
                   <select
                     name="roomType"
@@ -645,21 +616,20 @@ export const Hotels: React.FC = () => {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-3 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
-                  >
-                    <option value="single">Single Room</option>
-                    <option value="double">Double Room</option>
-                    <option value="twin">Twin Room</option>
-                    <option value="triple">Triple Room</option>
-                    <option value="quad">Quad Room</option>
-                    <option value="suite">Suite</option>
-                    <option value="family">Family Room</option>
-                    <option value="deluxe">Deluxe Room</option>
+                  >                    <option value="single">{t('hotels.roomTypes.single', 'Single Room')}</option>
+                    <option value="double">{t('hotels.roomTypes.double', 'Double Room')}</option>
+                    <option value="twin">{t('hotels.roomTypes.twin', 'Twin Room')}</option>
+                    <option value="triple">{t('hotels.roomTypes.triple', 'Triple Room')}</option>
+                    <option value="quad">{t('hotels.roomTypes.quad', 'Quad Room')}</option>
+                    <option value="suite">{t('hotels.roomTypes.suite', 'Suite')}</option>
+                    <option value="family">{t('hotels.roomTypes.family', 'Family Room')}</option>
+                    <option value="deluxe">{t('hotels.roomTypes.deluxe', 'Deluxe Room')}</option>
                   </select>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Stay Type *
+                    {t('hotels.stayType', 'Stay Type')} *
                   </label>
                   <select
                     name="stayType"
@@ -667,58 +637,51 @@ export const Hotels: React.FC = () => {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-3 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
-                  >
-                    <option value="room_only">Room Only</option>
-                    <option value="bed_breakfast">Bed & Breakfast</option>
-                    <option value="half_board">Half Board</option>
-                    <option value="full_board">Full Board</option>
-                    <option value="all_inclusive">All Inclusive</option>
+                  >                    <option value="room_only">{t('hotels.stayTypes.roomOnly', 'Room Only')}</option>
+                    <option value="bed_breakfast">{t('hotels.stayTypes.bedBreakfast', 'Bed & Breakfast')}</option>
+                    <option value="half_board">{t('hotels.stayTypes.halfBoard', 'Half Board')}</option>
+                    <option value="full_board">{t('hotels.stayTypes.fullBoard', 'Full Board')}</option>
+                    <option value="all_inclusive">{t('hotels.stayTypes.allInclusive', 'All Inclusive')}</option>
                   </select>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Payment Method *
+                    {t('hotels.paymentMethod', 'Payment Method')} *
                   </label>
-                  <div className="relative">
-                    <select
+                  <div className="relative">                    <select
                       name="paymentMethod"
                       value={formData.paymentMethod}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 pl-12 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 appearance-none"
-                    >
-                      <option value="">Select Payment Method</option>
-                      <option value="credit_card">Credit Card</option>
-                      <option value="debit_card">Debit Card</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="cash_on_arrival">Cash on Arrival</option>
-                      <option value="digital_wallet">Digital Wallet</option>
-                      <option value="check">Check</option>
+                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 appearance-none`}
+                    >                      <option value="">{t('hotels.selectPaymentMethod', 'Select Payment Method')}</option>
+                      <option value="credit_card">{t('hotels.paymentMethods.creditCard', 'Credit Card')}</option>
+                      <option value="debit_card">{t('hotels.paymentMethods.debitCard', 'Debit Card')}</option>
+                      <option value="bank_transfer">{t('hotels.paymentMethods.bankTransfer', 'Bank Transfer')}</option>
+                      <option value="cash_on_arrival">{t('hotels.paymentMethods.cashOnArrival', 'Cash on Arrival')}</option>
+                      <option value="digital_wallet">{t('hotels.paymentMethods.digitalWallet', 'Digital Wallet')}</option>
+                      <option value="check">{t('hotels.paymentMethods.check', 'Check')}</option>
                     </select>
-                    <CreditCardIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-500" />
+                    <CreditCardIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-500`} />
                   </div>
                 </div>
               </div>
-            </div>            {/* Additional Guests Card */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
+            </div>            {/* Additional Guests Card */}            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">              <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 mb-6`}>
+                <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
                   <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
                     <UserGroupIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Additional Guests</h3>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Optional</span>
+                  </div>                  <h3 className="text-lg font-semibold text-gray-900">{t('hotels.additionalGuests', 'Additional Guests')}</h3>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{t('common.optional', 'Optional')}</span>
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   type="button"
                   onClick={() => setShowGuestForm(true)}
-                  className="bg-green-500 text-white px-4 py-2 rounded-xl hover:bg-green-600 transition-all duration-200 flex items-center space-x-2 shadow-lg hover:shadow-xl"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  <span>Add Guest</span>
+                  className={`w-full sm:w-auto bg-green-500 text-white px-4 py-2.5 sm:py-2 rounded-xl hover:bg-green-600 transition-all duration-200 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 shadow-lg hover:shadow-xl text-sm sm:text-base`}
+                >                  <PlusIcon className="h-4 w-4" />
+                  <span>{t('hotels.addGuest', 'Add Guest')}</span>
                 </motion.button>
               </div>
 
@@ -730,17 +693,16 @@ export const Hotels: React.FC = () => {
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="flex items-center justify-between bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-green-200 shadow-sm"
+                      exit={{ opacity: 0, y: -20 }}                      className={`flex items-center justify-between bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-green-200 shadow-sm`}
                     >
-                      <div className="flex items-center space-x-4">
+                      <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-4`}>
                         <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                           <UserIcon className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{guest.fullName}</p>
-                          <p className="text-sm text-gray-600 flex items-center">
-                            <PhoneIcon className="h-4 w-4 mr-1 text-gray-400" />
+                          <p className={`text-sm text-gray-600 flex items-center`}>
+                            <PhoneIcon className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'} text-gray-400`} />
                             {guest.phoneNumber}
                           </p>
                         </div>
@@ -766,39 +728,35 @@ export const Hotels: React.FC = () => {
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-green-200 space-y-4"
-                >
-                  <div className="flex items-center space-x-2 mb-4">
+                >                  <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 mb-4`}>
                     <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
                       <PlusIcon className="h-3 w-3 text-white" />
                     </div>
-                    <h4 className="font-semibold text-gray-900">Add Guest Information</h4>
+                    <h4 className="font-semibold text-gray-900">{t('hotels.addGuestInformation', 'Add Guest Information')}</h4>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700">
-                        Guest's Full Name *
+                        {t('hotels.guestFullName', 'Guest\'s Full Name')} *
                       </label>
                       <div className="relative">
-                        <input
-                          type="text"
+                        <input                          type="text"
                           name="fullName"
                           value={newGuest.fullName}
                           onChange={handleNewGuestChange}
                           required
-                          placeholder="Enter guest's full name"
-                          className="w-full px-4 py-3 pl-12 border border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                          placeholder={t('hotels.enterGuestFullName', 'Enter guest\'s full name')}
+                          className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                         />
-                        <UserIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
+                        <UserIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500`} />
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
+                    </div>                    <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700">
-                        Guest's Phone Number *
+                        {t('hotels.guestPhoneNumber', 'Guest\'s Phone Number')} *
                       </label>
-                      <div className="flex gap-3">
-                        <div className="w-1/3">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="w-full sm:w-1/3">
                           <ReactCountryDropdown
                             defaultCountry={newGuest.phoneCountryCode || 'SA'}
                             onSelect={(country) => {
@@ -811,32 +769,29 @@ export const Hotels: React.FC = () => {
                             }}
                           />
                         </div>
-                        <div className="w-2/3 relative">
-                          <input
-                            type="tel"
+                        <div className="w-full sm:w-2/3 relative">
+                          <input                            type="tel"
                             name="phoneNumber"
                             value={newGuest.phoneNumber}
                             onChange={handleNewGuestChange}
                             required
-                            placeholder="Enter guest's phone number"
-                            className="w-full px-4 py-3 pl-12 border border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
+                            placeholder={t('hotels.enterGuestPhoneNumber', 'Enter guest\'s phone number')}
+                            className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-green-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
                           />
-                          <PhoneIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500" />
+                          <PhoneIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-500`} />
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex space-x-3 pt-4">
+                  </div>                  <div className={`flex flex-col sm:flex-row ${isRTL ? 'sm:space-x-reverse' : ''} sm:space-x-3 gap-3 pt-4`}>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       type="button"
                       onClick={handleAddGuest}
-                      className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-all duration-200 flex items-center space-x-2 shadow-lg"
+                      className={`w-full sm:w-auto bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-green-700 transition-all duration-200 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 shadow-lg text-sm sm:text-base`}
                     >
                       <CheckCircleIcon className="h-4 w-4" />
-                      <span>Add Guest</span>
+                      <span>{t('common.addGuest', 'Add Guest')}</span>
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -846,10 +801,10 @@ export const Hotels: React.FC = () => {
                         setShowGuestForm(false);
                         setNewGuest({ fullName: '', phoneNumber: '', phoneCountryCode: 'SA' });
                       }}
-                      className="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-300 transition-all duration-200 flex items-center space-x-2"
+                      className={`w-full sm:w-auto bg-gray-200 text-gray-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-gray-300 transition-all duration-200 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 text-sm sm:text-base`}
                     >
                       <XMarkIcon className="h-4 w-4" />
-                      <span>Cancel</span>
+                      <span>{t('common.cancel', 'Cancel')}</span>
                     </motion.button>
                   </div>
                 </motion.div>
@@ -857,19 +812,16 @@ export const Hotels: React.FC = () => {
 
               {formData.guests_list.length === 0 && !showGuestForm && (
                 <div className="text-center py-8 text-gray-500">
-                  <UserGroupIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm">No additional guests added yet</p>
-                  <p className="text-xs text-gray-400 mt-1">Click "Add Guest" to include travel companions</p>
+                  <UserGroupIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />                  <p className="text-sm">{t('hotels.noAdditionalGuests', 'No additional guests added yet')}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('hotels.clickAddGuest', 'Click "Add Guest" to include travel companions')}</p>
                 </div>
               )}
-            </div>            {/* Special Requests Card */}
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-6 border border-yellow-100">
-              <div className="flex items-center space-x-3 mb-4">
+            </div>            {/* Special Requests Card */}            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-6 border border-yellow-100">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-4`}>
                 <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center">
                   <HeartIcon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Special Requests</h3>
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Optional</span>
+                </div>                <h3 className="text-lg font-semibold text-gray-900">{t('hotels.specialRequests', 'Special Requests')}</h3>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{t('common.optional', 'Optional')}</span>
               </div>
               <div className="relative">
                 <textarea
@@ -877,15 +829,21 @@ export const Hotels: React.FC = () => {
                   value={formData.specialRequests}
                   onChange={handleInputChange}
                   rows={4}
-                  placeholder="Tell us about any special accommodations, dietary requirements, accessibility needs, or preferences to make your stay perfect..."
+                  placeholder={t('hotels.specialRequestsPlaceholder', 'Tell us about any special accommodations, dietary requirements, accessibility needs, or preferences to make your stay perfect...')}
                   className="w-full px-4 py-3 border border-yellow-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 resize-none"
-                />
-                <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                />                <div className={`absolute ${isRTL ? 'bottom-3 left-3' : 'bottom-3 right-3'} text-xs text-gray-400`}>
                   {formData.specialRequests.length}/500
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['Wheelchair Accessible', 'Quiet Room', 'High Floor', 'Early Check-in', 'Late Check-out', 'Airport Transfer'].map((tag) => (
+                {[
+                  t('hotels.specialRequestTags.wheelchairAccessible', 'Wheelchair Accessible'),
+                  t('hotels.specialRequestTags.quietRoom', 'Quiet Room'),
+                  t('hotels.specialRequestTags.highFloor', 'High Floor'),
+                  t('hotels.specialRequestTags.earlyCheckIn', 'Early Check-in'),
+                  t('hotels.specialRequestTags.lateCheckOut', 'Late Check-out'),
+                  t('hotels.specialRequestTags.airportTransfer', 'Airport Transfer')
+                ].map((tag) => (
                   <button
                     key={tag}
                     type="button"
@@ -902,26 +860,23 @@ export const Hotels: React.FC = () => {
               </div>
             </div>
 
-            {/* File Attachments Card */}
-            <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl p-6 border border-violet-100">
-              <div className="flex items-center space-x-3 mb-4">
+            {/* File Attachments Card */}            <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl p-6 border border-violet-100">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3 mb-4`}>
                 <div className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center">
                   <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Document Attachments</h3>
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Optional</span>
+                </div>                <h3 className="text-lg font-semibold text-gray-900">{t('hotels.documentAttachments', 'Document Attachments')}</h3>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{t('common.optional', 'Optional')}</span>
               </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">
-                  Upload relevant documents to support your booking request
+              <div className="mb-4">                <p className="text-sm text-gray-600 mb-2">
+                  {t('hotels.uploadDocumentsDescription', 'Upload relevant documents to support your booking request')}
                 </p>
                 <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                  <span className="bg-gray-100 px-2 py-1 rounded">• ID/Passport copies</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">• Visa documents</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">• Travel insurance</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded">• Medical certificates</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded">• {t('hotels.documentTypes.idPassport', 'ID/Passport copies')}</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded">• {t('hotels.documentTypes.visa', 'Visa documents')}</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded">• {t('hotels.documentTypes.insurance', 'Travel insurance')}</span>
+                  <span className="bg-gray-100 px-2 py-1 rounded">• {t('hotels.documentTypes.medical', 'Medical certificates')}</span>
                 </div>
               </div>
               <div className="bg-white/70 backdrop-blur-sm rounded-xl border-2 border-dashed border-violet-200 p-4">
@@ -934,11 +889,10 @@ export const Hotels: React.FC = () => {
                 />
               </div>
             </div>            {/* Error Message */}
-            {error && (
-              <motion.div
+            {error && (              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 flex items-center space-x-3"
+                className={`bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}
               >
                 <div className="w-8 h-8 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
                   <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -956,31 +910,29 @@ export const Hotels: React.FC = () => {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 text-white py-4 px-8 rounded-2xl font-bold text-lg focus:ring-4 focus:ring-orange-200 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl relative overflow-hidden group"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                <div className="relative flex items-center justify-center space-x-3">
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>                <div className={`relative flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Processing Your Booking...</span>
+                      <span>{t('hotels.processingBooking', 'Processing Your Booking...')}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircleIcon className="h-6 w-6" />
-                      <span>Proceed to Booking Confirmation</span>
-                      <svg className="h-5 w-5 ml-2 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      <span>{t('hotels.proceedToConfirmation', 'Proceed to Booking Confirmation')}</span>
+                      <svg className={`h-5 w-5 ${isRTL ? 'mr-2' : 'ml-2'} transform group-hover:${isRTL ? '-translate-x-1' : 'translate-x-1'} transition-transform duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isRTL ? "M11 17l-5-5m0 0l5-5m-5 5h12" : "M13 7l5 5m0 0l-5 5m5-5H6"} />
                       </svg>
                     </>
                   )}
                 </div>
               </motion.button>
 
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-500 flex items-center justify-center space-x-2">
+              <div className="mt-4 text-center">                <p className={`text-sm text-gray-500 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                   <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Secure booking • Instant confirmation • Best price guarantee</span>
+                  <span>{t('hotels.secureBookingGuarantee', 'Secure booking • Instant confirmation • Best price guarantee')}</span>
                 </p>
               </div>
             </div>

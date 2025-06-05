@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { searchHotels } from '../services/hotelService';
 import { Hotel } from '../types/hotel';
+import { useDirection } from '../hooks/useDirection';
 
 interface HotelSelectionModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
   onSelectHotel
 }) => {
   const { t } = useTranslation();
+  const { isRTL } = useDirection();
   const [searchQuery, setSearchQuery] = useState('');
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,10 +131,8 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
             <div className="absolute inset-0 opacity-20"
                  style={{
                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                 }}></div>
-
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+                 }}></div>            <div className="relative flex items-center justify-between">
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-4`}>
                 <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
                   <BuildingOfficeIcon className="h-7 w-7 text-white" />
                 </div>
@@ -165,10 +165,8 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                 animate={{ width: "100%" }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="absolute inset-0 bg-gradient-to-r from-orange-100/50 to-amber-100/50 rounded-2xl"
-              />
-
-              <div className="relative flex items-center">
-                <div className="absolute left-4 z-10">
+              />                <div className="relative flex items-center">
+                <div className={`absolute ${isRTL ? 'right-4' : 'left-4'} z-10`}>
                   <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg">
                     <MagnifyingGlassIcon className="h-5 w-5 text-white" />
                   </div>
@@ -179,7 +177,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                   placeholder={t('hotels.searchHotels', 'Search for hotels by city, country, or hotel name...')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-16 pr-6 py-4 bg-white/80 backdrop-blur-sm border-2 border-orange-200/60 rounded-2xl focus:ring-4 focus:ring-orange-200/50 focus:border-orange-400 transition-all duration-200 text-gray-900 placeholder-gray-500 text-lg shadow-lg"
+                  className={`w-full ${isRTL ? 'pr-16 pl-6' : 'pl-16 pr-6'} py-4 bg-white/80 backdrop-blur-sm border-2 border-orange-200/60 rounded-2xl focus:ring-4 focus:ring-orange-200/50 focus:border-orange-400 transition-all duration-200 text-gray-900 placeholder-gray-500 text-lg shadow-lg`}
                 />
 
                 {searchQuery && (
@@ -187,9 +185,8 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-4 w-8 h-8 bg-gray-400 hover:bg-gray-500 rounded-lg flex items-center justify-center transition-all duration-200"
+                    whileTap={{ scale: 0.9 }}                    onClick={() => setSearchQuery('')}
+                    className={`absolute ${isRTL ? 'left-4' : 'right-4'} w-8 h-8 bg-gray-400 hover:bg-gray-500 rounded-lg flex items-center justify-center transition-all duration-200`}
                   >
                     <XMarkIcon className="h-4 w-4 text-white" />
                   </motion.button>
@@ -210,7 +207,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                     <div className="absolute inset-0 w-16 h-16 border-4 border-transparent rounded-full animate-ping border-t-orange-300"></div>
                   </div>
                   <p className="mt-4 text-gray-600 font-medium">Searching for perfect hotels...</p>
-                  <div className="flex space-x-1 mt-2">
+                  <div className={`flex ${isRTL ? 'space-x-reverse' : ''} space-x-1 mt-2`}>
                     <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
                     <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                     <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -279,7 +276,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                     {/* Hover gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
 
-                      <div className="relative flex items-center space-x-6">
+                      <div className={`relative flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-6`}>
                         {/* Hotel Image */}
                         <div className="relative w-24 h-24 flex-shrink-0">
                           {hotel.image ? (
@@ -292,11 +289,9 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl flex items-center justify-center shadow-lg">
                               <BuildingOfficeIcon className="h-8 w-8 text-gray-400" />
                             </div>
-                          )}
-
-                          {/* Rating badge */}
+                          )}                          {/* Rating badge */}
                           {hotel.rating && (
-                            <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-amber-400 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg flex items-center space-x-1">
+                            <div className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} bg-gradient-to-r from-yellow-400 to-amber-400 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg flex items-center space-x-1`}>
                               <StarIcon className="h-3 w-3 fill-current" />
                               <span>{hotel.rating}</span>
                             </div>
@@ -307,10 +302,8 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                         <div className="flex-1 min-w-0">
                           <h4 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors duration-200 truncate">
                             {hotel.name}
-                          </h4>
-
-                          <div className="flex items-center text-gray-600 mb-3">
-                            <MapPinIcon className="h-4 w-4 mr-2 text-orange-500" />
+                          </h4>                          <div className={`flex items-center text-gray-600 mb-3`}>
+                            <MapPinIcon className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} text-orange-500`} />
                             <p className="text-sm truncate">
                               {hotel.address}, {hotel.city}, {hotel.country}
                             </p>
@@ -321,7 +314,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                               {hotel.description}
                             </p>
                           )}                          {/* Hotel features */}
-                          <div className="flex items-center space-x-4 text-xs">
+                          <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-4 text-xs`}>
                             {hotel.reviewCount && (
                               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                                 {hotel.reviewCount} reviews
@@ -364,9 +357,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                 >
                   <div className="text-sm text-gray-600 bg-orange-50/50 px-4 py-2 rounded-xl">
                     Showing {hotels.length} of {totalHotels} hotels (Page {currentPage} of {totalPages})
-                  </div>
-
-                  <div className="flex items-center space-x-3">
+                  </div>                  <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -374,7 +365,7 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                       disabled={currentPage <= 1 || loading}
                       className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl flex items-center justify-center shadow-lg disabled:shadow-none transition-all duration-200 disabled:cursor-not-allowed"
                     >
-                      <ChevronLeftIcon className="h-5 w-5" />
+                      <ChevronLeftIcon className={`h-5 w-5 ${isRTL ? 'rotate-180' : ''}`} />
                     </motion.button>
 
                     <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-2 rounded-xl font-bold min-w-[3rem] text-center shadow-lg">
@@ -384,11 +375,10 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages || loading}
+                      onClick={() => handlePageChange(currentPage + 1)}                      disabled={currentPage >= totalPages || loading}
                       className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl flex items-center justify-center shadow-lg disabled:shadow-none transition-all duration-200 disabled:cursor-not-allowed"
                     >
-                      <ChevronRightIcon className="h-5 w-5" />
+                      <ChevronRightIcon className={`h-5 w-5 ${isRTL ? 'rotate-180' : ''}`} />
                     </motion.button>
                   </div>
                 </motion.div>

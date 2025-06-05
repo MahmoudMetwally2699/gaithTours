@@ -250,7 +250,7 @@ export const Profile: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative -mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="relative -mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Profile Information */}
           <motion.div
             initial={{ x: -30, opacity: 0 }}
@@ -337,19 +337,17 @@ export const Profile: React.FC = () => {
                       placeholder={t('auth.nationalityPlaceholder')}
                       className="w-full px-4 py-3 border border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-orange-50/30 transition-all duration-200"
                     />
-                  </div>
-
-                  <div className="flex space-x-3 pt-4">
+                  </div>                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 px-4 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 font-medium shadow-lg"
+                      className="w-full sm:flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 px-4 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 font-medium shadow-lg"
                     >
                       {t('profile.save')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditing(false)}
-                      className="flex-1 border border-orange-200 text-orange-700 py-3 px-4 rounded-xl hover:bg-orange-50 transition-colors duration-200 font-medium"
+                      className="w-full sm:flex-1 border border-orange-200 text-orange-700 py-3 px-4 rounded-xl hover:bg-orange-50 transition-colors duration-200 font-medium"
                     >
                       {t('profile.cancel')}
                     </button>
@@ -423,61 +421,58 @@ export const Profile: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <div className="bg-white rounded-3xl shadow-xl border border-orange-100/50 overflow-hidden">
-              {/* Tab Navigation */}
+            <div className="bg-white rounded-3xl shadow-xl border border-orange-100/50 overflow-hidden">              {/* Tab Navigation */}
               <div className="bg-gradient-to-r from-orange-50/80 to-amber-50/80 border-b border-orange-100/50">
-                <nav className="flex space-x-8 px-8 pt-6 pb-4">
+                <nav className="flex flex-col sm:flex-row gap-2 sm:gap-4 lg:gap-8 px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-3 sm:pb-4 overflow-x-auto">
                   <button
                     onClick={() => setActiveTab('reservations')}
-                    className={`py-3 px-4 border-b-3 font-semibold text-sm rounded-t-xl transition-all duration-200 ${
+                    className={`py-2.5 sm:py-3 px-3 sm:px-4 border-b-3 font-semibold text-sm rounded-t-xl transition-all duration-200 whitespace-nowrap ${
                       activeTab === 'reservations'
                         ? 'border-orange-400 text-orange-600 bg-white shadow-lg'
                         : 'border-transparent text-gray-500 hover:text-orange-600 hover:bg-orange-50/50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${
                         activeTab === 'reservations'
                           ? 'bg-orange-100'
                           : 'bg-gray-100'
                       }`}>
-                        <CalendarIcon className={`h-5 w-5 ${
+                        <CalendarIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${
                           activeTab === 'reservations'
                             ? 'text-orange-600'
                             : 'text-gray-500'
                         }`} />
                       </div>
-                      <span>{t('profile.reservations')}</span>
+                      <span className="text-xs sm:text-sm">{t('profile.reservations')}</span>
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('invoices')}
-                    className={`py-3 px-4 border-b-3 font-semibold text-sm rounded-t-xl transition-all duration-200 ${
+                    className={`py-2.5 sm:py-3 px-3 sm:px-4 border-b-3 font-semibold text-sm rounded-t-xl transition-all duration-200 whitespace-nowrap ${
                       activeTab === 'invoices'
                         ? 'border-orange-400 text-orange-600 bg-white shadow-lg'
                         : 'border-transparent text-gray-500 hover:text-orange-600 hover:bg-orange-50/50'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-colors duration-200 ${
                         activeTab === 'invoices'
                           ? 'bg-orange-100'
                           : 'bg-gray-100'
                       }`}>
-                        <DocumentTextIcon className={`h-5 w-5 ${
+                        <DocumentTextIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${
                           activeTab === 'invoices'
                             ? 'text-orange-600'
                             : 'text-gray-500'
                         }`} />
                       </div>
-                      <span>{t('profile.invoices')}</span>
+                      <span className="text-xs sm:text-sm">{t('profile.invoices')}</span>
                     </div>
                   </button>
                 </nav>
-              </div>
-
-              {/* Tab Content */}
-              <div className="p-8">                {activeTab === 'reservations' && (
+              </div>              {/* Tab Content */}
+              <div className="p-4 sm:p-6 lg:p-8">{activeTab === 'reservations' && (
                   <div>
                     {reservations.length === 0 ? (
                       <div className="text-center py-16">
@@ -500,32 +495,31 @@ export const Profile: React.FC = () => {
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                             className="bg-gradient-to-r from-orange-50/60 to-amber-50/60 border border-orange-100 rounded-2xl p-6 hover:shadow-lg transition-all duration-300"
-                          >
-                            <div className="flex items-start justify-between">
+                          >                            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                               <div className="flex-1">
-                                <div className="flex items-center space-x-4 mb-4">
-                                  <div className="w-14 h-14 bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg">
-                                    <span className="text-2xl text-white">🏨</span>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                                  <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg">
+                                      <span className="text-2xl text-white">🏨</span>
+                                    </div>
+                                    <div>
+                                      <h3 className="text-xl font-bold text-gray-900 mb-1">
+                                        {reservation.hotelName}
+                                      </h3>
+                                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                                        reservation.status === 'confirmed'
+                                          ? 'text-emerald-700 bg-emerald-100 border border-emerald-200'
+                                          : reservation.status === 'pending'
+                                          ? 'text-amber-700 bg-amber-100 border border-amber-200'
+                                          : 'text-red-700 bg-red-100 border border-red-200'
+                                      }`}>
+                                        {t(`reservations.status.${reservation.status}`)}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-1">
-                                      {reservation.hotelName}
-                                    </h3>
-                                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                                      reservation.status === 'confirmed'
-                                        ? 'text-emerald-700 bg-emerald-100 border border-emerald-200'
-                                        : reservation.status === 'pending'
-                                        ? 'text-amber-700 bg-amber-100 border border-amber-200'
-                                        : 'text-red-700 bg-red-100 border border-red-200'
-                                    }`}>
-                                      {t(`reservations.status.${reservation.status}`)}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                                </div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
                                   <div className="bg-white/70 rounded-xl p-4 border border-orange-100/50">
-                                    <div className="flex items-center space-x-3">
+                                    <div className="flex items-center gap-3">
                                       <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                                         <CalendarIcon className="h-5 w-5 text-blue-600" />
                                       </div>
@@ -537,7 +531,7 @@ export const Profile: React.FC = () => {
                                   </div>
 
                                   <div className="bg-white/70 rounded-xl p-4 border border-orange-100/50">
-                                    <div className="flex items-center space-x-3">
+                                    <div className="flex items-center gap-3">
                                       <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                                         <CalendarIcon className="h-5 w-5 text-purple-600" />
                                       </div>
@@ -548,8 +542,8 @@ export const Profile: React.FC = () => {
                                     </div>
                                   </div>
 
-                                  <div className="bg-white/70 rounded-xl p-4 border border-orange-100/50">
-                                    <div className="flex items-center space-x-3">
+                                  <div className="bg-white/70 rounded-xl p-4 border border-orange-100/50 sm:col-span-2 lg:col-span-1">
+                                    <div className="flex items-center gap-3">
                                       <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                                         <UserIcon className="h-5 w-5 text-green-600" />
                                       </div>
@@ -559,10 +553,8 @@ export const Profile: React.FC = () => {
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-
-                                <div className="flex items-center justify-between bg-white/50 rounded-xl p-4 border border-orange-100/50">
-                                  <div className="flex items-center space-x-3">
+                                </div>                                <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/50 rounded-xl p-4 border border-orange-100/50 gap-3">
+                                  <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                       <ClockIcon className="h-4 w-4 text-gray-600" />
                                     </div>
@@ -571,15 +563,16 @@ export const Profile: React.FC = () => {
                                     </span>
                                   </div>
                                 </div>
-                              </div>
-
-                              {reservation.status !== 'cancelled' && (
+                              </div>                              {reservation.status !== 'cancelled' && (
                                 <button
                                   onClick={() => handleCancelReservation(reservation._id)}
-                                  className="ml-6 w-12 h-12 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors duration-200 group"
+                                  className="w-full sm:w-auto lg:w-12 lg:h-12 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors duration-200 group px-4 py-2 lg:p-0"
                                   title={t('profile.cancelReservation')}
                                 >
                                   <TrashIcon className="h-5 w-5 text-red-600 group-hover:text-red-700" />
+                                  <span className="ml-2 lg:hidden text-sm font-medium text-red-600 group-hover:text-red-700">
+                                    {t('profile.cancelReservation')}
+                                  </span>
                                 </button>
                               )}
                             </div>
@@ -609,9 +602,8 @@ export const Profile: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      <div>
-                        {/* Invoice Summary Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      <div>                        {/* Invoice Summary Stats */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                           <motion.div
                             initial={{ y: 20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -681,23 +673,23 @@ export const Profile: React.FC = () => {
                                   ? 'from-emerald-50/80 to-green-50/80 border-emerald-200/50'
                                   : 'from-orange-50/80 to-amber-50/80 border-orange-200/50'
                               }`}
-                            >                              <div className="flex items-start justify-between">
+                            >                              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                                 <div className="flex-1">
-                                  <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center space-x-4">
-                                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                                    <div className="flex items-center gap-4">
+                                      <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-lg ${
                                         invoice.paymentStatus === 'paid'
                                           ? 'bg-gradient-to-r from-emerald-400 to-green-400'
                                           : 'bg-gradient-to-r from-orange-400 to-amber-400'
                                       }`}>
-                                        <DocumentTextIcon className="h-8 w-8 text-white" />
+                                        <DocumentTextIcon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                                       </div>
                                       <div>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-1">
+                                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
                                           {t('profile.invoiceNumber')} #{invoice.invoiceNumber}
                                         </h3>
                                         {invoice.paymentStatus === 'paid' && (
-                                          <div className="flex items-center space-x-2 bg-emerald-100 px-3 py-1 rounded-full">
+                                          <div className="flex items-center gap-2 bg-emerald-100 px-3 py-1 rounded-full">
                                             <CheckCircleIcon className="h-4 w-4 text-emerald-600" />
                                             <span className="text-sm font-medium text-emerald-800">
                                               {t('profile.completed')}
@@ -724,8 +716,7 @@ export const Profile: React.FC = () => {
                                         <span className="text-lg">🏨</span>
                                       </div>
                                       {t('profile.bookingDetails')}
-                                    </h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    </h4>                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                       <div className="bg-white/80 rounded-lg p-4 border border-blue-100/50">
                                         <span className="text-sm text-blue-600 font-medium">{t('profile.hotelName')}</span>
                                         <p className="font-bold text-gray-900 text-lg">{invoice.hotelName}</p>
@@ -735,12 +726,9 @@ export const Profile: React.FC = () => {
                                         <p className="font-bold text-gray-900 text-lg">{invoice.clientName}</p>
                                       </div>
                                     </div>
-                                  </div>
-
-                                  {/* Payment Details */}
-                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                    <div className="bg-white/70 rounded-xl p-4 border border-white/50 shadow-sm">
-                                      <div className="flex items-center space-x-3">
+                                  </div>                                  {/* Payment Details */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">                                    <div className="bg-white/70 rounded-xl p-4 border border-white/50 shadow-sm">
+                                      <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                                           <CreditCardIcon className="h-5 w-5 text-green-600" />
                                         </div>
@@ -753,7 +741,7 @@ export const Profile: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="bg-white/70 rounded-xl p-4 border border-white/50 shadow-sm">
-                                      <div className="flex items-center space-x-3">
+                                      <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                                           <CalendarIcon className="h-5 w-5 text-blue-600" />
                                         </div>
@@ -764,7 +752,7 @@ export const Profile: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="bg-white/70 rounded-xl p-4 border border-white/50 shadow-sm">
-                                      <div className="flex items-center space-x-3">
+                                      <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                                           <ClockIcon className="h-5 w-5 text-purple-600" />
                                         </div>
@@ -773,10 +761,9 @@ export const Profile: React.FC = () => {
                                           <p className="font-semibold text-gray-900">{formatDate(invoice.dueDate)}</p>
                                         </div>
                                       </div>
-                                    </div>
-                                    {invoice.paymentStatus === 'paid' && invoice.paymentDetails?.paidAt && (
-                                      <div className="bg-white/70 rounded-xl p-4 border border-white/50 shadow-sm">
-                                        <div className="flex items-center space-x-3">
+                                    </div>                                    {invoice.paymentStatus === 'paid' && invoice.paymentDetails?.paidAt && (
+                                      <div className="bg-white/70 rounded-xl p-4 border border-white/50 shadow-sm sm:col-span-2 lg:col-span-1">
+                                        <div className="flex items-center gap-3">
                                           <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                                             <CheckCircleIcon className="h-5 w-5 text-emerald-600" />
                                           </div>
@@ -789,17 +776,15 @@ export const Profile: React.FC = () => {
                                         </div>
                                       </div>
                                     )}
-                                  </div>
-
-                                  {invoice.description && (
+                                  </div>                                  {invoice.description && (
                                     <div className="mb-6 p-4 bg-white/70 rounded-xl border border-white/50 shadow-sm">
-                                      <div className="flex items-center space-x-3 mb-2">
+                                      <div className="flex items-center gap-3 mb-2">
                                         <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                           <DocumentTextIcon className="h-4 w-4 text-gray-600" />
                                         </div>
                                         <span className="text-sm font-bold text-gray-700">{t('profile.description')}</span>
                                       </div>
-                                      <p className="text-gray-900 ml-11 font-medium">{invoice.description}</p>
+                                      <p className="text-gray-900 ml-0 sm:ml-11 font-medium">{invoice.description}</p>
                                     </div>
                                   )}
 
@@ -811,8 +796,7 @@ export const Profile: React.FC = () => {
                                           <CheckCircleIcon className="h-5 w-5 text-white" />
                                         </div>
                                         {t('profile.paymentComplete')}
-                                      </h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      </h4>                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {invoice.paymentDetails.paymentMethod && (
                                           <div className="bg-white/70 rounded-lg p-4 border border-emerald-100/50">
                                             <span className="text-sm text-emerald-600 font-medium">{t('profile.paymentMethod')}</span>
@@ -831,10 +815,8 @@ export const Profile: React.FC = () => {
                                         )}
                                       </div>
                                     </div>
-                                  )}
-
-                                  <div className="flex items-center justify-between bg-white/50 rounded-xl p-4 border border-white/50">
-                                    <div className="flex items-center space-x-3 text-sm text-gray-600">
+                                  )}                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/50 rounded-xl p-4 border border-white/50 gap-4">
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
                                       <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                         <ClockIcon className="h-4 w-4 text-gray-500" />
                                       </div>
@@ -843,12 +825,12 @@ export const Profile: React.FC = () => {
                                       </span>
                                     </div>
 
-                                    <div className="flex space-x-3">
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                       {invoice.paymentStatus === 'unpaid' && (
                                         <button
                                           onClick={() => handlePayNow(invoice._id)}
                                           disabled={paymentLoading === invoice._id}
-                                          className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg"
+                                          className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg text-sm sm:text-base"
                                         >
                                           {paymentLoading === invoice._id ? (
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -865,7 +847,7 @@ export const Profile: React.FC = () => {
                                       )}
                                       <button
                                         onClick={() => handleViewInvoice(invoice._id)}
-                                        className="border border-orange-200 text-orange-700 px-5 py-3 rounded-xl hover:bg-orange-50 transition-colors duration-200 flex items-center space-x-2 font-semibold"
+                                        className="w-full sm:w-auto border border-orange-200 text-orange-700 px-4 sm:px-5 py-3 rounded-xl hover:bg-orange-50 transition-colors duration-200 flex items-center justify-center gap-2 font-semibold text-sm sm:text-base"
                                       >
                                         <DocumentTextIcon className="h-5 w-5" />
                                         <span>{t('profile.viewInvoice')}</span>
@@ -873,7 +855,7 @@ export const Profile: React.FC = () => {
                                       {invoice.paymentStatus === 'paid' && (
                                         <button
                                           onClick={() => handleDownloadReceipt(invoice._id)}
-                                          className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-5 py-3 rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 flex items-center space-x-2 font-semibold shadow-lg"
+                                          className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 sm:px-5 py-3 rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 flex items-center justify-center gap-2 font-semibold shadow-lg text-sm sm:text-base"
                                         >
                                           <DocumentTextIcon className="h-5 w-5" />
                                           <span>{t('profile.downloadReceipt')}</span>
