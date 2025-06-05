@@ -304,19 +304,22 @@ export const Navbar: React.FC = () => {
                           <span className="text-gray-700 font-medium group-hover:text-red-600">{t('nav.logout')}</span>                        </button>
                       </div>
                     </motion.div>
-                  )}
-              </motion.div>
-            ) : (              <motion.div
+                  )}              </motion.div>
+            ) : (
+              <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.6 }}
                 className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}
-              ><motion.div
+              >
+                <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                >                  <Link
+                  className="relative z-50"
+                >
+                  <Link
                     to="/login"
-                    className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg`}
+                    className={`group relative flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200/50 hover:border-orange-300/70 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50`}
                   >
                     <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <UserIcon className="h-4 w-4 text-white" />
@@ -324,16 +327,15 @@ export const Navbar: React.FC = () => {
                     <span className="text-gray-700 font-semibold group-hover:text-gray-900 transition-colors duration-300">
                       {t('nav.login')}
                     </span>
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-400/10 to-amber-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </Link>
-                </motion.div>
-
-                <motion.div
+                </motion.div>                <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                >                  <Link
+                  className="relative z-50"
+                >
+                  <Link
                     to="/register"
-                    className={`group flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg`}
+                    className={`group relative flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 border border-orange-300 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300/50`}
                   >
                     <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                       <UserIcon className="h-4 w-4 text-white" />
@@ -341,7 +343,6 @@ export const Navbar: React.FC = () => {
                     <span className="text-white font-semibold transition-colors duration-300">
                       {t('nav.register')}
                     </span>
-                    <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                   </Link>
                 </motion.div>
               </motion.div>
