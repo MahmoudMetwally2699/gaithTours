@@ -310,21 +310,20 @@ export const Hotels: React.FC = () => {
               <div
                 onClick={() => setShowHotelSelection(true)}
                 className="border-2 border-dashed border-orange-300/70 rounded-xl p-6 cursor-pointer hover:border-orange-400 hover:bg-orange-50/50 transition-all duration-300 group"
-              >                {selectedHotel ? (
-                  <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-6`}>
-                    <div className="relative">
+              >                {selectedHotel ? (                  <div className={`flex flex-col sm:flex-row items-start sm:items-center ${isRTL ? 'sm:space-x-reverse' : ''} sm:space-x-4 space-y-4 sm:space-y-0`}>
+                    <div className="relative flex-shrink-0">
                       <img
                         src={selectedHotel.image || '/placeholder-hotel.jpg'}
                         alt={selectedHotel.name}
-                        className="w-20 h-20 rounded-xl object-cover shadow-lg"
+                        className="w-24 h-24 sm:w-20 sm:h-20 rounded-xl object-cover shadow-lg"
                       />
                       <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <CheckCircleIcon className="h-4 w-4 text-white" />
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-xl font-bold text-gray-900 mb-1">{selectedHotel.name}</h4>
-                      <p className="text-gray-600 mb-2">{selectedHotel.address}, {selectedHotel.city}</p>
+                    <div className="flex-1 min-w-0 w-full sm:w-auto">
+                      <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 truncate">{selectedHotel.name}</h4>
+                      <p className="text-sm sm:text-base text-gray-600 mb-2 line-clamp-2">{selectedHotel.address}, {selectedHotel.city}</p>
                       <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-4`}>
                         <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-1`}>
                           {[...Array(5)].map((_, i) => (
@@ -342,7 +341,8 @@ export const Hotels: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                    </div><div className="text-orange-600 group-hover:text-orange-700">
+                    </div>
+                    <div className="text-orange-600 group-hover:text-orange-700 self-center sm:self-auto">
                       <span className="text-sm font-medium">{t('common.clickToChange', 'Click to change')}</span>
                     </div>
                   </div>
@@ -407,38 +407,39 @@ export const Hotels: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{t('hotels.travelDates', 'Travel Dates')}</h3>
                 <span className="text-red-500 text-sm">*</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">                  <label className="block text-sm font-medium text-gray-700">
+              </div>              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.checkInDate', 'Check-in Date')}
                   </label>
-                  <div className="relative">                    <input
+                  <div className="relative">
+                    <input
                       type="date"
                       name="checkIn"
                       value={formData.checkIn}
                       onChange={handleInputChange}
                       required
                       min={new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 ${isRTL ? 'pr-10 sm:pr-12' : 'pl-10 sm:pl-12'} border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base`}
                     />
-                    <CalendarIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-500`} />
+                    <CalendarIcon className={`absolute ${isRTL ? 'right-3 sm:right-4' : 'left-3 sm:left-4'} top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-purple-500`} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.checkOutDate', 'Check-out Date')}
                   </label>
-                  <div className="relative">                    <input
+                  <div className="relative">
+                    <input
                       type="date"
                       name="checkOut"
                       value={formData.checkOut}
                       onChange={handleInputChange}
                       required
                       min={formData.checkIn || new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 ${isRTL ? 'pr-10 sm:pr-12' : 'pl-10 sm:pl-12'} border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base`}
                     />
-                    <CalendarIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-500`} />
+                    <CalendarIcon className={`absolute ${isRTL ? 'right-3 sm:right-4' : 'left-3 sm:left-4'} top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-purple-500`} />
                   </div>
                 </div>
               </div>
@@ -449,14 +450,13 @@ export const Hotels: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{t('hotels.accommodationDetails', 'Accommodation Details')}</h3>
                 <span className="text-red-500 text-sm">*</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              </div>              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.numberOfGuests', 'Number of Guests')}
                   </label>
-                  <div className="relative">                    <input
+                  <div className="relative">
+                    <input
                       type="number"
                       name="guests"
                       value={formData.guests}
@@ -464,16 +464,17 @@ export const Hotels: React.FC = () => {
                       min="1"
                       max="10"
                       required
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 ${isRTL ? 'pr-10 sm:pr-12' : 'pl-10 sm:pl-12'} border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base`}
                     />
-                    <UserGroupIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500`} />
+                    <UserGroupIcon className={`absolute ${isRTL ? 'right-3 sm:right-4' : 'left-3 sm:left-4'} top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-cyan-500`} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.numberOfRooms', 'Number of Rooms')}
                   </label>
-                  <div className="relative">                    <input
+                  <div className="relative">
+                    <input
                       type="number"
                       name="rooms"
                       value={formData.rooms}
@@ -481,9 +482,9 @@ export const Hotels: React.FC = () => {
                       min="1"
                       max="5"
                       required
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 ${isRTL ? 'pr-10 sm:pr-12' : 'pl-10 sm:pl-12'} border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base`}
                     />
-                    <HomeIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-cyan-500`} />
+                    <HomeIcon className={`absolute ${isRTL ? 'right-3 sm:right-4' : 'left-3 sm:left-4'} top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-cyan-500`} />
                   </div>
                 </div>
               </div>
@@ -494,90 +495,113 @@ export const Hotels: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{t('personalInformation.title', 'Personal Information')}</h3>
                 <span className="text-red-500 text-sm">*</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('personalInformation.touristName', 'Tourist Name')} *
-                  </label>
-                  <div className="relative">                    <input
+              </div>              <div className="space-y-3 sm:space-y-4">                {/* Tourist Name Card */}
+                <div className={`flex items-start gap-3 p-3 sm:p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-rose-200/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-6">
+                    <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" />
+                  </div>                  <div className="flex-1 min-w-0">
+                    <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {t('personalInformation.touristName', 'Tourist Name')} *
+                    </label>                    <input
                       type="text"
                       name="touristName"
                       value={formData.touristName}
                       onChange={handleInputChange}
                       required
                       placeholder={t('personalInformation.enterFullName', 'Enter your full name')}
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      className="w-full px-4 py-2 sm:py-2.5 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/80 transition-all duration-200 text-sm"
+                      style={{
+                        minWidth: '200px',
+                        textAlign: isRTL ? 'right' : 'left',
+                        direction: isRTL ? 'rtl' : 'ltr'
+                      }}
                     />
-                    <UserIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500`} />
                   </div>
-                </div>                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('personalInformation.phoneNumber', 'Phone Number')} *
-                  </label>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <div className="w-full sm:w-1/3">
+                </div>                {/* Phone Number Card */}
+                <div className={`flex items-start gap-3 p-3 sm:p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-rose-200/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-6">
+                    <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" />
+                  </div>                  <div className="flex-1 min-w-0">
+                    <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {t('personalInformation.phoneNumber', 'Phone Number')} *
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full">
+                      <div className="w-full sm:w-1/3 min-w-0">
+                        <ReactCountryDropdown
+                          defaultCountry={formData.phoneCountryCode || 'SA'}
+                          onSelect={(country) => {
+                            if (country && country.callingCodes && country.callingCodes[0]) {
+                              setFormData({
+                                ...formData,
+                                phoneCountryCode: country.code
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="w-full sm:w-2/3 min-w-0">                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          required
+                          placeholder={t('personalInformation.enterPhoneNumber', 'Enter phone number')}
+                          className="w-full px-4 py-2 sm:py-2.5 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/80 transition-all duration-200 text-sm"
+                          style={{
+                            minWidth: '120px',
+                            textAlign: isRTL ? 'right' : 'left',
+                            direction: isRTL ? 'rtl' : 'ltr'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>                {/* Nationality Card */}
+                <div className={`flex items-start gap-3 p-3 sm:p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-rose-200/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-6">
+                    <svg className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>                  <div className="flex-1 min-w-0">
+                    <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {t('personalInformation.nationality', 'Nationality')} *
+                    </label>
+                    <div className="w-full">
                       <ReactCountryDropdown
-                        defaultCountry={formData.phoneCountryCode || 'SA'}
+                        defaultCountry={formData.nationalityCountry || 'SA'}
                         onSelect={(country) => {
-                          if (country && country.callingCodes && country.callingCodes[0]) {
+                          if (country && country.citizen && country.code) {
                             setFormData({
                               ...formData,
-                              phoneCountryCode: country.code
+                              nationalityCountry: country.code,
+                              nationality: country.citizen
                             });
                           }
                         }}
                       />
                     </div>
-                    <div className="w-full sm:w-2/3 relative">
-                      <input                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        required
-                        placeholder={t('personalInformation.enterPhoneNumber', 'Enter your phone number')}
-                        className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
-                      />
-                      <PhoneIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500`} />
-                    </div>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('personalInformation.nationality', 'Nationality')} *
-                  </label>
-                  <div className="relative">
-                    <ReactCountryDropdown
-                      defaultCountry={formData.nationalityCountry || 'SA'}
-                      onSelect={(country) => {
-                        if (country && country.citizen && country.code) {
-                          setFormData({
-                            ...formData,
-                            nationalityCountry: country.code,
-                            nationality: country.citizen
-                          });
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    {t('personalInformation.emailAddress', 'Email Address')} *
-                  </label>
-                  <div className="relative">                    <input
+                </div>{/* Email Address Card */}
+                <div className={`flex items-start gap-3 p-3 sm:p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-rose-200/50 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-6">
+                    <EnvelopeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-rose-600" />
+                  </div>                  <div className="flex-1 min-w-0">
+                    <label className={`block text-xs sm:text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {t('personalInformation.emailAddress', 'Email Address')} *
+                    </label>                    <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      placeholder={t('personalInformation.enterEmailAddress', 'Enter your email address')}
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-rose-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      placeholder={t('personalInformation.enterEmailAddress', 'Enter email address')}
+                      className="w-full px-4 py-2 sm:py-2.5 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white/80 transition-all duration-200 text-sm"
+                      style={{
+                        minWidth: '200px',
+                        textAlign: isRTL ? 'right' : 'left',
+                        direction: isRTL ? 'rtl' : 'ltr'
+                      }}
                     />
-                    <EnvelopeIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-rose-500`} />
                   </div>
                 </div>
               </div>
@@ -588,26 +612,25 @@ export const Hotels: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900">{t('hotels.bookingDetails', 'Booking Details')}</h3>
                 <span className="text-red-500 text-sm">*</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              </div>              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.expectedCheckInTime', 'Expected Check-in Time')}
                   </label>
-                  <div className="relative">                    <input
+                  <div className="relative">
+                    <input
                       type="time"
                       name="expectedCheckInTime"
                       value={formData.expectedCheckInTime}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200`}
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 ${isRTL ? 'pr-10 sm:pr-12' : 'pl-10 sm:pl-12'} border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base`}
                     />
-                    <ClockIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-500`} />
+                    <ClockIcon className={`absolute ${isRTL ? 'right-3 sm:right-4' : 'left-3 sm:left-4'} top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-indigo-500`} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.roomType', 'Room Type')} *
                   </label>
                   <select
@@ -615,8 +638,9 @@ export const Hotels: React.FC = () => {
                     value={formData.roomType}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
-                  >                    <option value="single">{t('hotels.roomTypes.single', 'Single Room')}</option>
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base"
+                  >
+                    <option value="single">{t('hotels.roomTypes.single', 'Single Room')}</option>
                     <option value="double">{t('hotels.roomTypes.double', 'Double Room')}</option>
                     <option value="twin">{t('hotels.roomTypes.twin', 'Twin Room')}</option>
                     <option value="triple">{t('hotels.roomTypes.triple', 'Triple Room')}</option>
@@ -628,7 +652,7 @@ export const Hotels: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.stayType', 'Stay Type')} *
                   </label>
                   <select
@@ -636,8 +660,9 @@ export const Hotels: React.FC = () => {
                     value={formData.stayType}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200"
-                  >                    <option value="room_only">{t('hotels.stayTypes.roomOnly', 'Room Only')}</option>
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 text-sm sm:text-base"
+                  >
+                    <option value="room_only">{t('hotels.stayTypes.roomOnly', 'Room Only')}</option>
                     <option value="bed_breakfast">{t('hotels.stayTypes.bedBreakfast', 'Bed & Breakfast')}</option>
                     <option value="half_board">{t('hotels.stayTypes.halfBoard', 'Half Board')}</option>
                     <option value="full_board">{t('hotels.stayTypes.fullBoard', 'Full Board')}</option>
@@ -646,16 +671,18 @@ export const Hotels: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 truncate">
                     {t('hotels.paymentMethod', 'Payment Method')} *
                   </label>
-                  <div className="relative">                    <select
+                  <div className="relative">
+                    <select
                       name="paymentMethod"
                       value={formData.paymentMethod}
                       onChange={handleInputChange}
                       required
-                      className={`w-full px-4 py-3 ${isRTL ? 'pr-12' : 'pl-12'} border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 appearance-none`}
-                    >                      <option value="">{t('hotels.selectPaymentMethod', 'Select Payment Method')}</option>
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 ${isRTL ? 'pr-10 sm:pr-12' : 'pl-10 sm:pl-12'} border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/70 backdrop-blur-sm transition-all duration-200 appearance-none text-sm sm:text-base`}
+                    >
+                      <option value="">{t('hotels.selectPaymentMethod', 'Select Payment Method')}</option>
                       <option value="credit_card">{t('hotels.paymentMethods.creditCard', 'Credit Card')}</option>
                       <option value="debit_card">{t('hotels.paymentMethods.debitCard', 'Debit Card')}</option>
                       <option value="bank_transfer">{t('hotels.paymentMethods.bankTransfer', 'Bank Transfer')}</option>
@@ -663,7 +690,7 @@ export const Hotels: React.FC = () => {
                       <option value="digital_wallet">{t('hotels.paymentMethods.digitalWallet', 'Digital Wallet')}</option>
                       <option value="check">{t('hotels.paymentMethods.check', 'Check')}</option>
                     </select>
-                    <CreditCardIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-indigo-500`} />
+                    <CreditCardIcon className={`absolute ${isRTL ? 'right-3 sm:right-4' : 'left-3 sm:left-4'} top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-indigo-500`} />
                   </div>
                 </div>
               </div>

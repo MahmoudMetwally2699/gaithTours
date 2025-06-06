@@ -693,8 +693,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                                       </svg>
                                     </div>
                                   )}
-                                </div>
-                                <div className="flex-1 min-w-0">
+                                </div>                                <div className="flex-1 min-w-0 max-w-0">
                                   <p className="text-sm font-bold text-gray-900 truncate">
                                     {file.fileName}
                                   </p>
@@ -702,7 +701,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white text-gray-700 shadow-sm">
                                       {file.fileType.toUpperCase()}
                                     </span>
-                                    <span className="text-xs text-gray-500 font-medium">
+                                    <span className="text-xs text-gray-500 font-medium truncate">
                                       {(file.size / 1024 / 1024).toFixed(2)} MB
                                     </span>
                                   </div>

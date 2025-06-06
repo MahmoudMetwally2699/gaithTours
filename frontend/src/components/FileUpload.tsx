@@ -195,18 +195,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {files.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Uploaded Files ({files.length}/{maxFiles})</h4>
-          {files.map((file, index) => (
-            <div
+          {files.map((file, index) => (            <div
               key={`${file.publicId}-${index}`}
               className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
                 {getFileIcon(file.fileType)}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 max-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {file.fileName}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 truncate">
                     {file.fileType.toUpperCase()} • Uploaded {new Date(file.uploadedAt).toLocaleDateString()}
                   </p>
                 </div>

@@ -1121,10 +1121,9 @@ export const AdminDashboard: React.FC = () => {
                             <div className="text-red-500">📄</div>
                           ) : (
                             <div className="text-blue-500">🖼️</div>
-                          )}
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{attachment.fileName}</p>
-                            <p className="text-xs text-gray-500">
+                          )}                          <div>
+                            <p className="text-sm font-medium text-gray-900 truncate pr-2">{attachment.fileName}</p>
+                            <p className="text-xs text-gray-500 truncate pr-2">
                               {attachment.fileType.toUpperCase()} • {(attachment.size / 1024 / 1024).toFixed(2)} MB •
                               Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
                             </p>
