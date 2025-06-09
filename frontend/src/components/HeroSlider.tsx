@@ -10,31 +10,36 @@ const slides = [
     id: 1,
     image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp',
     titleKey: 'hero.riyadh.title',
-    subtitleKey: 'hero.riyadh.subtitle'
+    subtitleKey: 'hero.riyadh.subtitle',
+    location: 'Riyadh, Saudi Arabia'
   },
   {
     id: 2,
     image: '/hero/Djeddah.jpg',
     titleKey: 'hero.jeddah.title',
-    subtitleKey: 'hero.jeddah.subtitle'
+    subtitleKey: 'hero.jeddah.subtitle',
+    location: 'Jeddah, Saudi Arabia'
   },
   {
     id: 3,
-    image: '/hero/At-Turaif.webp',
+    image: '/hero/2158333.jpg',
     titleKey: 'hero.diriyah.title',
-    subtitleKey: 'hero.diriyah.subtitle'
+    subtitleKey: 'hero.diriyah.subtitle',
+    location: 'Diriyah, Saudi Arabia'
   },
   {
     id: 4,
     image: '/hero/al-ul-old-town.jpeg',
     titleKey: 'hero.alula.title',
-    subtitleKey: 'hero.alula.subtitle'
+    subtitleKey: 'hero.alula.subtitle',
+    location: 'AlUla, Saudi Arabia'
   },
   {
     id: 5,
-    image: '/hero/salwa-palace-1024x768.jpg',
+    image: '/hero/98.jpg',
     titleKey: 'hero.heritage.title',
-    subtitleKey: 'hero.heritage.subtitle'
+    subtitleKey: 'hero.heritage.subtitle',
+    location: 'Saudi Arabia'
   }
 ];
 
@@ -93,38 +98,46 @@ export const HeroSlider: React.FC = () => {
         >
           <div className="absolute inset-0 bg-black bg-opacity-40" />
         </div>
-      </motion.div>
-
-      {/* Content */}
+      </motion.div>      {/* Content */}
       <div className="relative z-10 h-full flex items-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <motion.div
-            key={`content-${currentSlide}`}
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className={`text-center text-white ${isRTL ? 'text-right' : 'text-left'} max-w-4xl mx-auto`}
-          >
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-              {t(slides[currentSlide].titleKey)}
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 opacity-90 leading-relaxed">
-              {t(slides[currentSlide].subtitleKey)}
-            </p>            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={handleBookNow}
-                className="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
-                {t('hero.bookNow')}
-              </button>
-              <button
-                onClick={handleExploreMore}
-                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300 transform hover:scale-105"
-              >
-                {t('hero.exploreMore')}
-              </button>
-            </div>
-          </motion.div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">          <div className="flex items-center justify-center min-h-full">
+            {/* Content */}
+            <motion.div
+              key={`content-${currentSlide}`}
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="text-white text-center max-w-4xl mx-auto"
+            >
+              {/* Location Badge */}
+              <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+                <span className="text-sm font-medium">{slides[currentSlide].location || t('hero.location')}</span>
+              </div>              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight whitespace-nowrap">
+                {t(slides[currentSlide].titleKey)}
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl mb-8 opacity-90 leading-relaxed max-w-3xl mx-auto">
+                {t(slides[currentSlide].subtitleKey)}
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <motion.button
+                  onClick={handleBookNow}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  {t('hero.bookNow')}
+                </motion.button>
+                <motion.button
+                  onClick={handleExploreMore}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="border-2 border-white text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300 backdrop-blur-sm"
+                >
+                  {t('hero.exploreMore')}
+                </motion.button>
+              </div></motion.div>
+          </div>
         </div>
       </div>
 

@@ -25,6 +25,13 @@ export const en = {
     description: 'From luxury hotels to historic destinations, we make your travel dreams come true',
     bookNow: 'Book Now',
     exploreMore: 'Explore More',
+    quickBook: 'Quick Booking',
+    destination: 'Destination',
+    selectDestination: 'Select destination',
+    checkIn: 'Check-in',
+    guests: 'Guests',
+    searchTours: 'Search Tours',
+    scrollDown: 'Scroll',
     riyadh: {
       title: 'Experience Riyadh\'s Grandeur',
       subtitle: 'Discover the capital\'s modern skyline and rich cultural heritage'
@@ -110,47 +117,134 @@ export const en = {
 
   // Mission
   mission: {
-    title: 'Our Mission',
-    description: 'At Ghaith Tours, our mission is to simplify and enrich the travel experience by providing seamless hotel booking services and tailored travel solutions. We are committed to delivering competitive prices, reliable support, and a user-friendly digital platform that empowers both individuals and businesses to explore the world with ease and confidence.'
-  },
-
-  // Why Choose Us
-  whyChooseUs: {
-    title: 'Why Choose Gaith Tours?',
-    subtitle: 'Experience the difference with our exceptional service and expertise',
-    secure: {
-      title: 'Secure Booking',
-      description: 'Your transactions are protected with advanced encryption and secure payment gateways'
+    sectionTitle: 'Our Mission',
+    title: 'Creating Unforgettable Journeys',
+    description: 'At Gaith Tours, we are dedicated to crafting extraordinary travel experiences that connect you with the rich heritage, stunning landscapes, and warm hospitality of Saudi Arabia.',
+    statement: {
+      title: 'Our Core Mission',
+      text: 'To be the leading travel companion in Saudi Arabia, providing authentic, memorable, and transformative experiences that showcase the Kingdom\'s magnificent culture, history, and natural beauty while ensuring the highest standards of service and sustainability.'
     },
-    bestPrice: {
-      title: 'Best Price Guarantee',
-      description: 'We offer competitive rates and price matching to ensure you get the best value'
+    discovery: {
+      title: 'Cultural Discovery',
+      description: 'Immerse yourself in Saudi Arabia\'s rich heritage, from ancient archaeological sites to vibrant modern cities, guided by our expert local knowledge.'
     },
-    support: {
-      title: '24/7 Support',
-      description: 'Our dedicated support team is available round the clock to assist you'
+    experiences: {
+      title: 'Authentic Experiences',
+      description: 'We create genuine connections with local culture, traditions, and people, ensuring every journey tells a unique and meaningful story.'
     },
-    expert: {
-      title: 'Expert Guidance',
-      description: 'Our travel experts provide personalized recommendations for your perfect trip'
+    excellence: {
+      title: 'Service Excellence',
+      description: 'Our commitment to exceptional service means every detail is carefully planned and executed to exceed your expectations at every step.'
     },
-    destinations: {
-      title: 'Global Destinations',
-      description: 'Access to thousands of hotels and destinations worldwide'
-    },
-    personalized: {
-      title: 'Personalized Service',
-      description: 'Tailored travel solutions to match your preferences and budget'
+    community: {
+      title: 'Community Impact',
+      description: 'We support local communities and promote sustainable tourism practices that preserve Saudi Arabia\'s natural and cultural treasures for future generations.'
+    },    vision: {
+      title: 'Our Vision for the Future',
+      text: 'To become the premier gateway for discovering Saudi Arabia, inspiring travelers from around the world to explore the Kingdom\'s hidden gems while fostering cross-cultural understanding and appreciation.',
+      startJourney: 'Start Your Journey'
     }
   },
 
-  // Stats
-  stats: {
-    happyCustomers: 'Happy Customers',
-    destinations: 'Destinations',
-    yearsExperience: 'Years Experience',
-    support: '24/7 Support'
+  // Our Services Section
+  services: {
+    sectionTitle: 'Our Services',
+    title: 'Comprehensive Travel Solutions',
+    description: 'From accommodation to guided tours, we provide everything you need for an exceptional Saudi Arabian adventure.',
+    learnMore: 'Learn More',
+    accommodation: {
+      title: 'Premium Accommodation',
+      description: 'Carefully selected hotels and resorts that combine luxury, comfort, and authentic Saudi hospitality.',
+      feature1: 'Luxury hotels & boutique properties',
+      feature2: '24/7 concierge service',
+      feature3: 'Best rate guarantee'
+    },
+    tours: {
+      title: 'Guided Tours & Experiences',
+      description: 'Expert-led tours that unveil the secrets and stories of Saudi Arabia\'s most fascinating destinations.',
+      feature1: 'Professional multilingual guides',
+      feature2: 'Small group & private options',
+      feature3: 'UNESCO World Heritage sites'
+    },
+    planning: {
+      title: 'Custom Trip Planning',
+      description: 'Personalized itineraries designed to match your interests, schedule, and travel style.',
+      feature1: 'Tailored itinerary design',
+      feature2: 'Flexible scheduling options',
+      feature3: 'Personal travel consultant'
+    },
+    transport: {
+      title: 'Premium Transportation',
+      description: 'Comfortable, safe, and reliable transportation options for all your travel needs.',
+      feature1: 'Luxury vehicle fleet',
+      feature2: 'Professional drivers',
+      feature3: 'Airport transfers included'
+    },
+    guides: {
+      title: 'Expert Local Guides',
+      description: 'Knowledgeable guides who bring Saudi Arabia\'s history and culture to life.',
+      feature1: 'Certified cultural experts',
+      feature2: 'Multiple language support',
+      feature3: 'Insider local knowledge'
+    },
+    photography: {
+      title: 'Photography Services',
+      description: 'Professional photography to capture your unforgettable moments and Saudi Arabia\'s beauty.',
+      feature1: 'Professional photographers',
+      feature2: 'High-quality image delivery',
+      feature3: 'Drone photography available'
+    },
+    cta: {
+      title: 'Ready to Start Your Journey?',
+      description: 'Let us create an unforgettable Saudi Arabian adventure tailored just for you.',
+      button: 'Plan My Trip'
+    }
   },
+
+  // Why Choose Us Section (Enhanced)
+  whyChooseUs: {
+    sectionTitle: 'Why Choose Us',
+    title: 'Your Trusted Travel Partner',
+    description: 'Discover why thousands of travelers choose Gaith Tours for their Saudi Arabian adventures.',
+    learnMore: 'Learn More',
+    stats: {
+      happyCustomers: 'Happy Customers',
+      destinations: 'Destinations',
+      rating: 'Average Rating',
+      experience: 'Years Experience'
+    },
+    secure: {
+      title: 'Secure & Trusted',
+      description: 'Your safety and security are our top priorities. We maintain the highest standards of safety protocols and secure booking processes.'
+    },
+    bestPrice: {
+      title: 'Best Price Guarantee',
+      description: 'We offer competitive pricing with our best price guarantee. Find the same tour for less, and we\'ll match it.'
+    },
+    support: {
+      title: '24/7 Customer Support',
+      description: 'Our dedicated support team is available around the clock to assist you before, during, and after your journey.'
+    },
+    expert: {
+      title: 'Expert Local Guides',
+      description: 'Our certified guides are passionate locals who share insider knowledge and stories you won\'t find in guidebooks.'
+    },
+    destinations: {
+      title: 'Diverse Destinations',
+      description: 'From bustling cities to serene deserts, we offer access to Saudi Arabia\'s most spectacular and diverse destinations.'
+    },
+    personalized: {
+      title: 'Personalized Service',
+      description: 'Every journey is tailored to your preferences, ensuring a unique and memorable experience that exceeds expectations.'
+    },
+    cta: {
+      title: 'Experience the Gaith Tours Difference',
+      description: 'Join thousands of satisfied travelers who have discovered the magic of Saudi Arabia with us.',
+      primaryButton: 'Start Planning',
+      secondaryButton: 'Learn More'
+    }
+  },
+
   // Footer
   footer: {
     description: 'Your trusted partner for unforgettable travel experiences worldwide',

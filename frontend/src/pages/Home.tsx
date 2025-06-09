@@ -1,16 +1,16 @@
 import React from 'react';
 import { HeroSlider } from '../components/HeroSlider';
-import { HolidayPackages } from '../components/HolidayPackages';
-import { FeaturedHotels } from '../components/FeaturedHotels';
-import { WhyChooseUs } from '../components/WhyChooseUs';
+import { OurMissionModern } from '../components/OurMissionModern';
+import { WhyChooseUsModern } from '../components/WhyChooseUsFixed';
+import { OurServicesSimple } from '../components/OurServicesSimple';
 
 export const Home: React.FC = () => {
   return (
     <div className="min-h-screen">
       <HeroSlider />
-      <HolidayPackages />
-      <FeaturedHotels />
-      <WhyChooseUs />
+      <OurMissionModern />
+      <WhyChooseUsModern />
+      <OurServicesSimple />
     </div>
   );
 };
