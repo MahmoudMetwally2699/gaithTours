@@ -84,7 +84,7 @@ export const HeroSlider: React.FC = () => {
       history.push('/login');
     }
   };  return (
-    <div className="relative h-screen overflow-hidden">
+    <div className="relative h-screen min-h-[600px] sm:min-h-[700px] lg:min-h-screen overflow-hidden">
       {/* Background Image with Enhanced Overlay */}
       <motion.div
         key={currentSlide}
@@ -106,31 +106,27 @@ export const HeroSlider: React.FC = () => {
               background: `linear-gradient(to top, rgba(0,0,0,0.6), rgba(253, 202, 120, 0.1) 50%, rgba(255, 121, 2, 0.1))`
             }}
           />
-        </div>
-
-        {/* Animated gradient elements */}
+        </div>        {/* Animated gradient elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
             initial={{ x: '-100%', opacity: 0 }}
             animate={{ x: '100%', opacity: 0.3 }}
             transition={{ duration: 8, repeat: Infinity, repeatType: 'loop' }}
-            className="absolute top-1/4 w-96 h-96 rounded-full blur-3xl"
+            className="absolute top-1/4 w-48 h-48 sm:w-96 sm:h-96 rounded-full blur-2xl sm:blur-3xl"
             style={{ background: `linear-gradient(45deg, #FDCA78, #FF7902)` }}
           />
           <motion.div
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: '-100%', opacity: 0.2 }}
             transition={{ duration: 12, repeat: Infinity, repeatType: 'loop', delay: 2 }}
-            className="absolute bottom-1/4 right-0 w-80 h-80 rounded-full blur-3xl"
+            className="absolute bottom-1/4 right-0 w-40 h-40 sm:w-80 sm:h-80 rounded-full blur-2xl sm:blur-3xl"
             style={{ background: `linear-gradient(45deg, #F2932C, #F98F34)` }}
           />
         </div>
-      </motion.div>
-
-      {/* Content */}
+      </motion.div>      {/* Content */}
       <div className="relative z-10 h-full flex items-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="flex items-center justify-center min-h-full">
+          <div className="flex items-center justify-center min-h-full py-20 sm:py-16">
             {/* Content */}
             <motion.div
               key={`content-${currentSlide}`}
@@ -144,24 +140,22 @@ export const HeroSlider: React.FC = () => {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
-                className="inline-flex items-center bg-white/10 backdrop-blur-xl rounded-full px-6 py-3 mb-8 border border-white/20 shadow-2xl"
+                className="inline-flex items-center bg-white/10 backdrop-blur-xl rounded-full px-3 sm:px-6 py-2 sm:py-3 mb-4 sm:mb-8 border border-white/20 shadow-2xl"
                 style={{
                   background: `linear-gradient(135deg, rgba(253, 202, 120, 0.2), rgba(255, 121, 2, 0.1))`
                 }}
               >
                 <div
-                  className="w-2 h-2 rounded-full mr-3 animate-pulse"
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-2 sm:mr-3 animate-pulse"
                   style={{ backgroundColor: '#FDCA78' }}
                 />
-                <span className="text-base font-semibold tracking-wide">{slides[currentSlide].location || t('hero.location')}</span>
-              </motion.div>
-
-              {/* Enhanced Title with Gradient */}
+                <span className="text-sm sm:text-base font-semibold tracking-wide">{slides[currentSlide].location || t('hero.location')}</span>
+              </motion.div>              {/* Enhanced Title with Gradient */}
               <motion.h1
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight"
+                className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 lg:mb-8 leading-tight px-4 sm:px-0"
                 style={{
                   background: `linear-gradient(135deg, #FDCA78, #FF7902, #F2932C, #F98F34)`,
                   WebkitBackgroundClip: 'text',
@@ -178,23 +172,21 @@ export const HeroSlider: React.FC = () => {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.7 }}
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl mb-12 leading-relaxed max-w-4xl mx-auto text-white/90 font-light"
+                className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-6 sm:mb-8 lg:mb-12 leading-relaxed max-w-4xl mx-auto text-white/90 font-light px-4 sm:px-0"
               >
                 {t(slides[currentSlide].subtitleKey)}
-              </motion.p>
-
-              {/* Enhanced Action Buttons */}
+              </motion.p>              {/* Enhanced Action Buttons */}
               <motion.div
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
-                className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+                className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 sm:px-0"
               >
                 <motion.button
                   onClick={handleBookNow}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="group relative overflow-hidden text-white px-10 py-5 rounded-2xl text-xl font-bold transition-all duration-500 shadow-2xl hover:shadow-3xl transform"
+                  className="group relative overflow-hidden text-white px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 rounded-xl sm:rounded-2xl text-base sm:text-lg lg:text-xl font-bold transition-all duration-500 shadow-2xl hover:shadow-3xl transform w-full sm:w-auto max-w-xs sm:max-w-none"
                   style={{
                     background: `linear-gradient(135deg, #FDCA78, #FF7902, #F2932C, #F98F34)`,
                     boxShadow: '0 20px 40px rgba(253, 202, 120, 0.4)'
@@ -209,7 +201,7 @@ export const HeroSlider: React.FC = () => {
                   onClick={handleExploreMore}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="group relative border-2 border-white/40 text-white px-10 py-5 rounded-2xl text-xl font-bold transition-all duration-500 backdrop-blur-xl hover:backdrop-blur-sm overflow-hidden"
+                  className="group relative border-2 border-white/40 text-white px-6 sm:px-8 lg:px-10 py-3 sm:py-4 lg:py-5 rounded-xl sm:rounded-2xl text-base sm:text-lg lg:text-xl font-bold transition-all duration-500 backdrop-blur-xl hover:backdrop-blur-sm overflow-hidden w-full sm:w-auto max-w-xs sm:max-w-none"
                   style={{
                     background: `linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(253, 202, 120, 0.1))`,
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)'
@@ -233,7 +225,7 @@ export const HeroSlider: React.FC = () => {
         onClick={prevSlide}
         whileHover={{ scale: 1.1, x: isRTL ? 5 : -5 }}
         whileTap={{ scale: 0.9 }}
-        className={`absolute top-1/2 ${isRTL ? 'right-6' : 'left-6'} transform -translate-y-1/2 z-20 group overflow-hidden p-4 rounded-full transition-all duration-500 shadow-2xl hover:shadow-3xl`}
+        className={`absolute top-1/2 ${isRTL ? 'right-2 sm:right-4 lg:right-6' : 'left-2 sm:left-4 lg:left-6'} transform -translate-y-1/2 z-20 group overflow-hidden p-2 sm:p-3 lg:p-4 rounded-full transition-all duration-500 shadow-2xl hover:shadow-3xl`}
         style={{
           background: `linear-gradient(135deg, rgba(253, 202, 120, 0.2), rgba(255, 121, 2, 0.2))`,
           backdropFilter: 'blur(16px)',
@@ -245,9 +237,9 @@ export const HeroSlider: React.FC = () => {
           style={{ background: `linear-gradient(135deg, #FDCA78, #FF7902)` }}
         />
         {isRTL ? (
-          <ChevronRightIcon className="h-7 w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+          <ChevronRightIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
         ) : (
-          <ChevronLeftIcon className="h-7 w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+          <ChevronLeftIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
         )}
       </motion.button>
 
@@ -255,7 +247,7 @@ export const HeroSlider: React.FC = () => {
         onClick={nextSlide}
         whileHover={{ scale: 1.1, x: isRTL ? -5 : 5 }}
         whileTap={{ scale: 0.9 }}
-        className={`absolute top-1/2 ${isRTL ? 'left-6' : 'right-6'} transform -translate-y-1/2 z-20 group overflow-hidden p-4 rounded-full transition-all duration-500 shadow-2xl hover:shadow-3xl`}
+        className={`absolute top-1/2 ${isRTL ? 'left-2 sm:left-4 lg:left-6' : 'right-2 sm:right-4 lg:right-6'} transform -translate-y-1/2 z-20 group overflow-hidden p-2 sm:p-3 lg:p-4 rounded-full transition-all duration-500 shadow-2xl hover:shadow-3xl`}
         style={{
           background: `linear-gradient(135deg, rgba(242, 147, 44, 0.2), rgba(249, 143, 52, 0.2))`,
           backdropFilter: 'blur(16px)',
@@ -267,16 +259,14 @@ export const HeroSlider: React.FC = () => {
           style={{ background: `linear-gradient(135deg, #F2932C, #F98F34)` }}
         />
         {isRTL ? (
-          <ChevronLeftIcon className="h-7 w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+          <ChevronLeftIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
         ) : (
-          <ChevronRightIcon className="h-7 w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+          <ChevronRightIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
         )}
-      </motion.button>
-
-      {/* Enhanced Dots Indicator */}
-      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20">
+      </motion.button>      {/* Enhanced Dots Indicator */}
+      <div className="absolute bottom-4 sm:bottom-6 lg:bottom-10 left-1/2 transform -translate-x-1/2 z-20">
         <div
-          className="flex space-x-4 bg-white/10 backdrop-blur-xl rounded-full p-3 border border-white/20"
+          className="flex space-x-2 sm:space-x-3 lg:space-x-4 bg-white/10 backdrop-blur-xl rounded-full p-2 sm:p-3 border border-white/20"
           style={{
             background: `linear-gradient(135deg, rgba(253, 202, 120, 0.1), rgba(255, 121, 2, 0.1))`
           }}
@@ -287,7 +277,7 @@ export const HeroSlider: React.FC = () => {
               onClick={() => goToSlide(index)}
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
-              className={`relative w-4 h-4 rounded-full transition-all duration-500 overflow-hidden ${
+              className={`relative w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 rounded-full transition-all duration-500 overflow-hidden ${
                 index === currentSlide ? 'scale-125' : 'hover:scale-110'
               }`}
               style={{
