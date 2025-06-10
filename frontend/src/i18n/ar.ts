@@ -343,12 +343,11 @@ export const ar = {
     },
     secureEncryption: 'تشفير آمن',
     globalAccess: 'وصول عالمي'
-  },
-  // Hotels
+  },  // Hotels
   hotels: {
-    title: 'اكتشف',
-    perfectStay: 'إقامتك المثالية',
-    subtitle: 'استمتع بالفخامة والراحة مع مجموعتنا المختارة بعناية من الفنادق الفاخرة في جميع أنحاء العالم',
+    title: 'ابحث عن',
+    perfectStay: 'فندقك المثالي',
+    subtitle: 'اكتشف إقامات مذهلة حول العالم',
     premiumBooking: 'حجز فنادق فاخرة',
     selectYourHotel: 'اختر فندقك',
     chooseYourHotel: 'اختر فندقك',
@@ -429,19 +428,29 @@ export const ar = {
     proceedToConfirmation: 'المتابعة لتأكيد الحجز',
     secureBookingGuarantee: 'حجز آمن • تأكيد فوري • ضمان أفضل سعر',
     selectHotelFirst: 'يرجى اختيار فندق أولاً',
-    fillRequiredFields: 'يرجى ملء جميع الحقول المطلوبة',
-    searchPlaceholder: 'ابحث عن الفنادق أو المدن أو الوجهات...',
-    search: 'بحث',
+    fillRequiredFields: 'يرجى ملء جميع الحقول المطلوبة',    searchPlaceholder: 'ابحث عن الفنادق أو المدن أو الوجهات...',    search: {
+      button: 'البحث عن فنادق رائعة',
+      subtitle: 'اكتشف إقامات استثنائية حول العالم مع بحثنا الذكي. قارن آلاف الفنادق واحصل على عروض حصرية.',
+      destination: 'أين تود الإقامة؟',
+      destinationPlaceholder: 'أدخل المدينة أو اسم الفندق أو معلم سياحي...',
+      fillRequired: 'يرجى ملء جميع الحقول المطلوبة',
+      invalidCheckIn: 'تاريخ تسجيل الوصول لا يمكن أن يكون في الماضي',
+      invalidCheckOut: 'تاريخ تسجيل المغادرة يجب أن يكون بعد تاريخ تسجيل الوصول'
+    },
     filters: 'المرشحات',
     sortBy: 'ترتيب حسب',
     price: 'السعر',
     rating: 'التقييم',
     distance: 'المسافة',
     checkIn: 'تسجيل الوصول',
-    checkOut: 'تسجيل المغادرة',
-    guests: 'الضيوف',
+    checkOut: 'تسجيل المغادرة',    guests: 'الضيوف',
     adult: 'بالغ',
     adults: 'البالغين',
+    rooms: 'الغرف',
+    room: 'غرفة',
+    child: 'طفل',
+    children: 'الأطفال',
+    noChildren: 'لا يوجد أطفال',
     totalPrice: 'السعر الإجمالي',
     bookNow: 'احجز الآن',
     viewDetails: 'عرض التفاصيل',
@@ -451,18 +460,16 @@ export const ar = {
     reviews: 'التقييمات',
     noHotelsFound: 'لم يتم العثور على فنادق. حاول تعديل معايير البحث.',
     loadingHotels: 'البحث عن الفنادق...',
-    results: 'تم العثور على {{count}} فندق',
-    noResults: 'لم يتم العثور على فنادق',
+    results: 'تم العثور على {{count}} فندق',    noResults: 'لم يتم العثور على فنادق',
     priceLowToHigh: 'السعر: من الأقل إلى الأعلى',
     priceHighToLow: 'السعر: من الأعلى إلى الأقل',
-    name: 'الاسم',
-    tryDifferentSearch: 'حاول تعديل معايير البحث أو تصفح فنادقنا المميزة.',
+    name: 'الاسم',    tryDifferentSearch: 'حاول تعديل معايير البحث أو تصفح فنادقنا المميزة.',
     featured: {
       title: 'الفنادق المميزة',
       subtitle: 'اكتشف مجموعتنا المختارة بعناية من أماكن الإقامة الفاخرة'
-    },
-    off: 'خصم',
+    },    off: 'خصم',
     perNight: 'لكل ليلة',
+    priceOnRequest: 'السعر عند الطلب',
     viewAll: 'عرض جميع الفنادق',
     booking: {
       title: 'احجز إقامتك',
@@ -517,7 +524,6 @@ export const ar = {
       guestNumber: 'الضيف {{number}}'
     }
   },
-
   // Personal Information
   personalInformation: {
     title: 'المعلومات الشخصية',
@@ -533,6 +539,8 @@ export const ar = {
   // Booking
   booking: {
     title: 'أكمل حجزك',
+    complete: 'إتمام الحجز',
+    book: 'احجز',
     touristName: 'اسم السائح',
     phone: 'رقم الهاتف',
     email: 'عنوان البريد الإلكتروني',
@@ -548,7 +556,89 @@ export const ar = {
     bookingSuccess: 'تم تقديم الحجز بنجاح!',
     bookingError: 'فشل في تقديم الحجز. يرجى المحاولة مرة أخرى.',
     confirmBooking: 'تأكيد الحجز',
-    selectHotelFirst: 'يرجى اختيار فندق أولاً'
+    selectHotelFirst: 'يرجى اختيار فندق أولاً',
+
+    // Booking Steps
+    steps: {
+      checkInAndRoom: 'الوصول والغرفة',
+      payment: 'طريقة الدفع',
+      guests: 'الضيوف الإضافيون',
+      requests: 'الطلبات الخاصة',
+      documents: 'المستندات'
+    },
+
+    // Check-in Time & Room Type
+    checkInTime: {
+      title: 'تفاصيل الوصول ونوع الغرفة',
+      subtitle: 'ساعدنا في التحضير لوصولك',
+      label: 'وقت الوصول المتوقع',
+      note: 'وقت تسجيل الوصول الاعتيادي هو 15:00. تسجيل الوصول المبكر حسب التوفر.'
+    },
+
+    roomType: {
+      label: 'نوع الغرفة',
+      standard: 'غرفة عادية',
+      deluxe: 'غرفة ديلوكس',
+      suite: 'جناح',
+      family: 'غرفة عائلية'
+    },
+
+    stayType: {
+      label: 'الغرض من الإقامة',
+      leisure: 'سياحة',
+      business: 'عمل',
+      transit: 'عبور'
+    },
+
+    // Payment
+    payment: {
+      title: 'كيف تريد أن تدفع؟',
+      subtitle: 'اختر طريقة الدفع المفضلة لديك',
+      creditCard: 'بطاقة ائتمان',
+      debitCard: 'بطاقة مدين',
+      bankTransfer: 'تحويل مصرفي',
+      cashOnArrival: 'نقداً عند الوصول'
+    },
+
+    // Guests
+    guests: {
+      title: 'الضيوف الإضافيون',
+      subtitle: 'أضف رفاق السفر (اختياري)',
+      added: 'الضيوف المضافون',
+      addNew: 'إضافة ضيف',
+      namePlaceholder: 'أدخل اسم الضيف',
+      phonePlaceholder: 'أدخل رقم الهاتف',
+      addButton: 'إضافة ضيف'
+    },
+
+    // Special Requests
+    requests: {
+      title: 'الطلبات الخاصة',
+      subtitle: 'أخبرنا عن أي احتياجات خاصة (اختياري)',
+      placeholder: 'أخبرنا عن أي ترتيبات خاصة، متطلبات غذائية، احتياجات إمكانية الوصول، أو تفضيلات...',
+      examples: 'أمثلة:',
+      example1: 'غرفة مناسبة للكراسي المتحركة',
+      example2: 'غرفة هادئة',
+      example3: 'دور عالي',
+      example4: 'سريران منفصلان',
+      example5: 'تسجيل وصول مبكر'
+    },
+
+    // Documents
+    documents: {
+      title: 'رفع المستندات',
+      subtitle: 'أرفق المستندات ذات الصلة (اختياري)',
+      types: 'أنواع المستندات المقبولة:',
+      uploaded: 'المستندات المرفوعة'
+    },
+
+    // Validation
+    validation: {
+      checkInTime: 'يرجى اختيار وقت الوصول المتوقع',
+      roomType: 'يرجى اختيار نوع الغرفة',
+      stayType: 'يرجى اختيار الغرض من الإقامة',
+      paymentMethod: 'يرجى اختيار طريقة الدفع'
+    }
   },
 
   // Profile
@@ -648,8 +738,7 @@ export const ar = {
     date: 'التاريخ',
     viewInvoices: 'عرض فواتيري',
     backToHome: 'العودة للرئيسية',
-    tryAgain: 'إعادة المحاولة'
-  },
+    tryAgain: 'إعادة المحاولة'  },
 
   // Reservations
   reservations: {
@@ -659,6 +748,7 @@ export const ar = {
       cancelled: 'ملغى'
     }
   },
+
   // Common
   common: {
     loading: 'جاري التحميل...',
@@ -666,16 +756,19 @@ export const ar = {
     success: 'نجح',
     save: 'حفظ',
     cancel: 'إلغاء',
-    close: 'إغلاق',
-    edit: 'تحرير',
+    close: 'إغلاق',    edit: 'تحرير',
     delete: 'حذف',
+    remove: 'إزالة',
     confirm: 'تأكيد',
     back: 'رجوع',
     next: 'التالي',
     previous: 'السابق',
+    prev: 'السابق',
+    proceed: 'متابعة',
     submit: 'إرسال',
     reset: 'إعادة تعيين',
     retry: 'إعادة المحاولة',
+    tryAgain: 'حاول مرة أخرى',
     showMore: 'عرض المزيد',
     showLess: 'عرض أقل',
     selectAll: 'تحديد الكل',
@@ -689,7 +782,9 @@ export const ar = {
     instantConfirmation: 'تأكيد فوري',
     clickToChange: 'اضغط للتغيير',
     hotelWebsite: 'موقع الفندق',
-    addGuest: 'إضافة ضيف'
+    addGuest: 'إضافة ضيف',
+    fullName: 'الاسم الكامل',
+    phoneNumber: 'رقم الهاتف'
   },
 
   // Validation

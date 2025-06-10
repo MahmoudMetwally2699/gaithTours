@@ -1,5 +1,5 @@
 // filepath: e:\gaithgroup\frontend\src\services\hotelService.ts
-import { Hotel, HotelSearchResponse } from '../types/hotel';
+import { HotelSearchResponse } from '../types/hotel';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
@@ -35,13 +35,74 @@ const searchHotels = async (destination: string, page: number = 1, limit: number
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }    const data = await response.json();
+
+    // Debug logging
+    console.log('API Response:', data);
+    console.log('Data structure:', {
+      success: data.success,
+      hasData: !!data.data,
+      dataKeys: data.data ? Object.keys(data.data) : 'no data',
+      hotelsCount: data.data?.hotels?.length || 0
+    });
+
+    // Check if the response is successful
+    if (!data.success) {
+      throw new Error(data.message || 'Hotel search failed');
     }
 
-    const data = await response.json();
     return data.data; // Return the data object containing hotels, total, page info
 
   } catch (error) {
     console.error('Error searching hotels:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get hotel details by ID
+ * @param {string} hotelId - The hotel ID
+ * @returns {Promise<Object>} - Promise that resolves to hotel details
+ */
+const getHotelDetails = async (hotelId: string) => {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const options = {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+
+    const url = `${API_BASE_URL}/hotels/details/${hotelId}`;
+
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Debug logging
+    console.log('Hotel details response:', data);
+
+    // Check if the response is successful
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to get hotel details');
+    }
+
+    return data.data.hotel; // Return the hotel object
+
+  } catch (error) {
+    console.error('Error getting hotel details:', error);
     throw error;
   }
 };
@@ -114,5 +175,5 @@ const searchDestinations = async (query: string) => {
   }
 };
 
-export { searchHotels, getPopularDestinations, searchDestinations };
+export { searchHotels, getHotelDetails, getPopularDestinations, searchDestinations };
 export default searchHotels;

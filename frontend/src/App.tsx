@@ -6,6 +6,9 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
 import { Hotels } from './pages/Hotels';
+import { HotelSearchResults } from './pages/HotelSearchResults';
+import { HotelDetails } from './pages/HotelDetails';
+import { HotelBookingFlow } from './pages/HotelBookingFlow';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
@@ -27,6 +30,30 @@ const AppContent = () => {
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />
+          <Route
+            path="/hotels/search"
+            render={() => (
+              <ProtectedRoute>
+                <HotelSearchResults />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/hotels/details/:hotelId"
+            render={() => (
+              <ProtectedRoute>
+                <HotelDetails />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/hotels/booking"
+            render={() => (
+              <ProtectedRoute>
+                <HotelBookingFlow />
+              </ProtectedRoute>
+            )}
+          />
           <Route
             path="/hotels"
             render={() => (

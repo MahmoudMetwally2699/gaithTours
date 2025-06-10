@@ -10,6 +10,7 @@ export interface Hotel {
   currency: string;
   rating: number;
   image: string | null;
+  images?: string[]; // Array of image URLs
   description: string;
   reviewScore: number;
   reviewCount: number;

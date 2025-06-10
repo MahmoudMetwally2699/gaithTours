@@ -92,11 +92,26 @@ export const OurMissionModern: React.FC = () => {
       }
     }
   };
-
   return (
-    <section className="relative py-24 lg:py-32 overflow-hidden">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0">
+    <section className="relative py-16 sm:py-24 lg:py-32 overflow-hidden">
+      {/* Mobile: Unique Dynamic Background */}
+      <div className="absolute inset-0 sm:hidden">
+        {/* Mobile gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"></div>
+
+        {/* Mobile floating shapes */}
+        <div className="absolute top-10 left-4 w-16 h-16 bg-gradient-to-br from-blue-400/30 to-cyan-400/30 rounded-2xl rotate-12 animate-pulse"></div>
+        <div className="absolute top-32 right-6 w-12 h-12 bg-gradient-to-br from-purple-400/25 to-pink-400/25 rounded-full animate-bounce"></div>
+        <div className="absolute bottom-20 left-8 w-10 h-10 bg-gradient-to-br from-emerald-400/30 to-teal-400/30 rounded-xl rotate-45 animate-pulse delay-1000"></div>
+        <div className="absolute bottom-40 right-4 w-14 h-14 bg-gradient-to-br from-amber-400/25 to-orange-400/25 rounded-2xl rotate-45 animate-pulse delay-500"></div>
+
+        {/* Mobile wave patterns */}
+        <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-r from-transparent via-blue-200/10 to-transparent transform -skew-y-1"></div>
+        <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-r from-transparent via-purple-200/10 to-transparent transform skew-y-1"></div>
+      </div>
+
+      {/* Desktop: Original Background */}
+      <div className="absolute inset-0 hidden sm:block">
         {/* Base gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50"></div>
 
@@ -120,12 +135,55 @@ export const OurMissionModern: React.FC = () => {
       </div>
 
       <div className="relative z-10 container mx-auto px-4 lg:px-8">
-        {/* Hero Section */}
+        {/* Mobile: Unique Header Design */}
+        <div className="sm:hidden text-center mb-12">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/15 to-purple-500/15 backdrop-blur-sm border border-blue-200/40 rounded-full mb-6"
+          >
+            <SparklesIcon className="w-4 h-4 text-blue-600 animate-pulse" />
+            <span className="text-blue-700 font-bold text-xs tracking-widest uppercase">
+              {t('mission.sectionTitle')}
+            </span>
+          </motion.div>
+
+          {/* Mobile: Stacked title with unique typography */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="space-y-2"
+          >
+            <h2 className="text-3xl font-black text-gray-900 leading-none">
+              Creating
+            </h2>
+            <h2 className="text-3xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-none">
+              Unforgettable
+            </h2>
+            <h2 className="text-3xl font-black text-gray-900 leading-none">
+              Journeys
+            </h2>
+          </motion.div>
+
+          {/* Mobile: Compact description */}
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="text-sm text-gray-600 leading-relaxed max-w-xs mx-auto mt-4"
+          >
+            Crafting extraordinary travel experiences that connect you with Saudi Arabia's magic
+          </motion.p>
+        </div>
+
+        {/* Desktop: Original Hero Section */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={heroVariants}
-          className="text-center max-w-5xl mx-auto mb-20"
+          className="hidden sm:block text-center max-w-5xl mx-auto mb-20"
         >
           {/* Badge */}
           <motion.div
@@ -138,7 +196,10 @@ export const OurMissionModern: React.FC = () => {
             <span className="text-blue-700 font-semibold text-sm tracking-wide uppercase">
               {t('mission.sectionTitle')}
             </span>
-          </motion.div>          {/* Main Title */}          <motion.h2
+          </motion.div>
+
+          {/* Main Title */}
+          <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -147,9 +208,7 @@ export const OurMissionModern: React.FC = () => {
             <span className="bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent whitespace-nowrap">
               {t('mission.title')}
             </span>
-          </motion.h2>
-
-          {/* Description */}
+          </motion.h2>          {/* Description */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -160,12 +219,43 @@ export const OurMissionModern: React.FC = () => {
           </motion.p>
         </motion.div>
 
-        {/* Mission Statement Card - Modern Design */}
+        {/* Mobile: Unique Card Stack Design for Mission Statement */}
+        <div className="sm:hidden mb-12">
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="relative"
+          >
+            {/* Background card with glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-2xl blur opacity-60"></div>
+
+            <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-100/50 shadow-xl">
+              {/* Mobile floating icon */}
+              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <HeartIcon className="w-6 h-6 text-white" />
+                </div>
+              </div>
+
+              <div className="pt-8 text-center">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 leading-tight">
+                  {t('mission.statement.title')}
+                </h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {t('mission.statement.text')}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Desktop: Original Mission Statement Card */}
         <motion.div
           initial={{ opacity: 0, y: 60, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1, delay: 0.5 }}
-          className="mb-24"
+          className="hidden sm:block mb-24"
         >
           <div className="relative group">
             {/* Card background with gradient border */}
@@ -177,8 +267,7 @@ export const OurMissionModern: React.FC = () => {
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
                   <HeartIcon className="w-8 h-8 text-white" />
                 </div>
-              </div>              <div className="text-center pt-8">
-                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+              </div>              <div className="text-center pt-8">                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 leading-tight">
                   {t('mission.statement.title')}
                 </h3>
                 <p className="text-lg lg:text-xl text-gray-700 leading-relaxed max-w-4xl mx-auto">
@@ -189,12 +278,54 @@ export const OurMissionModern: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Mission Features - Modern Grid */}
+        {/* Mobile: Unique Swipe-Style Features */}
+        <div className="sm:hidden mb-12">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="space-y-4"
+          >
+            {missionFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ x: index % 2 === 0 ? -100 : 100, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
+                className="relative group"
+              >
+                {/* Background glow */}
+                <div className={`absolute inset-0 bg-gradient-to-r ${feature.gradient} rounded-2xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300`}></div>
+
+                <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl p-5 border border-gray-100/50 shadow-lg">
+                  <div className="flex items-start space-x-4">
+                    {/* Icon */}
+                    <div className={`w-12 h-12 bg-gradient-to-r ${feature.iconBg} rounded-xl flex items-center justify-center shadow-md flex-shrink-0`}>
+                      <feature.icon className="w-6 h-6 text-white" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-lg font-bold text-gray-900 mb-2 leading-tight">
+                        {t(feature.titleKey)}
+                      </h4>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        {t(feature.descriptionKey)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Desktop: Original Mission Features Grid */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24"
+          className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24"
         >
           {missionFeatures.map((feature, index) => (
             <motion.div
@@ -229,9 +360,7 @@ export const OurMissionModern: React.FC = () => {
 
                   <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
                     {t(feature.descriptionKey)}
-                  </p>
-
-                  {/* Learn more indicator */}
+                  </p>                  {/* Learn more indicator */}
                   <div className={`flex items-center gap-2 text-sm font-medium ${feature.textColor} opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0`}>
                     <span>Learn more</span>
                     <ArrowRightIcon className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -242,19 +371,55 @@ export const OurMissionModern: React.FC = () => {
           ))}
         </motion.div>
 
-        {/* Vision Section - Redesigned */}
+        {/* Mobile: Unique Vision Card */}
+        <div className="sm:hidden">
+          <motion.div
+            initial={{ y: 50, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="relative"
+          >
+            {/* Mobile background with unique gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl"></div>
+
+            <div className="relative p-6 text-white overflow-hidden rounded-2xl">
+              {/* Mobile floating elements */}
+              <div className="absolute top-4 right-4 w-8 h-8 border border-white/20 rounded-lg rotate-12 animate-pulse"></div>
+              <div className="absolute bottom-4 left-4 w-6 h-6 bg-white/10 rounded-full animate-bounce"></div>
+
+              <div className="relative z-10 text-center">
+                <h3 className="text-2xl font-bold mb-4 leading-tight">
+                  {t('mission.vision.title')}
+                </h3>
+                <p className="text-sm leading-relaxed opacity-95 mb-6">
+                  {t('mission.vision.text')}
+                </p>
+
+                {/* Mobile CTA button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/30 hover:bg-white/30 transition-all duration-300"
+                >
+                  {t('mission.vision.startJourney')}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Desktop: Original Vision Section */}
         <motion.div
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.6 }}
-          className="text-center"
+          className="hidden sm:block text-center"
         >
           <div className="relative group">
             {/* Animated background */}
             <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 rounded-3xl"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20 rounded-3xl blur-xl"></div>
-
-            {/* Content */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-cyan-600/20 rounded-3xl blur-xl"></div>            {/* Content */}
             <div className="relative rounded-3xl p-12 lg:p-20 text-white overflow-hidden">
               {/* Floating elements */}
               <div className="absolute top-10 right-10 w-20 h-20 border border-white/10 rounded-full animate-spin-slow"></div>

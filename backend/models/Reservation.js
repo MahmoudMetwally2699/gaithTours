@@ -118,16 +118,14 @@ const reservationSchema = new mongoose.Schema({
   },  roomType: {
     type: String,
     required: false, // Changed to false for backward compatibility
-    enum: ['single', 'double', 'twin', 'triple', 'quad', 'suite', 'family', 'deluxe'],
     trim: true,
-    default: 'double' // Default value
+    default: 'Standard Room' // Updated default value
   },
   stayType: {
     type: String,
     required: false, // Changed to false for backward compatibility
-    enum: ['room_only', 'bed_breakfast', 'half_board', 'full_board', 'all_inclusive'],
     trim: true,
-    default: 'room_only' // Default value
+    default: 'Leisure' // Updated default value
   },
   paymentMethod: {
     type: String,

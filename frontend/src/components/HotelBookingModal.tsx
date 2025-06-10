@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../types/hotel';
 import { UploadedFile } from './FileUpload';
@@ -72,8 +73,10 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
   hotel,
   searchParams,
   onClose
-}) => {  const { t } = useTranslation();
+}) => {
+  const { t } = useTranslation();
   const { isRTL } = useDirection();
+  const history = useHistory();
   const [loading, setLoading] = useState(false);
   // Custom stylish toast notification
   const showBookingSuccessToast = () => {
@@ -204,15 +207,15 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
       const endTime = Date.now();
       const duration = endTime - startTime;
       console.log(`✅ Reservation API call completed in ${duration}ms`);
-      console.log('📥 API Result:', result);
-
-      // Show our custom stylish toast
+      console.log('📥 API Result:', result);      // Show our custom stylish toast
       showBookingSuccessToast();
 
-      // Close the modal after a short delay to let the user see the toast
+      // Close the modal and redirect to home page after a short delay
       setTimeout(() => {
         onClose();
-      }, 1000);
+        // Redirect to home page
+        history.push('/');
+      }, 1500); // Increased delay to 1.5 seconds to let user see the toast
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
