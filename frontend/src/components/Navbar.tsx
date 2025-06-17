@@ -65,12 +65,14 @@ export const Navbar: React.FC = () => {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      transition={{ duration: 0.8, ease: "easeOut" }}      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-white/95 backdrop-blur-xl shadow-2xl border-b border-orange-100/50'
-          : 'bg-gradient-to-r from-orange-50/90 via-amber-50/90 to-yellow-50/90 backdrop-blur-sm'
+          ? 'backdrop-blur-xl shadow-2xl border-b border-orange-100/50'
+          : 'backdrop-blur-sm'
       }`}
+      style={{
+        backgroundImage: 'linear-gradient(to top, #f7871d, #f4a135, #f2b851, #f0cd6f, #f1e190, #e0e99c, #d1efac, #c4f4bd, #9aeec7, #6de7d7, #3adde9, #00d0f9)'
+      }}
     >
       {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-yellow-500/10 opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
@@ -161,6 +163,7 @@ export const Navbar: React.FC = () => {
                   </div>                  <div className={`${isRTL ? 'mr-4' : 'ml-4'} relative z-20`}>
                     <motion.h1
                       className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent group-hover:from-orange-700 group-hover:via-amber-700 group-hover:to-yellow-700 transition-all duration-300 select-none"
+                      style={{ fontFamily: 'TIDO, serif' }}
                       whileHover={{ scale: 1.02 }}
                     >
                       {t('brand.name', 'Gaith Tours')}

@@ -5,6 +5,7 @@ const stripeService = require('../utils/stripeService');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const { sendPaymentConfirmationEmail } = require('../utils/emailService');
+const whatsappService = require('../utils/whatsappService');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const router = express.Router();
@@ -111,9 +112,7 @@ router.post('/webhook', async (req, res) => {
             invoiceId: result.invoice._id,
             paymentId: result.payment._id,
             status: result.payment.status
-          });
-
-          // Send payment confirmation email
+          });          // Send payment confirmation email
           try {
             await sendPaymentConfirmationEmail({
               email: result.invoice.clientEmail,
@@ -124,6 +123,26 @@ router.post('/webhook', async (req, res) => {
             console.log('Payment confirmation email sent');
           } catch (emailError) {
             console.error('Failed to send payment confirmation email:', emailError);
+          }
+
+          // Send WhatsApp notification for payment confirmation
+          try {
+            // Get the booking details from the invoice
+            const booking = {
+              touristName: result.invoice.clientName,
+              phone: result.invoice.clientPhone,
+              hotel: { name: result.invoice.hotelName },
+              checkIn: result.reservation?.checkIn,
+              checkOut: result.reservation?.checkOut,
+              duration: result.reservation?.duration,
+              adults: result.reservation?.adults,
+              children: result.reservation?.children
+            };
+
+            await whatsappService.sendBookingConfirmation(booking, result.payment);
+            console.log('Payment confirmation WhatsApp sent');
+          } catch (whatsappError) {
+            console.error('Failed to send payment confirmation WhatsApp:', whatsappError);
           }
         } catch (paymentError) {
           console.error('Error handling payment success:', paymentError);

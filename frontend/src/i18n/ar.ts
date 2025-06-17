@@ -17,6 +17,14 @@ export const ar = {
     profile: 'الملف الشخصي',
     language: 'اللغة'
   },
+  // Main Section
+  main: {
+    tagline: 'من غيث إلى أي مكان',
+    subtitle: 'ستجد أفضل الأسعار أينما ذهبت',
+    accommodation: 'الإقامة',
+    flights: 'طيران',
+    comingSoon: 'قريباً'
+  },
 
   // Hero Section
   hero: {

@@ -7,6 +7,7 @@ const Payment = require('../models/Payment');
 const { protect, admin } = require('../middleware/auth');
 const { successResponse, errorResponse } = require('../utils/helpers');
 const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail } = require('../utils/emailService');
+const whatsappService = require('../utils/whatsappService');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -260,9 +261,7 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
 
     // Update booking status to invoiced
     booking.status = 'invoiced';
-    await booking.save();
-
-    // Send invoice email
+    await booking.save();    // Send invoice email
     try {
       await sendInvoiceEmail({
         email: booking.email,
@@ -272,6 +271,13 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
       });
     } catch (emailError) {
       console.error('Failed to send invoice email:', emailError);
+    }
+
+    // Send WhatsApp notification
+    try {
+      await whatsappService.sendBookingApprovalNotification(booking, invoice);
+    } catch (whatsappError) {
+      console.error('Failed to send WhatsApp notification:', whatsappError);
     }
 
     successResponse(res, { booking, invoice }, 'Booking approved and invoice generated successfully');
@@ -300,9 +306,7 @@ router.patch('/bookings/:id/deny', protect, admin, [
     // Update booking status
     booking.status = 'denied';
     booking.notes = reason;
-    await booking.save();
-
-    // Send denial email
+    await booking.save();    // Send denial email
     try {
       await sendBookingDenialEmail({
         email: booking.email,
@@ -312,6 +316,13 @@ router.patch('/bookings/:id/deny', protect, admin, [
       });
     } catch (emailError) {
       console.error('Failed to send denial email:', emailError);
+    }
+
+    // Send WhatsApp notification
+    try {
+      await whatsappService.sendBookingDenialNotification(booking, reason);
+    } catch (whatsappError) {
+      console.error('Failed to send denial WhatsApp notification:', whatsappError);
     }
 
     successResponse(res, { booking }, 'Booking denied successfully');
@@ -412,6 +423,23 @@ router.get('/payments', protect, admin, async (req, res) => {
   } catch (error) {
     console.error('Get payments error:', error);
     errorResponse(res, 'Failed to get payments', 500);
+  }
+});
+
+// Test WhatsApp functionality (development only)
+router.post('/test-whatsapp', protect, admin, async (req, res) => {
+  try {
+    const { phoneNumber, message } = req.body;
+
+    if (!phoneNumber || !message) {
+      return errorResponse(res, 'Phone number and message are required', 400);
+    }
+
+    await whatsappService.sendMessage(phoneNumber, message);
+    successResponse(res, {}, 'WhatsApp message sent successfully');
+  } catch (error) {
+    console.error('Test WhatsApp error:', error);
+    errorResponse(res, 'Failed to send WhatsApp message', 500);
   }
 });
 

@@ -5,6 +5,16 @@
 /* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+
+/* Custom TIDO Font */
+@font-face {
+  font-family: 'TIDO';
+  src: url('./assets/fonts/alfont_com_TIDO-B.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* Import Leaflet CSS - Temporarily disabled */
 /* @import 'leaflet/dist/leaflet.css'; */

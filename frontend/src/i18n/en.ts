@@ -18,6 +18,15 @@ export const en = {
     language: 'Language'
   },
 
+  // Main Section
+  main: {
+    tagline: 'From Gaith to anywhere',
+    subtitle: 'You will find the best prices wherever you go',
+    accommodation: 'Accommodation',
+    flights: 'Flights',
+    comingSoon: 'Coming Soon'
+  },
+
   // Hero Section
   hero: {
     title: 'Discover Your Next Adventure',
