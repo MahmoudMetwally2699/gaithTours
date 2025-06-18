@@ -179,7 +179,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-[#F7871D] shadow-md hover:shadow-lg transition-all duration-300">
 
                   {/* Destination Field */}
-                  <div className="space-y-2 mb-3 relative">
+                  <div className="space-y-2 mb-3 relative z-50">
                     <label className={`text-gray-700 font-medium text-sm ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                       {t('hotels.search.destination', 'Where to?')}
                     </label>
@@ -207,8 +207,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                        exit={{ opacity: 0, y: -10 }}                        className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
                       >
                         {hotels.map((hotel, index) => (
                           <motion.div
@@ -338,7 +337,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 initial={{ x: -30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="space-y-3 relative"
+                className="space-y-3 relative z-50"
               >
                 <label className={`flex items-center text-gray-700 font-semibold text-lg ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                   <GlobeAltIcon className={`h-6 w-6 text-blue-600 ${isRTL ? 'ml-6 sm:ml-4' : 'mr-6 sm:mr-4'}`} />
@@ -372,15 +371,12 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Desktop Autocomplete Dropdown */}
+                </div>                {/* Desktop Autocomplete Dropdown */}
                 {showSuggestions && hotels.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
+                    exit={{ opacity: 0, y: -10 }}                    className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
                   >
                     {hotels.map((hotel, index) => (
                       <motion.div
