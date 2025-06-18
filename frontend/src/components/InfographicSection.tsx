@@ -54,23 +54,18 @@ export const InfographicSection: React.FC = () => {
       className="py-12 sm:py-16 lg:py-24 relative overflow-hidden"
       style={{ backgroundColor: '#E1FAFF' }}
       dir="rtl"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    >      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-0"
+          className="space-y-0 w-full"
         >
-          {infographicData.map((item, index) => (
-            <React.Fragment key={item.id}>              <motion.div
+          {infographicData.map((item, index) => (            <React.Fragment key={item.id}>              <motion.div
                 variants={itemVariants}
-                className="flex flex-row lg:grid lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 lg:gap-16 items-start lg:items-center py-8 sm:py-12 lg:py-20"
-              >
-                {/* Text Content - Right Side in RTL (Left side visually) */}
-                <div className="flex-1 order-2 lg:order-1 text-right px-2 sm:px-4 lg:px-8">
-                  <h2
-                    className="text-base sm:text-lg md:text-2xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 lg:mb-6 leading-tight"
+                className={`grid grid-cols-1 lg:grid-cols-2 ${index === 0 ? 'gap-1 lg:gap-2' : 'gap-4 lg:gap-6'} items-center justify-items-center py-8 sm:py-12 lg:py-20 max-w-5xl mx-auto`}
+              >{/* Text Content - Right Side in RTL (Left side visually) */}                <div className={`order-2 lg:order-1 text-center lg:text-right w-full flex flex-col justify-center items-center lg:items-end ${index === 0 ? 'px-4 lg:pl-8 lg:pr-0 lg:-ml-48' : 'px-4 lg:px-2'}`}>                  <h2
+                    className={`font-bold mb-2 sm:mb-3 lg:mb-6 whitespace-nowrap ${index === 0 ? 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl' : index === 2 ? 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-24' : 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-16'}`}
                     style={{
                       color: '#0F5F5F', // Dark teal
                       fontFamily: 'Cairo, sans-serif'
@@ -78,7 +73,7 @@ export const InfographicSection: React.FC = () => {
                   >
                     {t(`infographic.${item.translationKey}.headline`)}
                   </h2>                  <p
-                    className="text-xs sm:text-sm md:text-base lg:text-xl xl:text-2xl leading-relaxed"
+                    className="text-xs sm:text-xs md:text-sm lg:text-base xl:text-lg whitespace-nowrap"
                     style={{
                       color: '#9CA3AF', // Light grey
                       fontFamily: 'Cairo, sans-serif'
@@ -86,12 +81,13 @@ export const InfographicSection: React.FC = () => {
                   >
                     {t(`infographic.${item.translationKey}.supportingText`)}
                   </p>
-                </div>                {/* Asset Image - Left Side in RTL (Right side visually) */}                <div className="flex-shrink-0 order-1 lg:order-2 flex justify-start items-center">
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 lg:w-full lg:max-w-md">                    <img
+                </div>{/* Asset Image - Left Side in RTL (Right side visually) */}                <div className="order-1 lg:order-2 flex justify-center lg:justify-start items-center w-full">
+                  <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-full lg:max-w-md xl:max-w-lg">
+                    <img
                       src={item.assetImage}
                       alt={`Asset ${item.id}`}
-                      className="w-full h-full lg:w-auto lg:h-auto object-contain select-none"                      style={{
-                        maxHeight: '120px',
+                      className="w-full h-full object-contain select-none lg:max-h-80 xl:max-h-96"
+                      style={{
                         imageRendering: 'auto'
                       }}
                       loading="lazy"
@@ -99,7 +95,7 @@ export const InfographicSection: React.FC = () => {
                     />
                   </div>
                 </div>
-              </motion.div>              {/* Orange Separator Line */}
+              </motion.div>{/* Orange Separator Line */}
               {index < infographicData.length - 1 && (
                 <motion.div
                   initial={{ scaleX: 0 }}
