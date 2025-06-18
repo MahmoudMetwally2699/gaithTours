@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,9 +9,12 @@ import {
   UserIcon,
   HomeIcon,
   SparklesIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useDirection } from '../hooks/useDirection';
+import { searchHotels } from '../services/hotelService';
+import { Hotel } from '../types/hotel';
 
 interface HotelSearchSectionProps {
   onSearch?: (params: any) => void;
@@ -22,7 +25,6 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
   const { direction } = useDirection();
   const history = useHistory();
   const isRTL = direction === 'rtl';
-
   const [searchParams, setSearchParams] = useState({
     destination: '',
     checkIn: '',
@@ -32,11 +34,69 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
     children: 0
   });
 
+  // Autocomplete state
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingHotels, setLoadingHotels] = useState(false);
+  // Hotel search function for autocomplete
+  const searchHotelsAsync = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setHotels([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setLoadingHotels(true);
+    try {
+      const response = await searchHotels(query, 1, 8); // Limit to 8 suggestions
+      if (response?.hotels) {
+        setHotels(response.hotels);
+        setShowSuggestions(true);
+      } else {
+        setHotels([]);
+        setShowSuggestions(false);
+      }
+    } catch (err) {
+      console.error('Error searching hotels:', err);
+      setHotels([]);
+      setShowSuggestions(false);
+    } finally {
+      setLoadingHotels(false);
+    }
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (searchParams.destination.length >= 2) {
+      const delayedSearch = setTimeout(() => {
+        searchHotelsAsync(searchParams.destination);
+      }, 300);
+      return () => clearTimeout(delayedSearch);
+    } else {
+      setHotels([]);
+      setShowSuggestions(false);
+    }
+  }, [searchParams.destination, searchHotelsAsync]);
+
   const handleChange = (field: string, value: string | number) => {
     setSearchParams(prev => ({
       ...prev,
       [field]: value
     }));
+
+    // Close suggestions when changing other fields
+    if (field !== 'destination') {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleHotelSelect = (hotel: Hotel) => {
+    setSearchParams(prev => ({
+      ...prev,
+      destination: `${hotel.name}, ${hotel.city}, ${hotel.country}`
+    }));
+    setShowSuggestions(false);
+    setHotels([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,25 +171,61 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-[#F7871D] shadow-md hover:shadow-lg transition-all duration-300">
 
                   {/* Destination Field */}
-                  <div className="space-y-2 mb-3">
-                    <label className={`text-gray-700 font-medium text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
+                  <div className="space-y-2 mb-3 relative">
+                    <label className={`text-gray-700 font-medium text-sm ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                       {t('hotels.search.destination', 'Where to?')}
                     </label>
-                    <input
-                      type="text"
-                      value={searchParams.destination}
-                      onChange={(e) => handleChange('destination', e.target.value)}
-                      placeholder={t('hotels.search.destinationPlaceholder', 'City, hotel, or landmark...')}
-                      className={`w-full p-2.5 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-sm transition-all duration-300 ${isRTL ? 'text-right' : 'text-left'} placeholder-gray-400`}
-                      dir={isRTL ? 'rtl' : 'ltr'}
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchParams.destination}
+                        onChange={(e) => handleChange('destination', e.target.value)}
+                        onFocus={() => searchParams.destination.length >= 2 && setShowSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        placeholder={t('hotels.search.destinationPlaceholder', 'City, hotel, or landmark...')}
+                        className={`w-full p-2.5 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-sm transition-all duration-300 ${isRTL ? 'text-right' : 'text-left'} placeholder-gray-400`}
+                        dir={isRTL ? 'rtl' : 'ltr'}
+                        required
+                      />
+
+                      {/* Loading indicator */}
+                      {loadingHotels && (
+                        <div className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2`}>
+                          <div className="w-4 h-4 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </div>                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && hotels.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                      >
+                        {hotels.map((hotel, index) => (
+                          <motion.div
+                            key={hotel.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            onClick={() => handleHotelSelect(hotel)}
+                            className="flex items-start p-3 hover:bg-orange-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                          >                            <div className={`w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} flex-shrink-0 mt-0.5`}>
+                              <BuildingOfficeIcon className="h-4 w-4 text-orange-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 text-xs leading-tight break-words">{hotel.name}</div>
+                              <div className="text-xs text-gray-500 mt-1 break-words">{hotel.city}, {hotel.country}</div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
                   </div>
 
                   {/* Dates Row */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="space-y-1">
-                      <label className={`text-gray-700 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className="space-y-1">                      <label className={`text-gray-700 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                         {t('hotels.checkIn', 'Check-in')}
                       </label>
                       <input
@@ -141,8 +237,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                         required
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className={`text-gray-700 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className="space-y-1">                      <label className={`text-gray-700 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                         {t('hotels.checkOut', 'Check-out')}
                       </label>
                       <input
@@ -158,8 +253,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
 
                   {/* Guests Row */}
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className="space-y-1">                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                         {t('hotels.rooms', 'Rooms')}
                       </label>
                       <select
@@ -172,8 +266,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className="space-y-1">                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                         {t('hotels.adults', 'Adults')}
                       </label>
                       <select
@@ -186,8 +279,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                         ))}
                       </select>
                     </div>
-                    <div className="space-y-1">
-                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className="space-y-1">                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                         {t('hotels.children', 'Children')}
                       </label>
                       <select
@@ -238,8 +330,9 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 initial={{ x: -30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="space-y-3"
-              >                <label className={`flex items-center text-gray-700 font-semibold text-lg ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`}>
+                className="space-y-3 relative"
+              >
+                <label className={`flex items-center text-gray-700 font-semibold text-lg ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                   <GlobeAltIcon className={`h-6 w-6 text-blue-600 ${isRTL ? 'ml-6 sm:ml-4' : 'mr-6 sm:mr-4'}`} />
                   <span
                     className={`${isRTL ? 'text-right' : 'text-left'}`}
@@ -247,19 +340,76 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     {t('hotels.search.destination', 'Where would you like to stay?')}
                   </span>
                   <span className={`${isRTL ? 'mr-2' : 'ml-2'} text-red-500`}>*</span>
-                </label><div className="relative group">
-                    <div className="relative bg-gray-50/70 rounded-2xl border-2 border-gray-200 hover:border-[#F7871D] transition-all duration-300 overflow-hidden focus-within:border-[#F7871D] focus-within:ring-4 focus-within:ring-orange-100">
-                      <MapPinIcon className={`absolute ${isRTL ? 'right-6' : 'left-6'} top-1/2 transform -translate-y-1/2 h-6 w-6 text-[#F7871D]`} />                    <input
+                </label>
+
+                <div className="relative group">
+                  <div className="relative bg-gray-50/70 rounded-2xl border-2 border-gray-200 hover:border-[#F7871D] transition-all duration-300 overflow-hidden focus-within:border-[#F7871D] focus-within:ring-4 focus-within:ring-orange-100">
+                    <MapPinIcon className={`absolute ${isRTL ? 'right-6' : 'left-6'} top-1/2 transform -translate-y-1/2 h-6 w-6 text-[#F7871D]`} />
+                    <input
                       type="text"
                       value={searchParams.destination}
                       onChange={(e) => handleChange('destination', e.target.value)}
+                      onFocus={() => searchParams.destination.length >= 2 && setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                       placeholder={t('hotels.search.destinationPlaceholder', 'Enter city, hotel name, or landmark...')}
                       className={`w-full ${isRTL ? 'pr-16 pl-6 text-right' : 'pl-16 pr-6 text-left'} py-5 bg-transparent text-gray-800 placeholder-gray-400 text-lg font-medium focus:outline-none border-none`}
                       dir={isRTL ? 'rtl' : 'ltr'}
                       required
                     />
+
+                    {/* Loading indicator */}
+                    {loadingHotels && (
+                      <div className={`absolute ${isRTL ? 'left-6' : 'right-6'} top-1/2 transform -translate-y-1/2`}>
+                        <div className="w-5 h-5 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin"></div>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Desktop Autocomplete Dropdown */}
+                {showSuggestions && hotels.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
+                  >
+                    {hotels.map((hotel, index) => (
+                      <motion.div
+                        key={hotel.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => handleHotelSelect(hotel)}
+                        className="flex items-center p-4 hover:bg-orange-50 cursor-pointer transition-all duration-200 border-b border-gray-100 last:border-b-0 group"
+                      >
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-amber-100 rounded-xl flex items-center justify-center mr-4 flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
+                          <BuildingOfficeIcon className="h-6 w-6 text-orange-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 text-base truncate group-hover:text-orange-600 transition-colors duration-200">{hotel.name}</div>
+                          <div className="text-sm text-gray-500 truncate flex items-center mt-1">
+                            <MapPinIcon className="h-4 w-4 mr-1 text-gray-400" />
+                            {hotel.city}, {hotel.country}
+                          </div>
+                          {hotel.rating && (
+                            <div className="flex items-center mt-1">
+                              <div className="flex text-yellow-400">
+                                {[...Array(Math.floor(hotel.rating))].map((_, i) => (
+                                  <span key={i} className="text-xs">★</span>
+                                ))}
+                              </div>
+                              <span className="text-xs text-gray-500 ml-1">{hotel.rating}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          →
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
               </motion.div>              {/* Date Selection */}
               <motion.div
                 initial={{ x: 30, opacity: 0 }}
@@ -268,7 +418,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 className="grid grid-cols-2 gap-6"
               >
                 {/* Check-in Date */}
-                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`}>
+                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                     <CalendarIcon className={`h-5 w-5 text-green-600 ${isRTL ? 'ml-4 sm:ml-3' : 'mr-4 sm:mr-3'}`} />
                     <span className={isRTL ? 'text-right' : 'text-left'}>{t('hotels.checkIn', 'Check-in')}</span>
                     <span className={`${isRTL ? 'mr-2' : 'ml-2'} text-red-500`}>*</span>
@@ -286,7 +436,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     </div>
                   </div>
                 </div>                {/* Check-out Date */}
-                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`}>
+                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                     <CalendarIcon className={`h-5 w-5 text-pink-600 ${isRTL ? 'ml-4 sm:ml-3' : 'mr-4 sm:mr-3'}`} />
                     <span className={isRTL ? 'text-right' : 'text-left'}>{t('hotels.checkOut', 'Check-out')}</span>
                     <span className={`${isRTL ? 'mr-2' : 'ml-2'} text-red-500`}>*</span>
@@ -312,7 +462,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 className="grid grid-cols-1 md:grid-cols-3 gap-6"
               >
                 {/* Rooms */}
-                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`}>
+                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                     <HomeIcon className={`h-5 w-5 text-amber-600 ${isRTL ? 'ml-4 sm:ml-3' : 'mr-4 sm:mr-3'}`} />
                     <span className={isRTL ? 'text-right' : 'text-left'}>{t('hotels.rooms', 'Rooms')}</span>
                   </label><div className="relative group">
@@ -333,7 +483,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 </div>
 
                 {/* Adults */}
-                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`}>
+                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                     <UserIcon className={`h-5 w-5 text-blue-600 ${isRTL ? 'ml-6 sm:ml-4' : 'mr-6 sm:mr-4'}`} />
                     <span className={`${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.adults', 'Adults')}</span>
                   </label><div className="relative group">
@@ -354,7 +504,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                 </div>
 
                 {/* Children */}
-                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`}>
+                <div className="space-y-3">                  <label className={`flex items-center text-gray-700 font-semibold text-base ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                     <UserIcon className={`h-5 w-5 text-purple-600 ${isRTL ? 'ml-6 sm:ml-4' : 'mr-6 sm:mr-4'}`} />
                     <span className={`${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.children', 'Children')}</span>
                   </label><div className="relative group">

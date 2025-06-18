@@ -16,6 +16,15 @@
   font-display: swap;
 }
 
+/* Custom SFArabic-Regular Font */
+@font-face {
+  font-family: 'SFArabic-Regular';
+  src: url('./assets/fonts/SFArabic-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Import Leaflet CSS - Temporarily disabled */
 /* @import 'leaflet/dist/leaflet.css'; */
 
