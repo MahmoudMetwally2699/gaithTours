@@ -13,7 +13,7 @@ export const MainSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'accommodation' | 'flights'>('accommodation');
   const { t } = useTranslation();
 
-  return (    <div className="bg-gray-50 py-8 sm:py-16 pt-20 sm:pt-24">{/* Added pt-20 for mobile, pt-24 for larger screens to account for fixed navbar */}
+  return (    <div className="bg-gray-50 py-8 sm:py-16 pt-24 sm:pt-28">{/* Added pt-24 for mobile, pt-28 for larger screens to account for fixed navbar */}
       <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">        {/* Main and Sub Taglines */}
         <div className="text-center mb-8 sm:mb-16 relative">
           {/* Background decorative elements */}
