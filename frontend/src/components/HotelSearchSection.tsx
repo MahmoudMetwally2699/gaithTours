@@ -84,7 +84,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];  return (
-    <section className="relative py-8 sm:py-16 lg:py-20 overflow-hidden">      {/* Modern Light Background */}
+    <section className="relative py-4 sm:py-16 lg:py-20 overflow-hidden">      {/* Modern Light Background */}
       <div className="absolute inset-0" style={{backgroundColor: '#E1FAFF'}}></div>{/* Subtle decorative elements for modern look */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-4 -left-4 w-72 h-72 bg-blue-100/20 rounded-full blur-3xl"></div>
@@ -92,116 +92,108 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
         <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-teal-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">        {/* Modern Search Form */}{/* Mobile: Unique Card Stack Design */}
+      <div className="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">        {/* Modern Search Form */}{/* Mobile: Compact Stacked Design */}
         <div className="sm:hidden">
           <motion.div
-            initial={{ y: 60, opacity: 0 }}
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="space-y-4"
-          >            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Modern Card 1: Destination */}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="space-y-3"
+          >
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Single Compact Card */}
               <motion.div
-                initial={{ x: -100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="relative group"
-              >                <div className="relative bg-white/90 backdrop-blur-md rounded-3xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <div className={`flex items-center mb-4 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
-                    <span className={`text-gray-700 font-semibold text-lg ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.search.destination', 'Where to?')}</span>
-                  </div><input
-                    type="text"
-                    value={searchParams.destination}
-                    onChange={(e) => handleChange('destination', e.target.value)}
-                    placeholder={t('hotels.search.destinationPlaceholder', 'City, hotel, or landmark...')}
-                    className={`w-full p-4 bg-gray-50/70 rounded-2xl border-2 border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100 text-gray-800 font-medium transition-all duration-300 ${isRTL ? 'text-right' : 'text-left'} placeholder-gray-400`}
-                    dir={isRTL ? 'rtl' : 'ltr'}
-                    required
-                  />
-                </div>
-              </motion.div>
-
-              {/* Modern Card 2: Dates (Side by Side) */}
-              <motion.div
-                initial={{ y: 50, opacity: 0 }}
+                initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="grid grid-cols-2 gap-4"
-              >                {/* Check-in */}
-                <div className="relative group">
-                  <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">                    <div className={`flex items-center mb-3 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
-                      <div className={`w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} shadow-md`}>
-                        <CalendarIcon className="h-5 w-5 text-white" />
-                      </div>
-                      <span className={`text-gray-700 font-semibold text-sm ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.checkIn', 'Check-in')}</span>
-                    </div><input
-                      type="date"
-                      value={searchParams.checkIn}
-                      min={today}
-                      onChange={(e) => handleChange('checkIn', e.target.value)}
-                      className="w-full p-3 bg-gray-50/70 rounded-xl border-2 border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100 text-gray-800 text-sm font-medium transition-all duration-300"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Check-out */}
-                <div className="relative group">
-                  <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">                    <div className={`flex items-center mb-3 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
-                      <div className={`w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} shadow-md`}>
-                        <CalendarIcon className="h-5 w-5 text-white" />
-                      </div>
-                      <span className={`text-gray-700 font-semibold text-sm ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.checkOut', 'Check-out')}</span>
-                    </div><input
-                      type="date"
-                      value={searchParams.checkOut}
-                      min={searchParams.checkIn || tomorrowStr}
-                      onChange={(e) => handleChange('checkOut', e.target.value)}
-                      className="w-full p-3 bg-gray-50/70 rounded-xl border-2 border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100 text-gray-800 text-sm font-medium transition-all duration-300"
-                      required
-                    />
-                  </div>
-                </div>
-              </motion.div>              {/* Modern Card 3: Guests */}
-              <motion.div
-                initial={{ x: 100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
                 className="relative group"
-              >                <div className="relative bg-white/90 backdrop-blur-md rounded-3xl p-6 border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <div className={`flex items-center mb-4 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
-                    <span className={`text-gray-700 font-semibold text-lg ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.guests', 'Guests & Rooms')}</span>
+              >
+                <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-[#F7871D] shadow-md hover:shadow-lg transition-all duration-300">
+
+                  {/* Destination Field */}
+                  <div className="space-y-2 mb-3">
+                    <label className={`text-gray-700 font-medium text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {t('hotels.search.destination', 'Where to?')}
+                    </label>
+                    <input
+                      type="text"
+                      value={searchParams.destination}
+                      onChange={(e) => handleChange('destination', e.target.value)}
+                      placeholder={t('hotels.search.destinationPlaceholder', 'City, hotel, or landmark...')}
+                      className={`w-full p-2.5 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-sm transition-all duration-300 ${isRTL ? 'text-right' : 'text-left'} placeholder-gray-400`}
+                      dir={isRTL ? 'rtl' : 'ltr'}
+                      required
+                    />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center">
-                      <label className={`text-xs font-semibold text-gray-600 mb-2 block ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.rooms', 'Rooms')}</label>                      <select
+                  {/* Dates Row */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="space-y-1">
+                      <label className={`text-gray-700 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {t('hotels.checkIn', 'Check-in')}
+                      </label>
+                      <input
+                        type="date"
+                        value={searchParams.checkIn}
+                        min={today}
+                        onChange={(e) => handleChange('checkIn', e.target.value)}
+                        className="w-full p-2 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 text-xs font-medium transition-all duration-300"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className={`text-gray-700 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {t('hotels.checkOut', 'Check-out')}
+                      </label>
+                      <input
+                        type="date"
+                        value={searchParams.checkOut}
+                        min={searchParams.checkIn || tomorrowStr}
+                        onChange={(e) => handleChange('checkOut', e.target.value)}
+                        className="w-full p-2 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 text-xs font-medium transition-all duration-300"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Guests Row */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {t('hotels.rooms', 'Rooms')}
+                      </label>
+                      <select
                         value={searchParams.rooms}
                         onChange={(e) => handleChange('rooms', parseInt(e.target.value))}
-                        className="w-full p-3 bg-gray-50/70 rounded-xl border-2 border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100 text-gray-800 font-medium text-sm transition-all duration-300"
+                        className="w-full p-2 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-xs transition-all duration-300"
                       >
                         {[1, 2, 3, 4, 5].map(num => (
                           <option key={num} value={num}>{num}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="text-center">
-                      <label className={`text-xs font-semibold text-gray-600 mb-2 block ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.adults', 'Adults')}</label>                      <select
+                    <div className="space-y-1">
+                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {t('hotels.adults', 'Adults')}
+                      </label>
+                      <select
                         value={searchParams.adults}
                         onChange={(e) => handleChange('adults', parseInt(e.target.value))}
-                        className="w-full p-3 bg-gray-50/70 rounded-xl border-2 border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100 text-gray-800 font-medium text-sm transition-all duration-300"
+                        className="w-full p-2 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-xs transition-all duration-300"
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                           <option key={num} value={num}>{num}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="text-center">
-                      <label className={`text-xs font-semibold text-gray-600 mb-2 block ${isRTL ? 'text-right' : 'text-left'}`}>{t('hotels.children', 'Children')}</label>
+                    <div className="space-y-1">
+                      <label className={`text-gray-600 font-medium text-xs ${isRTL ? 'text-right' : 'text-left'}`}>
+                        {t('hotels.children', 'Children')}
+                      </label>
                       <select
                         value={searchParams.children}
                         onChange={(e) => handleChange('children', parseInt(e.target.value))}
-                        className="w-full p-3 bg-gray-50/70 rounded-xl border-2 border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-4 focus:ring-orange-100 text-gray-800 font-medium text-sm transition-all duration-300"
+                        className="w-full p-2 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-xs transition-all duration-300"
                       >
                         {[0, 1, 2, 3, 4, 5, 6].map(num => (
                           <option key={num} value={num}>{num}</option>
@@ -210,21 +202,23 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     </div>
                   </div>
                 </div>
-              </motion.div>              {/* Modern Search Button */}
+              </motion.div>
+
+              {/* Compact Search Button */}
               <motion.div
-                initial={{ y: 50, opacity: 0, scale: 0.9 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="pt-4"
-              >                <button
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+                className="pt-2"
+              >
+                <button
                   type="submit"
-                  className="relative w-full group overflow-hidden bg-[#F7871D] hover:bg-[#e67612] text-white py-4 px-6 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transform transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                  className="relative w-full group overflow-hidden bg-[#F7871D] hover:bg-[#e67612] text-white py-3 px-6 rounded-xl font-semibold text-base shadow-lg hover:shadow-xl transform transition-all duration-300 hover:scale-[1.02] active:scale-95"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <div className="relative flex items-center justify-center space-x-3">
-                    <MagnifyingGlassIcon className="h-6 w-6" />
-                    <span className="font-bold tracking-wide">{t('hotels.search.button', 'Search Hotels')}</span>
-                    <SparklesIcon className="h-5 w-5 group-hover:animate-pulse" />
+                  <div className="relative flex items-center justify-center space-x-2">
+                    <MagnifyingGlassIcon className="h-5 w-5" />
+                    <span className="font-bold">{t('hotels.search.button', 'Search Hotels')}</span>
                   </div>
                 </button>
               </motion.div>
@@ -236,9 +230,8 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="relative hidden sm:block"
-        >
-          {/* Modern clean container */}
-          <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 shadow-2xl hover:shadow-3xl transition-all duration-300">
+        >          {/* Modern clean container */}
+          <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 border-2 border-[#F7871D] shadow-2xl hover:shadow-3xl transition-all duration-300">
             <form onSubmit={handleSubmit} className="relative space-y-8">
               {/* Destination Search */}
               <motion.div

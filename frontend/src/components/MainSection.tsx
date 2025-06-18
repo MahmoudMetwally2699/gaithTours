@@ -13,9 +13,9 @@ export const MainSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'accommodation' | 'flights'>('accommodation');
   const { t } = useTranslation();
 
-  return (    <div className="bg-gray-50 py-16 pt-24">{/* Added pt-24 to account for fixed navbar */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">{/* Main and Sub Taglines */}
-        <div className="text-center mb-16 relative">
+  return (    <div className="bg-gray-50 py-8 sm:py-16 pt-20 sm:pt-24">{/* Added pt-20 for mobile, pt-24 for larger screens to account for fixed navbar */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">        {/* Main and Sub Taglines */}
+        <div className="text-center mb-8 sm:mb-16 relative">
           {/* Background decorative elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-4 -left-4 w-32 h-32 bg-orange-100 rounded-full blur-3xl opacity-30"></div>
@@ -30,23 +30,21 @@ export const MainSection: React.FC = () => {
             className="relative z-10"
           >            {/* Main Heading with gradient and animations */}
             <h1
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black mb-6 leading-tight sm:whitespace-nowrap whitespace-normal"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black mb-4 sm:mb-6 leading-tight sm:whitespace-nowrap whitespace-normal"
               style={{ fontFamily: 'TIDO, sans-serif' }}
             >
               <span className="bg-gradient-to-r from-[#F7871D] via-[#FF6B35] to-[#1976D2] bg-clip-text text-transparent">
                 {t('main.tagline')}
               </span>
-            </h1>
-
-            {/* Decorative line */}
-            <div className="flex justify-center mb-8">
+            </h1>            {/* Decorative line */}
+            <div className="flex justify-center mb-4 sm:mb-8">
               <div className="w-24 h-1 bg-gradient-to-r from-orange-400 to-blue-400 rounded-full"></div>
-            </div>            {/* Subtitle with enhanced styling */}
+            </div>{/* Subtitle with enhanced styling */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-700 font-medium max-w-4xl mx-auto leading-relaxed px-2 sm:px-4"
+              className="text-base sm:text-lg md:text-2xl lg:text-3xl text-gray-700 font-medium max-w-4xl mx-auto leading-relaxed px-2 sm:px-4"
               style={{ fontFamily: 'TIDO, sans-serif' }}
             >
               <span className="relative">
@@ -59,39 +57,36 @@ export const MainSection: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex justify-center mb-8 px-2"
+          className="flex justify-center mb-4 sm:mb-8 px-2"
         >
           <div className="flex gap-1 sm:gap-2 p-1 bg-white rounded-full shadow-lg max-w-full">            {/* Accommodation Tab */}
             <button
-              onClick={() => setActiveTab('accommodation')}
-              className={`
-                flex items-center gap-3 sm:gap-3 px-4 sm:px-6 py-3 sm:py-3 rounded-full transition-all duration-300 text-base sm:text-base
+              onClick={() => setActiveTab('accommodation')}              className={`
+                flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base
                 ${activeTab === 'accommodation'
                   ? 'bg-white border-2 border-orange-500 text-orange-500 shadow-md'
                   : 'bg-sky-200 border-2 border-sky-300 text-white hover:bg-sky-300'
                 }
               `}
               style={{ fontFamily: 'Cairo, sans-serif' }}
-            >
-              <div className={`
-                w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center
+            >              <div className={`
+                w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center
                 ${activeTab === 'accommodation' ? 'bg-sky-200' : 'bg-sky-400'}
               `}>
-                <HomeIcon className="w-5 h-5 sm:w-5 sm:h-5 text-white" />
+                <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <span className="font-medium">{t('main.accommodation')}</span>
             </button>            {/* Flights Tab (Disabled) */}
             <div className="relative group">
               <button
-                disabled
-                className="
-                  flex items-center gap-3 sm:gap-3 px-4 sm:px-6 py-3 sm:py-3 rounded-full text-base sm:text-base
+                disabled                className="
+                  flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-full text-sm sm:text-base
                   bg-sky-200 border-2 border-sky-300 text-black
                   opacity-60 cursor-not-allowed
                 "
                 style={{ fontFamily: 'Cairo, sans-serif' }}
-              >                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-sky-400">
-                  <PaperAirplaneIcon className="w-5 h-5 sm:w-5 sm:h-5 text-white rotate-45" />
+              >                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-sky-400">
+                  <PaperAirplaneIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white rotate-45" />
                 </div>
                 <span className="font-medium">{t('main.flights')}</span>
               </button>
