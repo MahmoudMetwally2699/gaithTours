@@ -167,19 +167,16 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="space-y-3"
-          >
-            <form onSubmit={handleSubmit} className="space-y-3">
+          >            <form onSubmit={handleSubmit} className="space-y-3 relative">
               {/* Single Compact Card */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                className="relative group"
+                className="relative group z-20"
               >
-                <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-[#F7871D] shadow-md hover:shadow-lg transition-all duration-300">
-
-                  {/* Destination Field */}
-                  <div className="space-y-2 mb-3 relative z-50">
+                <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-[#F7871D] shadow-md hover:shadow-lg transition-all duration-300">                  {/* Destination Field */}
+                  <div className="space-y-2 mb-3 relative z-[9999]">
                     <label className={`text-gray-700 font-medium text-sm ${isRTL ? 'text-right' : 'text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
                       {t('hotels.search.destination', 'Where to?')}
                     </label>
@@ -207,7 +204,8 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}                        className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                        exit={{ opacity: 0, y: -10 }}                        className="absolute top-full left-0 right-0 z-[99999] mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-2xl max-h-64 overflow-y-auto"
+                        style={{ zIndex: 99999 }}
                       >
                         {hotels.map((hotel, index) => (
                           <motion.div
@@ -301,14 +299,12 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     </div>
                   </div>
                 </div>
-              </motion.div>
-
-              {/* Compact Search Button */}
+              </motion.div>              {/* Compact Search Button */}
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.4, delay: 0.4 }}
-                className="pt-2"
+                className="pt-2 relative z-0"
               >
                 <button
                   type="submit"
