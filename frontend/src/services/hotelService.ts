@@ -12,18 +12,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api
  */
 const searchHotels = async (destination: string, page: number = 1, limit: number = 10): Promise<HotelSearchResponse> => {
   try {
-    // Get auth token from localStorage
+    // Get auth token from localStorage (optional for search)
     const token = localStorage.getItem('token');
 
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    const options = {
+    const options: RequestInit = {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       }
     };
 
@@ -35,7 +31,7 @@ const searchHotels = async (destination: string, page: number = 1, limit: number
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }    const data = await response.json();
+    }const data = await response.json();
 
     // Debug logging
     console.log('API Response:', data);

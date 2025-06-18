@@ -98,7 +98,6 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
     setShowSuggestions(false);
     setHotels([]);
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -121,6 +120,15 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
 
     if (checkOutDate <= checkInDate) {
       alert(t('hotels.search.invalidCheckOut', 'Check-out date must be after check-in date'));
+      return;
+    }
+
+    // Check authentication before proceeding to search results
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // If not logged in, redirect to login page with return URL
+      const returnUrl = encodeURIComponent(`/hotels/search?destination=${encodeURIComponent(searchParams.destination)}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&rooms=${searchParams.rooms}&adults=${searchParams.adults}&children=${searchParams.children}`);
+      history.push(`/login?returnUrl=${returnUrl}`);
       return;
     }
 
@@ -200,7 +208,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                        className="absolute top-full left-0 right-0 z-[100] mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
                       >
                         {hotels.map((hotel, index) => (
                           <motion.div
@@ -372,7 +380,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
                   >
                     {hotels.map((hotel, index) => (
                       <motion.div
