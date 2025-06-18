@@ -45,7 +45,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
       setShowSuggestions(false);
       return;
     }
-
+//    Start loading state
     setLoadingHotels(true);
     try {
       const response = await searchHotels(query, 1, 8); // Limit to 8 suggestions
