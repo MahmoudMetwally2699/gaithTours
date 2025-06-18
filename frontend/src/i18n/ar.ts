@@ -240,7 +240,22 @@ export const ar = {
     cta: {
       title: 'مستعد لبدء رحلتك؟',
       description: 'دعنا ننشئ مغامرة سعودية لا تُنسى مصممة خصيصاً لك.',
-      button: 'خطط لرحلتي'
+      button: 'خطط لرحلتي'    }
+  },
+
+  // Infographic Section
+  infographic: {
+    section1: {
+      headline: 'ضمان توفير أفضل الأسعار',
+      supportingText: 'خصومات على إقامتك ورحلاتك تصل إلى 25%'
+    },
+    section2: {
+      headline: 'نساعدك على إختيار أفضل إقامة تناسبك',
+      supportingText: 'نبحث لك عن أفضل إقامة تناسب رحلتك'
+    },
+    section3: {
+      headline: 'سنكون دائماً أقرب إليك لتوفير طلباتك خلال رحلتك',
+      supportingText: 'على مدار الساعة تتواصل معك لتلبيه إحتياجاتك'
     }
   },
 

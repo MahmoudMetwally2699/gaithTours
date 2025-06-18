@@ -206,7 +206,22 @@ export const en = {
     cta: {
       title: 'Ready to Start Your Journey?',
       description: 'Let us create an unforgettable Saudi Arabian adventure tailored just for you.',
-      button: 'Plan My Trip'
+      button: 'Plan My Trip'    }
+  },
+
+  // Infographic Section
+  infographic: {
+    section1: {
+      headline: 'Best Price Guarantee',
+      supportingText: 'Get up to 25% discount on your stay and trips'
+    },
+    section2: {
+      headline: 'We Help You Choose the Perfect Accommodation',
+      supportingText: 'We search for the best accommodation that suits your trip'
+    },
+    section3: {
+      headline: 'We Will Always Be Close to You to Provide Your Needs During Your Trip',
+      supportingText: 'Available 24/7 to communicate with you and meet your needs'
     }
   },
 
