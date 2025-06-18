@@ -8,8 +8,8 @@ const router = express.Router();
 // In-memory cache for hotel search results (temporary solution)
 let hotelSearchCache = new Map();
 
-// Search hotels - simplified to only require destination
-router.get('/search', protect, async (req, res) => {
+// Search hotels - simplified to only require destination (no authentication required)
+router.get('/search', async (req, res) => {
   try {
     const { destination, page = 1, limit = 10 } = req.query;
 
