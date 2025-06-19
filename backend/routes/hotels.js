@@ -5,22 +5,21 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 
 const router = express.Router();
 
-// In-memory cache for hotel search results (temporary solution)
+// In-memory cache for hotel search results with pagination support
 let hotelSearchCache = new Map();
+let hotelPaginationCache = new Map(); // Cache for paginated results
 
 // Search hotels - simplified to only require destination (no authentication required)
 router.get('/search', async (req, res) => {
   try {
-    const { destination, page = 1, limit = 10 } = req.query;
+    const { destination, page = 1, limit = 20 } = req.query;
 
     if (!destination) {
       return errorResponse(res, 'Destination is required', 400);
-    }
-
-    // Parse pagination parameters
+    }    // Parse pagination parameters
     const pageNumber = parseInt(page) || 1;
-    const limitNumber = parseInt(limit) || 10;
-    const maxLimit = 50; // Maximum hotels per request
+    const limitNumber = parseInt(limit) || 20; // Default to 20 hotels per page
+    const maxLimit = 50; // Maximum hotels per request (reasonable limit)
     const actualLimit = Math.min(limitNumber, maxLimit);
 
     // Generate default dates (today + 1 day for check-in, today + 2 days for check-out)
@@ -106,10 +105,10 @@ router.get('/search', async (req, res) => {
       const aHotels = a.hotels || a.nr_hotels || 0;
       const bHotels = b.hotels || b.nr_hotels || 0;
       return bHotels - aHotels;
-    });
+    });    console.log(`Sorted destinations:`, sortedDestinations.slice(0, 5).map(d => ({ name: d.name, type: d.dest_type, hotels: d.hotels || d.nr_hotels })));
 
-    console.log(`Sorted destinations:`, sortedDestinations.slice(0, 5).map(d => ({ name: d.name, type: d.dest_type, hotels: d.hotels || d.nr_hotels })));    let allHotels = [];
-    let totalCount = 0;    // Identify if this is a search for specific hotels, including exact name matching
+    let allHotels = [];
+    let totalCount = 0; // Will be calculated after maxDestinations is set// Identify if this is a search for specific hotels, including exact name matching
     // This will detect searches like "ewaa" that are looking for specific hotels
     const isHotelSearch = destination.toLowerCase().includes('hotel') ||
                           destination.toLowerCase().includes('فندق') ||
@@ -117,27 +116,156 @@ router.get('/search', async (req, res) => {
                             dest.dest_type === 'hotel' &&
                             dest.name.toLowerCase().includes(destination.toLowerCase())
                           );    // For hotel searches, allow processing more destinations to get all matching hotels
-    let maxDestinations = 3; // default
-    if (isHotelSearch) {
-      // Count how many matching hotel destinations we have
-      const matchingHotelCount = sortedDestinations.filter(dest =>
-        dest.dest_type === 'hotel' &&
-        dest.name.toLowerCase().includes(destination.toLowerCase().replace(/hotel/g, '').trim())
-      ).length;
-      maxDestinations = Math.min(8, Math.max(5, matchingHotelCount)); // Optimized: between 5-8 destinations max
-      console.log(`🚀 Hotel search detected: processing ${maxDestinations} destinations (${matchingHotelCount} matching hotels found)`);
+    let maxDestinations = 5; // Optimized default for lazy loading
+    if (isHotelSearch) {      // Count how many matching hotel destinations we have
+      const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim(); // Remove "hotel" and everything after comma
+      const matchingHotelCount = sortedDestinations.filter(dest => {
+        if (dest.dest_type !== 'hotel') return false;
+
+        const destName = dest.name.toLowerCase();
+        const searchTerms = cleanDestination.split(/\s+/).filter(term => term.length > 2); // Split into words, ignore short words
+
+        // Check if most search terms are found in the destination name
+        const matchingTerms = searchTerms.filter(term => destName.includes(term));
+        return matchingTerms.length >= Math.max(1, Math.floor(searchTerms.length * 0.6)); // At least 60% of terms must match
+      }).length;
+      maxDestinations = Math.min(10, Math.max(5, matchingHotelCount)); // Balanced: between 5-10 destinations max
+      console.log(`🚀 Hotel search detected: processing ${maxDestinations} destinations (${matchingHotelCount} matching hotels found)`);    } else {
+      // For city searches, process fewer destinations for efficient lazy loading
+      maxDestinations = Math.min(2 + Math.ceil(pageNumber / 2), sortedDestinations.length); // Gradually increase with page number      console.log(`🏙️ City search detected: processing ${maxDestinations} destinations for page ${pageNumber}`);
     }
 
+    // Calculate estimated total hotels available for better pagination
+    const estimatedTotalHotels = sortedDestinations
+      .slice(0, Math.min(maxDestinations, sortedDestinations.length))
+      .reduce((sum, dest) => sum + (dest.hotels || dest.nr_hotels || 0), 0);
+
+    console.log(`📊 Estimated total hotels available: ${estimatedTotalHotels} from ${Math.min(maxDestinations, sortedDestinations.length)} destinations`);
+    totalCount = estimatedTotalHotels; // Set the estimated total
+
     let hotelsCollected = 0;
-    const targetHotels = actualLimit;
+
+    // Lazy loading: Only fetch what's needed for the current page + a small buffer
+    const hotelsPerPage = actualLimit;    // Calculate how many total hotels we need for this page (true lazy loading)
+    // We need enough hotels to fill from page 1 to the current page, plus a buffer for duplicates
+    const hotelsNeededForCurrentPage = pageNumber * hotelsPerPage;
+
+    // Account for duplicates: collect extra hotels to ensure we have enough unique ones
+    // Higher pages need more buffer due to more potential duplicates
+    const duplicateBuffer = Math.min(pageNumber * hotelsPerPage * 0.5, 100); // 50% buffer, max 100
+    const bufferSize = hotelsPerPage + duplicateBuffer; // Base buffer + duplicate buffer
+    const targetHotels = hotelsNeededForCurrentPage + bufferSize;
+
+    console.log(`🎯 Lazy Loading: Page ${pageNumber} needs ${hotelsNeededForCurrentPage} hotels (+ ${bufferSize.toFixed(0)} buffer for duplicates = ${targetHotels.toFixed(0)} total to collect)`);    // Check if we have cached results for this destination
+    // Include search type in cache key to differentiate between exact hotel searches and area searches
+    const searchTypeIndicator = isHotelSearch ? 'hotel_search' : 'area_search';
+    // For exact hotel searches, include more specific terms in the cache key
+    const cleanSearchTerms = isHotelSearch ? destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim().replace(/\s+/g, '_') : destination.toLowerCase();
+    const destinationCacheKey = `${cleanSearchTerms}_${searchTypeIndicator}_${arrivalDate}_${departureDate}`;
+    const cachedData = hotelSearchCache.get(destinationCacheKey);    if (cachedData && cachedData.allHotels) {
+      let hotelsToUse = cachedData.allHotels;
+
+      // For exact hotel searches, filter cached results to only include matching hotels
+      if (isHotelSearch) {
+        const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim();
+        const searchTerms = cleanDestination.split(/\s+/).filter(term => term.length > 2);
+
+        console.log(`🔍 Filtering cached hotels for exact match. Original destination: "${destination}"`);
+        console.log(`🔍 Clean destination: "${cleanDestination}"`);
+        console.log(`🔍 Search terms: [${searchTerms.join(', ')}]`);
+        console.log(`🔍 Total cached hotels: ${cachedData.allHotels.length}`);
+
+        const matchingHotels = cachedData.allHotels.filter(hotel => {
+          const hotelNameLower = hotel.name.toLowerCase();
+
+          // For very specific searches (like "Ewaa Express Hotel - Al Shati"), use stricter matching
+          if (destination.toLowerCase().includes(' - ') || destination.toLowerCase().includes('express') || destination.toLowerCase().includes('ewaa')) {
+            // Check if the hotel name contains the key identifying terms
+            const keyTerms = destination.toLowerCase().split(/[\s\-]+/).filter(term => term.length > 2);
+            const matchingKeyTerms = keyTerms.filter(term => hotelNameLower.includes(term));
+            const matches = matchingKeyTerms.length >= Math.max(2, Math.floor(keyTerms.length * 0.8)); // 80% of terms must match for specific searches
+            console.log(`  🏨 "${hotel.name}": key terms [${keyTerms.join(', ')}], matching: [${matchingKeyTerms.join(', ')}] (${matchingKeyTerms.length}/${keyTerms.length}) - ${matches ? 'MATCH' : 'NO MATCH'}`);
+            return matches;
+          }
+
+          // Check if most search terms are found in the hotel name (original logic)
+          const matchingTerms = searchTerms.filter(term => hotelNameLower.includes(term));
+          const matches = matchingTerms.length >= Math.max(1, Math.floor(searchTerms.length * 0.6));
+          console.log(`  🏨 "${hotel.name}": terms [${searchTerms.join(', ')}], matching: [${matchingTerms.join(', ')}] (${matchingTerms.length}/${searchTerms.length}) - ${matches ? 'MATCH' : 'NO MATCH'}`);
+          return matches;
+        });
+
+        if (matchingHotels.length > 0) {
+          hotelsToUse = matchingHotels;
+          console.log(`🔍 Filtered cached hotels from ${cachedData.allHotels.length} to ${matchingHotels.length} matching hotels for: ${destination}`);
+        } else {
+          console.log(`⚠️  No matching hotels found in cache for "${destination}", will fetch fresh data`);
+          // Don't use cached data if no matches found for hotel search
+          hotelsToUse = []; // Set to empty array to skip cache usage
+        }
+      }
+
+      // Only proceed with cache if we have filtered hotels (for hotel searches) or any hotels (for area searches)
+      if (hotelsToUse.length > 0) {
+        // Check if we have enough cached hotels for this specific page
+        const startIndex = (pageNumber - 1) * actualLimit;
+        const endIndex = startIndex + actualLimit;
+        const availableForThisPage = hotelsToUse.slice(startIndex, endIndex);
+
+        if (availableForThisPage.length === actualLimit || (pageNumber === Math.ceil(hotelsToUse.length / actualLimit) && availableForThisPage.length > 0)) {
+          // We have enough hotels for this specific page OR this is the last page with some hotels
+          console.log(`📋 Using cached data for ${destination} page ${pageNumber} (${availableForThisPage.length} hotels available for this page)`);
+
+          return successResponse(res, {
+            hotels: availableForThisPage,
+            total: Math.max(hotelsToUse.length, estimatedTotalHotels),
+            page: pageNumber,
+            limit: actualLimit,
+            totalPages: Math.ceil(Math.max(hotelsToUse.length, estimatedTotalHotels) / actualLimit),
+            destinationsSearched: cachedData.destinationsSearched || 0,
+            totalDestinationsFound: cachedData.totalDestinationsFound || 0,
+            fromCache: true,
+            estimatedTotal: estimatedTotalHotels,
+            cachedHotels: hotelsToUse.length
+          }, `Hotels retrieved from cache (page ${pageNumber}, ${availableForThisPage.length} hotels of ${Math.max(hotelsToUse.length, estimatedTotalHotels)} estimated total)`);
+        } else if (hotelsToUse.length >= hotelsNeededForCurrentPage) {
+          // We have enough total hotels but need to paginate
+          console.log(`📋 Using cached data for ${destination} page ${pageNumber} (${hotelsToUse.length} total hotels, need ${hotelsNeededForCurrentPage})`);
+
+          const paginatedHotels = hotelsToUse.slice(startIndex, endIndex);
+
+          return successResponse(res, {
+            hotels: paginatedHotels,
+            total: Math.max(hotelsToUse.length, estimatedTotalHotels),
+            page: pageNumber,
+            limit: actualLimit,
+            totalPages: Math.ceil(Math.max(hotelsToUse.length, estimatedTotalHotels) / actualLimit),
+            destinationsSearched: cachedData.destinationsSearched || 0,
+            totalDestinationsFound: cachedData.totalDestinationsFound || 0,
+            fromCache: true,
+            estimatedTotal: estimatedTotalHotels,
+            cachedHotels: hotelsToUse.length
+          }, `Hotels retrieved from cache (page ${pageNumber}, ${paginatedHotels.length} hotels of ${Math.max(hotelsToUse.length, estimatedTotalHotels)} estimated total)`);
+        } else {
+          console.log(`📋 Partial cache found for ${destination}: ${hotelsToUse.length} hotels, but need ${hotelsNeededForCurrentPage} for page ${pageNumber}. Fetching more...`);
+          // Continue with API calls to fetch more hotels, starting from what we have
+          allHotels = [...hotelsToUse];
+          hotelsCollected = hotelsToUse.length;
+        }
+      }
+    }
 
     // For hotel searches, first collect all exact matching hotel destinations
     let exactMatchHotels = [];
-    if (isHotelSearch) {
-      const exactMatchDestinations = sortedDestinations.filter(dest =>
-        dest.dest_type === 'hotel' &&
-        dest.name.toLowerCase().includes(destination.toLowerCase().replace(/hotel/g, '').trim())
-      );
+    if (isHotelSearch) {      const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim();
+      const searchTerms = cleanDestination.split(/\s+/).filter(term => term.length > 2);
+
+      const exactMatchDestinations = sortedDestinations.filter(dest => {
+        if (dest.dest_type !== 'hotel') return false;
+        const destName = dest.name.toLowerCase();
+        const matchingTerms = searchTerms.filter(term => destName.includes(term));
+        return matchingTerms.length >= Math.max(1, Math.floor(searchTerms.length * 0.6));
+      });
 
       console.log(`Found ${exactMatchDestinations.length} exact matching hotel destinations`);
 
@@ -152,24 +280,23 @@ router.get('/search', async (req, res) => {
       const destId = destinationData.dest_id;
 
       console.log(`\n=== Searching destination ${destIndex + 1}/${Math.min(sortedDestinations.length, maxDestinations)}: ${destinationData.name} (${destinationData.hotels || destinationData.nr_hotels} hotels) ===`);      console.log(`Destination type: "${destinationData.dest_type}", Hotels: ${destinationData.hotels || destinationData.nr_hotels || 0}`);      // For hotel searches, check if this is a matching hotel destination
-      let isMatchingHotel = isHotelSearch &&
-        destinationData.dest_type === 'hotel' &&
-        destinationData.name.toLowerCase().includes(destination.toLowerCase().replace(/hotel/g, '').trim());
+      let isMatchingHotel = false;
+      if (isHotelSearch && destinationData.dest_type === 'hotel') {
+        const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim();
+        const destName = destinationData.name.toLowerCase();
+        const searchTerms = cleanDestination.split(/\s+/).filter(term => term.length > 2);
 
-      // For hotel searches: ALWAYS process ALL matching hotel destinations
-      // For regular searches: stop when target is reached
-      if (!isHotelSearch && hotelsCollected >= targetHotels) {
-        console.log(`Regular search: stopping at ${hotelsCollected}/${targetHotels} hotels`);
-        break;
-      }
-
-      // For hotel searches with matching hotels: NEVER stop, process all matching destinations
+        // Check if most search terms are found in the destination name
+        const matchingTerms = searchTerms.filter(term => destName.includes(term));
+        isMatchingHotel = matchingTerms.length >= Math.max(1, Math.floor(searchTerms.length * 0.6));
+      }// For hotel searches: ALWAYS process ALL matching hotel destinations
+      // For regular searches: stop when we have enough for current page
       if (isHotelSearch && isMatchingHotel) {
         console.log(`Hotel search: Processing matching hotel destination regardless of count: ${destinationData.name}`);
-      }      // For hotel searches with non-matching destinations: stop when target reached
-      else if (isHotelSearch && !isMatchingHotel && hotelsCollected >= targetHotels) {
-        console.log(`Hotel search: skipping non-matching destination, already have ${hotelsCollected}/${targetHotels} hotels`);
-        continue; // Skip this destination but continue to others
+      }      // For hotel searches with non-matching destinations: stop when we have enough for current page
+      else if (isHotelSearch && !isMatchingHotel && hotelsCollected >= hotelsNeededForCurrentPage) {
+        console.log(`✅ Hotel search: Got enough hotels for page ${pageNumber} (${hotelsCollected}/${hotelsNeededForCurrentPage}). Skipping non-matching destinations.`);
+        break;
       }
 
       // Special handling for Ewaa hotels or similar exact name matches
@@ -198,7 +325,7 @@ router.get('/search', async (req, res) => {
           console.log(`Including hotel match: ${destinationData.name}`);
         }
         // For individual hotels in general search, only include if we need more results
-        else if (destinationData.dest_type === 'hotel' && hotelsCollected < targetHotels / 2) {
+        else if (destinationData.dest_type === 'hotel' && hotelsCollected < hotelsNeededForCurrentPage / 2) {
           console.log(`Including individual hotel: ${destinationData.name}`);
         }
         // For other types with few hotels, skip
@@ -209,11 +336,11 @@ router.get('/search', async (req, res) => {
       }
 
       console.log(`✅ Processing destination: ${destinationData.name} (Type: ${destinationData.dest_type})`);      // Fetch hotels from this destination
-      // For matching hotels, we want to get all pages
-      // For non-matching hotels, stop when we reach the target
+      // Adjust page fetching based on current request page
+      const maxPagesPerDestination = Math.min(5, Math.max(2, pageNumber)); // More pages for later requests
       const continueForMatching = isHotelSearch && isMatchingHotel;
 
-      for (let page = 1; page <= 2 && (continueForMatching || hotelsCollected < targetHotels); page++) {
+      for (let page = 1; page <= maxPagesPerDestination && (continueForMatching || hotelsCollected < targetHotels); page++) {
         // CRITICAL FIX: Use correct search_type based on destination type
         let searchType = 'city'; // default
         if (destinationData.dest_type === 'hotel') {
@@ -248,9 +375,7 @@ router.get('/search', async (req, res) => {
           timeout: 8000 // Reduced timeout to 8 seconds for faster responses
         };
 
-        try {
-          console.log(`Searching hotels page ${page} (collected: ${hotelsCollected}/${targetHotels})`);
-          const hotelResponse = await axios.request(hotelOptions);
+        try {          console.log(`Searching hotels page ${page} (collected: ${hotelsCollected}/${hotelsNeededForCurrentPage} needed for page ${pageNumber})`);          const hotelResponse = await axios.request(hotelOptions);
 
           console.log(`Hotel API response page ${page}:`, {
             status: hotelResponse.data.status,
@@ -327,26 +452,26 @@ router.get('/search', async (req, res) => {
               console.log(`Filtered to ${exactMatchHotels.length} exact matches from ${pageHotels.length} total hotels`);
               pageHotels = exactMatchHotels;
             }
-          }          // Only take what we need to reach our target, unless it's an exact hotel match
+          }          // Only take what we need to reach our target for the current page, unless it's an exact hotel match
           let hotelsToAdd;
           if (isHotelSearch && destinationData.dest_type === 'hotel' && isMatchingHotel) {
             // For exact hotel matches, take all matching hotels regardless of limit
             hotelsToAdd = pageHotels;
-            console.log(`Taking all ${pageHotels.length} hotels from exact match: ${destinationData.name}`);
-          } else {
-            // For other searches, respect the remaining slots
-            const remainingSlots = Math.max(0, targetHotels - hotelsCollected);
-            hotelsToAdd = pageHotels.slice(0, remainingSlots);
+            console.log(`Taking all ${pageHotels.length} hotels from exact match: ${destinationData.name}`);          } else {
+            // For other searches, control the amount based on current needs for the requested page
+            const remainingNeeded = Math.max(0, hotelsNeededForCurrentPage - hotelsCollected);
+            hotelsToAdd = remainingNeeded > 0 ? pageHotels.slice(0, Math.max(remainingNeeded, hotelsPerPage)) : pageHotels.slice(0, hotelsPerPage);
           }
 
           allHotels = allHotels.concat(hotelsToAdd);
           hotelsCollected += hotelsToAdd.length;
           totalCount = hotelResponse.data.data?.total_count || allHotels.length;
 
-          console.log(`Page ${page}: Found ${pageHotels.length} hotels, Added ${hotelsToAdd.length}, Total: ${hotelsCollected}/${targetHotels}`);          // For hotel searches with exact matches, always continue
-          // For other searches, stop when we've collected enough hotels
+          console.log(`Page ${page}: Found ${pageHotels.length} hotels, Added ${hotelsToAdd.length}, Total: ${hotelsCollected}/${hotelsNeededForCurrentPage} (need for page ${pageNumber})`);          // For hotel searches with exact matches, always continue
+          // For other searches, stop when we've collected enough hotels for the current page
+          // But account for potential duplicates by checking if we need more
           if (hotelsCollected >= targetHotels && !(isHotelSearch && isMatchingHotel)) {
-            console.log(`✅ Target reached: ${hotelsCollected}/${targetHotels} hotels collected`);
+            console.log(`✅ Page target reached: ${hotelsCollected}/${targetHotels} hotels collected for page ${pageNumber} (accounting for duplicates)`);
             break;
           }
 
@@ -359,14 +484,12 @@ router.get('/search', async (req, res) => {
           if (isHotelSearch && destinationData.dest_type === 'hotel' && isMatchingHotel) {
             console.log(`Continuing hotel search for exact match: ${destinationData.name}`);
             break; // Break from pages loop but continue to next destination
-          }
-
-          // Stop if this page has fewer than 20 hotels (no more results)
-          if (pageHotels.length < 20) {
-            console.log(`Last page reached (${pageHotels.length} < 20 hotels)`);
+          }          // Stop if this page has fewer than 10 hotels (indicating we're near the end of results)
+          if (pageHotels.length < 10) {
+            console.log(`Last page reached (${pageHotels.length} < 10 hotels)`);
             break;
-          }          // Reduced delay between requests for faster response
-          await new Promise(resolve => setTimeout(resolve, 100));
+          }          // Minimal delay between requests for faster response while respecting rate limits
+          await new Promise(resolve => setTimeout(resolve, 50));
 
         } catch (error) {
           console.error(`Error fetching page ${page} for destination ${destinationData.name}:`, error.message);
@@ -377,30 +500,38 @@ router.get('/search', async (req, res) => {
           break; // Stop fetching more pages if current page fails
         }
       }      // Log completion for this destination
-      console.log(`=== Completed destination ${destIndex + 1}: ${destinationData.name} ===`);
+      console.log(`=== Completed destination ${destIndex + 1}: ${destinationData.name} ===`);      // For hotel searches: check if we need to continue for more exact matches
+      if (isHotelSearch) {        // Check if there are more matching hotel destinations to process AND we still need more hotels
+        const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim();
+        const searchTerms = cleanDestination.split(/\s+/).filter(term => term.length > 2);
 
-      // For hotel searches: always continue if we haven't processed all matching hotel destinations
-      // For regular searches: stop when we hit the target hotel count
-      if (isHotelSearch) {
-        // Check if there are more matching hotel destinations to process
-        const remainingMatchingHotels = sortedDestinations.slice(destIndex + 1).some(dest =>
-          dest.dest_type === 'hotel' &&
-          dest.name.toLowerCase().includes(destination.toLowerCase().replace(/hotel/g, '').trim())
-        );
+        const remainingMatchingHotels = sortedDestinations.slice(destIndex + 1).some(dest => {
+          if (dest.dest_type !== 'hotel') return false;
+          const destName = dest.name.toLowerCase();
+          const matchingTerms = searchTerms.filter(term => destName.includes(term));
+          return matchingTerms.length >= Math.max(1, Math.floor(searchTerms.length * 0.6));
+        });
 
-        if (remainingMatchingHotels) {
-          console.log(`Hotel search: Continuing to process remaining matching hotels (collected: ${hotelsCollected})`);
+        // Only continue if we have more matching hotels AND we haven't got enough for current page
+        if (remainingMatchingHotels && hotelsCollected < hotelsNeededForCurrentPage) {
+          console.log(`Hotel search: Continuing to process remaining matching hotels (collected: ${hotelsCollected}/${hotelsNeededForCurrentPage} needed)`);
           continue;
+        } else if (hotelsCollected >= hotelsNeededForCurrentPage) {
+          console.log(`✅ Hotel search: Got enough hotels for page ${pageNumber} (${hotelsCollected}/${hotelsNeededForCurrentPage}), stopping search`);
+          break;
+        } else {
+          console.log(`Hotel search: All matching hotels processed, stopping with ${hotelsCollected} hotels`);
+          break;
         }
+      }      // For regular searches, stop when we have enough hotels for the current page
+      if (!isHotelSearch && hotelsCollected >= targetHotels) {
+        console.log(`✅ Lazy Loading: Got enough hotels for page ${pageNumber}! Collected ${hotelsCollected}, needed ${targetHotels} (with buffer). Stopping search.`);
+        break;
       }
 
-      // For regular searches or if no more matching hotels, stop when target is reached
-      if (hotelsCollected >= targetHotels) {
-        if (isHotelSearch) {
-          console.log(`Hotel search: All matching hotels processed, stopping with ${hotelsCollected} hotels`);
-        } else {
-          console.log(`Regular search: Target reached, stopping at ${hotelsCollected}/${targetHotels} hotels`);
-        }
+      // For hotel searches with non-matching destinations: stop when we have enough for current page
+      else if (isHotelSearch && !isMatchingHotel && hotelsCollected >= targetHotels) {
+        console.log(`✅ Hotel search: Got enough hotels for page ${pageNumber} (${hotelsCollected}/${targetHotels}). Skipping non-matching destinations.`);
         break;
       }
     }
@@ -437,31 +568,57 @@ router.get('/search', async (req, res) => {
       const bScore = bExactMatch + bStartsWith + bContains + bWordMatches + b.rating;
 
       return bScore - aScore; // Higher score first
-    });
-
-    console.log(`Sorted hotels: ${sortedHotels.slice(0, 5).map(h => h.name).join(', ')}`);    // Implement pagination on the final sorted results
+    });    // Implement pagination on the final sorted results
     const startIndex = (pageNumber - 1) * actualLimit;
     const endIndex = startIndex + actualLimit;
     const paginatedHotels = sortedHotels.slice(startIndex, endIndex);
 
-    // Cache the search results for use in hotel details fallback
-    hotelSearchCache.set(destination.toLowerCase(), sortedHotels);
+    console.log(`🎯 Search Summary: Found ${sortedHotels.length} total hotels from ${Math.min(destinations.length, maxDestinations)} destinations`);
+    console.log(`📊 Pagination: Returning page ${pageNumber} (${paginatedHotels.length} hotels) of ${Math.ceil(sortedHotels.length / actualLimit)} total pages`);    // Create cache key for this specific search and page (include search type)
+    const cacheKey = `${destination.toLowerCase()}_${searchTypeIndicator}_page_${pageNumber}_limit_${actualLimit}`;
 
-    // Keep cache size reasonable (max 50 entries)
+    // Check if we have cached results for this exact search and page
+    if (hotelPaginationCache.has(cacheKey)) {
+      console.log(`🚀 Returning cached results for: ${cacheKey}`);
+      const cachedResult = hotelPaginationCache.get(cacheKey);
+      return successResponse(res, cachedResult, 'Hotels retrieved from cache');
+    }    // Cache the search results for use in hotel details fallback and future pagination
+    // Use the same improved cache key that includes search type
+    hotelSearchCache.set(destinationCacheKey, {
+      allHotels: sortedHotels,
+      destinationsSearched: Math.min(destinations.length, maxDestinations),
+      totalDestinationsFound: destinations.length,
+      timestamp: Date.now(),
+      searchType: searchTypeIndicator // Store the search type for debugging
+    });// Cache the paginated results for this specific page
+    const responseData = {
+      hotels: paginatedHotels,
+      total: Math.max(sortedHotels.length, totalCount), // Use the larger of collected hotels or estimated total
+      page: pageNumber,
+      limit: actualLimit,
+      totalPages: Math.ceil(Math.max(sortedHotels.length, totalCount) / actualLimit),
+      destinationsSearched: Math.min(destinations.length, maxDestinations),
+      totalDestinationsFound: destinations.length,
+      isLazyLoading: true,
+      hotelsCollected: sortedHotels.length,
+      estimatedTotal: totalCount
+    };
+
+    hotelPaginationCache.set(cacheKey, responseData);
+
+    // Keep cache size reasonable (max 100 entries for pagination cache)
+    if (hotelPaginationCache.size > 100) {
+      const firstKey = hotelPaginationCache.keys().next().value;
+      hotelPaginationCache.delete(firstKey);
+    }
+
+    // Keep search cache size reasonable (max 50 entries)
     if (hotelSearchCache.size > 50) {
       const firstKey = hotelSearchCache.keys().next().value;
       hotelSearchCache.delete(firstKey);
     }
 
-    successResponse(res, {
-      hotels: paginatedHotels,
-      total: sortedHotels.length,
-      page: pageNumber,
-      limit: actualLimit,
-      totalPages: Math.ceil(sortedHotels.length / actualLimit),
-      destinationsSearched: Math.min(destinations.length, maxDestinations),
-      totalDestinationsFound: destinations.length
-    }, `Hotels retrieved successfully (page ${pageNumber}, ${paginatedHotels.length} hotels of ${sortedHotels.length} total)`);
+    successResponse(res, responseData, `Hotels retrieved successfully (page ${pageNumber}, ${paginatedHotels.length} hotels of ${sortedHotels.length} total)`);
   } catch (error) {
     console.error('Hotel search error:', error);
     console.error('Error details:', {

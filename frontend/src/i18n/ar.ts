@@ -16,14 +16,16 @@ export const ar = {
     hotels: 'الفنادق',
     profile: 'الملف الشخصي',
     language: 'اللغة'
-  },
-  // Main Section
+  },  // Main Section
   main: {
     tagline: 'من غيث إلى أي مكان',
     subtitle: 'ستجد أفضل الأسعار أينما ذهبت',
     accommodation: 'الإقامة',
     flights: 'طيران',
-    comingSoon: 'قريباً'
+    comingSoon: 'قريباً',
+    riyadh: 'الرياض',
+    jeddah: 'جدة',
+    alula: 'العلا'
   },
 
   // Hero Section

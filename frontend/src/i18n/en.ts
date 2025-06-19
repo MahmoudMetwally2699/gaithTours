@@ -17,14 +17,16 @@ export const en = {
     profile: 'Profile',
     language: 'Language'
   },
-
   // Main Section
   main: {
     tagline: 'From Gaith to anywhere',
     subtitle: 'You will find the best prices wherever you go',
     accommodation: 'Accommodation',
     flights: 'Flights',
-    comingSoon: 'Coming Soon'
+    comingSoon: 'Coming Soon',
+    riyadh: 'Riyadh',
+    jeddah: 'Jeddah',
+    alula: 'AlUla'
   },
 
   // Hero Section

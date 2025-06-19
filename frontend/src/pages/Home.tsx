@@ -2,7 +2,7 @@ import React from 'react';
 import { MainSection } from '../components/MainSection';
 import { InfographicSection } from '../components/InfographicSection';
 import { SpecialPricingCard } from '../components/SpecialPricingCard';
-import { OurServicesSimple } from '../components/OurServicesSimple';
+import { ExploreDestinations } from '../components/ExploreDestinations';
 
 export const Home: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ export const Home: React.FC = () => {
       <MainSection />
       <InfographicSection />
       <SpecialPricingCard />
-      <OurServicesSimple />
+      <ExploreDestinations />
     </div>
   );
 };
