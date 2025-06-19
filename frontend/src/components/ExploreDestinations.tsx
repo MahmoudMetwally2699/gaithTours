@@ -81,12 +81,11 @@ const cityData = [
 export const ExploreDestinations: React.FC = () => {
   const { i18n } = useTranslation();
   const { direction } = useDirection();
-  const history = useHistory();
-  const isRTL = direction === 'rtl';
+  const history = useHistory();  const isRTL = direction === 'rtl';
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Number of cards to show at once (responsive)
-  const cardsPerView = 3;
+  const cardsPerView = 3; // Show 3 cards on both mobile and desktop
   const maxIndex = Math.max(0, cityData.length - cardsPerView);
 
   const handleCityClick = (city: typeof cityData[0]) => {
@@ -179,10 +178,99 @@ export const ExploreDestinations: React.FC = () => {
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-32 h-32 bg-blue-200 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-0 w-40 h-40 bg-cyan-200 rounded-full blur-3xl"></div>
-        </div>
+        </div>        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Mobile Layout - 3 cards in a row */}
+          <div className="block md:hidden">
+            {/* City Cards for Mobile */}
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-3 gap-3 mb-6"
+            >
+              {visibleCities.map((city, index) => (
+                <motion.div
+                  key={city.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -5, scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleCityClick(city)}
+                  className="group cursor-pointer"
+                >
+                  <div className="text-center">
+                    {/* City Image */}
+                    <div className="relative mb-2 overflow-hidden rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300">
+                      <img
+                        src={city.image}
+                        alt={i18n.language === 'ar' ? city.arabicName : city.englishName}
+                        className="w-full h-32 object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          // Fallback to a gradient background if image fails to load
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `
+                              <div class="w-full h-32 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl flex items-center justify-center">
+                                <span class="text-white text-xs font-bold text-center px-1">${i18n.language === 'ar' ? city.arabicName : city.englishName}</span>
+                              </div>
+                            `;
+                          }
+                        }}
+                      />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center">            {/* Left Arrow */}
+                      {/* Overlay for better text visibility */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-2xl"></div>
+
+                      {/* Hover Effect Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+                    </div>
+
+                    {/* City Name */}
+                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-300 leading-tight">
+                      {i18n.language === 'ar' ? city.arabicName : city.englishName}
+                    </h3>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Navigation Arrows for Mobile */}
+            <div className="flex items-center justify-center space-x-4">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={isRTL ? handleNext : handlePrevious}
+                disabled={currentIndex === 0}
+                className="w-10 h-10 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
+                aria-label={isRTL ? 'السابق' : 'Previous'}
+              >
+                {isRTL ? (
+                  <ChevronRightIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronLeftIcon className="w-5 h-5" />
+                )}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={isRTL ? handlePrevious : handleNext}
+                disabled={currentIndex >= maxIndex}
+                className="w-10 h-10 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
+                aria-label={isRTL ? 'التالي' : 'Next'}
+              >
+                {isRTL ? (
+                  <ChevronLeftIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronRightIcon className="w-5 h-5" />
+                )}
+              </motion.button>
+            </div>
+          </div>
+
+          {/* Desktop Layout - Inline */}
+          <div className="hidden md:flex items-center justify-center">
+            {/* Left Arrow */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -203,7 +291,7 @@ export const ExploreDestinations: React.FC = () => {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className={`flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl ${isRTL ? 'order-2' : 'order-2'}`}
+              className={`flex-1 grid grid-cols-3 gap-8 max-w-4xl ${isRTL ? 'order-2' : 'order-2'}`}
             >
               {visibleCities.map((city, index) => (
                 <motion.div
@@ -249,7 +337,9 @@ export const ExploreDestinations: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>            {/* Right Arrow */}
+            </motion.div>
+
+            {/* Right Arrow */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -262,15 +352,14 @@ export const ExploreDestinations: React.FC = () => {
                 <ChevronLeftIcon className="w-6 h-6" />
               ) : (
                 <ChevronRightIcon className="w-6 h-6" />
-              )}            </motion.button>
-          </div>
-
-          {/* Carousel Indicators */}
+              )}
+            </motion.button>
+          </div>          {/* Carousel Indicators */}
           <div className="flex justify-center mt-8 space-x-2">
             {Array.from({ length: Math.ceil(cityData.length / cardsPerView) }, (_, i) => (
               <button
                 key={i}
-                onClick={() => setCurrentIndex(i * cardsPerView)}
+                onClick={() => setCurrentIndex(Math.min(i * cardsPerView, maxIndex))}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
                   Math.floor(currentIndex / cardsPerView) === i
                     ? 'bg-orange-500 scale-125'
