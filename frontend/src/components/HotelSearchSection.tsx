@@ -152,7 +152,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];  return (
-    <section className="relative py-4 sm:py-16 lg:py-20 overflow-hidden">      {/* Modern Light Background */}
+    <section id="hotel-search-section" className="relative py-4 sm:py-16 lg:py-20 overflow-hidden">{/* Modern Light Background */}
       <div className="absolute inset-0" style={{backgroundColor: '#E1FAFF'}}></div>{/* Subtle decorative elements for modern look */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-4 -left-4 w-72 h-72 bg-blue-100/20 rounded-full blur-3xl"></div>

@@ -65,7 +65,7 @@ export const InfographicSection: React.FC = () => {
                 variants={itemVariants}
                 className={`grid grid-cols-1 lg:grid-cols-2 ${index === 0 ? 'gap-1 lg:gap-2' : 'gap-4 lg:gap-6'} items-center justify-items-center py-8 sm:py-12 lg:py-20 max-w-5xl mx-auto`}
               >{/* Text Content - Right Side in RTL (Left side visually) */}                <div className={`order-2 lg:order-1 text-center lg:text-right w-full flex flex-col justify-center items-center lg:items-end ${index === 0 ? 'px-4 lg:pl-8 lg:pr-0 lg:-ml-48' : 'px-4 lg:px-2'}`}>                  <h2
-                    className={`font-bold mb-2 sm:mb-3 lg:mb-6 whitespace-nowrap ${index === 0 ? 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl' : index === 2 ? 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-24' : 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-16'}`}
+                    className={`font-bold mb-2 sm:mb-3 lg:mb-6 ${index === 0 ? 'whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl' : index === 2 ? 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-24' : 'whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-16'}`}
                     style={{
                       color: '#0F5F5F', // Dark teal
                       fontFamily: 'Cairo, sans-serif'
@@ -73,7 +73,7 @@ export const InfographicSection: React.FC = () => {
                   >
                     {t(`infographic.${item.translationKey}.headline`)}
                   </h2>                  <p
-                    className="text-xs sm:text-xs md:text-sm lg:text-base xl:text-lg whitespace-nowrap"
+                    className={`text-xs sm:text-xs md:text-sm lg:text-base xl:text-lg ${index === 2 ? '' : 'whitespace-nowrap'}`}
                     style={{
                       color: '#9CA3AF', // Light grey
                       fontFamily: 'Cairo, sans-serif'
@@ -82,7 +82,7 @@ export const InfographicSection: React.FC = () => {
                     {t(`infographic.${item.translationKey}.supportingText`)}
                   </p>
                 </div>{/* Asset Image - Left Side in RTL (Right side visually) */}                <div className="order-1 lg:order-2 flex justify-center lg:justify-start items-center w-full">
-                  <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-full lg:max-w-md xl:max-w-lg">
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-full lg:max-w-md xl:max-w-lg">
                     <img
                       src={item.assetImage}
                       alt={`Asset ${item.id}`}

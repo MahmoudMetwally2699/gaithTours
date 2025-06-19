@@ -806,8 +806,15 @@ export const ar = {
     clickToChange: 'اضغط للتغيير',
     hotelWebsite: 'موقع الفندق',
     addGuest: 'إضافة ضيف',
-    fullName: 'الاسم الكامل',
-    phoneNumber: 'رقم الهاتف'
+    fullName: 'الاسم الكامل',    phoneNumber: 'رقم الهاتف'
+  },
+
+  // Special Pricing
+  specialPricing: {
+    title: 'طلب أسعار خاصة',
+    subtitle: 'للحجوزات الطويلة',
+    description: 'إبتداءً من 14 ليلة',
+    requestNow: 'اطلب الان'
   },
 
   // Validation

@@ -707,6 +707,13 @@ export const en = {
     hotelWebsite: 'Hotel Website',
     addGuest: 'Add Guest'
   },
+  // Special Pricing
+  specialPricing: {
+    title: 'Request Special Pricing',
+    subtitle: 'For Long-Term Bookings',
+    description: 'Starting from 14 nights',
+    requestNow: 'Request Now'
+  },
 
   // Validation
   validation: {
