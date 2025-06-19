@@ -115,13 +115,20 @@ export const ExploreDestinations: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
   };
-
   const handlePrevious = () => {
-    setCurrentIndex(prev => Math.max(0, prev - 1));
+    if (isRTL) {
+      setCurrentIndex(prev => Math.min(maxIndex, prev + 1));
+    } else {
+      setCurrentIndex(prev => Math.max(0, prev - 1));
+    }
   };
 
   const handleNext = () => {
-    setCurrentIndex(prev => Math.min(maxIndex, prev + 1));
+    if (isRTL) {
+      setCurrentIndex(prev => Math.max(0, prev - 1));
+    } else {
+      setCurrentIndex(prev => Math.min(maxIndex, prev + 1));
+    }
   };
 
   const visibleCities = cityData.slice(currentIndex, currentIndex + cardsPerView);
@@ -232,15 +239,13 @@ export const ExploreDestinations: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
-
-            {/* Navigation Arrows for Mobile */}
-            <div className="flex items-center justify-center space-x-4">
+            </motion.div>            {/* Navigation Arrows for Mobile */}
+            <div className={`flex items-center justify-center ${isRTL ? 'space-x-reverse space-x-4' : 'space-x-4'}`}>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={isRTL ? handleNext : handlePrevious}
-                disabled={currentIndex === 0}
+                onClick={handlePrevious}
+                disabled={isRTL ? currentIndex >= maxIndex : currentIndex === 0}
                 className="w-10 h-10 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
                 aria-label={isRTL ? 'السابق' : 'Previous'}
               >
@@ -254,8 +259,8 @@ export const ExploreDestinations: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={isRTL ? handlePrevious : handleNext}
-                disabled={currentIndex >= maxIndex}
+                onClick={handleNext}
+                disabled={isRTL ? currentIndex === 0 : currentIndex >= maxIndex}
                 className="w-10 h-10 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
                 aria-label={isRTL ? 'التالي' : 'Next'}
               >
@@ -269,13 +274,12 @@ export const ExploreDestinations: React.FC = () => {
           </div>
 
           {/* Desktop Layout - Inline */}
-          <div className="hidden md:flex items-center justify-center">
-            {/* Left Arrow */}
+          <div className="hidden md:flex items-center justify-center">            {/* Left Arrow */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={isRTL ? handleNext : handlePrevious}
-              disabled={currentIndex === 0}
+              onClick={handlePrevious}
+              disabled={isRTL ? currentIndex >= maxIndex : currentIndex === 0}
               className={`flex-shrink-0 w-12 h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isRTL ? 'order-3 ml-4' : 'order-1 mr-4'}`}
               aria-label={isRTL ? 'السابق' : 'Previous'}
             >
@@ -337,14 +341,12 @@ export const ExploreDestinations: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
-
-            {/* Right Arrow */}
+            </motion.div>            {/* Right Arrow */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={isRTL ? handlePrevious : handleNext}
-              disabled={currentIndex >= maxIndex}
+              onClick={handleNext}
+              disabled={isRTL ? currentIndex === 0 : currentIndex >= maxIndex}
               className={`flex-shrink-0 w-12 h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isRTL ? 'order-1 mr-4' : 'order-3 ml-4'}`}
               aria-label={isRTL ? 'التالي' : 'Next'}
             >
@@ -355,7 +357,7 @@ export const ExploreDestinations: React.FC = () => {
               )}
             </motion.button>
           </div>          {/* Carousel Indicators */}
-          <div className="flex justify-center mt-8 space-x-2">
+          <div className={`flex justify-center mt-8 ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'}`}>
             {Array.from({ length: Math.ceil(cityData.length / cardsPerView) }, (_, i) => (
               <button
                 key={i}
