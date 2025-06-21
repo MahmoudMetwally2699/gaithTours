@@ -68,10 +68,9 @@ export const Navbar: React.FC = () => {
       transition={{ duration: 0.8, ease: "easeOut" }}      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'backdrop-blur-xl shadow-2xl border-b border-orange-100/50'
-          : 'backdrop-blur-sm'
-      }`}
+          : 'backdrop-blur-sm'      }`}
       style={{
-        backgroundImage: 'linear-gradient(to top, #f7871d, #f4a135, #f2b851, #f0cd6f, #f1e190, #e0e99c, #d1efac, #c4f4bd, #9aeec7, #6de7d7, #3adde9, #00d0f9)'
+        backgroundImage: 'linear-gradient(to bottom, #00d0f9, #4ce0e3, #8ceccb, #c4f4bd, #f6f9be)'
       }}
     >
       {/* Animated background gradient */}

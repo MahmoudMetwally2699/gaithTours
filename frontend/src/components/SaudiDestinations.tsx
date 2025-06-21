@@ -5,80 +5,26 @@ import { motion } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useDirection } from '../hooks/useDirection';
 
-// Extended city data with cities from different countries
-const cityData = [
-  // Saudi Arabia
-  { id: 'riyadh', arabicName: 'الرياض', englishName: 'Riyadh', country: 'Saudi Arabia', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
-  { id: 'jeddah', arabicName: 'جدة', englishName: 'Jeddah', country: 'Saudi Arabia', image: '/hero/Jeddah Corniche.webp' },
-  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', country: 'Saudi Arabia', image: '/hero/al-ul-old-town.jpeg' },
-  { id: 'mecca', arabicName: 'مكة', englishName: 'Mecca', country: 'Saudi Arabia', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
-  { id: 'medina', arabicName: 'المدينة', englishName: 'Medina', country: 'Saudi Arabia', image: '/hero/Riyadh-city-predictions_00_Adobe-Stock-1.jpg' },
-  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', country: 'Saudi Arabia', image: '/hero/riyadh-1600x900.webp' },
-  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', country: 'Saudi Arabia', image: '/hero/10_Parks_river.jpg' },
-  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', country: 'Saudi Arabia', image: '/hero/1034971-1524699631.jpg' },
-
-  // UAE
-  { id: 'dubai', arabicName: 'دبي', englishName: 'Dubai', country: 'UAE', image: '/hero/98.jpg' },
-  { id: 'abudhabi', arabicName: 'أبو ظبي', englishName: 'Abu Dhabi', country: 'UAE', image: '/hero/2158333.jpg' },
-  { id: 'sharjah', arabicName: 'الشارقة', englishName: 'Sharjah', country: 'UAE', image: '/hero/161652_7693.jpg' },
-  { id: 'ajman', arabicName: 'عجمان', englishName: 'Ajman', country: 'UAE', image: '/hero/1deb1aec3cc3568b1ec867c18005532a.webp' },
-  { id: 'rasalkhaimah', arabicName: 'رأس الخيمة', englishName: 'Ras Al Khaimah', country: 'UAE', image: '/hero/k7h4b0O.jpeg' },
-
-  // Egypt
-  { id: 'cairo', arabicName: 'القاهرة', englishName: 'Cairo', country: 'Egypt', image: '/hero/shutterstock_1882829362_LR.jpg' },
-  { id: 'alexandria', arabicName: 'الإسكندرية', englishName: 'Alexandria', country: 'Egypt', image: '/hero/Things-To-Do-in-Jeddah.webp' },
-  { id: 'luxor', arabicName: 'الأقصر', englishName: 'Luxor', country: 'Egypt', image: '/hero/Al-Taybat-International-City-Museum-building.jpg' },
-  { id: 'aswan', arabicName: 'أسوان', englishName: 'Aswan', country: 'Egypt', image: '/hero/At-Turaif.webp' },
-  { id: 'sharmelsheikh', arabicName: 'شرم الشيخ', englishName: 'Sharm El Sheikh', country: 'Egypt', image: '/hero/Djeddah.jpg' },
-  { id: 'hurghada', arabicName: 'الغردقة', englishName: 'Hurghada', country: 'Egypt', image: '/hero/GettyImages-1226582429_8by10.avif' },
-
-  // Kuwait
-  { id: 'kuwait', arabicName: 'الكويت', englishName: 'Kuwait City', country: 'Kuwait', image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif' },
-  { id: 'hawalli', arabicName: 'حولي', englishName: 'Hawalli', country: 'Kuwait', image: '/hero/salwa-palace-1024x768.jpg' },
-
-  // Qatar
-  { id: 'doha', arabicName: 'الدوحة', englishName: 'Doha', country: 'Qatar', image: '/hero/What-to-do-in-Jeddah-modern-things-to-see-Al-Rahma-Mosque.jpg' },
-  { id: 'alrayyan', arabicName: 'الريان', englishName: 'Al Rayyan', country: 'Qatar', image: '/hero/Xe8JF2Zv-Riyadh-skyline2011-1200x800.jpg' },
-
-  // Bahrain
-  { id: 'manama', arabicName: 'المنامة', englishName: 'Manama', country: 'Bahrain', image: '/hero/230216140003-05-diriyah-gallery.jpg' },
-  { id: 'muharraq', arabicName: 'المحرق', englishName: 'Muharraq', country: 'Bahrain', image: '/hero/1536x864_cmsv2_df295417-c41e-543d-a0ba-95a37a1efd16-9097266.webp' },
-
-  // Oman
-  { id: 'muscat', arabicName: 'مسقط', englishName: 'Muscat', country: 'Oman', image: '/hero/10_Parks_river.jpg' },
-  { id: 'salalah', arabicName: 'صلالة', englishName: 'Salalah', country: 'Oman', image: '/hero/1034971-1524699631.jpg' },
-  { id: 'nizwa', arabicName: 'نزوى', englishName: 'Nizwa', country: 'Oman', image: '/hero/98.jpg' },
-
-  // Jordan
-  { id: 'amman', arabicName: 'عمان', englishName: 'Amman', country: 'Jordan', image: '/hero/2158333.jpg' },
-  { id: 'petra', arabicName: 'البتراء', englishName: 'Petra', country: 'Jordan', image: '/hero/161652_7693.jpg' },
-  { id: 'aqaba', arabicName: 'العقبة', englishName: 'Aqaba', country: 'Jordan', image: '/hero/1deb1aec3cc3568b1ec867c18005532a.webp' },
-
-  // Lebanon
-  { id: 'beirut', arabicName: 'بيروت', englishName: 'Beirut', country: 'Lebanon', image: '/hero/k7h4b0O.jpeg' },
-  { id: 'tripoli', arabicName: 'طرابلس', englishName: 'Tripoli', country: 'Lebanon', image: '/hero/shutterstock_1882829362_LR.jpg' },
-
-  // Morocco
-  { id: 'casablanca', arabicName: 'الدار البيضاء', englishName: 'Casablanca', country: 'Morocco', image: '/hero/Things-To-Do-in-Jeddah.webp' },
-  { id: 'marrakech', arabicName: 'مراكش', englishName: 'Marrakech', country: 'Morocco', image: '/hero/Al-Taybat-International-City-Museum-building.jpg' },
-  { id: 'rabat', arabicName: 'الرباط', englishName: 'Rabat', country: 'Morocco', image: '/hero/At-Turaif.webp' },
-  { id: 'fez', arabicName: 'فاس', englishName: 'Fez', country: 'Morocco', image: '/hero/Djeddah.jpg' },
-
-  // Tunisia
-  { id: 'tunis', arabicName: 'تونس', englishName: 'Tunis', country: 'Tunisia', image: '/hero/GettyImages-1226582429_8by10.avif' },
-  { id: 'sousse', arabicName: 'سوسة', englishName: 'Sousse', country: 'Tunisia', image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif' },
-
-  // Turkey
-  { id: 'istanbul', arabicName: 'إسطنبول', englishName: 'Istanbul', country: 'Turkey', image: '/hero/salwa-palace-1024x768.jpg' },
-  { id: 'ankara', arabicName: 'أنقرة', englishName: 'Ankara', country: 'Turkey', image: '/hero/What-to-do-in-Jeddah-modern-things-to-see-Al-Rahma-Mosque.jpg' },
-  { id: 'antalya', arabicName: 'أنطاليا', englishName: 'Antalya', country: 'Turkey', image: '/hero/Xe8JF2Zv-Riyadh-skyline2011-1200x800.jpg' },
-
-  // Malaysia
-  { id: 'kualalumpur', arabicName: 'كوالالمبور', englishName: 'Kuala Lumpur', country: 'Malaysia', image: '/hero/230216140003-05-diriyah-gallery.jpg' },
-  { id: 'penang', arabicName: 'بينانغ', englishName: 'Penang', country: 'Malaysia', image: '/hero/1536x864_cmsv2_df295417-c41e-543d-a0ba-95a37a1efd16-9097266.webp' }
+// Saudi Arabia cities data
+const saudiCityData = [
+  { id: 'riyadh', arabicName: 'الرياض', englishName: 'Riyadh', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
+  { id: 'jeddah', arabicName: 'جدة', englishName: 'Jeddah', image: '/hero/Jeddah Corniche.webp' },
+  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', image: '/hero/al-ul-old-town.jpeg' },
+  { id: 'mecca', arabicName: 'مكة المكرمة', englishName: 'Mecca', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
+  { id: 'medina', arabicName: 'المدينة المنورة', englishName: 'Medina', image: '/hero/Riyadh-city-predictions_00_Adobe-Stock-1.jpg' },
+  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', image: '/hero/riyadh-1600x900.webp' },
+  { id: 'khobar', arabicName: 'الخبر', englishName: 'Al Khobar', image: '/hero/98.jpg' },
+  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', image: '/hero/10_Parks_river.jpg' },
+  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', image: '/hero/1034971-1524699631.jpg' },
+  { id: 'tabuk', arabicName: 'تبوك', englishName: 'Tabuk', image: '/hero/2158333.jpg' },
+  { id: 'buraidah', arabicName: 'بريدة', englishName: 'Buraidah', image: '/hero/161652_7693.jpg' },
+  { id: 'khamismushait', arabicName: 'خميس مشيط', englishName: 'Khamis Mushait', image: '/hero/1deb1aec3cc3568b1ec867c18005532a.webp' },
+  { id: 'hail', arabicName: 'حائل', englishName: 'Hail', image: '/hero/k7h4b0O.jpeg' },
+  { id: 'najran', arabicName: 'نجران', englishName: 'Najran', image: '/hero/shutterstock_1882829362_LR.jpg' },
+  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', image: '/hero/Things-To-Do-in-Jeddah.webp' }
 ];
 
-export const ExploreDestinations: React.FC = () => {
+export const SaudiDestinations: React.FC = () => {
   const { i18n } = useTranslation();
   const { direction } = useDirection();
   const history = useHistory();
@@ -87,9 +33,9 @@ export const ExploreDestinations: React.FC = () => {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // Number of cards to show at once (responsive)
+  // Number of cards to show at once
   const cardsPerView = 2; // Show 2 cards on both mobile and desktop
-  const maxIndex = Math.max(0, cityData.length - cardsPerView);
+  const maxIndex = Math.max(0, saudiCityData.length - cardsPerView);
 
   // Touch handlers for swipe functionality
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -124,7 +70,7 @@ export const ExploreDestinations: React.FC = () => {
     }
   };
 
-  const handleCityClick = (city: typeof cityData[0]) => {
+  const handleCityClick = (city: typeof saudiCityData[0]) => {
     // Navigate to hotel search results with the selected city
     const cityName = i18n.language === 'ar' ? city.arabicName : city.englishName;
 
@@ -151,6 +97,7 @@ export const ExploreDestinations: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
   };
+
   const handlePrevious = () => {
     if (isRTL) {
       setCurrentIndex(prev => Math.min(maxIndex, prev + 1));
@@ -167,7 +114,7 @@ export const ExploreDestinations: React.FC = () => {
     }
   };
 
-  const visibleCities = cityData.slice(currentIndex, currentIndex + cardsPerView);
+  const visibleCities = saudiCityData.slice(currentIndex, currentIndex + cardsPerView);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -204,24 +151,23 @@ export const ExploreDestinations: React.FC = () => {
           >
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              {isRTL ? 'استكشف وجهاتنا' : 'Explore Our Destinations'}
+              {isRTL ? 'استكشف المملكة العربية السعودية' : 'Explore Saudi Arabia'}
             </h2>
 
             {/* Subtitle */}
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
-              {isRTL ? 'المدن الأكثر شعبية للزيارة' : 'Discover popular cities to visit'}
+              {isRTL ? 'اكتشف أجمل المدن السعودية وتراثها العريق' : 'Discover the most beautiful Saudi cities and their rich heritage'}
             </p>
           </motion.div>
         </div>
-      </div>
-
-      {/* City Cards Content Area - Light Blue Background */}
-      <div className="bg-cyan-50 py-12 sm:py-16 relative overflow-hidden">
-        {/* Background Pattern */}
+      </div>      {/* City Cards Content Area - Same color as ExploreDestinations */}
+      <div className="py-12 sm:py-16 relative overflow-hidden" style={{ backgroundColor: '#FDEDE4' }}>        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-blue-200 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-40 h-40 bg-cyan-200 rounded-full blur-3xl"></div>
-        </div>        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">          {/* Mobile Layout - 2 cards in a row with swipe */}
+          <div className="absolute top-0 left-0 w-32 h-32 bg-orange-200 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-40 h-40 bg-amber-200 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">          {/* Mobile Layout - 2 cards in a row with swipe */}
           <div className="block md:hidden">
             {/* City Cards for Mobile */}
             <motion.div
@@ -277,7 +223,7 @@ export const ExploreDestinations: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
-            </motion.div>            {/* Navigation Arrows for Mobile */}
+            </motion.div>            {/* Navigation Arrows for Mobile - Visible along with swipe gestures */}
             <div className={`flex items-center justify-center ${isRTL ? 'space-x-reverse space-x-4' : 'space-x-4'}`}>
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -309,14 +255,13 @@ export const ExploreDestinations: React.FC = () => {
                 )}
               </motion.button>
             </div>
-          </div>
-
-          {/* Desktop Layout - Inline */}
+          </div>          {/* Desktop Layout - Inline */}
           <div className="hidden md:flex items-center justify-center">            {/* Left Arrow */}
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handlePrevious}              disabled={isRTL ? currentIndex >= maxIndex : currentIndex === 0}
+              onClick={handlePrevious}
+              disabled={isRTL ? currentIndex >= maxIndex : currentIndex === 0}
               className={`flex-shrink-0 w-12 h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isRTL ? 'order-3' : 'order-1'} ${isRTL ? 'ms-4' : 'me-4'}`}
               aria-label={isRTL ? 'السابق' : 'Previous'}
             >
@@ -325,7 +270,9 @@ export const ExploreDestinations: React.FC = () => {
               ) : (
                 <ChevronLeftIcon className="w-6 h-6" />
               )}
-            </motion.button>            {/* City Cards Row */}
+            </motion.button>
+
+            {/* City Cards Row */}
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -389,9 +336,9 @@ export const ExploreDestinations: React.FC = () => {
                 <ChevronLeftIcon className="w-6 h-6" />
               ) : (
                 <ChevronRightIcon className="w-6 h-6" />
-              )}            </motion.button>
-          </div>
-        </div>
+              )}
+            </motion.button>
+          </div>        </div>
       </div>
     </section>
   );

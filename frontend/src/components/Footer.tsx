@@ -5,13 +5,8 @@ import { motion } from 'framer-motion';
 import {
   MapPinIcon,
   PhoneIcon,
-  EnvelopeIcon,
-  GlobeAltIcon,
-  SparklesIcon,
-  HeartIcon,
-  BuildingOfficeIcon,
-  UserGroupIcon,
-  StarIcon
+  AtSymbolIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline';
 import {
   FaFacebook,
@@ -70,29 +65,7 @@ export const Footer: React.FC = () => {
       href: '#',
       icon: FaYoutube as React.ComponentType<{ className?: string }>,
       color: 'from-red-500 to-red-600',
-      hoverColor: 'hover:from-red-600 hover:to-red-700'
-    }
-  ];
-  const quickLinks: Array<{
-    name: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }> = [
-    { name: t('footer.home'), href: '/', icon: BuildingOfficeIcon },
-    { name: t('footer.hotels'), href: '/hotels', icon: UserGroupIcon },
-    { name: t('footer.about'), href: '/about', icon: StarIcon },
-    { name: t('footer.contact'), href: '/contact', icon: PhoneIcon }
-  ];
-  const services: Array<{
-    name: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }> = [
-    { name: t('footer.hotelBooking'), icon: BuildingOfficeIcon },
-    { name: t('footer.flightReservation'), icon: GlobeAltIcon },
-    { name: t('footer.carRental'), icon: MapPinIcon },
-    { name: t('footer.tourGuides'), icon: UserGroupIcon },
-    { name: t('footer.visaAssistance'), icon: StarIcon },
-    { name: t('footer.travelInsurance'), icon: HeartIcon }
+      hoverColor: 'hover:from-red-600 hover:to-red-700'    }
   ];
 
   const containerVariants = {
@@ -115,14 +88,13 @@ export const Footer: React.FC = () => {
       }
     }
   };
-
   return (
-    <footer className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+    <footer className="relative overflow-hidden" style={{backgroundImage: 'linear-gradient(to bottom, #00d0f9, #4ce0e3, #8ceccb, #c4f4bd, #f6f9be)'}}>
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
         {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 via-amber-900/20 to-yellow-900/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/10 via-purple-900/10 to-pink-900/10"></div>
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute inset-0 bg-white/5"></div>
 
         {/* Floating elements */}
         <motion.div
@@ -173,9 +145,9 @@ export const Footer: React.FC = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-12"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Company Info - Enhanced */}
             <motion.div
               variants={itemVariants}
@@ -273,183 +245,49 @@ export const Footer: React.FC = () => {
                     );
                   })}
                 </div>
-              </div>
-            </motion.div>
-
-            {/* Quick Links - Enhanced */}
+              </div>            </motion.div>            {/* Contact Info - Horizontal Layout */}
             <motion.div
               variants={itemVariants}
-              className="space-y-6"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-8 bg-gradient-to-b from-orange-400 to-amber-400 rounded-full"></div>
-                <h3 className="text-xl font-bold text-white">{t('footer.quickLinks')}</h3>
-              </div>
-
-              <ul className="space-y-4">
-                {quickLinks.map((link, index) => {
-                  const IconComponent = link.icon;
-                  return (
-                    <motion.li
-                      key={link.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                    >
-                      <Link
-                        to={link.href}
-                        className="group flex items-center space-x-3 text-gray-300 p-2 rounded-xl hover:bg-white/5 transition-all duration-300"
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-r from-orange-400/20 to-amber-400/20 rounded-lg flex items-center justify-center group-hover:from-orange-400 group-hover:to-amber-400 transition-all duration-300">
-                          <IconComponent className="h-4 w-4 text-orange-400 group-hover:text-white transition-colors duration-300" />
-                        </div>
-                        <span className="group-hover:text-white group-hover:translate-x-1 transition-all duration-300">
-                          {link.name}
-                        </span>
-                      </Link>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </motion.div>
-
-            {/* Services - Premium Design */}
-            <motion.div
-              variants={itemVariants}
-              className="space-y-6"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-8 bg-gradient-to-b from-blue-400 to-purple-400 rounded-full"></div>
-                <h3 className="text-xl font-bold text-white">{t('footer.services')}</h3>
-              </div>
-
-              <ul className="space-y-4">
-                {services.map((service, index) => {
-                  const IconComponent = service.icon;
-                  return (
-                    <motion.li
-                      key={service.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                      className="group flex items-center space-x-3 text-gray-300 p-2 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-lg flex items-center justify-center group-hover:from-blue-400 group-hover:to-purple-400 transition-all duration-300">
-                        <IconComponent className="h-4 w-4 text-blue-400 group-hover:text-white transition-colors duration-300" />
-                      </div>
-                      <span className="group-hover:text-white group-hover:translate-x-1 transition-all duration-300">
-                        {service.name}
-                      </span>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </motion.div>
-
-            {/* Contact Info - Enhanced */}
-            <motion.div
-              variants={itemVariants}
-              className="space-y-6"
+              className="space-y-4"
             >
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-8 bg-gradient-to-b from-green-400 to-emerald-400 rounded-full"></div>
                 <h3 className="text-xl font-bold text-white">{t('footer.contact')}</h3>
               </div>
 
-              <div className="space-y-6">
-                {/* Contact Items */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="space-y-4"
-                >
-                  <div className="group flex items-start space-x-4 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
-                    <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                      <MapPinIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium mb-1">Our Location</p>
-                      <p className="text-gray-300 text-sm leading-relaxed">
-                        123 Tourism Street<br />
-                        Riyadh, Saudi Arabia
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="group flex items-start space-x-4 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                      <PhoneIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium mb-1">Call Us</p>
-                      <p className="text-gray-300 text-sm">+966 123 456 789</p>
-                    </div>
-                  </div>
-
-                  <div className="group flex items-start space-x-4 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
-                    <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                      <EnvelopeIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium mb-1">Email Us</p>
-                      <p className="text-gray-300 text-sm">info@gaithtours.com</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Newsletter Section - Premium Design */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-16 mb-12"
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-yellow-500/10 backdrop-blur-sm border border-orange-500/20 rounded-3xl p-8 text-center">
+              {/* Contact Items - Horizontal Layout */}
               <motion.div
-                animate={{
-                  scale: [1, 1.05, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="w-16 h-16 bg-gradient-to-r from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl"
-              >
-                <SparklesIcon className="h-8 w-8 text-white" />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+              >                <div className="group flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
+                  <div className="w-8 h-8 min-w-[2rem] bg-gradient-to-r from-orange-400 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <MapPinIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Riyadh, Saudi Arabia</p>
+                  </div>
+                </div>
+
+                <div className="group flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
+                  <div className="w-8 h-8 min-w-[2rem] bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <PhoneIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">+966 123 456 789</p>
+                  </div>
+                </div>                <div className="group flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
+                  <div className="w-8 h-8 min-w-[2rem] bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <AtSymbolIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">info@gaithtours.com</p>
+                  </div>
+                </div>
               </motion.div>
-
-              <h3 className="text-2xl font-bold text-white mb-4">
-                {t('footer.newsletter.title', 'Subscribe to Our Newsletter')}
-              </h3>
-              <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
-                {t('footer.newsletter.description', 'Get exclusive travel deals, destination guides, and premium offers delivered to your inbox.')}
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder={t('footer.newsletter.placeholder', 'Enter your email address')}
-                  className="flex-1 px-6 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:ring-4 focus:ring-orange-500/30 focus:border-orange-400 transition-all duration-300"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  {t('footer.newsletter.subscribe', 'Subscribe')}
-                </motion.button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+            </motion.div>
+          </div>        </motion.div>
 
         {/* Bottom Section - Enhanced */}
         <motion.div

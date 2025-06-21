@@ -19,7 +19,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
+    lng: 'ar', // Set Arabic as default language
+    fallbackLng: 'ar', // Set Arabic as fallback language
 
     debug: process.env.NODE_ENV === 'development',
 
@@ -36,5 +37,9 @@ i18n
       useSuspense: false,
     },
   });
+
+// Set initial document direction based on default language
+document.dir = 'rtl';
+document.documentElement.lang = 'ar';
 
 export default i18n;

@@ -708,13 +708,35 @@ export const en = {
     clickToChange: 'Click to change',
     hotelWebsite: 'Hotel Website',
     addGuest: 'Add Guest'
-  },
-  // Special Pricing
+  },  // Special Pricing
   specialPricing: {
     title: 'Request Special Pricing',
     subtitle: 'For Long-Term Bookings',
     description: 'Starting from 14 nights',
     requestNow: 'Request Now'
+  },
+
+  // Booking Process
+  bookingProcess: {
+    title: 'How to Book',
+    subtitle: 'Follow these simple steps to book your perfect trip',
+    bookNow: 'Book Now',
+    step1: {
+      title: 'Choose Your Accommodation',
+      description: 'Select your destination and set your arrival and departure dates and room type'
+    },
+    step2: {
+      title: 'Wait for Booking Confirmation',
+      description: 'Your request is reviewed to find the best available offers for your selected dates'
+    },
+    step3: {
+      title: 'Receive Confirmation Message',
+      description: 'You will receive a booking confirmation message with all the details and required information'
+    },
+    step4: {
+      title: 'Pay and Receive Your Invoice',
+      description: 'Complete the secure payment process and receive your invoice and final confirmation'
+    }
   },
 
   // Validation
