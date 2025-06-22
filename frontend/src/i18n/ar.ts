@@ -282,8 +282,10 @@ export const ar = {
     travelInsurance: 'تأمين السفر',
     travelPackages: 'باقات السفر',
     groupTours: 'جولات جماعية',
-    customItineraries: 'مسارات مخصصة',
-    contactInfo: 'معلومات الاتصال',
+    customItineraries: 'مسارات مخصصة',    contactInfo: 'معلومات الاتصال',
+    location: 'الرياض، المملكة العربية السعودية',
+    phoneNumber: '+966 123 456 789',
+    emailAddress: 'info@gaithtours.com',
     address: {
       line1: '123 شارع السفر',
       line2: 'دبي، الإمارات العربية المتحدة'

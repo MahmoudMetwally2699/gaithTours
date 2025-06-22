@@ -55,226 +55,330 @@ class WhatsAppService {
       throw error;
     }
   }
-
   /**
-   * Send booking approval notification
+   * Send booking approval notification using Arabic template
    * @param {Object} booking - Booking details
    * @param {Object} invoice - Invoice details
-   */  async sendBookingApprovalNotification(booking, invoice) {
-    try {
-      // Check if WhatsApp is properly configured
-      if (!this.accessToken || !this.phoneNumberId) {
-        console.warn('WhatsApp not configured - skipping notification');
-        return;
-      }
-
-      const message = this.formatBookingApprovalMessage(booking, invoice);
-
-      // Extract phone number from booking
-      let phoneNumber = booking.phone;
-
-      // If phone doesn't start with country code, assume Saudi Arabia (+966)
-      if (!phoneNumber.startsWith('966') && !phoneNumber.startsWith('+966')) {
-        phoneNumber = phoneNumber.startsWith('0') ?
-          `966${phoneNumber.substring(1)}` :
-          `966${phoneNumber}`;
-      }
-
-      await this.sendMessage(phoneNumber, message);
-      console.log(`Booking approval WhatsApp sent to ${phoneNumber}`);
-    } catch (error) {
-      // Check if it's the "account not registered" error
-      if (error.response?.data?.error?.code === 133010) {
-        console.error('❌ WhatsApp Business Account NOT REGISTERED with Meta Cloud API');
-        console.error('🔧 ACTION REQUIRED: Go to developers.facebook.com and complete WhatsApp Business setup');
-      } else {
-        console.error('Failed to send booking approval WhatsApp:', error.response?.data || error.message);
-      }
-      // Don't throw error to avoid breaking the booking approval process
-    }
-  }
-  /**
-   * Format booking approval message
-   * @param {Object} booking - Booking details
-   * @param {Object} invoice - Invoice details
-   * @returns {string} Formatted message
    */
-  formatBookingApprovalMessage(booking, invoice) {
-    // Handle date formatting safely
-    let checkInDate = 'Not specified';
-    let checkOutDate = 'Not specified';
-    let duration = 'Not specified';
-
-    if (booking.checkInDate) {
-      checkInDate = new Date(booking.checkInDate).toLocaleDateString('en-GB');
-    }
-
-    if (booking.checkOutDate) {
-      checkOutDate = new Date(booking.checkOutDate).toLocaleDateString('en-GB');
-    }
-
-    // Calculate duration if both dates are available
-    if (booking.checkInDate && booking.checkOutDate) {
-      const checkIn = new Date(booking.checkInDate);
-      const checkOut = new Date(booking.checkOutDate);
-      const timeDiff = checkOut.getTime() - checkIn.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      duration = daysDiff > 0 ? `${daysDiff}` : 'Not specified';
-    }
-
-    return `🎉 *Booking Approved - Gaith Tours*
-
-Dear ${booking.touristName},
-
-Great news! Your booking request has been approved.
-
-📋 *Booking Details:*
-• Hotel: ${booking.hotel.name}
-• Check-in: ${checkInDate}
-• Check-out: ${checkOutDate}
-• Duration: ${duration} nights
-• Guests: ${booking.numberOfGuests || 1} guests
-
-💰 *Invoice Information:*
-• Invoice ID: ${invoice.invoiceId}
-• Amount: ${invoice.amount} SAR
-
-📧 You will receive a detailed invoice via email shortly.
-
-For any questions, please contact us:
-📞 Phone: +966 XX XXX XXXX
-📧 Email: info@gaithtours.com
-
-Thank you for choosing Gaith Tours! 🌟`;
-  }
-
-  /**
-   * Send payment reminder notification
+  async sendBookingApprovalNotification(booking, invoice) {
+    return this.sendBookingApprovalNotificationArabic(booking, invoice);
+  }  /**
+   * Send payment reminder notification using Arabic template
    * @param {Object} booking - Booking details
    * @param {Object} invoice - Invoice details
    */
   async sendPaymentReminder(booking, invoice) {
-    try {
-      const message = `💳 *Payment Reminder - Gaith Tours*
-
-Dear ${booking.touristName},
-
-This is a friendly reminder about your pending payment.
-
-📋 *Invoice Details:*
-• Invoice ID: ${invoice.invoiceId}
-• Amount: ${invoice.amount} SAR
-• Hotel: ${booking.hotel.name}
-
-Please complete your payment to confirm your reservation.
-
-Contact us for payment assistance:
-📞 Phone: +966 XX XXX XXXX
-
-Thank you!`;
-
-      let phoneNumber = booking.phone;
-      if (!phoneNumber.startsWith('966') && !phoneNumber.startsWith('+966')) {
-        phoneNumber = phoneNumber.startsWith('0') ?
-          `966${phoneNumber.substring(1)}` :
-          `966${phoneNumber}`;
-      }
-
-      await this.sendMessage(phoneNumber, message);
-      console.log(`Payment reminder WhatsApp sent to ${phoneNumber}`);
-    } catch (error) {
-      console.error('Failed to send payment reminder WhatsApp:', error);
-    }
+    return this.sendPaymentReminderArabic(booking, invoice);
   }
-
   /**
-   * Send booking confirmation after payment
+   * Send booking confirmation using Arabic template
    * @param {Object} booking - Booking details
    * @param {Object} payment - Payment details
    */
   async sendBookingConfirmation(booking, payment) {
-    try {
-      const checkInDate = new Date(booking.checkIn).toLocaleDateString('en-GB');
-      const checkOutDate = new Date(booking.checkOut).toLocaleDateString('en-GB');
-
-      const message = `✅ *Booking Confirmed - Gaith Tours*
-
-Dear ${booking.touristName},
-
-Your payment has been received and your booking is now confirmed!
-
-📋 *Confirmed Booking:*
-• Hotel: ${booking.hotel.name}
-• Check-in: ${checkInDate}
-• Check-out: ${checkOutDate}
-• Duration: ${booking.duration} nights
-• Guests: ${booking.adults} adults${booking.children ? `, ${booking.children} children` : ''}
-
-💳 *Payment Confirmed:*
-• Amount: ${payment.amount} SAR
-• Payment ID: ${payment.paymentId || payment._id}
-
-📧 Confirmation email with all details has been sent.
-
-Have a wonderful trip! 🌟
-
-Gaith Tours Team`;
-
-      let phoneNumber = booking.phone;
-      if (!phoneNumber.startsWith('966') && !phoneNumber.startsWith('+966')) {
-        phoneNumber = phoneNumber.startsWith('0') ?
-          `966${phoneNumber.substring(1)}` :
-          `966${phoneNumber}`;
-      }
-
-      await this.sendMessage(phoneNumber, message);
-      console.log(`Booking confirmation WhatsApp sent to ${phoneNumber}`);
-    } catch (error) {
-      console.error('Failed to send booking confirmation WhatsApp:', error);
-    }
+    return this.sendBookingConfirmationArabic(booking, payment);
   }
-
   /**
-   * Send booking denial notification
+   * Send booking denial notification using Arabic template
    * @param {Object} booking - Booking details
    * @param {string} reason - Denial reason
    */
   async sendBookingDenialNotification(booking, reason) {
+    return this.sendBookingDenialNotificationArabic(booking, reason);
+  }
+
+  /**
+   * Send Arabic booking approval notification using template
+   * @param {Object} booking - Booking details
+   * @param {Object} invoice - Invoice details
+   */
+  async sendBookingApprovalNotificationArabic(booking, invoice) {
     try {
-      const message = `❌ *Booking Update - Gaith Tours*
-
-Dear ${booking.touristName},
-
-We regret to inform you that your booking request has been denied.
-
-📋 *Booking Details:*
-• Hotel: ${booking.hotel.name}
-• Check-in: ${new Date(booking.checkIn).toLocaleDateString('en-GB')}
-• Check-out: ${new Date(booking.checkOut).toLocaleDateString('en-GB')}
-
-📝 *Reason:*
-${reason}
-
-We apologize for any inconvenience. Please feel free to submit a new booking request or contact us for alternative options.
-
-📞 Contact us: +966 XX XXX XXXX
-📧 Email: info@gaithtours.com
-
-Thank you for your understanding.
-Gaith Tours Team`;
-
-      let phoneNumber = booking.phone;
-      if (!phoneNumber.startsWith('966') && !phoneNumber.startsWith('+966')) {
-        phoneNumber = phoneNumber.startsWith('0') ?
-          `966${phoneNumber.substring(1)}` :
-          `966${phoneNumber}`;
+      if (!this.accessToken || !this.phoneNumberId) {
+        console.warn('WhatsApp not configured - skipping Arabic notification');
+        return;
       }
 
-      await this.sendMessage(phoneNumber, message);
-      console.log(`Booking denial WhatsApp sent to ${phoneNumber}`);
+      const phoneNumber = this.formatPhoneNumber(booking.phone);
+
+      // Calculate duration
+      const duration = this.calculateDuration(booking.checkInDate, booking.checkOutDate);
+
+      const templateData = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'template',
+        template: {
+          name: 'booking_approval_ar',
+          language: {
+            code: 'ar'
+          },
+          components: [            {
+              type: 'body',
+              parameters: [
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name },
+                { type: 'text', parameter_name: 'check_in_date', text: this.formatDateArabic(booking.checkInDate) },
+                { type: 'text', parameter_name: 'check_out_date', text: this.formatDateArabic(booking.checkOutDate) },
+                { type: 'text', parameter_name: 'duration', text: duration.toString() },
+                { type: 'text', parameter_name: 'guest_count', text: (booking.numberOfGuests || 1).toString() },
+                { type: 'text', parameter_name: 'invoice_id', text: invoice.invoiceId },
+                { type: 'text', parameter_name: 'amount', text: invoice.amount.toString() }
+              ]
+            }
+          ]
+        }
+      };
+
+      const response = await axios.post(this.baseUrl, templateData, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Arabic booking approval template sent successfully:', response.data);
+      return response.data;
     } catch (error) {
-      console.error('Failed to send booking denial WhatsApp:', error);
+      this.handleWhatsAppError(error, 'Arabic booking approval');
     }
+  }
+
+  /**
+   * Send Arabic payment reminder using template
+   * @param {Object} booking - Booking details
+   * @param {Object} invoice - Invoice details
+   */
+  async sendPaymentReminderArabic(booking, invoice) {
+    try {
+      if (!this.accessToken || !this.phoneNumberId) {
+        console.warn('WhatsApp not configured - skipping Arabic payment reminder');
+        return;
+      }
+
+      const phoneNumber = this.formatPhoneNumber(booking.phone);
+
+      const templateData = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'template',
+        template: {
+          name: 'payment_reminder_ar',
+          language: {
+            code: 'ar'
+          },
+          components: [            {
+              type: 'body',
+              parameters: [
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
+                { type: 'text', parameter_name: 'invoice_id', text: invoice.invoiceId },
+                { type: 'text', parameter_name: 'amount', text: invoice.amount.toString() },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name }
+              ]
+            }
+          ]
+        }
+      };
+
+      const response = await axios.post(this.baseUrl, templateData, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Arabic payment reminder template sent successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      this.handleWhatsAppError(error, 'Arabic payment reminder');
+    }
+  }
+
+  /**
+   * Send Arabic booking confirmation using template
+   * @param {Object} booking - Booking details
+   * @param {Object} payment - Payment details
+   */
+  async sendBookingConfirmationArabic(booking, payment) {
+    try {
+      if (!this.accessToken || !this.phoneNumberId) {
+        console.warn('WhatsApp not configured - skipping Arabic booking confirmation');
+        return;
+      }
+
+      const phoneNumber = this.formatPhoneNumber(booking.phone);
+      const duration = this.calculateDuration(booking.checkInDate, booking.checkOutDate);
+      const childrenInfo = booking.children ? `, ${booking.children} أطفال` : '';
+
+      const templateData = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'template',
+        template: {
+          name: 'booking_confirmation_ar',
+          language: {
+            code: 'ar'
+          },
+          components: [            {
+              type: 'body',
+              parameters: [
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name },
+                { type: 'text', parameter_name: 'check_in_date', text: this.formatDateArabic(booking.checkInDate) },
+                { type: 'text', parameter_name: 'check_out_date', text: this.formatDateArabic(booking.checkOutDate) },
+                { type: 'text', parameter_name: 'duration', text: duration.toString() },
+                { type: 'text', parameter_name: 'guest_count', text: (booking.adults || booking.numberOfGuests || 1).toString() },
+                { type: 'text', parameter_name: 'children_info', text: childrenInfo },
+                { type: 'text', parameter_name: 'amount', text: payment.amount.toString() },
+                { type: 'text', parameter_name: 'payment_id', text: payment.paymentId || payment._id }
+              ]
+            }
+          ]
+        }
+      };
+
+      const response = await axios.post(this.baseUrl, templateData, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Arabic booking confirmation template sent successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      this.handleWhatsAppError(error, 'Arabic booking confirmation');
+    }
+  }
+
+  /**
+   * Send Arabic booking denial using template
+   * @param {Object} booking - Booking details
+   * @param {string} reason - Denial reason
+   */
+  async sendBookingDenialNotificationArabic(booking, reason) {
+    try {
+      if (!this.accessToken || !this.phoneNumberId) {
+        console.warn('WhatsApp not configured - skipping Arabic booking denial');
+        return;
+      }
+
+      const phoneNumber = this.formatPhoneNumber(booking.phone);
+
+      const templateData = {
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'template',
+        template: {
+          name: 'booking_denial_ar',
+          language: {
+            code: 'ar'
+          },
+          components: [            {
+              type: 'body',
+              parameters: [
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name },
+                { type: 'text', parameter_name: 'check_in_date', text: this.formatDateArabic(booking.checkInDate) },
+                { type: 'text', parameter_name: 'check_out_date', text: this.formatDateArabic(booking.checkOutDate) },
+                { type: 'text', parameter_name: 'denial_reason', text: reason }
+              ]
+            }
+          ]
+        }
+      };
+
+      const response = await axios.post(this.baseUrl, templateData, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Arabic booking denial template sent successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      this.handleWhatsAppError(error, 'Arabic booking denial');
+    }
+  }
+  /**
+   * Helper method to format phone number
+   * @param {string} phone - Phone number
+   * @returns {string} Formatted phone number
+   */
+  formatPhoneNumber(phone) {
+    // Remove any non-numeric characters
+    let phoneNumber = phone.replace(/[^\d]/g, '');
+
+    // Remove leading + if present
+    if (phoneNumber.startsWith('+')) {
+      phoneNumber = phoneNumber.substring(1);
+    }
+
+    // If number already has a country code (starts with common country codes), use as is
+    if (phoneNumber.startsWith('966') || // Saudi Arabia
+        phoneNumber.startsWith('20') ||  // Egypt
+        phoneNumber.startsWith('971') || // UAE
+        phoneNumber.startsWith('965') || // Kuwait
+        phoneNumber.startsWith('973') || // Bahrain
+        phoneNumber.startsWith('974') || // Qatar
+        phoneNumber.startsWith('968') || // Oman
+        phoneNumber.startsWith('1') ||   // US/Canada
+        phoneNumber.startsWith('44') ||  // UK
+        phoneNumber.length > 10) {       // Likely international number
+      return phoneNumber;
+    }
+
+    // If it's a Saudi local number (starts with 5 and 9 digits) or starts with 0
+    if (phoneNumber.startsWith('0')) {
+      return `966${phoneNumber.substring(1)}`;
+    } else if (phoneNumber.startsWith('5') && phoneNumber.length === 9) {
+      return `966${phoneNumber}`;
+    }
+
+    // Default: assume it's already formatted correctly
+    return phoneNumber;
+  }
+
+  /**
+   * Helper method to calculate duration between dates
+   * @param {string} checkIn - Check-in date
+   * @param {string} checkOut - Check-out date
+   * @returns {number} Duration in nights
+   */
+  calculateDuration(checkIn, checkOut) {
+    if (!checkIn || !checkOut) return 0;
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+  }
+
+  /**
+   * Helper method to format date in Arabic locale
+   * @param {string} dateString - Date string
+   * @returns {string} Formatted date
+   */
+  formatDateArabic(dateString) {
+    if (!dateString) return 'غير محدد';
+    return new Date(dateString).toLocaleDateString('ar-SA');
+  }
+
+  /**
+   * Helper method to handle WhatsApp errors
+   * @param {Object} error - Error object
+   * @param {string} context - Context of the error
+   */
+  handleWhatsAppError(error, context) {
+    if (error.response?.data?.error?.code === 133010) {
+      console.error(`❌ WhatsApp Account Error (${context}): Account is not registered with Meta Cloud API`);
+      console.error('🔧 Setup Required: Visit developers.facebook.com → WhatsApp → Complete business verification');
+    } else if (error.response?.data?.error?.code === 131056) {
+      console.error(`❌ Template Error (${context}): Message template may not be approved`);
+    } else {
+      console.error(`WhatsApp ${context} error:`, error.response?.data || error.message);
+    }
+    // Don't throw error to avoid breaking the process
   }
 }
 

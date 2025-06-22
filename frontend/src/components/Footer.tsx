@@ -87,9 +87,8 @@ export const Footer: React.FC = () => {
         duration: 0.6
       }
     }
-  };
-  return (
-    <footer className="relative overflow-hidden" style={{backgroundImage: 'linear-gradient(to bottom, #00d0f9, #4ce0e3, #8ceccb, #c4f4bd, #f6f9be)'}}>
+  };  return (
+    <footer className="relative overflow-hidden" style={{backgroundColor: '#2BD9EC'}}>
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
         {/* Gradient overlays */}
@@ -152,33 +151,18 @@ export const Footer: React.FC = () => {
             <motion.div
               variants={itemVariants}
               className="space-y-6"
-            >              {/* Logo Section - Enhanced with actual logo */}
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  {/* Modern logo container with actual logo image */}
-                  <motion.div
-                    animate={{
-                      rotate: [0, 360],
-                      scale: [1, 1.1, 1]
-                    }}
-                    transition={{
-                      duration: 10,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                    className="w-16 h-16 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 rounded-2xl flex items-center justify-center shadow-2xl border-2 border-white/20 overflow-hidden"
-                  >
+            >              {/* Logo Section - Enhanced with actual logo and RTL support */}
+              <div className="flex items-center space-x-4 space-x-reverse">
+                <div className="relative">                  {/* Modern logo container with actual logo image */}
+                  <div className="w-16 h-16 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 rounded-2xl flex items-center justify-center shadow-2xl border-2 border-white/20 overflow-hidden">
                     {/* Logo image with styling */}
-                    <motion.img
+                    <img
                       src="/logo-no-background.png"
                       alt="Gaith Tours Logo"
                       className="w-12 h-12 object-contain drop-shadow-lg z-10"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5 }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 to-yellow-600/20 rounded-2xl animate-pulse"></div>
-                  </motion.div>
+                  </div>
 
                   {/* Enhanced sparkle effects */}
                   <motion.div
@@ -206,12 +190,11 @@ export const Footer: React.FC = () => {
                     }}
                     className="absolute -bottom-1 -left-1 w-2 h-2 bg-orange-400 rounded-full shadow-lg shadow-orange-400/50"
                   ></motion.div>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent">
+                </div>                <div className="mr-6">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent tracking-wide" style={{ fontFamily: 'TIDO, serif' }}>
                     {t('brand.name', 'Gaith Tours')}
                   </h2>
-                  <p className="text-orange-300 text-sm font-medium">Premium Travel Experience</p>
+                  <p className="text-orange-300 text-sm font-medium mt-1">Premium Travel Experience</p>
                 </div>
               </div>
 
@@ -253,37 +236,31 @@ export const Footer: React.FC = () => {
               <div className="flex items-center space-x-3">
                 <div className="w-2 h-8 bg-gradient-to-b from-green-400 to-emerald-400 rounded-full"></div>
                 <h3 className="text-xl font-bold text-white">{t('footer.contact')}</h3>
-              </div>
-
-              {/* Contact Items - Horizontal Layout */}
+              </div>              {/* Contact Items - Minimal Gap Display */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-              >                <div className="group flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
-                  <div className="w-8 h-8 min-w-[2rem] bg-gradient-to-r from-orange-400 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                className="space-y-3"
+              >                <div className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
+                  <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 shrink-0">
                     <MapPinIcon className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">Riyadh, Saudi Arabia</p>
-                  </div>
-                </div>
-
-                <div className="group flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
-                  <div className="w-8 h-8 min-w-[2rem] bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                  </div>                  <p className="text-white font-medium text-sm mr-3" dir="rtl">
+                    {t('footer.location', 'الرياض، المملكة العربية السعودية')}
+                  </p>
+                </div>                <div className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 shrink-0">
                     <PhoneIcon className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">+966 123 456 789</p>
-                  </div>
-                </div>                <div className="group flex items-center space-x-3 p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
-                  <div className="w-8 h-8 min-w-[2rem] bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                  </div>                  <p className="text-white font-medium text-sm font-mono mr-3" dir="ltr">
+                    {t('footer.phoneNumber', '٩٦٦+ ١٢٣ ٤٥٦ ٧٨٩')}
+                  </p>
+                </div>                <div className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 shrink-0">
                     <AtSymbolIcon className="h-4 w-4 text-white" />
                   </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">info@gaithtours.com</p>
-                  </div>
+                  <p className="text-white font-medium text-sm font-mono mr-3" dir="ltr">
+                    {t('footer.emailAddress', 'info@gaithtours.com')}
+                  </p>
                 </div>
               </motion.div>
             </motion.div>

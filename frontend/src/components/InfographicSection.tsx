@@ -82,7 +82,7 @@ export const InfographicSection: React.FC = () => {
                     {t(`infographic.${item.translationKey}.supportingText`)}
                   </p>
                 </div>{/* Asset Image - Left Side in RTL (Right side visually) */}                <div className="order-1 lg:order-2 flex justify-center lg:justify-start items-center w-full">
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-full lg:max-w-md xl:max-w-lg">
+                  <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-full lg:max-w-md xl:max-w-lg">
                     <img
                       src={item.assetImage}
                       alt={`Asset ${item.id}`}
