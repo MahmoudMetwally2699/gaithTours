@@ -116,14 +116,14 @@ class WhatsAppService {
           components: [            {
               type: 'body',
               parameters: [
-                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
-                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name },
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName || 'عميل كريم' },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel?.name || 'الفندق' },
                 { type: 'text', parameter_name: 'check_in_date', text: this.formatDateArabic(booking.checkInDate) },
                 { type: 'text', parameter_name: 'check_out_date', text: this.formatDateArabic(booking.checkOutDate) },
                 { type: 'text', parameter_name: 'duration', text: duration.toString() },
                 { type: 'text', parameter_name: 'guest_count', text: (booking.numberOfGuests || 1).toString() },
-                { type: 'text', parameter_name: 'invoice_id', text: invoice.invoiceId },
-                { type: 'text', parameter_name: 'amount', text: invoice.amount.toString() }
+                { type: 'text', parameter_name: 'invoice_id', text: invoice.invoiceId || 'N/A' },
+                { type: 'text', parameter_name: 'amount', text: invoice.amount?.toString() || '0' }
               ]
             }
           ]
@@ -170,10 +170,10 @@ class WhatsAppService {
           components: [            {
               type: 'body',
               parameters: [
-                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
-                { type: 'text', parameter_name: 'invoice_id', text: invoice.invoiceId },
-                { type: 'text', parameter_name: 'amount', text: invoice.amount.toString() },
-                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name }
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName || 'عميل كريم' },
+                { type: 'text', parameter_name: 'invoice_id', text: invoice.invoiceId || 'N/A' },
+                { type: 'text', parameter_name: 'amount', text: invoice.amount?.toString() || '0' },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel?.name || 'الفندق' }
               ]
             }
           ]
@@ -204,11 +204,9 @@ class WhatsAppService {
       if (!this.accessToken || !this.phoneNumberId) {
         console.warn('WhatsApp not configured - skipping Arabic booking confirmation');
         return;
-      }
-
-      const phoneNumber = this.formatPhoneNumber(booking.phone);
+      }      const phoneNumber = this.formatPhoneNumber(booking.phone);
       const duration = this.calculateDuration(booking.checkInDate, booking.checkOutDate);
-      const childrenInfo = booking.children ? `, ${booking.children} أطفال` : '';
+      const childrenInfo = booking.children ? `, ${booking.children} أطفال` : ' ';
 
       const templateData = {
         messaging_product: 'whatsapp',
@@ -222,15 +220,15 @@ class WhatsAppService {
           components: [            {
               type: 'body',
               parameters: [
-                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
-                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name },
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName || 'عميل كريم' },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel?.name || 'الفندق' },
                 { type: 'text', parameter_name: 'check_in_date', text: this.formatDateArabic(booking.checkInDate) },
                 { type: 'text', parameter_name: 'check_out_date', text: this.formatDateArabic(booking.checkOutDate) },
                 { type: 'text', parameter_name: 'duration', text: duration.toString() },
                 { type: 'text', parameter_name: 'guest_count', text: (booking.adults || booking.numberOfGuests || 1).toString() },
                 { type: 'text', parameter_name: 'children_info', text: childrenInfo },
-                { type: 'text', parameter_name: 'amount', text: payment.amount.toString() },
-                { type: 'text', parameter_name: 'payment_id', text: payment.paymentId || payment._id }
+                { type: 'text', parameter_name: 'amount', text: payment.amount?.toString() || '0' },
+                { type: 'text', parameter_name: 'payment_id', text: payment.paymentId || payment._id || 'N/A' }
               ]
             }
           ]
@@ -277,11 +275,11 @@ class WhatsAppService {
           components: [            {
               type: 'body',
               parameters: [
-                { type: 'text', parameter_name: 'customer_name', text: booking.touristName },
-                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel.name },
+                { type: 'text', parameter_name: 'customer_name', text: booking.touristName || 'عميل كريم' },
+                { type: 'text', parameter_name: 'hotel_name', text: booking.hotel?.name || 'الفندق' },
                 { type: 'text', parameter_name: 'check_in_date', text: this.formatDateArabic(booking.checkInDate) },
                 { type: 'text', parameter_name: 'check_out_date', text: this.formatDateArabic(booking.checkOutDate) },
-                { type: 'text', parameter_name: 'denial_reason', text: reason }
+                { type: 'text', parameter_name: 'denial_reason', text: reason || 'غير محدد' }
               ]
             }
           ]
