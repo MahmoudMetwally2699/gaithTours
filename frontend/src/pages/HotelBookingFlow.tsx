@@ -76,13 +76,13 @@ export const HotelBookingFlow: React.FC = () => {
     fullName: '',
     phoneNumber: '',
     phoneCountryCode: 'SA'
-  });
-  const steps: BookingStep[] = [
-    { id: 1, title: t('booking.steps.checkInAndRoom', 'Check-in & Room'), completed: false },
-    { id: 2, title: t('booking.steps.payment', 'Payment Method'), completed: false },
-    { id: 3, title: t('booking.steps.guests', 'Additional Guests'), completed: false },
-    { id: 4, title: t('booking.steps.requests', 'Special Requests'), completed: false },
-    { id: 5, title: t('booking.steps.documents', 'Documents'), completed: false }
+  });  const steps: BookingStep[] = [
+    { id: 1, title: t('booking.steps.checkIn', 'Check-in Time'), completed: false },
+    { id: 2, title: t('booking.steps.roomType', 'Room Type'), completed: false },
+    { id: 3, title: t('booking.steps.payment', 'Payment Method'), completed: false },
+    { id: 4, title: t('booking.steps.guests', 'Additional Guests'), completed: false },
+    { id: 5, title: t('booking.steps.requests', 'Special Requests'), completed: false },
+    { id: 6, title: t('booking.steps.documents', 'Documents'), completed: false }
   ];
 
   // Auto-populate user data
@@ -100,14 +100,15 @@ export const HotelBookingFlow: React.FC = () => {
 
   const handlePrevious = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-  const validateCurrentStep = () => {
+  };  const validateCurrentStep = () => {
     switch (currentStep) {
       case 1:
         if (!formData.expectedCheckInTime) {
           alert(t('booking.validation.checkInTime', 'Please select your expected check-in time'));
           return false;
         }
+        break;
+      case 2:
         if (!formData.roomType) {
           alert(t('booking.validation.roomType', 'Please select a room type'));
           return false;
@@ -117,13 +118,13 @@ export const HotelBookingFlow: React.FC = () => {
           return false;
         }
         break;
-      case 2:
+      case 3:
         if (!formData.paymentMethod) {
           alert(t('booking.validation.paymentMethod', 'Please select a payment method'));
           return false;
         }
         break;
-      // Steps 3, 4, 5 are optional
+      // Steps 4, 5, 6 are optional
     }
     return true;
   };
@@ -163,135 +164,159 @@ export const HotelBookingFlow: React.FC = () => {
   const renderStepContent = () => {
     switch (currentStep) {      case 1:
         return (
-          <div className="space-y-6 sm:space-y-8">
-            <div className={`text-center mb-6 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <ClockIcon className="h-12 w-12 sm:h-16 sm:w-16 text-primary-500 mx-auto mb-3 sm:mb-4" />
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">
-                {t('booking.checkInTime.title', 'Check-in Details & Room Type')}
+          <div className="space-y-4 sm:space-y-10">
+            <div className={`text-center mb-4 sm:mb-10 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full mb-2 sm:mb-6">
+                <ClockIcon className="h-5 w-5 sm:h-10 sm:w-10 text-blue-600" />
+              </div>
+              <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-3">
+                {t('booking.checkInTime.title', 'Check-in Details')}
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
                 {t('booking.checkInTime.subtitle', 'Help us prepare for your arrival')}
               </p>
             </div>
 
-            <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
+            <div className="max-w-3xl mx-auto space-y-3 sm:space-y-8">
               {/* Check-in Time */}
-              <div>
-                <label className={`block text-sm font-medium text-gray-700 mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-2xl p-3 sm:p-8">
+                <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('booking.checkInTime.label', 'Expected Check-in Time')} *
                 </label>
                 <input
                   type="time"
                   value={formData.expectedCheckInTime}
                   onChange={(e) => handleInputChange('expectedCheckInTime', e.target.value)}
-                  className={`w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base sm:text-lg ${isRTL ? 'text-right' : 'text-left'}`}
+                  className={`w-full px-3 sm:px-6 py-2 sm:py-5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 sm:focus:ring-3 focus:ring-blue-100 focus:border-blue-500 text-base sm:text-xl font-medium shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
                   required
                 />
-                <p className={`mt-2 text-xs sm:text-sm text-gray-500 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('booking.checkInTime.note', 'Standard check-in time is 15:00. Early check-in subject to availability.')}
+                <p className={`mt-2 sm:mt-3 text-xs sm:text-base text-gray-600 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg border border-gray-100 ${isRTL ? 'text-right' : 'text-left'}`}>
+                  💡 {t('booking.checkInTime.note', 'Standard check-in time is 15:00. Early check-in subject to availability.')}
                 </p>
-              </div>
-
-              {/* Room Type */}
-              <div>
-                <label className={`block text-sm font-medium text-gray-700 mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('booking.roomType.label', 'Room Type')} *
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {[
-                    { id: 'Standard Room', label: t('booking.roomType.standard', 'Standard Room'), icon: '🛏️' },
-                    { id: 'Deluxe Room', label: t('booking.roomType.deluxe', 'Deluxe Room'), icon: '🏨' },
-                    { id: 'Suite', label: t('booking.roomType.suite', 'Suite'), icon: '🏛️' },
-                    { id: 'Family Room', label: t('booking.roomType.family', 'Family Room'), icon: '👨‍👩‍👧‍👦' }
-                  ].map((room) => (
-                    <label
-                      key={room.id}
-                      className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                        formData.roomType === room.id
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="roomType"
-                        value={room.id}
-                        checked={formData.roomType === room.id}
-                        onChange={(e) => handleInputChange('roomType', e.target.value)}
-                        className="sr-only"
-                      />
-                      <span className="text-xl sm:text-2xl">{room.icon}</span>
-                      <span className={`font-medium text-gray-900 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}>
-                        {room.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Stay Type */}
-              <div>
-                <label className={`block text-sm font-medium text-gray-700 mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('booking.stayType.label', 'Purpose of Stay')} *
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { id: 'Leisure', label: t('booking.stayType.leisure', 'Leisure'), icon: '🏖️' },
-                    { id: 'Business', label: t('booking.stayType.business', 'Business'), icon: '💼' },
-                    { id: 'Transit', label: t('booking.stayType.transit', 'Transit'), icon: '✈️' }
-                  ].map((stay) => (
-                    <label
-                      key={stay.id}
-                      className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
-                        formData.stayType === stay.id
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="stayType"
-                        value={stay.id}
-                        checked={formData.stayType === stay.id}
-                        onChange={(e) => handleInputChange('stayType', e.target.value)}
-                        className="sr-only"
-                      />
-                      <span className="text-xl sm:text-2xl">{stay.icon}</span>
-                      <span className={`font-medium text-gray-900 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}>
-                        {stay.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
-        );      case 2:
-        return (
-          <div className="space-y-4 sm:space-y-6">
-            <div className={`text-center mb-6 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <CreditCardIcon className="h-12 w-12 sm:h-16 sm:w-16 text-primary-500 mx-auto mb-3 sm:mb-4" />
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">
-                {t('booking.payment.title', 'How would you like to pay?')}
+        );
+
+      case 2:        return (
+          <div className="space-y-4 sm:space-y-8">
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full mb-2 sm:mb-4">
+                <UserIcon className="h-5 w-5 sm:h-10 sm:w-10 text-purple-600" />
+              </div>
+              <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
+                {t('booking.roomType.title', 'Choose Your Room')}
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
-                {t('booking.payment.subtitle', 'Choose your preferred payment method')}
+              <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
+                {t('booking.roomType.subtitle', 'Select the perfect room for your stay')}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
+            <div className="max-w-3xl mx-auto">
+              <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {t('booking.roomType.label', 'Room Type')} *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                {[
+                  { id: 'Standard Room', label: t('booking.roomType.standard', 'Standard Room'), icon: '🛏️', desc: 'Comfortable stay' },
+                  { id: 'Deluxe Room', label: t('booking.roomType.deluxe', 'Deluxe Room'), icon: '🏨', desc: 'Enhanced amenities' },
+                  { id: 'Suite', label: t('booking.roomType.suite', 'Suite'), icon: '🏛️', desc: 'Spacious luxury' },
+                  { id: 'Family Room', label: t('booking.roomType.family', 'Family Room'), icon: '👨‍👩‍👧‍👦', desc: 'Perfect for families' }
+                ].map((room) => (
+                  <label
+                    key={room.id}
+                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                      formData.roomType === room.id
+                        ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="roomType"
+                      value={room.id}
+                      checked={formData.roomType === room.id}
+                      onChange={(e) => handleInputChange('roomType', e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="text-center">
+                      <span className="text-lg sm:text-2xl mb-1 block">{room.icon}</span>
+                      <span className={`font-bold text-xs sm:text-sm text-gray-900 block text-center leading-tight`}>
+                        {room.label}
+                      </span>
+                      <span className="text-xs text-gray-600 hidden sm:block">{room.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Purpose of Stay */}
+            <div className="max-w-3xl mx-auto">
+              <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {t('booking.stayType.label', 'Purpose of Stay')} *
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                {[
+                  { id: 'business', label: t('booking.stayType.business', 'Business'), icon: '💼', desc: 'Work or meetings' },
+                  { id: 'leisure', label: t('booking.stayType.leisure', 'Leisure'), icon: '🌴', desc: 'Vacation or tourism' },
+                  { id: 'family', label: t('booking.stayType.family', 'Family'), icon: '👨‍👩‍👧‍👦', desc: 'Family time' },
+                  { id: 'other', label: t('booking.stayType.other', 'Other'), icon: '📝', desc: 'Other purpose' }
+                ].map((stay) => (
+                  <label
+                    key={stay.id}
+                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                      formData.stayType === stay.id
+                        ? 'border-green-500 bg-gradient-to-br from-green-50 to-green-100 shadow-lg'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="stayType"
+                      value={stay.id}
+                      checked={formData.stayType === stay.id}
+                      onChange={(e) => handleInputChange('stayType', e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="text-center">
+                      <span className="text-lg sm:text-2xl mb-1 block">{stay.icon}</span>
+                      <span className={`font-bold text-xs sm:text-sm text-gray-900 block text-center leading-tight`}>
+                        {stay.label}
+                      </span>
+                      <span className="text-xs text-gray-600 hidden sm:block">{stay.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        );      case 3:
+        return (
+          <div className="space-y-4 sm:space-y-8">
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-green-100 to-emerald-200 rounded-full mb-2 sm:mb-4">
+                <CreditCardIcon className="h-5 w-5 sm:h-10 sm:w-10 text-green-600" />
+              </div>
+              <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
+                {t('booking.payment.title', 'How would you like to pay?')}
+              </h2>
+              <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
+                {t('booking.payment.subtitle', 'Choose your preferred payment method')}
+              </p>
+            </div>            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto">
               {[
-                { id: 'credit_card', label: t('booking.payment.creditCard', 'Credit Card'), icon: '💳' },
-                { id: 'debit_card', label: t('booking.payment.debitCard', 'Debit Card'), icon: '💳' },
-                { id: 'bank_transfer', label: t('booking.payment.bankTransfer', 'Bank Transfer'), icon: '🏦' },
-                { id: 'cash_on_arrival', label: t('booking.payment.cashOnArrival', 'Cash on Arrival'), icon: '💵' }
+                { id: 'credit_card', label: t('booking.payment.creditCard', 'Credit Card'), icon: '💳', desc: 'Visa, MasterCard, etc.' },
+                { id: 'debit_card', label: t('booking.payment.debitCard', 'Debit Card'), icon: '💳', desc: 'Direct bank payment' },
+                { id: 'bank_transfer', label: t('booking.payment.bankTransfer', 'Bank Transfer'), icon: '🏦', desc: 'Wire transfer' },
+                { id: 'cash_on_arrival', label: t('booking.payment.cashOnArrival', 'Cash on Arrival'), icon: '💵', desc: 'Pay at the hotel' }
               ].map((method) => (
                 <label
                   key={method.id}
-                  className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all touch-manipulation ${
+                  className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
                     formData.paymentMethod === method.id
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg'
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                   }`}
                 >
                   <input
@@ -302,43 +327,49 @@ export const HotelBookingFlow: React.FC = () => {
                     onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
                     className="sr-only"
                   />
-                  <span className="text-xl sm:text-2xl">{method.icon}</span>
-                  <span className={`font-medium text-gray-900 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {method.label}
-                  </span>
+                  <div className="text-center">
+                    <span className="text-lg sm:text-2xl mb-1 block">{method.icon}</span>
+                    <span className={`font-bold text-xs sm:text-sm text-gray-900 block text-center leading-tight`}>
+                      {method.label}
+                    </span>
+                    <span className="text-xs text-gray-600 hidden sm:block">{method.desc}</span>
+                  </div>
                 </label>
               ))}
-            </div>          </div>
-        );      case 3:
+            </div>
+          </div>
+        );      case 4:
         return (
-          <div className="space-y-4 sm:space-y-6">
-            <div className={`text-center mb-6 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <UserPlusIcon className="h-12 w-12 sm:h-16 sm:w-16 text-primary-500 mx-auto mb-3 sm:mb-4" />
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">
+          <div className="space-y-4 sm:space-y-8">
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full mb-2 sm:mb-4">
+                <UserPlusIcon className="h-5 w-5 sm:h-10 sm:w-10 text-purple-600" />
+              </div>
+              <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.guests.title', 'Additional Guests')}
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
                 {t('booking.guests.subtitle', 'Add travel companions (optional)')}
               </p>
             </div>
 
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-3xl mx-auto">
               {/* Existing Guests */}
               {formData.additionalGuests.length > 0 && (
-                <div className="mb-4 sm:mb-6">
-                  <h3 className={`font-medium text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}>
+                <div className="mb-6 sm:mb-8">
+                  <h3 className={`font-bold text-lg text-gray-900 mb-3 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                     {t('booking.guests.added', 'Added Guests')}
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-2 sm:space-y-3">
                     {formData.additionalGuests.map((guest, index) => (
-                      <div key={index} className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between bg-gray-50 p-3 rounded-lg`}>
+                      <div key={index} className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between bg-gradient-to-r from-gray-50 to-gray-100 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-200 hover:shadow-md transition-shadow`}>
                         <div className={`flex-1 min-w-0 ${isRTL ? 'text-right' : 'text-left'}`}>
-                          <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{guest.fullName}</div>
-                          <div className="text-xs sm:text-sm text-gray-600 truncate">{guest.phoneNumber}</div>
+                          <div className="font-semibold text-gray-900 text-sm sm:text-lg truncate">{guest.fullName}</div>
+                          <div className="text-xs sm:text-base text-gray-600 truncate">{guest.phoneNumber}</div>
                         </div>
                         <button
                           onClick={() => handleRemoveGuest(index)}
-                          className="text-red-600 hover:text-red-700 transition-colors text-sm sm:text-base font-medium ml-3 flex-shrink-0 touch-manipulation"
+                          className="bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm ml-2 sm:ml-3 flex-shrink-0"
                         >
                           {t('common.remove', 'Remove')}
                         </button>
@@ -349,162 +380,172 @@ export const HotelBookingFlow: React.FC = () => {
               )}
 
               {/* Add New Guest */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-                <h3 className={`font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
+                <h3 className={`font-bold text-base sm:text-lg text-gray-900 mb-4 sm:mb-6 ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('booking.guests.addNew', 'Add Guest')}
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className={`block text-sm font-medium text-gray-700 mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
                       {t('common.fullName', 'Full Name')}
                     </label>
                     <input
                       type="text"
                       value={newGuest.fullName}
                       onChange={(e) => setNewGuest(prev => ({ ...prev, fullName: e.target.value }))}
-                      className={`w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}
+                      className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
                       placeholder={t('booking.guests.namePlaceholder', 'Enter guest name')}
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium text-gray-700 mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
                       {t('common.phoneNumber', 'Phone Number')}
                     </label>
                     <input
                       type="tel"
                       value={newGuest.phoneNumber}
                       onChange={(e) => setNewGuest(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                      className={`w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}
+                      className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
                       placeholder={t('booking.guests.phonePlaceholder', 'Enter phone number')}
                     />
                   </div>
                 </div>
                 <button
                   onClick={handleAddGuest}
-                  className="mt-3 sm:mt-4 bg-primary-600 hover:bg-primary-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base w-full sm:w-auto touch-manipulation"
+                  className="mt-4 sm:mt-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
                 >
                   {t('booking.guests.addButton', 'Add Guest')}
                 </button>
               </div>
             </div>
           </div>
-        );      case 4:
+        );      case 5:
         return (
-          <div className="space-y-4 sm:space-y-6">
-            <div className={`text-center mb-6 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <DocumentTextIcon className="h-12 w-12 sm:h-16 sm:w-16 text-primary-500 mx-auto mb-3 sm:mb-4" />
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">
+          <div className="space-y-4 sm:space-y-8">
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
+                <DocumentTextIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
+              </div>
+              <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.requests.title', 'Special Requests')}
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
                 {t('booking.requests.subtitle', 'Let us know about any special needs (optional)')}
               </p>
             </div>
 
-            <div className="max-w-2xl mx-auto">
-              <textarea
-                value={formData.specialRequests}
-                onChange={(e) => handleInputChange('specialRequests', e.target.value)}
-                rows={4}
-                className={`w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}
-                placeholder={t('booking.requests.placeholder', 'Tell us about any special accommodations, dietary requirements, accessibility needs, or preferences...')}
-              />
+            <div className="max-w-3xl mx-auto">
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
+                <textarea
+                  value={formData.specialRequests}
+                  onChange={(e) => handleInputChange('specialRequests', e.target.value)}
+                  rows={4}
+                  className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 resize-none text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
+                  placeholder={t('booking.requests.placeholder', 'Tell us about any special accommodations, dietary requirements, accessibility needs, or preferences...')}
+                />
 
-              <div className="mt-3 sm:mt-4">
-                <p className={`text-xs sm:text-sm text-gray-600 mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('booking.requests.examples', 'Examples:')}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    t('booking.requests.example1', 'Wheelchair accessible room'),
-                    t('booking.requests.example2', 'Quiet room'),
-                    t('booking.requests.example3', 'High floor'),
-                    t('booking.requests.example4', 'Twin beds'),
-                    t('booking.requests.example5', 'Early check-in')
-                  ].map((example, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        const current = formData.specialRequests;
-                        const newText = current ? `${current}, ${example}` : example;
-                        handleInputChange('specialRequests', newText);
-                      }}
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm transition-colors touch-manipulation"
-                    >
-                      + {example}
-                    </button>
-                  ))}
+                <div className="mt-4 sm:mt-6">
+                  <p className={`text-sm sm:text-base font-semibold text-gray-800 mb-3 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    💡 {t('booking.requests.examples', 'Quick Examples:')}
+                  </p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    {[
+                      t('booking.requests.example1', 'Wheelchair accessible room'),
+                      t('booking.requests.example2', 'Quiet room'),
+                      t('booking.requests.example3', 'High floor'),
+                      t('booking.requests.example4', 'Twin beds'),
+                      t('booking.requests.example5', 'Early check-in')
+                    ].map((example, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const current = formData.specialRequests;
+                          const newText = current ? `${current}, ${example}` : example;
+                          handleInputChange('specialRequests', newText);
+                        }}
+                        className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-orange-300 text-gray-700 hover:text-orange-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm transition-all duration-200 hover:shadow-md font-medium"
+                      >
+                        + {example}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        );      case 5:
+        );      case 6:
         return (
-          <div className="space-y-4 sm:space-y-6">
-            <div className={`text-center mb-6 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <DocumentTextIcon className="h-12 w-12 sm:h-16 sm:w-16 text-primary-500 mx-auto mb-3 sm:mb-4" />
-              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2">
+          <div className="space-y-4 sm:space-y-8">
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-indigo-100 to-indigo-200 rounded-full mb-2 sm:mb-4">
+                <DocumentTextIcon className="h-5 w-5 sm:h-10 sm:w-10 text-indigo-600" />
+              </div>
+              <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.documents.title', 'Upload Documents')}
               </h2>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
                 {t('booking.documents.subtitle', 'Attach relevant documents (optional)')}
               </p>
             </div>
 
-            <div className="max-w-2xl mx-auto">
-              <FileUpload
-                files={formData.attachments}
-                onFilesChange={(files) => {
-                  handleInputChange('attachments', files);
-                }}
-                maxFiles={5}
-                acceptedTypes={['image/jpeg', 'image/png', 'application/pdf', 'application/msword']}
-                maxSize={10}
-              />
+            <div className="max-w-3xl mx-auto">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
+                <FileUpload
+                  files={formData.attachments}
+                  onFilesChange={(files) => {
+                    handleInputChange('attachments', files);
+                  }}
+                  maxFiles={5}
+                  acceptedTypes={['image/jpeg', 'image/png', 'application/pdf', 'application/msword']}
+                  maxSize={10}
+                />
 
-              <div className="mt-3 sm:mt-4">
-                <p className={`text-xs sm:text-sm text-gray-600 mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {t('booking.documents.types', 'Accepted document types:')}
-                </p>
-                <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                  <span className="bg-gray-100 px-2 py-1 rounded text-xs">ID/Passport</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded text-xs">Visa</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded text-xs">Travel Insurance</span>
-                  <span className="bg-gray-100 px-2 py-1 rounded text-xs">Medical Records</span>
-                </div>
-              </div>
-
-              {formData.attachments.length > 0 && (
                 <div className="mt-4 sm:mt-6">
-                  <h3 className={`font-medium text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {t('booking.documents.uploaded', 'Uploaded Documents')}
-                  </h3>
-                  <div className="space-y-2">
-                    {formData.attachments.map((file, index) => (
-                      <div key={file.publicId || index} className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between bg-gray-50 p-3 rounded-lg`}>
-                        <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} flex-1 min-w-0`}>
-                          <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0" />
-                          <div className={`flex-1 min-w-0 ${isRTL ? 'text-right' : 'text-left'}`}>
-                            <div className="font-medium text-gray-900 text-sm sm:text-base truncate">{file.fileName}</div>
-                            <div className="text-xs sm:text-sm text-gray-500">
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            const newAttachments = formData.attachments.filter((_, i) => i !== index);
-                            handleInputChange('attachments', newAttachments);
-                          }}
-                          className="text-red-600 hover:text-red-700 transition-colors text-sm font-medium ml-3 flex-shrink-0 touch-manipulation"
-                        >
-                          {t('common.remove', 'Remove')}
-                        </button>
-                      </div>
-                    ))}
+                  <p className={`text-sm sm:text-base font-semibold text-gray-800 mb-3 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    📎 {t('booking.documents.types', 'Accepted document types:')}
+                  </p>
+                  <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
+                    <span className="bg-white border-2 border-gray-200 text-gray-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-medium">📄 ID/Passport</span>
+                    <span className="bg-white border-2 border-gray-200 text-gray-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-medium">🛂 Visa</span>
+                    <span className="bg-white border-2 border-gray-200 text-gray-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-medium">🛡️ Travel Insurance</span>
+                    <span className="bg-white border-2 border-gray-200 text-gray-700 px-3 py-1 sm:px-4 sm:py-2 rounded-lg font-medium">🏥 Medical Records</span>
                   </div>
                 </div>
-              )}
+
+                {formData.attachments.length > 0 && (
+                  <div className="mt-6 sm:mt-8">
+                    <h3 className={`font-bold text-base sm:text-lg text-gray-900 mb-3 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                      {t('booking.documents.uploaded', 'Uploaded Documents')}
+                    </h3>
+                    <div className="space-y-2 sm:space-y-3">
+                      {formData.attachments.map((file, index) => (
+                        <div key={file.publicId || index} className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} justify-between bg-white border-2 border-gray-200 p-3 sm:p-4 rounded-lg hover:shadow-md transition-shadow`}>
+                          <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 sm:space-x-4 ${isRTL ? 'space-x-reverse' : ''} flex-1 min-w-0`}>
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                            </div>
+                            <div className={`flex-1 min-w-0 ${isRTL ? 'text-right' : 'text-left'}`}>
+                              <div className="font-semibold text-gray-900 text-sm sm:text-base truncate">{file.fileName}</div>
+                              <div className="text-xs sm:text-sm text-gray-600">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const newAttachments = formData.attachments.filter((_, i) => i !== index);
+                              handleInputChange('attachments', newAttachments);
+                            }}
+                            className="bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 px-3 py-1 sm:px-4 sm:py-2 rounded-lg transition-colors font-medium text-xs sm:text-sm ml-2 sm:ml-3 flex-shrink-0"
+                          >
+                            {t('common.remove', 'Remove')}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -512,150 +553,174 @@ export const HotelBookingFlow: React.FC = () => {
       default:
         return null;
     }
-  };
-  return (
-    <div className="min-h-screen bg-gray-50 pt-16 sm:pt-20">
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
+  };  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 pt-16 sm:pt-20">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">        {/* Header */}
+        <div className="mb-6 sm:mb-12">
+          <div className={`flex items-center justify-between mb-4 sm:mb-6 gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+            <button
+              onClick={() => history.goBack()}
+              className={`group flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-blue-600 transition-all duration-200 text-sm sm:text-base bg-white px-3 sm:px-4 py-2 rounded-full shadow-sm hover:shadow-md flex-shrink-0 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
+            >
+              <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="font-medium">{t('common.back', 'Back')}</span>
+            </button>
+              <div className="flex-1 text-center min-w-0">
+              <h1 className="text-lg sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent truncate">
+                {t('booking.title', 'Complete Your Booking')}
+              </h1>
+            </div>
+              {/* Spacer to balance the layout */}
+            <div className="w-[80px] sm:w-[120px] flex-shrink-0"></div>
+          </div>
 
-        {/* Header */}
-        <div className="text-center mb-6 sm:mb-8">
-          <button
-            onClick={() => history.goBack()}
-            className={`flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 mx-auto transition-colors text-sm sm:text-base ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
-          >
-            <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>{t('common.back', 'Back')}</span>
-          </button>
+          <div className="text-center">
+            <p className="text-sm sm:text-lg text-gray-600">
+              {hotelData.name}
+            </p>
+          </div>
+        </div>{/* Hotel Info Card */}
+        <div className="bg-white rounded-lg sm:rounded-2xl shadow-md border border-gray-100 p-3 sm:p-8 mb-4 sm:mb-12 hover:shadow-xl transition-shadow duration-300">
+          <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start sm:items-center space-x-2 sm:space-x-6 ${isRTL ? 'space-x-reverse' : ''}`}>
+            <div className="relative">
+              <img
+                src={hotelData.image || '/placeholder-hotel.jpg'}
+                alt={hotelData.name}
+                className="w-12 h-12 sm:w-24 sm:h-24 object-cover rounded-md sm:rounded-xl shadow-md flex-shrink-0"
+              />
+              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+                ★
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`text-sm sm:text-xl font-bold text-gray-900 mb-1 leading-tight ${isRTL ? 'text-right' : 'text-left'}`}>
+                {hotelData.name}
+              </h3>
+              <p className={`text-xs sm:text-base text-gray-600 mb-2 sm:mb-3 ${isRTL ? 'text-right' : 'text-left'}`}>
+                {hotelData.address}, {hotelData.city}
+              </p>
 
-          <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-            {t('booking.title', 'Complete Your Booking')}
-          </h1>
-          <p className={`text-sm sm:text-base text-gray-600 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-            {hotelData.name}
-          </p>
-        </div>        {/* Progress Steps */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-medium text-xs sm:text-sm ${
-                    currentStep === step.id
-                      ? 'bg-primary-600 text-white'
-                      : currentStep > step.id
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  {currentStep > step.id ? (
-                    <CheckCircleIcon className="h-4 w-4 sm:h-6 sm:w-6" />
-                  ) : (
-                    step.id
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+                <div className={`flex items-center text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-md sm:rounded-lg ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <CalendarIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-blue-500 ${isRTL ? 'ml-1 sm:ml-2' : 'mr-1 sm:mr-2'}`} />
+                  <span className="font-medium truncate">{hotelData.checkIn} - {hotelData.checkOut}</span>
+                </div>
+
+                <div className={`flex items-center text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-md sm:rounded-lg ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <UserIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-blue-500 ${isRTL ? 'ml-1 sm:ml-2' : 'mr-1 sm:mr-2'}`} />
+                  <span className="font-medium truncate">{hotelData.adults} adults, {hotelData.rooms} room(s)</span>
+                </div>
+              </div>
+
+              {/* Selected options */}
+              {(formData.roomType || formData.stayType) && (
+                <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-2">
+                  {formData.roomType && (
+                    <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium">
+                      {formData.roomType}
+                    </span>
+                  )}
+                  {formData.stayType && (
+                    <span className="bg-gray-100 text-gray-700 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium">
+                      {formData.stayType}
+                    </span>
                   )}
                 </div>
-                <div className={`ml-2 sm:ml-3 ${isRTL ? 'mr-2 sm:mr-3 ml-0' : ''}`}>
-                  <div className={`text-xs sm:text-sm font-medium ${
-                    currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
-                  } ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {step.title}
+              )}
+            </div>
+          </div>
+        </div>        {/* Step Content */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-8 lg:p-10 mb-4 sm:mb-12 hover:shadow-xl transition-shadow duration-300">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {renderStepContent()}
+          </motion.div>
+        </div>{/* Progress Steps - Moved above navigation */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between max-w-4xl mx-auto px-4">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center flex-1">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 ${
+                      currentStep === step.id
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110'
+                        : currentStep > step.id
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}
+                  >
+                    {currentStep > step.id ? (
+                      <CheckCircleIcon className="h-4 w-4 sm:h-6 sm:w-6" />
+                    ) : (
+                      step.id
+                    )}
+                  </div>
+                  <div className="mt-1 sm:mt-2 text-center">
+                    <div className={`text-xs sm:text-sm font-semibold transition-colors duration-300 ${
+                      currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
+                    }`}>
+                      {step.title}
+                    </div>
                   </div>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`hidden sm:block flex-1 h-1 mx-2 sm:mx-4 ${
-                    currentStep > step.id ? 'bg-green-500' : 'bg-gray-200'
+                  <div className={`flex-1 h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300 ${
+                    currentStep > step.id
+                      ? 'bg-gradient-to-r from-green-400 to-green-500'
+                      : currentStep === step.id
+                      ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                      : 'bg-gray-200'
                   }`} />
                 )}
               </div>
             ))}
           </div>
-        </div>        {/* Hotel Info Card */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
-          <div className={`flex ${isRTL ? 'flex-row-reverse' : 'flex-row'} items-start sm:items-center space-x-3 sm:space-x-4 ${isRTL ? 'space-x-reverse' : ''}`}>
-            <img
-              src={hotelData.image || '/placeholder-hotel.jpg'}
-              alt={hotelData.name}
-              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className={`text-base sm:text-lg font-semibold text-gray-900 truncate ${isRTL ? 'text-right' : 'text-left'}`}>
-                {hotelData.name}
-              </h3>
-              <p className={`text-sm sm:text-base text-gray-600 truncate ${isRTL ? 'text-right' : 'text-left'}`}>
-                {hotelData.address}, {hotelData.city}
-              </p>
+        </div>
 
-              {/* Mobile: Stack booking details vertically */}
-              <div className="mt-2 space-y-1 sm:space-y-0">
-                <div className={`flex items-center text-xs sm:text-sm text-gray-500 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <CalendarIcon className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                  <span className="truncate">{hotelData.checkIn} - {hotelData.checkOut}</span>
-                </div>
-
-                <div className={`flex items-center text-xs sm:text-sm text-gray-500 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <UserIcon className={`h-4 w-4 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                  <span>{hotelData.adults} adults, {hotelData.rooms} room(s)</span>
-                </div>
-
-                {/* Selected options */}
-                {(formData.roomType || formData.stayType) && (
-                  <div className={`flex flex-col sm:flex-row items-start sm:items-center text-xs sm:text-sm space-y-1 sm:space-y-0 ${isRTL ? 'text-right' : 'text-left'}`}>
-                    {formData.roomType && (
-                      <span className="text-primary-600 font-medium">
-                        {formData.roomType}
-                      </span>
-                    )}
-                    {formData.stayType && (
-                      <span className={`text-gray-400 ${formData.roomType ? 'sm:ml-2' : ''} ${isRTL && formData.roomType ? 'sm:mr-2' : ''}`}>
-                        {formData.roomType ? '• ' : ''}{formData.stayType}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>        {/* Step Content */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {renderStepContent()}
-          </motion.div>
-        </div>        {/* Navigation */}
-        <div className={`flex items-center justify-between gap-3 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Navigation */}
+        <div className={`flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
           <button
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm sm:text-base min-w-0 flex-shrink-0`}
+            className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm sm:text-base font-semibold shadow-sm hover:shadow-md`}
           >
-            <ArrowLeftIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${isRTL ? 'rotate-180' : ''}`} />
-            <span className="hidden sm:inline">{t('common.previous', 'Previous')}</span>
-            <span className="sm:hidden">{t('common.prev', 'Prev')}</span>
+            <ArrowLeftIcon className={`h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+            <span className="text-gray-700 group-hover:text-blue-700 transition-colors">
+              <span className="hidden sm:inline">{t('common.previous', 'Previous')}</span>
+              <span className="sm:hidden">{t('common.prev', 'Prev')}</span>
+            </span>
           </button>
 
           {currentStep < steps.length ? (
             <button
               onClick={handleNext}
-              className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} bg-primary-600 hover:bg-primary-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base min-w-0 flex-shrink-0`}
-            >              <span className="hidden sm:inline">{t('common.next', 'Next')}</span>
-              <span className="sm:hidden">{t('common.proceed', 'Continue')}</span>
-              <ArrowRightIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${isRTL ? 'rotate-180' : ''}`} />
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
+            >
+              <span>
+                <span className="hidden sm:inline">{t('common.next', 'Next')}</span>
+                <span className="sm:hidden">{t('common.proceed', 'Continue')}</span>
+              </span>
+              <ArrowRightIcon className={`h-5 w-5 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} bg-green-600 hover:bg-green-700 text-white px-4 sm:px-8 py-2 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base min-w-0 flex-shrink-0`}
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
             >
-              <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">{t('booking.complete', 'Complete Booking')}</span>
-              <span className="sm:hidden">{t('booking.book', 'Book')}</span>
+              <CheckCircleIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <span>
+                <span className="hidden sm:inline">{t('booking.complete', 'Complete Booking')}</span>
+                <span className="sm:hidden">{t('booking.book', 'Book')}</span>
+              </span>
             </button>
           )}
         </div>
-      </div>      {/* Booking Confirmation Modal */}
+      </div>{/* Booking Confirmation Modal */}
       {showBookingModal && (
         <HotelBookingModal
           hotel={{

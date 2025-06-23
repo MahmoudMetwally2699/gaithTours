@@ -156,9 +156,7 @@ class WhatsAppService {
         return;
       }
 
-      const phoneNumber = this.formatPhoneNumber(booking.phone);
-
-      const templateData = {
+      const phoneNumber = this.formatPhoneNumber(booking.phone);      const templateData = {
         messaging_product: 'whatsapp',
         to: phoneNumber,
         type: 'template',
@@ -185,9 +183,7 @@ class WhatsAppService {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json'
         }
-      });
-
-      console.log('Arabic payment reminder template sent successfully:', response.data);
+      });      console.log('Arabic payment reminder template sent successfully:', response.data);
       return response.data;
     } catch (error) {
       this.handleWhatsAppError(error, 'Arabic payment reminder');

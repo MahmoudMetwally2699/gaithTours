@@ -583,26 +583,25 @@ export const ar = {
     bookingSuccess: 'تم تقديم الحجز بنجاح!',
     bookingError: 'فشل في تقديم الحجز. يرجى المحاولة مرة أخرى.',
     confirmBooking: 'تأكيد الحجز',
-    selectHotelFirst: 'يرجى اختيار فندق أولاً',
-
-    // Booking Steps
+    selectHotelFirst: 'يرجى اختيار فندق أولاً',    // Booking Steps / خطوات الحجز
     steps: {
-      checkInAndRoom: 'الوصول والغرفة',
+      checkIn: 'وقت الوصول',
+      roomType: 'نوع الغرفة',
       payment: 'طريقة الدفع',
       guests: 'الضيوف الإضافيون',
       requests: 'الطلبات الخاصة',
       documents: 'المستندات'
     },
 
-    // Check-in Time & Room Type
+    // Check-in Time / وقت الوصول
     checkInTime: {
-      title: 'تفاصيل الوصول ونوع الغرفة',
+      title: 'تفاصيل الوصول',
       subtitle: 'ساعدنا في التحضير لوصولك',
       label: 'وقت الوصول المتوقع',
       note: 'وقت تسجيل الوصول الاعتيادي هو 15:00. تسجيل الوصول المبكر حسب التوفر.'
-    },
-
-    roomType: {
+    },    roomType: {
+      title: 'اختر غرفتك',
+      subtitle: 'اختر الغرفة المثالية لإقامتك',
       label: 'نوع الغرفة',
       standard: 'غرفة عادية',
       deluxe: 'غرفة ديلوكس',

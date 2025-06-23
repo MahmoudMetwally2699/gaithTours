@@ -410,86 +410,216 @@ export const HotelSearchResults: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  <>
-                    {filteredHotels.map((hotel, index) => (
+                  <>                    {filteredHotels.map((hotel, index) => (
                       <motion.div
                         key={hotel.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
                         onClick={() => handleHotelClick(hotel)}
-                        className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer group border border-gray-100 hover:border-primary-200"
-                      >                        <div className="p-4 sm:p-6">
-                          <div className={`flex flex-col sm:flex-row gap-4 ${isRTL && 'sm:flex-row'}`}>
-                            {/* Price Section - Top for mobile, conditional positioning for desktop */}
-                            <div className={`order-1 sm:order-none ${isRTL ? 'sm:order-1 text-left' : 'sm:order-3 text-right'} flex-shrink-0`}>                              <div className="text-xl sm:text-2xl font-bold text-gray-900">
-                                {hotel.price && hotel.price > 0 ? (
-                                  `SAR ${hotel.price}`
-                                ) : (
-                                  <span className="text-base sm:text-lg text-gray-500">
-                                    {t('hotels.priceOnRequest', 'Price on request')}
-                                  </span>
-                                )}
+                        className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group border-2 border-gray-100 hover:border-orange-200 overflow-hidden"
+                      >
+                        {/* Mobile Layout */}
+                        <div className="block sm:hidden">
+                          {/* Hotel Image */}
+                          <div className="relative">
+                            {hotel.image ? (
+                              <img
+                                src={hotel.image}
+                                alt={hotel.name}
+                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-48 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                                <BuildingOfficeIcon className="h-16 w-16 text-orange-500" />
                               </div>
-                              <div className="text-xs sm:text-sm text-gray-600">
-                                {t('hotels.perNight', 'per night')}
-                              </div>
-                              <button className="mt-2 w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm">
-                                {t('hotels.viewDetails', 'View Details')}
-                              </button>
+                            )}
+                            {/* Hotel type badge */}
+                            <div className="absolute top-3 left-3">
+                              <span className="bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
+                                Hotel
+                              </span>
                             </div>
-
-                            {/* Hotel Info - Always second on mobile, conditional on desktop */}
-                            <div className={`order-2 sm:order-2 flex-1 min-w-0`}>
-                              <h3 className={`text-base sm:text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                            {/* Rating badge */}
+                            <div className="absolute top-3 right-3">
+                              <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
+                                <StarIconSolid className="h-3 w-3 text-yellow-400" />
+                                <span className="text-xs font-semibold text-gray-900">
+                                  {hotel.rating.toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>                          {/* Hotel Info */}
+                          <div className="p-4">
+                            <div className="mb-4">
+                              {/* Centered Hotel Name */}
+                              <h3 className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors mb-3 leading-tight text-center">
                                 {hotel.name}
                               </h3>
 
-                              <div className={`flex items-center mt-1 mb-2 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
-                                <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                              {/* Star Rating Row - Centered */}
+                              <div className="flex items-center justify-center mb-3">
+                                <div className="flex items-center">
                                   {renderStars(hotel.rating)}
                                 </div>
-                                <span className={`${isRTL ? 'mr-2' : 'ml-2'} text-sm text-gray-600`}>
+                                <span className="ml-2 text-sm font-semibold text-gray-900">
                                   {hotel.rating.toFixed(1)}
                                 </span>
                                 {hotel.reviewCount > 0 && (
-                                  <span className={`${isRTL ? 'mr-1' : 'ml-1'} text-xs sm:text-sm text-gray-500`}>
-                                    ({hotel.reviewCount} reviews)
+                                  <span className="ml-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
+                                    {hotel.reviewCount.toLocaleString()} {t('hotels.reviews', 'reviews')}
                                   </span>
                                 )}
                               </div>
 
-                              <div className={`flex items-start text-gray-600 mb-2 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
-                                <MapPinIcon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${isRTL ? 'ml-1' : 'mr-1'}`} />
-                                <span className={`text-xs sm:text-sm line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                              {/* Location - Centered */}
+                              <div className="flex items-center justify-center text-gray-600 mb-3">
+                                <MapPinIcon className="h-4 w-4 flex-shrink-0 mr-1 text-orange-500" />
+                                <span className="text-sm text-center">
+                                  {hotel.city}, {hotel.country}
+                                </span>
+                              </div>                              {/* Important Info Section */}
+                              {(hotel.description || (hotel.facilities && hotel.facilities.length > 0)) && (
+                                <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                  <div className="text-center">
+                                    {hotel.facilities && hotel.facilities.length > 0 && (
+                                      <div className="mb-2">
+                                        <div className="text-xs text-blue-600 font-medium mb-1">Featured Facilities</div>
+                                        <div className="flex flex-wrap justify-center gap-1">
+                                          {hotel.facilities.slice(0, 3).map((facility: string, index: number) => (
+                                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-white text-blue-700 border border-blue-200">
+                                              {facility}
+                                            </span>
+                                          ))}
+                                          {hotel.facilities.length > 3 && (
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-600">
+                                              +{hotel.facilities.length - 3} more
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {hotel.description && (
+                                      <p className="text-xs text-blue-700 text-center line-clamp-2">
+                                        {hotel.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Price Section */}
+                            <div className="bg-orange-50 rounded-xl p-3 mb-4">
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-orange-600 mb-1">
+                                  {hotel.price && hotel.price > 0 ? (
+                                    `${hotel.price} SAR`
+                                  ) : (
+                                    <span className="text-lg text-gray-500">
+                                      {t('hotels.priceOnRequest', 'Price on request')}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-orange-500 font-medium">
+                                  {t('hotels.perNight', 'per night')}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                              {t('hotels.viewDetails', 'عرض التفاصيل')}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden sm:flex flex-row">
+                          {/* Hotel Image */}
+                          <div className="relative flex-shrink-0">
+                            {hotel.image ? (
+                              <img
+                                src={hotel.image}
+                                alt={hotel.name}
+                                className="w-64 lg:w-72 h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-64 lg:w-72 h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                                <BuildingOfficeIcon className="h-12 w-12 text-orange-500" />
+                              </div>
+                            )}
+                            {/* Hotel type badge */}
+                            <div className="absolute top-3 left-3">
+                              <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-medium text-gray-700">
+                                Hotel
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Hotel Info */}
+                          <div className="flex-1 p-6 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className={`text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                  {hotel.name}
+                                </h3>
+                              </div>
+
+                              <div className={`flex items-center mb-3 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
+                                <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                                  {renderStars(hotel.rating)}
+                                </div>
+                                <span className={`${isRTL ? 'mr-2' : 'ml-2'} text-sm font-medium text-gray-900`}>
+                                  {hotel.rating.toFixed(1)}
+                                </span>
+                                {hotel.reviewCount > 0 && (
+                                  <span className={`${isRTL ? 'mr-2' : 'ml-2'} text-sm text-gray-500`}>
+                                    ({hotel.reviewCount.toLocaleString()} {t('hotels.reviews', 'review')})
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className={`flex items-start text-gray-600 mb-3 ${isRTL ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}>
+                                <MapPinIcon className={`h-4 w-4 flex-shrink-0 mt-0.5 ${isRTL ? 'ml-1' : 'mr-1'} text-orange-500`} />
+                                <span className={`text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
                                   {hotel.address}, {hotel.city}, {hotel.country}
                                 </span>
                               </div>
 
                               {hotel.description && (
-                                <p className={`text-xs sm:text-sm text-gray-600 line-clamp-2 hidden sm:block ${isRTL ? 'text-right' : 'text-left'}`}>
+                                <p className={`text-sm text-gray-600 line-clamp-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                                   {hotel.description}
                                 </p>
                               )}
                             </div>
 
-                            {/* Hotel Image - Always first on mobile, conditional on desktop */}
-                            <div className={`order-0 sm:order-none ${isRTL ? 'sm:order-3' : 'sm:order-1'} flex-shrink-0 self-start`}>
-                              {hotel.image ? (
-                                <img
-                                  src={hotel.image}
-                                  alt={hotel.name}
-                                  className="w-full sm:w-24 lg:w-32 h-32 sm:h-20 lg:h-24 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
-                                />
-                              ) : (
-                                <div className="w-full sm:w-24 lg:w-32 h-32 sm:h-20 lg:h-24 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg flex items-center justify-center">
-                                  <BuildingOfficeIcon className="h-6 sm:h-8 w-6 sm:w-8 text-primary-500" />
+                            {/* Price and Action */}
+                            <div className={`flex items-end justify-between mt-4 pt-4 border-t border-gray-100 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                              <div className={`${isRTL ? 'text-right' : 'text-left'}`}>
+                                <div className="text-3xl font-bold text-gray-900">
+                                  {hotel.price && hotel.price > 0 ? (
+                                    `${hotel.price} SAR`
+                                  ) : (
+                                    <span className="text-lg text-gray-500">
+                                      {t('hotels.priceOnRequest', 'Price on request')}
+                                    </span>
+                                  )}
                                 </div>
-                              )}                            </div>
+                                <div className="text-sm text-gray-500">
+                                  {t('hotels.perNight', 'per night')}
+                                </div>
+                              </div>
+
+                              <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors text-sm whitespace-nowrap">
+                                {t('hotels.viewDetails', 'عرض التفاصيل')}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </motion.div>
-                    ))}                    {/* Pagination */}
+                    ))}{/* Pagination */}
                     {totalPages > 1 && (
                       <div className="flex justify-center mt-6 sm:mt-8">
                         <div className={`flex items-center gap-1 sm:gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>

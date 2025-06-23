@@ -549,10 +549,11 @@ export const en = {
       guestNumber: 'Guest {{number}}'
     }
   },
-
   // Booking
   booking: {
     title: 'Complete Your Booking',
+    complete: 'Complete Booking',
+    book: 'Book',
     touristName: 'Tourist Name',
     phone: 'Phone Number',
     email: 'Email Address',
@@ -568,7 +569,92 @@ export const en = {
     bookingSuccess: 'Booking submitted successfully!',
     bookingError: 'Failed to submit booking. Please try again.',
     confirmBooking: 'Confirm Booking',
-    selectHotelFirst: 'Please select a hotel first'
+    selectHotelFirst: 'Please select a hotel first',    // Steps
+    steps: {
+      checkIn: 'Check-in Time',
+      roomType: 'Room Type',
+      payment: 'Payment Method',
+      guests: 'Additional Guests',
+      requests: 'Special Requests',
+      documents: 'Documents'
+    },
+
+    // Validation messages
+    validation: {
+      checkInTime: 'Please select your expected check-in time',
+      roomType: 'Please select a room type',
+      stayType: 'Please select the purpose of your stay',
+      paymentMethod: 'Please select a payment method'
+    },
+
+    // Check-in time step
+    checkInTime: {
+      title: 'Check-in Details',
+      subtitle: 'Help us prepare for your arrival',
+      label: 'Expected Check-in Time',
+      note: 'Standard check-in time is 15:00. Early check-in subject to availability.'
+    },
+
+    // Room type step
+    roomType: {
+      title: 'Choose Your Room',
+      subtitle: 'Select the perfect room for your stay',
+      label: 'Room Type',
+      standard: 'Standard Room',
+      deluxe: 'Deluxe Room',
+      suite: 'Suite',
+      family: 'Family Room'
+    },
+
+    // Stay type step
+    stayType: {
+      label: 'Purpose of Stay',
+      leisure: 'Leisure',
+      business: 'Business',
+      transit: 'Transit'
+    },
+
+    // Payment step
+    payment: {
+      title: 'How would you like to pay?',
+      subtitle: 'Choose your preferred payment method',
+      creditCard: 'Credit Card',
+      debitCard: 'Debit Card',
+      bankTransfer: 'Bank Transfer',
+      cashOnArrival: 'Cash on Arrival'
+    },
+
+    // Guests step
+    guests: {
+      title: 'Additional Guests',
+      subtitle: 'Add travel companions (optional)',
+      added: 'Added Guests',
+      addNew: 'Add Guest',
+      addButton: 'Add Guest',
+      namePlaceholder: 'Enter guest name',
+      phonePlaceholder: 'Enter phone number'
+    },
+
+    // Requests step
+    requests: {
+      title: 'Special Requests',
+      subtitle: 'Let us know about any special needs (optional)',
+      placeholder: 'Tell us about any special accommodations, dietary requirements, accessibility needs, or preferences...',
+      examples: 'Quick Examples:',
+      example1: 'Wheelchair accessible room',
+      example2: 'Quiet room',
+      example3: 'High floor',
+      example4: 'Twin beds',
+      example5: 'Early check-in'
+    },
+
+    // Documents step
+    documents: {
+      title: 'Upload Documents',
+      subtitle: 'Attach relevant documents (optional)',
+      types: 'Accepted document types:',
+      uploaded: 'Uploaded Documents'
+    }
   },
 
   // Profile
@@ -678,8 +764,7 @@ export const en = {
       pending: 'Pending',
       cancelled: 'Cancelled'
     }
-  },
-  // Common
+  },  // Common
   common: {
     loading: 'Loading...',
     error: 'Error',
@@ -693,9 +778,12 @@ export const en = {
     back: 'Back',
     next: 'Next',
     previous: 'Previous',
+    prev: 'Prev',
+    proceed: 'Continue',
     submit: 'Submit',
     reset: 'Reset',
     retry: 'Retry',
+    remove: 'Remove',
     showMore: 'Show More',
     showLess: 'Show Less',
     selectAll: 'Select All',
@@ -709,8 +797,10 @@ export const en = {
     instantConfirmation: 'Instant Confirmation',
     clickToChange: 'Click to change',
     hotelWebsite: 'Hotel Website',
-    addGuest: 'Add Guest'
-  },  // Special Pricing
+    addGuest: 'Add Guest',
+    fullName: 'Full Name',
+    phoneNumber: 'Phone Number'
+  },// Special Pricing
   specialPricing: {
     title: 'Request Special Pricing',
     subtitle: 'For Long-Term Bookings',
