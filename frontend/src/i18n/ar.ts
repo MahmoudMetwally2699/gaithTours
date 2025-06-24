@@ -547,9 +547,41 @@ export const ar = {
       guestFullNamePlaceholder: 'أدخل الاسم الكامل للضيف',
       guestPhoneNumber: 'رقم هاتف الضيف',
       guestPhoneNumberPlaceholder: 'أدخل رقم هاتف الضيف',
-      noGuests: 'لم يتم إضافة ضيوف إضافيين',
-      guestNumber: 'الضيف {{number}}'
-    }
+      noGuests: 'لم يتم إضافة ضيوف إضافيين',      guestNumber: 'الضيف {{number}}',
+      // Invoice modal translations
+      confirmTitle: 'تأكيد الحجز',
+      invoiceNumber: 'فاتورة رقم BK-{{number}}',
+      invoiceDate: 'التاريخ: {{date}}',
+      hotelDetails: 'تفاصيل الفندق',
+      modalHotelName: 'اسم الفندق',
+      modalAddress: 'العنوان',
+      modalRating: 'التقييم',
+      modalPricePerNight: 'السعر لكل ليلة',
+      modalBookingDetails: 'تفاصيل الحجز',
+      modalCheckInDate: 'تاريخ تسجيل الوصول',
+      modalCheckOutDate: 'تاريخ تسجيل المغادرة',
+      modalNumberOfNights: 'عدد الليالي',
+      modalNumberOfGuests: 'عدد الضيوف',
+      modalNumberOfRooms: 'عدد الغرف',
+      modalExpectedCheckInTime: 'وقت الوصول المتوقع',
+      roomStayInformation: 'معلومات الغرفة والإقامة',
+      modalRoomType: 'نوع الغرفة',
+      modalStayType: 'نوع الإقامة',
+      modalPaymentMethod: 'طريقة الدفع',
+      modalGuestInformation: 'معلومات الضيوف',
+      primaryGuestName: 'اسم الضيف الرئيسي',
+      modalAdditionalGuests: 'الضيوف الإضافيون',
+      modalGuestName: 'اسم الضيف {{number}}',
+      modalSpecialRequests: 'الطلبات الخاصة',
+      attachments: 'المرفقات',
+      fileName: 'الملف {{number}}',
+      modalConfirmBooking: 'تأكيد الحجز',
+      bookingSubmitted: 'تم تقديم الحجز!',
+      submissionMessage: 'تم تقديم طلب حجز الفندق بنجاح. سيتواصل معك فريقنا خلال 24 ساعة لتأكيد حجزك.',
+      processingRequest: 'جاري معالجة طلبك...'    },
+    yourStay: 'إقامتك',
+    aboutProperty: 'عن هذا العقار',
+    bookWithBestPrice: 'احجز بأفضل سعر'
   },
   // Personal Information
   personalInformation: {
@@ -807,9 +839,14 @@ export const ar = {
     and: 'و',
     instantConfirmation: 'تأكيد فوري',
     clickToChange: 'اضغط للتغيير',
-    hotelWebsite: 'موقع الفندق',
-    addGuest: 'إضافة ضيف',
-    fullName: 'الاسم الكامل',    phoneNumber: 'رقم الهاتف'
+    hotelWebsite: 'موقع الفندق',    addGuest: 'إضافة ضيف',
+    fullName: 'الاسم الكامل',
+    phoneNumber: 'رقم الهاتف',
+    email: 'البريد الإلكتروني',
+    phone: 'رقم الهاتف',    nationality: 'الجنسية',
+    viewFile: 'عرض الملف',
+    processing: 'جاري المعالجة...',
+    mb: 'ميجابايت'
   },
   // Special Pricing
   specialPricing: {

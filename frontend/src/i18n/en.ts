@@ -545,9 +545,41 @@ export const en = {
       guestFullNamePlaceholder: 'Enter guest full name',
       guestPhoneNumber: 'Guest Phone Number',
       guestPhoneNumberPlaceholder: 'Enter guest phone number',
-      noGuests: 'No additional guests added',
-      guestNumber: 'Guest {{number}}'
-    }
+      noGuests: 'No additional guests added',      guestNumber: 'Guest {{number}}',
+      // Invoice modal translations
+      confirmTitle: 'BOOKING CONFIRMATION',
+      invoiceNumber: 'Invoice #BK-{{number}}',
+      invoiceDate: 'Date: {{date}}',
+      hotelDetails: 'HOTEL DETAILS',
+      modalHotelName: 'Hotel Name',
+      modalAddress: 'Address',
+      modalRating: 'Rating',
+      modalPricePerNight: 'Price per Night',
+      modalBookingDetails: 'BOOKING DETAILS',
+      modalCheckInDate: 'Check-in Date',
+      modalCheckOutDate: 'Check-out Date',
+      modalNumberOfNights: 'Number of Nights',
+      modalNumberOfGuests: 'Number of Guests',
+      modalNumberOfRooms: 'Number of Rooms',
+      modalExpectedCheckInTime: 'Expected Check-in Time',
+      roomStayInformation: 'ROOM & STAY INFORMATION',
+      modalRoomType: 'Room Type',
+      modalStayType: 'Stay Type',
+      modalPaymentMethod: 'Payment Method',
+      modalGuestInformation: 'GUEST INFORMATION',
+      primaryGuestName: 'Primary Guest Name',
+      modalAdditionalGuests: 'ADDITIONAL GUESTS',
+      modalGuestName: 'Guest {{number}} Name',
+      modalSpecialRequests: 'SPECIAL REQUESTS',
+      attachments: 'ATTACHMENTS',
+      fileName: 'File {{number}}',
+      modalConfirmBooking: 'Confirm Booking',
+      bookingSubmitted: 'Booking Submitted!',
+      submissionMessage: 'Your hotel reservation request has been successfully submitted. Our team will contact you within 24 hours to confirm your booking.',
+      processingRequest: 'Processing your request...'},
+    yourStay: 'Your stay',
+    aboutProperty: 'About this property',
+    bookWithBestPrice: 'Book with Best Price'
   },
   // Booking
   booking: {
@@ -796,10 +828,14 @@ export const en = {
     and: 'and',
     instantConfirmation: 'Instant Confirmation',
     clickToChange: 'Click to change',
-    hotelWebsite: 'Hotel Website',
-    addGuest: 'Add Guest',
+    hotelWebsite: 'Hotel Website',    addGuest: 'Add Guest',
     fullName: 'Full Name',
-    phoneNumber: 'Phone Number'
+    phoneNumber: 'Phone Number',
+    email: 'Email',
+    phone: 'Phone Number',    nationality: 'Nationality',
+    viewFile: 'View File',
+    processing: 'Processing...',
+    mb: 'MB'
   },// Special Pricing
   specialPricing: {
     title: 'Request Special Pricing',

@@ -274,16 +274,96 @@ export const HotelDetails: React.FC = () => {
     );
   }  return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-gray-50 pt-16 sm:pt-20">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
-
-        {/* Back Button */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">        {/* Back Button */}
         <button
           onClick={() => history.goBack()}
           className="flex items-center space-x-2 text-gray-600 hover:text-orange-600 mb-4 sm:mb-6 transition-colors group"
         >
           <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:-translate-x-1 transition-transform duration-200" />
           <span className="text-sm sm:text-base font-medium">{t('common.back', 'Back to results')}</span>
-        </button>
+        </button>        {/* Hotel Name Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-orange-200">
+          <div className="flex flex-col space-y-3 sm:space-y-4">
+            {/* Main content area */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1 space-y-3 sm:space-y-4">
+                {/* Hotel Name */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight text-center sm:text-left">
+                    {hotel.name}
+                  </h1>
+
+                  {/* Mobile: Actions inline with title */}
+                  <div className="flex sm:hidden items-center justify-center space-x-2">
+                    <button
+                      onClick={() => setIsFavorite(!isFavorite)}
+                      className={`p-2 border-2 rounded-lg transition-all duration-200 ${
+                        isFavorite
+                          ? 'bg-red-500 border-red-400 text-white hover:bg-red-600'
+                          : 'bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm'
+                      }`}
+                    >
+                      {isFavorite ? <HeartIconSolid className="h-4 w-4" /> : <HeartIcon className="h-4 w-4" />}
+                    </button>
+                    <button className="p-2 border-2 border-white/30 rounded-lg hover:bg-white/20 transition-all duration-200 text-white backdrop-blur-sm">
+                      <ShareIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Rating and Reviews - Improved mobile layout */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  {/* Rating stars */}
+                  <div className="flex items-center justify-center sm:justify-start">
+                    <div className="flex items-center bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      {renderStars(hotel.rating)}
+                    </div>
+                  </div>
+
+                  {/* Rating details */}
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
+                    <span className="text-lg sm:text-xl font-bold text-white">
+                      {hotel.rating.toFixed(1)}
+                    </span>
+                    <span className="text-orange-100 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium">
+                      {hotel.reviewCount.toLocaleString()} reviews
+                    </span>
+                    {hotel.reviewScoreWord && (
+                      <span className="bg-white/90 text-orange-700 px-3 py-1.5 rounded-full text-sm font-semibold">
+                        {hotel.reviewScoreWord}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Location - More compact and organized */}
+                <div className="flex items-center justify-center sm:justify-start text-white bg-white/10 backdrop-blur-sm p-3 rounded-xl">
+                  <MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0 text-orange-200" />
+                  <span className="text-sm sm:text-base font-medium text-center sm:text-left line-clamp-2">
+                    {hotel.address}, {hotel.city}, {hotel.country}
+                  </span>
+                </div>
+              </div>
+
+              {/* Desktop: Actions on the right */}
+              <div className="hidden sm:flex items-center space-x-3 self-start mt-1">
+                <button
+                  onClick={() => setIsFavorite(!isFavorite)}
+                  className={`p-3 border-2 rounded-xl transition-all duration-200 ${
+                    isFavorite
+                      ? 'bg-red-500 border-red-400 text-white hover:bg-red-600'
+                      : 'bg-white/20 border-white/30 text-white hover:bg-white/30 backdrop-blur-sm'
+                  }`}
+                >
+                  {isFavorite ? <HeartIconSolid className="h-5 w-5" /> : <HeartIcon className="h-5 w-5" />}
+                </button>
+                <button className="p-3 border-2 border-white/30 rounded-xl hover:bg-white/20 transition-all duration-200 text-white backdrop-blur-sm">
+                  <ShareIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Hotel Images Gallery */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6 sm:mb-8 border border-orange-100">
@@ -354,54 +434,10 @@ export const HotelDetails: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6 sm:space-y-8">            {/* Hotel Header */}
-            <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 border border-orange-100">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
-                <div className="flex-1">
-                  <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
-                    {hotel.name}
-                  </h1>
+        </div>        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
 
-                  <div className="flex flex-wrap items-center mb-3 sm:mb-4 gap-2 sm:gap-3">
-                    <div className="flex items-center bg-orange-50 px-2 sm:px-3 py-1 rounded-full">
-                      {renderStars(hotel.rating)}
-                    </div>
-                    <span className="text-lg sm:text-xl font-bold text-orange-600">
-                      {hotel.rating.toFixed(1)}
-                    </span>
-                    <span className="text-gray-600 bg-gray-50 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
-                      {hotel.reviewCount.toLocaleString()} reviews
-                    </span>
-                    {hotel.reviewScoreWord && (
-                      <span className="bg-gradient-to-r from-green-100 to-green-50 text-green-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border border-green-200">
-                        {hotel.reviewScoreWord}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-start text-gray-600 bg-gray-50 p-3 rounded-xl">
-                    <MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 mt-0.5 flex-shrink-0 text-orange-500" />
-                    <span className="text-sm sm:text-base font-medium">{hotel.address}, {hotel.city}, {hotel.country}</span>
-                  </div>
-                </div>                <div className="flex items-center space-x-2 sm:space-x-3 self-start">
-                  <button
-                    onClick={() => setIsFavorite(!isFavorite)}
-                    className={`p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl transition-all duration-200 ${
-                      isFavorite
-                        ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-                        : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50 hover:border-orange-200 hover:text-orange-500'
-                    }`}
-                  >
-                    {isFavorite ? <HeartIconSolid className="h-4 w-4 sm:h-5 sm:w-5" /> : <HeartIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
-                  </button>
-                  <button className="p-2 sm:p-3 border-2 border-gray-200 rounded-lg sm:rounded-xl hover:bg-gray-50 hover:border-orange-200 hover:text-orange-500 transition-all duration-200">
-                    <ShareIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>            {/* Description */}
+            {/* Description */}
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 border border-orange-100">
               <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
                 <BuildingOfficeIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-orange-500" />
@@ -412,7 +448,7 @@ export const HotelDetails: React.FC = () => {
                   {hotel.description}
                 </p>
               </div>
-            </div>            {/* Amenities */}
+            </div>{/* Amenities */}
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 border border-orange-100">
               <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
                 <CheckCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-orange-500" />
@@ -426,38 +462,14 @@ export const HotelDetails: React.FC = () => {
                     <span className="text-gray-800 font-medium text-xs sm:text-base truncate leading-tight">{facility}</span>
                   </div>
                 ))}
-              </div>
-            </div>{/* Check-in/Check-out */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 border border-orange-100">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <ClockIcon className="h-6 w-6 mr-3 text-orange-500" />
-                {t('hotels.importantInfo', 'Important Information')}
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
-                  <h3 className="font-bold text-green-800 mb-2 text-lg flex items-center">
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    {t('hotels.checkIn', 'Check-in')}
-                  </h3>
-                  <p className="text-green-700 font-semibold text-lg">{hotel.checkIn || '15:00'}</p>
-                </div>
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
-                  <h3 className="font-bold text-red-800 mb-2 text-lg flex items-center">
-                    <XMarkIcon className="h-5 w-5 mr-2" />
-                    {t('hotels.checkOut', 'Check-out')}
-                  </h3>
-                  <p className="text-red-700 font-semibold text-lg">{hotel.checkOut || '12:00'}</p>
-                </div>
-              </div>
-            </div>
+              </div>            </div>
           </div>
 
           {/* Booking Card */}
           <div className="lg:col-span-1 order-first lg:order-last">
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 lg:sticky lg:top-24 border-2 border-orange-200">
               {/* Booking Summary */}
-              <div className="space-y-4 mb-6">
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
+              <div className="space-y-4 mb-6">                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
                   <h3 className="font-bold text-orange-900 mb-4 text-lg flex items-center">
                     <CheckCircleIcon className="h-5 w-5 mr-2" />
                     {t('hotels.yourStay', 'Your stay')}
@@ -488,28 +500,13 @@ export const HotelDetails: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Book Now Button */}
+              </div>              {/* Book Now Button */}
               <button
                 onClick={handleBookNow}
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0"
               >
                 {t('hotels.bookWithBestPrice', 'Book with Best Price')}
               </button>
-
-              <div className="mt-4 text-center">
-                <div className="flex flex-col space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center justify-center space-x-2 bg-green-50 p-2 rounded-lg">
-                    <CheckCircleIcon className="h-4 w-4 text-green-600" />
-                    <span className="text-green-700 font-medium">{t('hotels.freeWifi', 'Free WiFi')}</span>
-                  </div>
-                  <div className="flex items-center justify-center space-x-2 bg-blue-50 p-2 rounded-lg">
-                    <CheckCircleIcon className="h-4 w-4 text-blue-600" />
-                    <span className="text-blue-700 font-medium">{t('hotels.freeCancellation', 'Free cancellation')}</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

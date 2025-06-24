@@ -480,19 +480,19 @@ export const HotelSearchResults: React.FC = () => {
                                 </span>
                               </div>                              {/* Important Info Section */}
                               {(hotel.description || (hotel.facilities && hotel.facilities.length > 0)) && (
-                                <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                <div className="bg-gray-50 rounded-lg p-3 mb-3">
                                   <div className="text-center">
                                     {hotel.facilities && hotel.facilities.length > 0 && (
                                       <div className="mb-2">
-                                        <div className="text-xs text-blue-600 font-medium mb-1">Featured Facilities</div>
+                                        <div className="text-xs text-gray-800 font-medium mb-1">Featured Facilities</div>
                                         <div className="flex flex-wrap justify-center gap-1">
                                           {hotel.facilities.slice(0, 3).map((facility: string, index: number) => (
-                                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-white text-blue-700 border border-blue-200">
+                                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-white text-gray-700 border border-gray-200">
                                               {facility}
                                             </span>
                                           ))}
                                           {hotel.facilities.length > 3 && (
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-600">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
                                               +{hotel.facilities.length - 3} more
                                             </span>
                                           )}
@@ -501,23 +501,21 @@ export const HotelSearchResults: React.FC = () => {
                                     )}
 
                                     {hotel.description && (
-                                      <p className="text-xs text-blue-700 text-center line-clamp-2">
+                                      <p className="text-xs text-gray-700 text-center line-clamp-2">
                                         {hotel.description}
                                       </p>
                                     )}
                                   </div>
                                 </div>
                               )}
-                            </div>
-
-                            {/* Price Section */}
-                            <div className="bg-orange-50 rounded-xl p-3 mb-4">
+                            </div>                            {/* Price Section */}
+                            <div className="bg-orange-50 rounded-md p-1.5 mb-3 border border-orange-100">
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-orange-600 mb-1">
+                                <div className="text-base font-bold text-orange-600 mb-0">
                                   {hotel.price && hotel.price > 0 ? (
                                     `${hotel.price} SAR`
                                   ) : (
-                                    <span className="text-lg text-gray-500">
+                                    <span className="text-xs text-gray-500">
                                       {t('hotels.priceOnRequest', 'Price on request')}
                                     </span>
                                   )}

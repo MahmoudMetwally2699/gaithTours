@@ -630,7 +630,7 @@ export const HotelBookingFlow: React.FC = () => {
             </div>
           </div>
         </div>        {/* Step Content */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-8 lg:p-10 mb-4 sm:mb-12 hover:shadow-xl transition-shadow duration-300">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-8 lg:p-10 mb-[200px] sm:mb-4 hover:shadow-xl transition-shadow duration-300">
           <motion.div
             key={currentStep}
             initial={{ opacity: 0, y: 20 }}
@@ -639,37 +639,116 @@ export const HotelBookingFlow: React.FC = () => {
           >
             {renderStepContent()}
           </motion.div>
-        </div>{/* Progress Steps - Moved above navigation */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center justify-between max-w-4xl mx-auto px-4">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 ${
-                      currentStep === step.id
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110'
-                        : currentStep > step.id
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}
-                  >
-                    {currentStep > step.id ? (
-                      <CheckCircleIcon className="h-4 w-4 sm:h-6 sm:w-6" />
-                    ) : (
-                      step.id
-                    )}
-                  </div>
-                  <div className="mt-1 sm:mt-2 text-center">
-                    <div className={`text-xs sm:text-sm font-semibold transition-colors duration-300 ${
-                      currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
-                    }`}>
-                      {step.title}
+        </div>
+
+        {/* Progress Steps and Navigation - Hidden on mobile (shown in sticky footer) */}
+        <div className="hidden sm:block">
+          {/* Progress Steps */}
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between max-w-4xl mx-auto px-4">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 ${
+                        currentStep === step.id
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110'
+                          : currentStep > step.id
+                          ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                          : 'bg-gray-200 text-gray-500'
+                      }`}
+                    >
+                      {currentStep > step.id ? (
+                        <CheckCircleIcon className="h-4 w-4 sm:h-6 sm:w-6" />
+                      ) : (
+                        step.id
+                      )}
+                    </div>
+                    <div className="mt-1 sm:mt-2 text-center">
+                      <div className={`text-xs sm:text-sm font-semibold transition-colors duration-300 ${
+                        currentStep >= step.id ? 'text-gray-900' : 'text-gray-500'
+                      }`}>
+                        {step.title}
+                      </div>
                     </div>
                   </div>
+                  {index < steps.length - 1 && (
+                    <div className={`flex-1 h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300 ${
+                      currentStep > step.id
+                        ? 'bg-gradient-to-r from-green-400 to-green-500'
+                        : currentStep === step.id
+                        ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                        : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className={`flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+            <button
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm sm:text-base font-semibold shadow-sm hover:shadow-md`}
+            >
+              <ArrowLeftIcon className={`h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+              <span className="text-gray-700 group-hover:text-blue-700 transition-colors">
+                <span className="hidden sm:inline">{t('common.previous', 'Previous')}</span>
+                <span className="sm:hidden">{t('common.prev', 'Prev')}</span>
+              </span>
+            </button>
+
+            {currentStep < steps.length ? (
+              <button
+                onClick={handleNext}
+                className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
+              >
+                <span>
+                  <span className="hidden sm:inline">{t('common.next', 'Next')}</span>
+                  <span className="sm:hidden">{t('common.proceed', 'Continue')}</span>
+                </span>
+                <ArrowRightIcon className={`h-5 w-5 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
+              >
+                <CheckCircleIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <span>
+                  <span className="hidden sm:inline">{t('booking.complete', 'Complete Booking')}</span>
+                  <span className="sm:hidden">{t('booking.book', 'Book')}</span>
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>{/* Sticky Footer for Mobile - Progress Steps and Navigation */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl">
+        {/* Progress Steps - Compact mobile version */}
+        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-blue-50">
+          <div className="flex items-center justify-center space-x-2">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                    currentStep === step.id
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110'
+                      : currentStep > step.id
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+                >
+                  {currentStep > step.id ? (
+                    <CheckCircleIcon className="h-3 w-3" />
+                  ) : (
+                    step.id
+                  )}
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`flex-1 h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300 ${
+                  <div className={`w-4 h-0.5 mx-1 rounded-full transition-all duration-300 ${
                     currentStep > step.id
                       ? 'bg-gradient-to-r from-green-400 to-green-500'
                       : currentStep === step.id
@@ -680,47 +759,50 @@ export const HotelBookingFlow: React.FC = () => {
               </div>
             ))}
           </div>
+          <div className="mt-2 text-center">
+            <div className="text-xs font-semibold text-gray-700">
+              {steps.find(step => step.id === currentStep)?.title}
+            </div>
+            <div className="text-xs text-gray-500">
+              Step {currentStep} of {steps.length}
+            </div>
+          </div>
         </div>
 
-        {/* Navigation */}
-        <div className={`flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Navigation Buttons */}
+        <div className={`flex items-center justify-between gap-3 px-4 py-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
           <button
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm sm:text-base font-semibold shadow-sm hover:shadow-md`}
+            className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} px-4 py-3 bg-white border-2 border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md flex-1`}
           >
-            <ArrowLeftIcon className={`h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+            <ArrowLeftIcon className={`h-4 w-4 text-gray-600 group-hover:text-blue-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
             <span className="text-gray-700 group-hover:text-blue-700 transition-colors">
-              <span className="hidden sm:inline">{t('common.previous', 'Previous')}</span>
-              <span className="sm:hidden">{t('common.prev', 'Prev')}</span>
+              {t('common.prev', 'Prev')}
             </span>
           </button>
 
           {currentStep < steps.length ? (
             <button
               onClick={handleNext}
-              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-200 text-sm shadow-lg hover:shadow-xl transform hover:scale-105 flex-1`}
             >
-              <span>
-                <span className="hidden sm:inline">{t('common.next', 'Next')}</span>
-                <span className="sm:hidden">{t('common.proceed', 'Continue')}</span>
-              </span>
-              <ArrowRightIcon className={`h-5 w-5 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+              <span>{t('common.next', 'Next')}</span>
+              <ArrowRightIcon className={`h-4 w-4 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
             </button>
           ) : (
             <button
               onClick={handleSubmit}
-              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl font-bold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-3 rounded-lg font-bold transition-all duration-200 text-sm shadow-lg hover:shadow-xl transform hover:scale-105 flex-1`}
             >
-              <CheckCircleIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-              <span>
-                <span className="hidden sm:inline">{t('booking.complete', 'Complete Booking')}</span>
-                <span className="sm:hidden">{t('booking.book', 'Book')}</span>
-              </span>
+              <CheckCircleIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              <span>{t('booking.book', 'Book')}</span>
             </button>
           )}
         </div>
-      </div>{/* Booking Confirmation Modal */}
+      </div>
+
+      {/* Booking Confirmation Modal */}
       {showBookingModal && (
         <HotelBookingModal
           hotel={{

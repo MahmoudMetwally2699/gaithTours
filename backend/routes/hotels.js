@@ -108,14 +108,51 @@ router.get('/search', async (req, res) => {
     });    console.log(`Sorted destinations:`, sortedDestinations.slice(0, 5).map(d => ({ name: d.name, type: d.dest_type, hotels: d.hotels || d.nr_hotels })));
 
     let allHotels = [];
-    let totalCount = 0; // Will be calculated after maxDestinations is set// Identify if this is a search for specific hotels, including exact name matching
+    let totalCount = 0; // Will be calculated after maxDestinations is set    // Identify if this is a search for specific hotels, including exact name matching
     // This will detect searches like "ewaa" that are looking for specific hotels
-    const isHotelSearch = destination.toLowerCase().includes('hotel') ||
-                          destination.toLowerCase().includes('فندق') ||
-                          sortedDestinations.some(dest =>
-                            dest.dest_type === 'hotel' &&
-                            dest.name.toLowerCase().includes(destination.toLowerCase())
-                          );    // For hotel searches, allow processing more destinations to get all matching hotels
+
+    // First, check if it's explicitly a hotel search
+    const explicitHotelSearch = destination.toLowerCase().includes('hotel') ||
+                               destination.toLowerCase().includes('فندق');
+
+    // Check if the user is searching for a specific hotel name
+    // Only consider it a hotel search if the destination is specifically a hotel name,
+    // not just a city that happens to have hotels with the city name
+    const isSpecificHotelSearch = !explicitHotelSearch && sortedDestinations.some(dest => {
+      if (dest.dest_type !== 'hotel') return false;
+
+      // For a search to be considered a specific hotel search, the destination should
+      // be a distinctive hotel name, not just a city name that appears in hotel names
+      const destNameLower = dest.name.toLowerCase();
+      const searchLower = destination.toLowerCase();
+
+      // Check if this is a search for a specific hotel (not just a city)
+      // The search term should be a substantial part of the hotel name, not just a city reference
+      const searchWords = searchLower.split(/\s+/).filter(word => word.length > 2);
+      const hotelNameWords = destNameLower.split(/\s+/).filter(word => word.length > 2);
+
+      // If the search is just a single city name and appears at the end of hotel names,
+      // it's likely a city search, not a hotel search
+      if (searchWords.length === 1) {
+        const searchWord = searchWords[0];
+        // Common city names that often appear in hotel names
+        const cityNames = ['جدة', 'jeddah', 'الرياض', 'riyadh', 'مكة', 'mecca', 'مakkah'];
+        if (cityNames.includes(searchWord)) {
+          return false; // Don't treat city name searches as hotel searches
+        }
+      }
+
+      // For multi-word searches, check if it's a distinctive hotel name
+      const matchingWords = searchWords.filter(word => destNameLower.includes(word));
+      return matchingWords.length >= Math.max(2, Math.floor(searchWords.length * 0.7)); // Need 70% match for hotel names
+    });
+
+    const isHotelSearch = explicitHotelSearch || isSpecificHotelSearch;
+
+    console.log(`🔍 Search analysis for "${destination}":`);
+    console.log(`  - Explicit hotel search: ${explicitHotelSearch}`);
+    console.log(`  - Specific hotel search: ${isSpecificHotelSearch}`);
+    console.log(`  - Final decision: ${isHotelSearch ? 'HOTEL SEARCH' : 'CITY/AREA SEARCH'}`);// For hotel searches, allow processing more destinations to get all matching hotels
     let maxDestinations = 5; // Optimized default for lazy loading
     if (isHotelSearch) {      // Count how many matching hotel destinations we have
       const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim(); // Remove "hotel" and everything after comma
@@ -159,13 +196,16 @@ router.get('/search', async (req, res) => {
     console.log(`🎯 Lazy Loading: Page ${pageNumber} needs ${hotelsNeededForCurrentPage} hotels (+ ${bufferSize.toFixed(0)} buffer for duplicates = ${targetHotels.toFixed(0)} total to collect)`);    // Check if we have cached results for this destination
     // Include search type in cache key to differentiate between exact hotel searches and area searches
     const searchTypeIndicator = isHotelSearch ? 'hotel_search' : 'area_search';
-    // For exact hotel searches, include more specific terms in the cache key
-    const cleanSearchTerms = isHotelSearch ? destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim().replace(/\s+/g, '_') : destination.toLowerCase();
+    // Use a consistent cache key based on the destination and search type
+    const cleanSearchTerms = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim().replace(/\s+/g, '_');
     const destinationCacheKey = `${cleanSearchTerms}_${searchTypeIndicator}_${arrivalDate}_${departureDate}`;
-    const cachedData = hotelSearchCache.get(destinationCacheKey);    if (cachedData && cachedData.allHotels) {
+    const cachedData = hotelSearchCache.get(destinationCacheKey);
+
+    if (cachedData && cachedData.allHotels) {
       let hotelsToUse = cachedData.allHotels;
 
       // For exact hotel searches, filter cached results to only include matching hotels
+      // For city searches, use all cached hotels
       if (isHotelSearch) {
         const cleanDestination = destination.toLowerCase().replace(/hotel/g, '').replace(/,.*$/, '').trim();
         const searchTerms = cleanDestination.split(/\s+/).filter(term => term.length > 2);
@@ -174,6 +214,37 @@ router.get('/search', async (req, res) => {
         console.log(`🔍 Clean destination: "${cleanDestination}"`);
         console.log(`🔍 Search terms: [${searchTerms.join(', ')}]`);
         console.log(`🔍 Total cached hotels: ${cachedData.allHotels.length}`);
+
+        // Create city name mappings for Arabic-English translations
+        const cityMappings = {
+          'جدة': ['jeddah', 'jedda', 'jeda'],
+          'الرياض': ['riyadh', 'riyad', 'ar-riyadh'],
+          'مكة': ['mecca', 'makkah', 'makkah al-mukarramah'],
+          'المدينة': ['medina', 'madinah', 'al-madinah'],
+          'الدمام': ['dammam', 'ad-dammam'],
+          'الطائف': ['taif', 'at-taif'],
+          'أبها': ['abha', 'abhā'],
+          'تبوك': ['tabuk', 'tabouk'],
+          'الخبر': ['khobar', 'al-khobar', 'alkhobar'],
+          'بريدة': ['buraidah', 'buraydah'],
+          'خميس مشيط': ['khamis mushait', 'khamis mushayt']
+        };
+
+        // Get all possible search terms including translations
+        const allSearchTerms = [...searchTerms];
+        searchTerms.forEach(term => {
+          if (cityMappings[term]) {
+            allSearchTerms.push(...cityMappings[term]);
+          }
+          // Also check reverse mapping (English to Arabic)
+          Object.entries(cityMappings).forEach(([arabic, englishVariants]) => {
+            if (englishVariants.includes(term)) {
+              allSearchTerms.push(arabic);
+            }
+          });
+        });
+
+        console.log(`🔍 Extended search terms with translations: [${allSearchTerms.join(', ')}]`);
 
         const matchingHotels = cachedData.allHotels.filter(hotel => {
           const hotelNameLower = hotel.name.toLowerCase();
@@ -188,8 +259,8 @@ router.get('/search', async (req, res) => {
             return matches;
           }
 
-          // Check if most search terms are found in the hotel name (original logic)
-          const matchingTerms = searchTerms.filter(term => hotelNameLower.includes(term));
+          // Check if any of the extended search terms are found in the hotel name
+          const matchingTerms = allSearchTerms.filter(term => hotelNameLower.includes(term));
           const matches = matchingTerms.length >= Math.max(1, Math.floor(searchTerms.length * 0.6));
           console.log(`  🏨 "${hotel.name}": terms [${searchTerms.join(', ')}], matching: [${matchingTerms.join(', ')}] (${matchingTerms.length}/${searchTerms.length}) - ${matches ? 'MATCH' : 'NO MATCH'}`);
           return matches;
