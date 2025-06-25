@@ -136,12 +136,10 @@ router.get('/conversations', async (req, res) => {
 
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-
-    // Get conversations
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };    // Get conversations
     const conversations = await WhatsAppConversation.find(query)
       .populate('userId', 'name firstName lastName email')
-      .populate('assignedTo', 'name firstName lastName')
+      .populate('assignedToAdmin', 'name firstName lastName')
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
@@ -596,16 +594,14 @@ router.post('/conversations/:id/assign', async (req, res) => {
       if (!admin || admin.role !== 'admin') {
         return res.status(400).json({ error: 'Invalid admin user' });
       }
-    }
-
-    conversation.assignedTo = adminUserId || null;
+    }    conversation.assignedToAdmin = adminUserId || null;
     await conversation.save();
 
-    await conversation.populate('assignedTo', 'name firstName lastName');
+    await conversation.populate('assignedToAdmin', 'name firstName lastName');
 
     res.json({
       success: true,
-      assignedTo: conversation.assignedTo
+      assignedTo: conversation.assignedToAdmin
     });
   } catch (error) {
     console.error('Error assigning conversation:', error);
