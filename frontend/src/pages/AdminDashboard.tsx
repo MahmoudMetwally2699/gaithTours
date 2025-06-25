@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Redirect, useHistory } from 'react-router-dom';
 import adminAPI from '../services/adminAPI';
 import toast from 'react-hot-toast';
+import WhatsAppInbox from '../components/WhatsApp/WhatsAppInbox';
 import {
   UserGroupIcon,
   ClipboardDocumentListIcon,
@@ -15,7 +16,8 @@ import {
   XMarkIcon,
   EyeIcon,
   PencilIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
@@ -365,13 +367,13 @@ export const AdminDashboard: React.FC = () => {
   if (!user || user.role !== 'admin') {
     return <Redirect to="/" />;
   }
-
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
     { id: 'clients', name: 'Clients', icon: UserGroupIcon },
     { id: 'bookings', name: 'Booking Requests', icon: ClipboardDocumentListIcon },
     { id: 'invoices', name: 'Invoices', icon: DocumentTextIcon },
-    { id: 'payments', name: 'Payments', icon: CreditCardIcon }
+    { id: 'payments', name: 'Payments', icon: CreditCardIcon },
+    { id: 'whatsapp', name: 'WhatsApp Messages', icon: ChatBubbleLeftRightIcon }
   ];
 
   return (
@@ -839,9 +841,15 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                       </tr>
                     ))}
-                  </tbody>
-                </table>
+                  </tbody>                </table>
               </div>
+            </div>
+          )}
+
+          {/* WhatsApp Messages Tab */}
+          {activeTab === 'whatsapp' && (
+            <div className="h-full">
+              <WhatsAppInbox />
             </div>
           )}
         </div>

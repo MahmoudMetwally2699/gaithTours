@@ -1,0 +1,528 @@
+const express = require('express');
+const { protect, admin } = require('../middleware/auth');
+const WhatsAppMessage = require('../models/WhatsAppMessage');
+const WhatsAppConversation = require('../models/WhatsAppConversation');
+const User = require('../models/User');
+const Reservation = require('../models/Reservation');
+const whatsappService = require('../utils/whatsappService');
+const { getIO } = require('../socket');
+
+const router = express.Router();
+
+// Apply auth middleware to all routes
+router.use(protect);
+router.use(admin);
+
+// GET /api/admin/whatsapp/conversations - Get all conversations with pagination
+router.get('/conversations', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search = '',
+      filter = 'all',
+      sortBy = 'lastMessageTimestamp',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build query
+    let query = {};
+
+    // Apply filters
+    if (filter === 'unread') {
+      query.unreadCount = { $gt: 0 };
+    } else if (filter === 'archived') {
+      query.isArchived = true;
+    } else if (filter === 'vip') {
+      query.isVip = true;
+    } else if (filter === 'active') {
+      query.isArchived = false;
+    }
+
+    // Apply search
+    if (search) {
+      query.$or = [
+        { phoneNumber: { $regex: search, $options: 'i' } },
+        { customerName: { $regex: search, $options: 'i' } },
+        { lastMessage: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    // Get conversations
+    const conversations = await WhatsAppConversation.find(query)
+      .populate('userId', 'name firstName lastName email')
+      .populate('assignedTo', 'name firstName lastName')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Get total count
+    const total = await WhatsAppConversation.countDocuments(query);
+
+    // Calculate stats
+    const stats = await WhatsAppConversation.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalConversations: { $sum: 1 },
+          unreadConversations: {
+            $sum: {
+              $cond: [{ $gt: ['$unreadCount', 0] }, 1, 0]
+            }
+          },
+          totalUnreadMessages: { $sum: '$unreadCount' },
+          vipConversations: {
+            $sum: {
+              $cond: ['$isVip', 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      conversations,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / parseInt(limit)),
+        count: total,
+        limit: parseInt(limit)
+      },
+      stats: stats[0] || {
+        totalConversations: 0,
+        unreadConversations: 0,
+        totalUnreadMessages: 0,
+        vipConversations: 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching conversations:', error);
+    res.status(500).json({ error: 'Failed to fetch conversations' });
+  }
+});
+
+// GET /api/admin/whatsapp/messages/:phone - Get messages for specific phone number
+router.get('/messages/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+
+    // Find conversation
+    const conversation = await WhatsAppConversation.findOne({ phoneNumber: phone })
+      .populate('userId', 'name firstName lastName email phone');
+
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get messages
+    const messages = await WhatsAppMessage.find({ conversationId: conversation._id })
+      .populate('adminUserId', 'name firstName lastName')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Reverse to show oldest first
+    messages.reverse();
+
+    // Get total count
+    const total = await WhatsAppMessage.countDocuments({ conversationId: conversation._id });
+
+    // Get customer reservations if linked
+    let reservations = [];
+    if (conversation.userId) {
+      reservations = await Reservation.find({ userId: conversation.userId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('_id checkIn checkOut totalAmount status hotelName')
+        .lean();
+    }
+
+    res.json({
+      conversation,
+      messages,
+      reservations,
+      pagination: {
+        current: parseInt(page),
+        total: Math.ceil(total / parseInt(limit)),
+        count: total,
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// POST /api/admin/whatsapp/reply - Send reply message
+router.post('/reply', async (req, res) => {
+  try {
+    const { phone, message, messageType = 'text', metadata = {} } = req.body;
+    const adminUserId = req.user.id;
+
+    if (!phone || !message) {
+      return res.status(400).json({ error: 'Phone and message are required' });
+    }    // Find or create conversation
+    const conversation = await WhatsAppConversation.findOrCreate(phone);
+
+    // Send message via WhatsApp API
+    const whatsappResponse = await whatsappService.sendMessage(phone, message);
+
+    if (!whatsappResponse || !whatsappResponse.messages || !whatsappResponse.messages[0]) {
+      return res.status(500).json({ error: 'Failed to send WhatsApp message' });
+    }
+
+    const messageId = whatsappResponse.messages[0].id;
+
+    // Save message to database
+    const newMessage = new WhatsAppMessage({
+      messageId: messageId,
+      from: process.env.WHATSAPP_PHONE_NUMBER_ID,
+      to: phone,
+      message,
+      messageType,
+      direction: 'outgoing',
+      conversationId: conversation._id,
+      adminUserId,
+      metadata,
+      status: 'sent'
+    });
+
+    await newMessage.save();
+
+    // Update conversation
+    conversation.lastMessage = message;
+    conversation.lastMessageTimestamp = newMessage.timestamp;
+    conversation.lastMessageDirection = 'outgoing';
+    conversation.totalMessages += 1;
+    conversation.lastActivity = new Date();
+
+    // Mark previous messages as replied
+    await WhatsAppMessage.updateMany(
+      {
+        conversationId: conversation._id,
+        direction: 'incoming',
+        isReplied: false
+      },
+      { isReplied: true }
+    );
+
+    await conversation.save();
+
+    // Populate admin user info
+    await newMessage.populate('adminUserId', 'name firstName lastName');
+
+    // Emit real-time event
+    const io = getIO();
+    if (io) {
+      io.emit('whatsapp_reply_sent', {
+        message: newMessage,
+        conversation
+      });
+    }    res.json({
+      success: true,
+      message: newMessage,
+      whatsappMessageId: messageId
+    });
+  } catch (error) {
+    console.error('Error sending reply:', error);
+    res.status(500).json({ error: 'Failed to send reply' });
+  }
+});
+
+// PUT /api/admin/whatsapp/messages/:id/read - Mark message as read
+router.put('/messages/:id/read', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const message = await WhatsAppMessage.findById(id);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Only mark incoming messages as read
+    if (message.direction === 'incoming' && !message.isRead) {
+      message.isRead = true;
+      await message.save();
+
+      // Update conversation unread count
+      const conversation = await WhatsAppConversation.findById(message.conversationId);
+      if (conversation && conversation.unreadCount > 0) {
+        conversation.unreadCount -= 1;
+        await conversation.save();
+
+        // Emit real-time event
+        const io = getIO();
+        if (io) {
+          io.emit('whatsapp_message_read', {
+            messageId: id,
+            conversationId: conversation._id,
+            newUnreadCount: conversation.unreadCount
+          });
+        }
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    res.status(500).json({ error: 'Failed to mark message as read' });
+  }
+});
+
+// PUT /api/admin/whatsapp/conversations/:id/read-all - Mark all messages in conversation as read
+router.put('/conversations/:id/read-all', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const conversation = await WhatsAppConversation.findById(id);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    // Mark all unread incoming messages as read
+    await WhatsAppMessage.updateMany(
+      {
+        conversationId: id,
+        direction: 'incoming',
+        isRead: false
+      },
+      { isRead: true }
+    );
+
+    // Reset unread count
+    conversation.unreadCount = 0;
+    await conversation.save();
+
+    // Emit real-time event
+    const io = getIO();
+    if (io) {
+      io.emit('whatsapp_conversation_read', {
+        conversationId: id
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking conversation as read:', error);
+    res.status(500).json({ error: 'Failed to mark conversation as read' });
+  }
+});
+
+// GET /api/admin/whatsapp/stats - Get message statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const { period = '7d' } = req.query;
+
+    // Calculate date range
+    const now = new Date();
+    let startDate;
+
+    switch (period) {
+      case '24h':
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    // Get message stats
+    const messageStats = await WhatsAppMessage.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: '$direction',
+          count: { $sum: 1 },
+          avgResponseTime: {
+            $avg: {
+              $cond: [
+                { $eq: ['$direction', 'outgoing'] },
+                { $subtract: ['$timestamp', '$createdAt'] },
+                null
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Get conversation stats
+    const conversationStats = await WhatsAppConversation.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalConversations: { $sum: 1 },
+          activeConversations: {
+            $sum: {
+              $cond: [
+                { $gte: ['$lastActivity', startDate] },
+                1,
+                0
+              ]
+            }
+          },
+          unreadConversations: {
+            $sum: {
+              $cond: [{ $gt: ['$unreadCount', 0] }, 1, 0]
+            }
+          },
+          totalUnreadMessages: { $sum: '$unreadCount' },
+          vipConversations: {
+            $sum: {
+              $cond: ['$isVip', 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Get daily message counts for chart
+    const dailyStats = await WhatsAppMessage.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$timestamp'
+              }
+            },
+            direction: '$direction'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.date': 1 }
+      }
+    ]);
+
+    const stats = {
+      messages: {
+        incoming: messageStats.find(s => s._id === 'incoming')?.count || 0,
+        outgoing: messageStats.find(s => s._id === 'outgoing')?.count || 0,
+        total: messageStats.reduce((sum, s) => sum + s.count, 0),
+        avgResponseTime: messageStats.find(s => s._id === 'outgoing')?.avgResponseTime || 0
+      },
+      conversations: conversationStats[0] || {
+        totalConversations: 0,
+        activeConversations: 0,
+        unreadConversations: 0,
+        totalUnreadMessages: 0,
+        vipConversations: 0
+      },
+      daily: dailyStats
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// PUT /api/admin/whatsapp/conversations/:id/toggle-vip - Toggle VIP status
+router.put('/conversations/:id/toggle-vip', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const conversation = await WhatsAppConversation.findById(id);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    conversation.isVip = !conversation.isVip;
+    await conversation.save();
+
+    res.json({
+      success: true,
+      isVip: conversation.isVip
+    });
+  } catch (error) {
+    console.error('Error toggling VIP status:', error);
+    res.status(500).json({ error: 'Failed to toggle VIP status' });
+  }
+});
+
+// PUT /api/admin/whatsapp/conversations/:id/archive - Toggle archive status
+router.put('/conversations/:id/archive', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const conversation = await WhatsAppConversation.findById(id);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    conversation.isArchived = !conversation.isArchived;
+    await conversation.save();
+
+    res.json({
+      success: true,
+      isArchived: conversation.isArchived
+    });
+  } catch (error) {
+    console.error('Error toggling archive status:', error);
+    res.status(500).json({ error: 'Failed to toggle archive status' });
+  }
+});
+
+// POST /api/admin/whatsapp/conversations/:id/assign - Assign conversation to admin
+router.post('/conversations/:id/assign', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminUserId } = req.body;
+
+    const conversation = await WhatsAppConversation.findById(id);
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    if (adminUserId) {
+      const admin = await User.findById(adminUserId);
+      if (!admin || admin.role !== 'admin') {
+        return res.status(400).json({ error: 'Invalid admin user' });
+      }
+    }
+
+    conversation.assignedTo = adminUserId || null;
+    await conversation.save();
+
+    await conversation.populate('assignedTo', 'name firstName lastName');
+
+    res.json({
+      success: true,
+      assignedTo: conversation.assignedTo
+    });
+  } catch (error) {
+    console.error('Error assigning conversation:', error);
+    res.status(500).json({ error: 'Failed to assign conversation' });
+  }
+});
+
+module.exports = router;

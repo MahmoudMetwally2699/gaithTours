@@ -3,9 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const { initializeSocket } = require('./socket');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
 
 // Security middleware
 app.use(helmet());
@@ -72,7 +75,12 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtour
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('MongoDB connected successfully'))
+.then(() => {
+  console.log('MongoDB connected successfully');
+  // Initialize Socket.io after MongoDB connection
+  initializeSocket(server);
+  console.log('Socket.io initialized successfully');
+})
 .catch(err => {
   console.error('MongoDB connection error:', err);
   process.exit(1);
@@ -129,6 +137,22 @@ try {
   console.error('Error loading uploads routes:', error);
 }
 
+// WhatsApp webhook routes (must be before other routes to avoid conflicts)
+try {
+  app.use('/webhook', require('./routes/webhook'));
+  console.log('Webhook routes loaded successfully');
+} catch (error) {
+  console.error('Error loading webhook routes:', error);
+}
+
+// WhatsApp admin routes
+try {
+  app.use('/api/admin/whatsapp', require('./routes/whatsapp-admin'));
+  console.log('WhatsApp admin routes loaded successfully');
+} catch (error) {
+  console.error('Error loading WhatsApp admin routes:', error);
+}
+
 // Test route to verify deployment
 app.get('/api/test', (req, res) => {
   res.status(200).json({
@@ -164,6 +188,6 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
