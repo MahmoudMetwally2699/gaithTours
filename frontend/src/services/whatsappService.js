@@ -20,19 +20,19 @@ apiClient.interceptors.request.use((config) => {
 export const whatsappService = {
   // Get all conversations
   getConversations: async (params = {}) => {
-    const response = await apiClient.get('/api/admin/whatsapp/conversations', { params });
+    const response = await apiClient.get('/admin/whatsapp/conversations', { params });
     return response.data;
   },
 
   // Get messages for a specific phone number
   getMessages: async (phone, params = {}) => {
-    const response = await apiClient.get(`/api/admin/whatsapp/messages/${phone}`, { params });
+    const response = await apiClient.get(`/admin/whatsapp/messages/${phone}`, { params });
     return response.data;
   },
 
   // Send a reply
   sendReply: async (phone, message, messageType = 'text', metadata = {}) => {
-    const response = await apiClient.post('/api/admin/whatsapp/reply', {
+    const response = await apiClient.post('/admin/whatsapp/reply', {
       phone,
       message,
       messageType,
@@ -43,37 +43,37 @@ export const whatsappService = {
 
   // Mark message as read
   markMessageAsRead: async (messageId) => {
-    const response = await apiClient.put(`/api/admin/whatsapp/messages/${messageId}/read`);
+    const response = await apiClient.put(`/admin/whatsapp/messages/${messageId}/read`);
     return response.data;
   },
 
   // Mark all messages in conversation as read
   markConversationAsRead: async (conversationId) => {
-    const response = await apiClient.put(`/api/admin/whatsapp/conversations/${conversationId}/read-all`);
+    const response = await apiClient.put(`/admin/whatsapp/conversations/${conversationId}/read-all`);
     return response.data;
   },
 
   // Get statistics
   getStats: async (period = '7d') => {
-    const response = await apiClient.get('/api/admin/whatsapp/stats', { params: { period } });
+    const response = await apiClient.get('/admin/whatsapp/stats', { params: { period } });
     return response.data;
   },
 
   // Toggle VIP status
   toggleVip: async (conversationId) => {
-    const response = await apiClient.put(`/api/admin/whatsapp/conversations/${conversationId}/toggle-vip`);
+    const response = await apiClient.put(`/admin/whatsapp/conversations/${conversationId}/toggle-vip`);
     return response.data;
   },
 
   // Toggle archive status
   toggleArchive: async (conversationId) => {
-    const response = await apiClient.put(`/api/admin/whatsapp/conversations/${conversationId}/archive`);
+    const response = await apiClient.put(`/admin/whatsapp/conversations/${conversationId}/archive`);
     return response.data;
   },
 
   // Assign conversation to admin
   assignConversation: async (conversationId, adminUserId) => {
-    const response = await apiClient.post(`/api/admin/whatsapp/conversations/${conversationId}/assign`, {
+    const response = await apiClient.post(`/admin/whatsapp/conversations/${conversationId}/assign`, {
       adminUserId
     });
     return response.data;
