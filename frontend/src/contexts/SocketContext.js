@@ -25,27 +25,33 @@ export const SocketProvider = ({ children }) => {
       // Remove /api from the URL for Socket.io connection
       const socketUrl = apiUrl.replace('/api', '');
 
+      console.log('Connecting to Socket.IO at:', socketUrl);
+
       const newSocket = io(socketUrl, {
         auth: {
           token: token
         },
         withCredentials: true,
         transports: ['websocket', 'polling']
-      });
-
-      newSocket.on('connect', () => {
-        console.log('Socket connected');
+      });      newSocket.on('connect', () => {
+        console.log('✅ Socket connected successfully');
+        console.log('🔗 Socket ID:', newSocket.id);
         setIsConnected(true);
       });
 
-      newSocket.on('disconnect', () => {
-        console.log('Socket disconnected');
+      newSocket.on('disconnect', (reason) => {
+        console.log('❌ Socket disconnected:', reason);
         setIsConnected(false);
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        console.error('❌ Socket connection error:', error.message);
+        console.error('🔧 Error details:', error);
         setIsConnected(false);
+      });
+
+      newSocket.on('error', (error) => {
+        console.error('❌ Socket error:', error);
       });
 
       setSocket(newSocket);

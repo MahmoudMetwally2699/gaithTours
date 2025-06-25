@@ -16,6 +16,8 @@ router.use(admin);
 // GET /api/admin/whatsapp/conversations - Get all conversations with pagination
 router.get('/conversations', async (req, res) => {
   try {
+    console.log('🔍 Getting WhatsApp conversations...');
+
     const {
       page = 1,
       limit = 20,
@@ -24,6 +26,8 @@ router.get('/conversations', async (req, res) => {
       sortBy = 'lastMessageTimestamp',
       sortOrder = 'desc'
     } = req.query;
+
+    console.log('📊 Query params:', { page, limit, search, filter, sortBy, sortOrder });
 
     // Build query
     let query = {};
@@ -48,6 +52,15 @@ router.get('/conversations', async (req, res) => {
       ];
     }
 
+    console.log('🔎 Query filter:', JSON.stringify(query, null, 2));
+
+    // Check total count first
+    const totalCount = await WhatsAppConversation.countDocuments({});
+    console.log('📈 Total conversations in database:', totalCount);
+
+    const filteredCount = await WhatsAppConversation.countDocuments(query);
+    console.log('📈 Conversations matching filter:', filteredCount);
+
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
@@ -60,6 +73,8 @@ router.get('/conversations', async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit))
       .lean();
+
+    console.log('💬 Found conversations:', conversations.length);
 
     // Get total count
     const total = await WhatsAppConversation.countDocuments(query);
@@ -522,6 +537,78 @@ router.post('/conversations/:id/assign', async (req, res) => {
   } catch (error) {
     console.error('Error assigning conversation:', error);
     res.status(500).json({ error: 'Failed to assign conversation' });
+  }
+});
+
+// Test endpoint to check webhook configuration
+router.get('/webhook-config', async (req, res) => {
+  try {
+    const config = {
+      webhookSecret: !!process.env.WHATSAPP_WEBHOOK_SECRET,
+      verifyToken: !!process.env.WHATSAPP_VERIFY_TOKEN,
+      accessToken: !!process.env.WHATSAPP_ACCESS_TOKEN,
+      phoneNumberId: !!process.env.WHATSAPP_PHONE_NUMBER_ID,
+      webhookUrl: process.env.API_URL ? `${process.env.API_URL}/webhook/whatsapp` : 'Not configured'
+    };
+
+    console.log('📋 WhatsApp Configuration Check:', config);
+
+    res.json({
+      success: true,
+      config,
+      message: 'Webhook configuration status'
+    });
+  } catch (error) {
+    console.error('❌ Error checking webhook config:', error);
+    res.status(500).json({ error: 'Failed to check webhook config' });
+  }
+});
+
+// Test endpoint to create a sample conversation (for debugging)
+router.post('/test-conversation', async (req, res) => {
+  try {
+    console.log('🧪 Creating test conversation...');
+
+    // Check if test conversation already exists
+    const existingConversation = await WhatsAppConversation.findOne({
+      phoneNumber: '201211477551'
+    });
+
+    if (existingConversation) {
+      console.log('✅ Test conversation already exists');
+      return res.json({
+        success: true,
+        message: 'Test conversation already exists',
+        conversation: existingConversation
+      });
+    }
+
+    // Create a test conversation
+    const testConversation = new WhatsAppConversation({
+      phoneNumber: '201211477551',
+      customerName: 'Test User',
+      lastMessagePreview: 'Hello, this is a test message',
+      lastMessageAt: new Date(),
+      unreadCount: 1,
+      totalMessages: 1,
+      isActive: true,
+      metadata: {
+        customerType: 'new',
+        preferredLanguage: 'en'
+      }
+    });
+
+    await testConversation.save();
+    console.log('✅ Test conversation created');
+
+    res.json({
+      success: true,
+      message: 'Test conversation created successfully',
+      conversation: testConversation
+    });
+  } catch (error) {
+    console.error('❌ Error creating test conversation:', error);
+    res.status(500).json({ error: 'Failed to create test conversation' });
   }
 });
 
