@@ -16,8 +16,13 @@ const initializeSocket = (server) => {
         process.env.FRONTEND_URL
       ].filter(Boolean),
       methods: ['GET', 'POST'],
-      credentials: true
-    }
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization']
+    },
+    // Additional configuration for better performance
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000
   });
 
   // Authentication middleware for socket connections

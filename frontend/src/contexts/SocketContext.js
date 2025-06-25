@@ -21,13 +21,16 @@ export const SocketProvider = ({ children }) => {
     if (isAuthenticated && user) {
       const token = localStorage.getItem('token');
 
-      if (!token) return;
+      if (!token) return;      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      // Remove /api from the URL for Socket.io connection
+      const socketUrl = apiUrl.replace('/api', '');
 
-      const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
+      const newSocket = io(socketUrl, {
         auth: {
           token: token
         },
-        withCredentials: true
+        withCredentials: true,
+        transports: ['websocket', 'polling']
       });
 
       newSocket.on('connect', () => {
