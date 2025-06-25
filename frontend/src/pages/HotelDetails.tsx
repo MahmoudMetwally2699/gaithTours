@@ -53,10 +53,14 @@ export const HotelDetails: React.FC = () => {
     children: parseInt(searchParams.get('children') || '0')
   };  const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [error, setError] = useState('');  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Function to get amenity icon
   const getAmenityIcon = (amenity: string) => {
@@ -159,7 +163,6 @@ export const HotelDetails: React.FC = () => {
 
     fetchHotelDetails();
   }, [hotelId, bookingParams.destination]);
-
   const handleBookNow = () => {
     if (!hotel) return;
 
@@ -176,6 +179,11 @@ export const HotelDetails: React.FC = () => {
     });
 
     history.push(`/hotels/booking?${params.toString()}`);
+
+    // Scroll to top after navigation
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 100);
   };
 
   const renderStars = (rating: number) => {
@@ -282,7 +290,7 @@ export const HotelDetails: React.FC = () => {
           <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:-translate-x-1 transition-transform duration-200" />
           <span className="text-sm sm:text-base font-medium">{t('common.back', 'Back to results')}</span>
         </button>        {/* Hotel Name Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-orange-200">
+        <div className="rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-orange-200" style={{ backgroundColor: '#46DFE5' }}>
           <div className="flex flex-col space-y-3 sm:space-y-4">
             {/* Main content area */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

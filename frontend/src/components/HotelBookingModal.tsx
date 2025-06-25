@@ -82,10 +82,10 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
     toast.custom((toastInstance) => (
       <div        className={`${
           toastInstance.visible ? 'animate-enter' : 'animate-leave'
-        } max-w-md w-full bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 border border-white/20 backdrop-blur-md overflow-hidden relative`}
+        } max-w-md w-full bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 border border-white/20 backdrop-blur-md overflow-hidden relative`}
         style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%)',
-          boxShadow: '0 25px 50px -12px rgba(102, 126, 234, 0.5), 0 0 0 1px rgba(255,255,255,0.1)',
+          background: 'linear-gradient(135deg, #f97316 0%, #f59e0b 50%, #eab308 100%)',
+          boxShadow: '0 25px 50px -12px rgba(249, 115, 22, 0.5), 0 0 0 1px rgba(255,255,255,0.1)',
         }}
       >
         {/* Shimmer effect */}
@@ -109,9 +109,8 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                 <span className="text-2xl animate-bounce" style={{ animationDelay: '0.1s' }}>🎉</span>                <p className="text-lg font-bold text-white" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                   {t('hotels.booking.bookingSubmitted', 'Booking Submitted!')}
                 </p>
-              </div>
-              <p className="mt-2 text-sm text-white/90 leading-relaxed" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                {t('hotels.booking.submissionMessage', 'Your hotel reservation request has been successfully submitted. Our team will contact you within 24 hours to confirm your booking.')}
+              </div>              <p className="mt-2 text-sm text-white/90 leading-relaxed" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                {t('hotels.booking.submissionMessage', 'تم تقديم طلب حجز الفندق بنجاح. سيتواصل معك فريقنا في اقرب وقت لتأكيد حجزك.')}
               </p>
               <div className={`mt-4 flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                 <div className={`flex ${isRTL ? 'space-x-reverse' : ''} space-x-1`}>
@@ -296,37 +295,76 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
           <div className="p-8 space-y-8">            {/* Hotel Information */}
             <div className="border-b border-gray-200 pb-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">{t('hotels.booking.hotelDetails', 'HOTEL DETAILS')}</h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="font-semibold text-gray-700">{t('hotels.booking.modalHotelName', 'Hotel Name')}:</span>
-                      <br />
-                      <span className="text-gray-900">{hotel.name}</span>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Hotel Image */}
+                <div className="lg:col-span-1">
+                  {hotel.image ? (
+                    <div className="w-full h-48 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                      <img
+                        src={hotel.image}
+                        alt={hotel.name}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center" style={{ display: 'none' }}>
+                        <div className="text-center text-gray-500">
+                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="mt-2 text-sm">{t('hotels.booking.noImage', 'No image available')}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-semibold text-gray-700">{t('hotels.booking.modalAddress', 'Address')}:</span>
-                      <br />
-                      <span className="text-gray-900">{hotel.address}, {hotel.city}, {hotel.country}</span>
+                  ) : (
+                    <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
+                      <div className="text-center text-gray-500">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="mt-2 text-sm">{t('hotels.booking.noImage', 'No image available')}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-                <div>
-                  <div className="space-y-3">
-                    {hotel.rating && (
-                      <div>
-                        <span className="font-semibold text-gray-700">{t('hotels.booking.modalRating', 'Rating')}:</span>
-                        <br />
-                        <span className="text-gray-900">{hotel.rating} ⭐</span>
+
+                {/* Hotel Details */}
+                <div className="lg:col-span-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <div className="space-y-3">
+                        <div>
+                          <span className="font-semibold text-gray-700">{t('hotels.booking.modalHotelName', 'Hotel Name')}:</span>
+                          <br />
+                          <span className="text-gray-900">{hotel.name}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">{t('hotels.booking.modalAddress', 'Address')}:</span>
+                          <br />
+                          <span className="text-gray-900">{hotel.address}, {hotel.city}, {hotel.country}</span>
+                        </div>                      </div>
+                    </div>
+                    <div>
+                      <div className="space-y-3">
+                        {hotel.rating && (
+                          <div>
+                            <span className="font-semibold text-gray-700">{t('hotels.booking.modalRating', 'Rating')}:</span>
+                            <br />
+                            <span className="text-gray-900">{hotel.rating} ⭐</span>
+                          </div>
+                        )}
+                        {searchParams.hotelPrice && (
+                          <div>
+                            <span className="font-semibold text-gray-700">{t('hotels.booking.modalPricePerNight', 'Price per Night')}:</span>
+                            <br />
+                            <span className="text-gray-900">{searchParams.hotelPrice} SAR</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {searchParams.hotelPrice && (
-                      <div>
-                        <span className="font-semibold text-gray-700">{t('hotels.booking.modalPricePerNight', 'Price per Night')}:</span>
-                        <br />
-                        <span className="text-gray-900">{searchParams.hotelPrice} SAR</span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -487,8 +525,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="pt-6">
+            {/* Action Buttons */}            <div className="pt-6">
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   type="button"
@@ -496,12 +533,12 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                   className="flex-1 px-6 py-3 bg-gray-100 border border-gray-300 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
                 >
                   {t('common.cancel', 'Cancel')}
-                </button>
-                <button
+                </button>                <button
                   type="button"
                   onClick={handleConfirmBooking}
                   disabled={loading}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-6 py-3 text-white font-semibold hover:opacity-90 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200"
+                  style={{ backgroundColor: '#EF620F' }}
                 >
                   {loading ? t('common.processing', 'Processing...') : t('hotels.booking.modalConfirmBooking', 'Confirm Booking')}
                 </button>

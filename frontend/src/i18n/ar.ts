@@ -415,11 +415,13 @@ export const ar = {
       allInclusive: 'شامل جميع الوجبات'
     },
     paymentMethod: 'طريقة الدفع',
-    selectPaymentMethod: 'اختر طريقة الدفع',
-    paymentMethods: {
+    selectPaymentMethod: 'اختر طريقة الدفع',    paymentMethods: {
+      bankCard: 'بطاقة بنكية',
+      bankTransfer: 'تحويل بنكي',
+      websitePayment: 'الدفع عن طريق الموقع',
+      paymentLink: 'رابط دفع',
       creditCard: 'بطاقة ائتمان',
       debitCard: 'بطاقة مدين',
-      bankTransfer: 'حوالة مصرفية',
       cashOnArrival: 'دفع نقدي عند الوصول',
       digitalWallet: 'محفظة رقمية',
       check: 'شيك'
@@ -646,15 +648,16 @@ export const ar = {
       leisure: 'سياحة',
       business: 'عمل',
       transit: 'عبور'
-    },
-
-    // Payment
+    },    // Payment
     payment: {
       title: 'كيف تريد أن تدفع؟',
       subtitle: 'اختر طريقة الدفع المفضلة لديك',
+      bankCard: 'بطاقة بنكية',
+      bankTransfer: 'تحويل بنكي',
+      websitePayment: 'الدفع عن طريق الموقع',
+      paymentLink: 'رابط دفع',
       creditCard: 'بطاقة ائتمان',
       debitCard: 'بطاقة مدين',
-      bankTransfer: 'تحويل مصرفي',
       cashOnArrival: 'نقداً عند الوصول'
     },
 

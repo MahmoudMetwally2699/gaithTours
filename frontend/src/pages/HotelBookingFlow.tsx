@@ -165,9 +165,8 @@ export const HotelBookingFlow: React.FC = () => {
     switch (currentStep) {      case 1:
         return (
           <div className="space-y-4 sm:space-y-10">
-            <div className={`text-center mb-4 sm:mb-10 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full mb-2 sm:mb-6">
-                <ClockIcon className="h-5 w-5 sm:h-10 sm:w-10 text-blue-600" />
+            <div className={`text-center mb-4 sm:mb-10 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-6">
+                <ClockIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
               </div>
               <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-3">
                 {t('booking.checkInTime.title', 'Check-in Details')}
@@ -177,9 +176,8 @@ export const HotelBookingFlow: React.FC = () => {
               </p>
             </div>
 
-            <div className="max-w-3xl mx-auto space-y-3 sm:space-y-8">
-              {/* Check-in Time */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-2xl p-3 sm:p-8">
+            <div className="max-w-3xl mx-auto space-y-3 sm:space-y-8">              {/* Check-in Time */}
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg sm:rounded-2xl p-3 sm:p-8">
                 <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('booking.checkInTime.label', 'Expected Check-in Time')} *
                 </label>
@@ -187,7 +185,7 @@ export const HotelBookingFlow: React.FC = () => {
                   type="time"
                   value={formData.expectedCheckInTime}
                   onChange={(e) => handleInputChange('expectedCheckInTime', e.target.value)}
-                  className={`w-full px-3 sm:px-6 py-2 sm:py-5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 sm:focus:ring-3 focus:ring-blue-100 focus:border-blue-500 text-base sm:text-xl font-medium shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
+                  className={`w-full px-3 sm:px-6 py-2 sm:py-5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 sm:focus:ring-3 focus:ring-orange-100 focus:border-orange-500 text-base sm:text-xl font-medium shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
                   required
                 />
                 <p className={`mt-2 sm:mt-3 text-xs sm:text-base text-gray-600 bg-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg border border-gray-100 ${isRTL ? 'text-right' : 'text-left'}`}>
@@ -200,9 +198,8 @@ export const HotelBookingFlow: React.FC = () => {
 
       case 2:        return (
           <div className="space-y-4 sm:space-y-8">
-            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full mb-2 sm:mb-4">
-                <UserIcon className="h-5 w-5 sm:h-10 sm:w-10 text-purple-600" />
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
+                <UserIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
               </div>
               <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.roomType.title', 'Choose Your Room')}
@@ -224,10 +221,9 @@ export const HotelBookingFlow: React.FC = () => {
                   { id: 'Family Room', label: t('booking.roomType.family', 'Family Room'), icon: '👨‍👩‍👧‍👦', desc: 'Perfect for families' }
                 ].map((room) => (
                   <label
-                    key={room.id}
-                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                    key={room.id}                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
                       formData.roomType === room.id
-                        ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg'
+                        ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                     }`}
                   >
@@ -264,10 +260,9 @@ export const HotelBookingFlow: React.FC = () => {
                   { id: 'other', label: t('booking.stayType.other', 'Other'), icon: '📝', desc: 'Other purpose' }
                 ].map((stay) => (
                   <label
-                    key={stay.id}
-                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                    key={stay.id}                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
                       formData.stayType === stay.id
-                        ? 'border-green-500 bg-gradient-to-br from-green-50 to-green-100 shadow-lg'
+                        ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                     }`}
                   >
@@ -294,9 +289,8 @@ export const HotelBookingFlow: React.FC = () => {
         );      case 3:
         return (
           <div className="space-y-4 sm:space-y-8">
-            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-green-100 to-emerald-200 rounded-full mb-2 sm:mb-4">
-                <CreditCardIcon className="h-5 w-5 sm:h-10 sm:w-10 text-green-600" />
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
+                <CreditCardIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
               </div>
               <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.payment.title', 'How would you like to pay?')}
@@ -306,16 +300,15 @@ export const HotelBookingFlow: React.FC = () => {
               </p>
             </div>            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto">
               {[
-                { id: 'credit_card', label: t('booking.payment.creditCard', 'Credit Card'), icon: '💳', desc: 'Visa, MasterCard, etc.' },
-                { id: 'debit_card', label: t('booking.payment.debitCard', 'Debit Card'), icon: '💳', desc: 'Direct bank payment' },
+                { id: 'bank_card', label: t('booking.payment.bankCard', 'Bank Card'), icon: '💳', desc: 'Debit/Credit Card' },
                 { id: 'bank_transfer', label: t('booking.payment.bankTransfer', 'Bank Transfer'), icon: '🏦', desc: 'Wire transfer' },
-                { id: 'cash_on_arrival', label: t('booking.payment.cashOnArrival', 'Cash on Arrival'), icon: '💵', desc: 'Pay at the hotel' }
+                { id: 'website_payment', label: t('booking.payment.websitePayment', 'Website Payment'), icon: '💻', desc: 'Pay through website' },
+                { id: 'payment_link', label: t('booking.payment.paymentLink', 'Payment Link'), icon: '�', desc: 'Secure payment link' }
               ].map((method) => (
                 <label
-                  key={method.id}
-                  className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                  key={method.id}                  className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
                     formData.paymentMethod === method.id
-                      ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg'
+                      ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg'
                       : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
                   }`}
                 >
@@ -341,9 +334,8 @@ export const HotelBookingFlow: React.FC = () => {
         );      case 4:
         return (
           <div className="space-y-4 sm:space-y-8">
-            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-100 to-purple-200 rounded-full mb-2 sm:mb-4">
-                <UserPlusIcon className="h-5 w-5 sm:h-10 sm:w-10 text-purple-600" />
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
+                <UserPlusIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
               </div>
               <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.guests.title', 'Additional Guests')}
@@ -377,10 +369,8 @@ export const HotelBookingFlow: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* Add New Guest */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
+              )}              {/* Add New Guest */}
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
                 <h3 className={`font-bold text-base sm:text-lg text-gray-900 mb-4 sm:mb-6 ${isRTL ? 'text-right' : 'text-left'}`}>
                   {t('booking.guests.addNew', 'Add Guest')}
                 </h3>
@@ -393,7 +383,7 @@ export const HotelBookingFlow: React.FC = () => {
                       type="text"
                       value={newGuest.fullName}
                       onChange={(e) => setNewGuest(prev => ({ ...prev, fullName: e.target.value }))}
-                      className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
+                      className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
                       placeholder={t('booking.guests.namePlaceholder', 'Enter guest name')}
                     />
                   </div>
@@ -405,14 +395,14 @@ export const HotelBookingFlow: React.FC = () => {
                       type="tel"
                       value={newGuest.phoneNumber}
                       onChange={(e) => setNewGuest(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                      className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
+                      className={`w-full px-3 py-3 sm:px-4 sm:py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500 text-sm sm:text-lg shadow-sm hover:shadow-md transition-all ${isRTL ? 'text-right' : 'text-left'}`}
                       placeholder={t('booking.guests.phonePlaceholder', 'Enter phone number')}
                     />
                   </div>
                 </div>
                 <button
                   onClick={handleAddGuest}
-                  className="mt-4 sm:mt-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
+                  className="mt-4 sm:mt-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 w-full sm:w-auto"
                 >
                   {t('booking.guests.addButton', 'Add Guest')}
                 </button>
@@ -435,8 +425,7 @@ export const HotelBookingFlow: React.FC = () => {
             </div>
 
             <div className="max-w-3xl mx-auto">
-              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
-                <textarea
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">                <textarea
                   value={formData.specialRequests}
                   onChange={(e) => handleInputChange('specialRequests', e.target.value)}
                   rows={4}
@@ -476,9 +465,8 @@ export const HotelBookingFlow: React.FC = () => {
         );      case 6:
         return (
           <div className="space-y-4 sm:space-y-8">
-            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
-              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-indigo-100 to-indigo-200 rounded-full mb-2 sm:mb-4">
-                <DocumentTextIcon className="h-5 w-5 sm:h-10 sm:w-10 text-indigo-600" />
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
+                <DocumentTextIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
               </div>
               <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                 {t('booking.documents.title', 'Upload Documents')}
@@ -486,10 +474,8 @@ export const HotelBookingFlow: React.FC = () => {
               <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
                 {t('booking.documents.subtitle', 'Attach relevant documents (optional)')}
               </p>
-            </div>
-
-            <div className="max-w-3xl mx-auto">
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
+            </div>            <div className="max-w-3xl mx-auto">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 rounded-lg sm:rounded-2xl p-4 sm:p-6">
                 <FileUpload
                   files={formData.attachments}
                   onFilesChange={(files) => {
@@ -557,16 +543,14 @@ export const HotelBookingFlow: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 pt-16 sm:pt-20">
       <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">        {/* Header */}
         <div className="mb-6 sm:mb-12">
-          <div className={`flex items-center justify-between mb-4 sm:mb-6 gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-            <button
+          <div className={`flex items-center justify-between mb-4 sm:mb-6 gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>            <button
               onClick={() => history.goBack()}
-              className={`group flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-blue-600 transition-all duration-200 text-sm sm:text-base bg-white px-3 sm:px-4 py-2 rounded-full shadow-sm hover:shadow-md flex-shrink-0 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
+              className={`group flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-orange-600 transition-all duration-200 text-sm sm:text-base bg-white px-3 sm:px-4 py-2 rounded-full shadow-sm hover:shadow-md flex-shrink-0 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
             >
               <ArrowLeftIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="font-medium">{t('common.back', 'Back')}</span>
             </button>
-              <div className="flex-1 text-center min-w-0">
-              <h1 className="text-lg sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent truncate">
+              <div className="flex-1 text-center min-w-0">              <h1 className="text-lg sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent truncate">
                 {t('booking.title', 'Complete Your Booking')}
               </h1>
             </div>
@@ -587,8 +571,7 @@ export const HotelBookingFlow: React.FC = () => {
                 src={hotelData.image || '/placeholder-hotel.jpg'}
                 alt={hotelData.name}
                 className="w-12 h-12 sm:w-24 sm:h-24 object-cover rounded-md sm:rounded-xl shadow-md flex-shrink-0"
-              />
-              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+              />              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full w-4 h-4 sm:w-6 sm:h-6 flex items-center justify-center text-xs font-bold shadow-lg">
                 ★
               </div>
             </div>
@@ -600,23 +583,21 @@ export const HotelBookingFlow: React.FC = () => {
                 {hotelData.address}, {hotelData.city}
               </p>
 
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-                <div className={`flex items-center text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-md sm:rounded-lg ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <CalendarIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-blue-500 ${isRTL ? 'ml-1 sm:ml-2' : 'mr-1 sm:mr-2'}`} />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">                <div className={`flex items-center text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-md sm:rounded-lg ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <CalendarIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-orange-500 ${isRTL ? 'ml-1 sm:ml-2' : 'mr-1 sm:mr-2'}`} />
                   <span className="font-medium truncate">{hotelData.checkIn} - {hotelData.checkOut}</span>
                 </div>
 
                 <div className={`flex items-center text-xs sm:text-sm text-gray-600 bg-gray-50 px-2 py-1 sm:px-3 sm:py-2 rounded-md sm:rounded-lg ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <UserIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-blue-500 ${isRTL ? 'ml-1 sm:ml-2' : 'mr-1 sm:mr-2'}`} />
+                  <UserIcon className={`h-3 w-3 sm:h-4 sm:w-4 text-orange-500 ${isRTL ? 'ml-1 sm:ml-2' : 'mr-1 sm:mr-2'}`} />
                   <span className="font-medium truncate">{hotelData.adults} adults, {hotelData.rooms} room(s)</span>
                 </div>
               </div>
 
               {/* Selected options */}
               {(formData.roomType || formData.stayType) && (
-                <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-2">
-                  {formData.roomType && (
-                    <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium">
+                <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-2">                  {formData.roomType && (
+                    <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-medium">
                       {formData.roomType}
                     </span>
                   )}
@@ -649,10 +630,9 @@ export const HotelBookingFlow: React.FC = () => {
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
-                    <div
-                      className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 ${
+                    <div                      className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-xs sm:text-base transition-all duration-300 ${
                         currentStep === step.id
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110'
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg scale-110'
                           : currentStep > step.id
                           ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
                           : 'bg-gray-200 text-gray-500'
@@ -672,12 +652,11 @@ export const HotelBookingFlow: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300 ${
+                  {index < steps.length - 1 && (                    <div className={`flex-1 h-1 mx-2 sm:mx-4 rounded-full transition-all duration-300 ${
                       currentStep > step.id
                         ? 'bg-gradient-to-r from-green-400 to-green-500'
                         : currentStep === step.id
-                        ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                        ? 'bg-gradient-to-r from-orange-400 to-orange-500'
                         : 'bg-gray-200'
                     }`} />
                   )}
@@ -687,23 +666,21 @@ export const HotelBookingFlow: React.FC = () => {
           </div>
 
           {/* Navigation */}
-          <div className={`flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-            <button
+          <div className={`flex items-center justify-between gap-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>            <button
               onClick={handlePrevious}
               disabled={currentStep === 1}
-              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm sm:text-base font-semibold shadow-sm hover:shadow-md`}
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} px-6 sm:px-8 py-3 sm:py-4 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 text-sm sm:text-base font-semibold shadow-sm hover:shadow-md`}
             >
-              <ArrowLeftIcon className={`h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
-              <span className="text-gray-700 group-hover:text-blue-700 transition-colors">
+              <ArrowLeftIcon className={`h-5 w-5 text-gray-600 group-hover:text-orange-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+              <span className="text-gray-700 group-hover:text-orange-700 transition-colors">
                 <span className="hidden sm:inline">{t('common.previous', 'Previous')}</span>
                 <span className="sm:hidden">{t('common.prev', 'Prev')}</span>
               </span>
             </button>
 
-            {currentStep < steps.length ? (
-              <button
+            {currentStep < steps.length ? (              <button
                 onClick={handleNext}
-                className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
+                className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-3 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105`}
               >
                 <span>
                   <span className="hidden sm:inline">{t('common.next', 'Next')}</span>
@@ -726,16 +703,14 @@ export const HotelBookingFlow: React.FC = () => {
           </div>
         </div>
       </div>{/* Sticky Footer for Mobile - Progress Steps and Navigation */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl">
-        {/* Progress Steps - Compact mobile version */}
-        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-blue-50">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl">        {/* Progress Steps - Compact mobile version */}
+        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-orange-50">
           <div className="flex items-center justify-center space-x-2">
             {steps.map((step, index) => (
               <div key={step.id} className="flex items-center">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                <div                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
                     currentStep === step.id
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg scale-110'
+                      ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg scale-110'
                       : currentStep > step.id
                       ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
                       : 'bg-gray-200 text-gray-500'
@@ -747,12 +722,11 @@ export const HotelBookingFlow: React.FC = () => {
                     step.id
                   )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-4 h-0.5 mx-1 rounded-full transition-all duration-300 ${
+                {index < steps.length - 1 && (                  <div className={`w-4 h-0.5 mx-1 rounded-full transition-all duration-300 ${
                     currentStep > step.id
                       ? 'bg-gradient-to-r from-green-400 to-green-500'
                       : currentStep === step.id
-                      ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                      ? 'bg-gradient-to-r from-orange-400 to-orange-500'
                       : 'bg-gray-200'
                   }`} />
                 )}
@@ -770,22 +744,20 @@ export const HotelBookingFlow: React.FC = () => {
         </div>
 
         {/* Navigation Buttons */}
-        <div className={`flex items-center justify-between gap-3 px-4 py-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-          <button
+        <div className={`flex items-center justify-between gap-3 px-4 py-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>          <button
             onClick={handlePrevious}
             disabled={currentStep === 1}
-            className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} px-4 py-3 bg-white border-2 border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md flex-1`}
+            className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} px-4 py-3 bg-white border-2 border-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:border-orange-300 hover:bg-orange-50 transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md flex-1`}
           >
-            <ArrowLeftIcon className={`h-4 w-4 text-gray-600 group-hover:text-blue-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
-            <span className="text-gray-700 group-hover:text-blue-700 transition-colors">
+            <ArrowLeftIcon className={`h-4 w-4 text-gray-600 group-hover:text-orange-600 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+            <span className="text-gray-700 group-hover:text-orange-700 transition-colors">
               {t('common.prev', 'Prev')}
             </span>
           </button>
 
-          {currentStep < steps.length ? (
-            <button
+          {currentStep < steps.length ? (            <button
               onClick={handleNext}
-              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-200 text-sm shadow-lg hover:shadow-xl transform hover:scale-105 flex-1`}
+              className={`group flex items-center ${isRTL ? 'flex-row-reverse' : 'flex-row'} space-x-2 ${isRTL ? 'space-x-reverse' : ''} bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-200 text-sm shadow-lg hover:shadow-xl transform hover:scale-105 flex-1`}
             >
               <span>{t('common.next', 'Next')}</span>
               <ArrowRightIcon className={`h-4 w-4 group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />

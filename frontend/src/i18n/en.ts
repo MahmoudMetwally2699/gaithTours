@@ -421,11 +421,13 @@ export const en = {
       allInclusive: 'All Inclusive'
     },
     paymentMethod: 'Payment Method',
-    selectPaymentMethod: 'Select Payment Method',
-    paymentMethods: {
+    selectPaymentMethod: 'Select Payment Method',    paymentMethods: {
+      bankCard: 'Bank Card',
+      bankTransfer: 'Bank Transfer',
+      websitePayment: 'Website Payment',
+      paymentLink: 'Payment Link',
       creditCard: 'Credit Card',
       debitCard: 'Debit Card',
-      bankTransfer: 'Bank Transfer',
       cashOnArrival: 'Cash on Arrival',
       digitalWallet: 'Digital Wallet',
       check: 'Check'
@@ -644,15 +646,16 @@ export const en = {
       leisure: 'Leisure',
       business: 'Business',
       transit: 'Transit'
-    },
-
-    // Payment step
+    },    // Payment step
     payment: {
       title: 'How would you like to pay?',
       subtitle: 'Choose your preferred payment method',
+      bankCard: 'Bank Card',
+      bankTransfer: 'Bank Transfer',
+      websitePayment: 'Website Payment',
+      paymentLink: 'Payment Link',
       creditCard: 'Credit Card',
       debitCard: 'Debit Card',
-      bankTransfer: 'Bank Transfer',
       cashOnArrival: 'Cash on Arrival'
     },
 
