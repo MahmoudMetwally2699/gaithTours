@@ -57,6 +57,10 @@ app.use(cors({
 // This route needs the raw body for signature verification
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
+// WhatsApp webhook route MUST be before express.json() middleware
+// This route needs the raw body for signature verification
+app.use('/webhook/whatsapp', express.raw({ type: 'application/json' }));
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -68,7 +72,7 @@ app.options('*', cors());
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   console.log('Headers:', req.headers);
-  if (req.path !== '/api/payments/webhook') {
+  if (req.path !== '/api/payments/webhook' && req.path !== '/webhook/whatsapp') {
     console.log('Body:', req.body);
   }
   next();

@@ -13,6 +13,79 @@ const router = express.Router();
 router.use(protect);
 router.use(admin);
 
+// Debug endpoint to check conversations and create test data
+router.get('/debug/conversations', async (req, res) => {
+  try {
+    console.log('🔍 DEBUG: Checking conversations...');
+
+    // Get all conversations
+    const conversations = await WhatsAppConversation.find({})
+      .populate('userId', 'name email')
+      .sort({ lastMessageAt: -1 })
+      .limit(10);
+
+    console.log(`📊 Found ${conversations.length} conversations`);
+
+    // Get all messages
+    const messages = await WhatsAppMessage.find({})
+      .sort({ timestamp: -1 })
+      .limit(20);
+
+    console.log(`💬 Found ${messages.length} messages`);
+
+    // If no conversations exist, create a test conversation
+    if (conversations.length === 0) {
+      console.log('📝 Creating test conversation...');
+
+      const testConversation = new WhatsAppConversation({
+        phoneNumber: '+1234567890',
+        customerName: 'Test Customer',
+        lastMessageAt: new Date(),
+        lastMessagePreview: 'Test message',
+        unreadCount: 1,
+        totalMessages: 1,
+        isActive: true
+      });
+
+      await testConversation.save();
+
+      const testMessage = new WhatsAppMessage({
+        messageId: 'test_' + Date.now(),
+        from: '+1234567890',
+        to: process.env.WHATSAPP_PHONE_NUMBER_ID || 'test_phone',
+        message: 'This is a test message to verify the system is working',
+        messageType: 'text',
+        direction: 'incoming',
+        conversationId: testConversation._id,
+        timestamp: new Date()
+      });
+
+      await testMessage.save();
+
+      console.log('✅ Test conversation and message created');
+    }
+
+    res.json({
+      success: true,
+      debug: {
+        conversationsCount: conversations.length,
+        messagesCount: messages.length,
+        conversations: conversations,
+        recentMessages: messages.slice(0, 5),
+        environment: process.env.NODE_ENV,
+        mongoUri: process.env.MONGODB_URI ? 'Connected' : 'Not configured'
+      }
+    });
+  } catch (error) {
+    console.error('❌ Debug endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // GET /api/admin/whatsapp/conversations - Get all conversations with pagination
 router.get('/conversations', async (req, res) => {
   try {

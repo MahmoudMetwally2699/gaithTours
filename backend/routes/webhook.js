@@ -29,14 +29,32 @@ const verifyWebhookSignature = (req, res, next) => {
     }
 
     const signatureHash = signature.replace('sha256=', '');
+
+    // Handle raw body (Buffer) or JSON object
+    let bodyString;
+    if (Buffer.isBuffer(req.body)) {
+      bodyString = req.body.toString('utf8');
+    } else if (typeof req.body === 'object') {
+      bodyString = JSON.stringify(req.body);
+    } else {
+      bodyString = req.body;
+    }
+
     const expectedHash = crypto
       .createHmac('sha256', webhookSecret)
-      .update(req.body, 'utf8')
+      .update(bodyString, 'utf8')
       .digest('hex');
 
     if (signatureHash !== expectedHash) {
       console.error('Invalid webhook signature');
+      console.error('Expected:', expectedHash);
+      console.error('Received:', signatureHash);
       return res.status(401).json({ error: 'Invalid signature' });
+    }
+
+    // Parse the body if it's still a Buffer
+    if (Buffer.isBuffer(req.body)) {
+      req.body = JSON.parse(bodyString);
     }
 
     next();
@@ -354,5 +372,76 @@ async function checkAutoReplyRules(conversation, message) {
     console.error('Error in auto-reply:', error);
   }
 }
+
+// Test endpoint to simulate webhook message (for development)
+router.post('/test-message', async (req, res) => {
+  try {
+    const { phoneNumber = '+1234567890', message = 'Test message from webhook simulation' } = req.body;
+
+    console.log('🧪 Simulating webhook message:', { phoneNumber, message });
+
+    // Find or create conversation
+    let conversation = await WhatsAppConversation.findOne({ phoneNumber });
+    if (!conversation) {
+      conversation = new WhatsAppConversation({
+        phoneNumber,
+        customerName: phoneNumber.replace('+', ''),
+        lastMessageAt: new Date(),
+        lastMessagePreview: message.substring(0, 100),
+        unreadCount: 1,
+        totalMessages: 1,
+        isActive: true
+      });
+      await conversation.save();
+    } else {
+      conversation.lastMessageAt = new Date();
+      conversation.lastMessagePreview = message.substring(0, 100);
+      conversation.unreadCount += 1;
+      conversation.totalMessages += 1;
+      await conversation.save();
+    }
+
+    // Create message
+    const whatsAppMessage = new WhatsAppMessage({
+      messageId: 'test_' + Date.now(),
+      from: phoneNumber,
+      to: process.env.WHATSAPP_PHONE_NUMBER_ID || 'test_phone',
+      message,
+      messageType: 'text',
+      direction: 'incoming',
+      conversationId: conversation._id,
+      timestamp: new Date()
+    });
+
+    await whatsAppMessage.save();
+
+    // Emit real-time update
+    const io = getIO();
+    if (io) {
+      io.emit('new_whatsapp_message', {
+        message: whatsAppMessage,
+        conversation
+      });
+      console.log('📡 Emitted Socket.IO event');
+    } else {
+      console.log('⚠️ Socket.IO not available');
+    }
+
+    res.json({
+      success: true,
+      message: 'Test message created successfully',
+      data: {
+        conversation,
+        message: whatsAppMessage
+      }
+    });
+  } catch (error) {
+    console.error('❌ Test message error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;
