@@ -33,8 +33,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://gaithtours.vercel.app',
-  'https://gaith-tours.vercel.app',
-  'https://gaith-tours-six.vercel.app',
+  'https://gaith-tours-one.vercel.app',
+  'https://gaith-tours-one.vercel.app/',
   'https://gaith-tours-backend.vercel.app',
   process.env.FRONTEND_URL,
   process.env.BACKEND_URL
