@@ -12,7 +12,7 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 5000) =>
 
     try {
       setIsPolling(true);
-      
+
       // Poll for new messages since last check
       const params = {
         since: new Date(lastPollingTime).toISOString(),
@@ -20,7 +20,7 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 5000) =>
       };
 
       const response = await whatsappService.getRecentUpdates(params);
-      
+
       if (response.success && response.updates?.length > 0) {
         console.log('📊 Polling found updates:', response.updates.length);
         setPollingData({
@@ -43,10 +43,10 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 5000) =>
     }
 
     console.log('🔄 Socket not available - starting polling fallback');
-    
+
     // Start polling immediately
     pollForUpdates();
-    
+
     // Set up polling interval
     const intervalId = setInterval(pollForUpdates, pollingInterval);
 

@@ -879,7 +879,7 @@ router.post('/test-socket', async (req, res) => {
 router.get('/recent-updates', async (req, res) => {
   try {
     console.log('🔄 Polling for recent updates...');
-    
+
     const { since, limit = 20 } = req.query;
     const sinceDate = since ? new Date(since) : new Date(Date.now() - 5 * 60 * 1000); // Default: last 5 minutes
 
@@ -933,8 +933,8 @@ router.get('/recent-updates', async (req, res) => {
     // Add conversation updates
     for (const conversation of recentConversations) {
       // Avoid duplicates if we already have a message from this conversation
-      const hasMessageUpdate = updates.some(update => 
-        update.type === 'new_message' && 
+      const hasMessageUpdate = updates.some(update =>
+        update.type === 'new_message' &&
         update.data.conversation._id.toString() === conversation._id.toString()
       );
 
@@ -970,10 +970,10 @@ router.get('/recent-updates', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error getting recent updates:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to get recent updates',
-      details: error.message 
+      details: error.message
     });
   }
 });

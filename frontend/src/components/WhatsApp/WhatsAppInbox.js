@@ -370,7 +370,7 @@ const WhatsAppInbox = () => {
       try {
         if (update.type === 'new_message') {
           const { message, conversation } = update.data;
-          
+
           // Update conversations list
           setConversations(prev => {
             const existingIndex = prev.findIndex(conv => conv._id === conversation._id);
@@ -389,7 +389,7 @@ const WhatsAppInbox = () => {
               newConversations = [updatedConversation, ...prev];
             }
 
-            return newConversations.sort((a, b) => 
+            return newConversations.sort((a, b) =>
               new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
             );
           });
@@ -399,7 +399,7 @@ const WhatsAppInbox = () => {
             setMessages(prev => {
               const exists = prev.some(msg => msg._id === message._id || msg.messageId === message.messageId);
               if (exists) return prev;
-              
+
               const newMessages = [...prev, message];
               scrollToBottom();
               return newMessages;
@@ -419,8 +419,8 @@ const WhatsAppInbox = () => {
 
           // Show notification for new incoming messages
           if (
-            message.direction === 'incoming' && 
-            Notification.permission === 'granted' && 
+            message.direction === 'incoming' &&
+            Notification.permission === 'granted' &&
             (!selectedConversation || message.conversationId !== selectedConversation._id)
           ) {
             new Notification(`New WhatsApp Message`, {
@@ -430,7 +430,7 @@ const WhatsAppInbox = () => {
           }
         } else if (update.type === 'conversation_update') {
           const { conversation } = update.data;
-          
+
           setConversations(prev =>
             prev.map(conv =>
               conv._id === conversation._id
@@ -459,18 +459,18 @@ const WhatsAppInbox = () => {
                     isConnected ? 'bg-green-500' : 'bg-yellow-500'
                   }`}
                   title={
-                    isConnected 
-                      ? 'Connected via Socket.io' 
-                      : connectionAttempts > 0 
-                        ? 'Reconnecting...' 
+                    isConnected
+                      ? 'Connected via Socket.io'
+                      : connectionAttempts > 0
+                        ? 'Reconnecting...'
                         : 'Using polling fallback'
                   }
                 ></div>
                 <span className="text-xs text-gray-500">
-                  {isConnected 
-                    ? 'Live' 
-                    : connectionAttempts > 0 
-                      ? 'Reconnecting...' 
+                  {isConnected
+                    ? 'Live'
+                    : connectionAttempts > 0
+                      ? 'Reconnecting...'
                       : 'Polling'
                   }
                 </span>
