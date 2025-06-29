@@ -11,22 +11,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Trust proxy - required for Vercel and other reverse proxies
-app.set('trust proxy', true);
-
 // Security middleware
 app.use(helmet());
+app.set('trust proxy', 1);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  skip: (req) => {
-    // Skip rate limiting for Socket.io connections
-    return req.path.startsWith('/socket.io');
-  }
-});
-app.use(limiter);
 
 // CORS configuration
 const allowedOrigins = [
