@@ -21,22 +21,22 @@ export const SocketProvider = ({ children }) => {
     // 🚫 SOCKET.IO DISABLED FOR VERCEL DEPLOYMENT
     // Vercel serverless functions don't support persistent WebSocket connections
     // Using polling fallback instead (see PollingContext.js)
-    
+
     console.log('🚫 Socket.IO disabled for Vercel deployment - using polling fallback');
-    
+
     // Keep socket state as null and disconnected
     setSocket(null);
     setIsConnected(false);
-    
+
     /*
     // ORIGINAL SOCKET.IO CODE (DISABLED FOR VERCEL):
     if (isAuthenticated && user) {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const socketUrl = apiUrl.replace('/api', '');
-      
+
       const newSocket = io(socketUrl, {
         auth: { token: token },
         withCredentials: true,
