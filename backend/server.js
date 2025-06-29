@@ -10,6 +10,9 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy for Vercel
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
@@ -19,8 +22,8 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
-    // Skip rate limiting for Socket.io connections
-    return req.path.startsWith('/socket.io');
+    // Skip rate limiting for Socket.io connections and webhooks
+    return req.path.startsWith('/socket.io') || req.path.startsWith('/webhook');
   }
 });
 app.use(limiter);
