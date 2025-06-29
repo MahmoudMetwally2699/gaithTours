@@ -681,4 +681,78 @@ router.post('/test-conversation', async (req, res) => {
   }
 });
 
+// Test endpoint to create a fake WhatsApp message for testing real-time updates
+router.post('/test-message', async (req, res) => {
+  try {
+    const { phoneNumber = '+1234567890', message = 'Test message' } = req.body;
+
+    // Find or create test conversation
+    let conversation = await WhatsAppConversation.findOne({ phoneNumber });
+    if (!conversation) {
+      conversation = new WhatsAppConversation({
+        phoneNumber,
+        customerName: 'Test Customer',
+        unreadCount: 0,
+        totalMessages: 0
+      });
+      await conversation.save();
+    }
+
+    // Create test message
+    const whatsAppMessage = new WhatsAppMessage({
+      messageId: `test_${Date.now()}`,
+      from: phoneNumber,
+      to: process.env.WHATSAPP_PHONE_NUMBER_ID || '123456789',
+      message,
+      messageType: 'text',
+      direction: 'incoming',
+      conversationId: conversation._id,
+      timestamp: new Date()
+    });
+
+    await whatsAppMessage.save();
+
+    // Update conversation
+    conversation.lastMessageId = whatsAppMessage._id;
+    conversation.lastMessageAt = new Date();
+    conversation.lastMessagePreview = message.substring(0, 100);
+    conversation.unreadCount += 1;
+    conversation.totalMessages += 1;
+    await conversation.save();
+
+    // Emit real-time event
+    const io = getIO();
+    if (io) {
+      console.log('🚀 Emitting test new_whatsapp_message event...');
+      io.emit('new_whatsapp_message', {
+        message: whatsAppMessage,
+        conversation: await conversation.populate('userId', 'name email')
+      });
+
+      io.emit('whatsapp_conversation_updated', {
+        conversationId: conversation._id,
+        unreadCount: conversation.unreadCount,
+        lastMessage: message,
+        lastMessageAt: new Date()
+      });
+
+      console.log('✅ Real-time events emitted successfully');
+    } else {
+      console.error('❌ Socket.IO not available');
+    }
+
+    res.json({
+      success: true,
+      message: 'Test message created and events emitted',
+      data: {
+        message: whatsAppMessage,
+        conversation
+      }
+    });
+  } catch (error) {
+    console.error('Error creating test message:', error);
+    res.status(500).json({ error: 'Failed to create test message' });
+  }
+});
+
 module.exports = router;

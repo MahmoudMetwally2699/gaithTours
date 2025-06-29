@@ -195,17 +195,15 @@ async function processIncomingMessages(data) {
       conversation.lastMessagePreview = messageData.text.substring(0, 100);
       conversation.unreadCount += 1;
       conversation.totalMessages += 1;
-      await conversation.save();
-
-      // Emit real-time update
+      await conversation.save();      // Emit real-time update
       const io = getIO();
       if (io) {
-        io.emit('newWhatsAppMessage', {
+        io.emit('new_whatsapp_message', {
           message: whatsAppMessage,
           conversation: await conversation.populate('userId', 'name email')
         });
 
-        io.emit('conversationUpdated', {
+        io.emit('whatsapp_conversation_updated', {
           conversationId: conversation._id,
           unreadCount: conversation.unreadCount,
           lastMessage: messageData.text,
@@ -243,12 +241,10 @@ async function processMessageStatuses(data) {
           status: statusType,
           ...(status.timestamp && { timestamp: new Date(parseInt(status.timestamp) * 1000) })
         }
-      );
-
-      // Emit status update
+      );      // Emit status update
       const io = getIO();
       if (io) {
-        io.emit('messageStatusUpdate', {
+        io.emit('whatsapp_message_status_update', {
           messageId,
           status: statusType,
           timestamp: status.timestamp

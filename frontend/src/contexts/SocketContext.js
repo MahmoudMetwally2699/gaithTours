@@ -25,7 +25,9 @@ export const SocketProvider = ({ children }) => {
       // Remove /api from the URL for Socket.io connection
       const socketUrl = apiUrl.replace('/api', '');
 
-      console.log('Connecting to Socket.IO at:', socketUrl);
+      console.log('🔗 API URL:', apiUrl);
+      console.log('🔗 Socket URL:', socketUrl);
+      console.log('🔗 Connecting to Socket.IO at:', socketUrl);
 
       const newSocket = io(socketUrl, {
         auth: {
@@ -36,17 +38,25 @@ export const SocketProvider = ({ children }) => {
       });      newSocket.on('connect', () => {
         console.log('✅ Socket connected successfully');
         console.log('🔗 Socket ID:', newSocket.id);
+        console.log('🔗 Connected to:', socketUrl);
         setIsConnected(true);
       });
 
       newSocket.on('disconnect', (reason) => {
         console.log('❌ Socket disconnected:', reason);
         setIsConnected(false);
+
+        // Try to reconnect if the disconnection was unexpected
+        if (reason === 'io server disconnect') {
+          console.log('🔄 Server initiated disconnect - reconnecting...');
+          newSocket.connect();
+        }
       });
 
       newSocket.on('connect_error', (error) => {
         console.error('❌ Socket connection error:', error.message);
         console.error('🔧 Error details:', error);
+        console.error('🔧 Attempted URL:', socketUrl);
         setIsConnected(false);
       });
 
