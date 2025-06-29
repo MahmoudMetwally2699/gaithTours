@@ -10,6 +10,9 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy - required for Vercel and other reverse proxies
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet());
 
