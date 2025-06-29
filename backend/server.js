@@ -32,7 +32,9 @@ const allowedOrigins = [
   'https://gaithtours.vercel.app',
   'https://gaith-tours.vercel.app',
   'https://gaith-tours-six.vercel.app',
-  process.env.FRONTEND_URL
+  'https://gaith-tours-backend.vercel.app',
+  process.env.FRONTEND_URL,
+  process.env.BACKEND_URL
 ].filter(Boolean);
 
 app.use(cors({

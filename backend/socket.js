@@ -4,8 +4,7 @@ const User = require('./models/User');
 
 let io;
 
-const initializeSocket = (server) => {
-  io = new Server(server, {
+const initializeSocket = (server) => {  io = new Server(server, {
     cors: {
       origin: [
         'http://localhost:3000',
@@ -13,7 +12,9 @@ const initializeSocket = (server) => {
         'https://gaithtours.vercel.app',
         'https://gaith-tours.vercel.app',
         'https://gaith-tours-six.vercel.app',
-        process.env.FRONTEND_URL
+        'https://gaith-tours-backend.vercel.app',
+        process.env.FRONTEND_URL,
+        process.env.BACKEND_URL
       ].filter(Boolean),
       methods: ['GET', 'POST'],
       credentials: true,
