@@ -1,7 +1,7 @@
 // filepath: e:\gaithgroup\frontend\src\services\hotelService.ts
 import { HotelSearchResponse } from '../types/hotel';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://gaith-tours-backend.vercel.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 /**
  * Search hotels by destination name with pagination support

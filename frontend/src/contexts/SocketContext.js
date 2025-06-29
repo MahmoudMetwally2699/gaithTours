@@ -21,7 +21,7 @@ export const SocketProvider = ({ children }) => {
     if (isAuthenticated && user) {
       const token = localStorage.getItem('token');
 
-      if (!token) return;      const apiUrl = process.env.REACT_APP_API_URL || 'https://gaith-tours-backend.vercel.app/api';
+      if (!token) return;      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       // Remove /api from the URL for Socket.io connection
       const socketUrl = apiUrl.replace('/api', '');
 
