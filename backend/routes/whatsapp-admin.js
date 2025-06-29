@@ -875,4 +875,107 @@ router.post('/test-socket', async (req, res) => {
   }
 });
 
+// GET /api/admin/whatsapp/recent-updates - Get recent updates for polling fallback
+router.get('/recent-updates', async (req, res) => {
+  try {
+    console.log('🔄 Polling for recent updates...');
+    
+    const { since, limit = 20 } = req.query;
+    const sinceDate = since ? new Date(since) : new Date(Date.now() - 5 * 60 * 1000); // Default: last 5 minutes
+
+    // Get recent messages
+    const recentMessages = await WhatsAppMessage.find({
+      timestamp: { $gte: sinceDate }
+    })
+    .populate('conversationId', 'phoneNumber customerName unreadCount')
+    .sort({ timestamp: -1 })
+    .limit(parseInt(limit));
+
+    // Get updated conversations
+    const recentConversations = await WhatsAppConversation.find({
+      lastMessageAt: { $gte: sinceDate }
+    })
+    .populate('userId', 'name email')
+    .sort({ lastMessageAt: -1 })
+    .limit(parseInt(limit));
+
+    const updates = [];
+
+    // Add new messages as updates
+    for (const message of recentMessages) {
+      updates.push({
+        type: 'new_message',
+        timestamp: message.timestamp,
+        data: {
+          message: {
+            _id: message._id,
+            messageId: message.messageId,
+            from: message.from,
+            to: message.to,
+            message: message.message,
+            messageType: message.messageType,
+            direction: message.direction,
+            timestamp: message.timestamp,
+            conversationId: message.conversationId._id,
+            metadata: message.metadata,
+            status: message.status
+          },
+          conversation: {
+            _id: message.conversationId._id,
+            phoneNumber: message.conversationId.phoneNumber,
+            customerName: message.conversationId.customerName,
+            unreadCount: message.conversationId.unreadCount
+          }
+        }
+      });
+    }
+
+    // Add conversation updates
+    for (const conversation of recentConversations) {
+      // Avoid duplicates if we already have a message from this conversation
+      const hasMessageUpdate = updates.some(update => 
+        update.type === 'new_message' && 
+        update.data.conversation._id.toString() === conversation._id.toString()
+      );
+
+      if (!hasMessageUpdate) {
+        updates.push({
+          type: 'conversation_update',
+          timestamp: conversation.lastMessageAt,
+          data: {
+            conversation: {
+              _id: conversation._id,
+              phoneNumber: conversation.phoneNumber,
+              customerName: conversation.customerName,
+              lastMessage: conversation.lastMessagePreview,
+              lastMessageTimestamp: conversation.lastMessageAt,
+              unreadCount: conversation.unreadCount,
+              userId: conversation.userId
+            }
+          }
+        });
+      }
+    }
+
+    // Sort by timestamp
+    updates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    console.log(`📊 Found ${updates.length} updates since ${sinceDate.toISOString()}`);
+
+    res.json({
+      success: true,
+      updates,
+      since: sinceDate.toISOString(),
+      pollingTimestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error getting recent updates:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to get recent updates',
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;

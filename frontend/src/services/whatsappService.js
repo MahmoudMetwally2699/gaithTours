@@ -78,12 +78,17 @@ export const whatsappService = {
     });
     return response.data;
   },
-
   // Test socket events (for debugging)
   testSocket: async (eventType = 'new_whatsapp_message') => {
     const response = await apiClient.post('/admin/whatsapp/test-socket', {
       eventType
     });
+    return response.data;
+  },
+
+  // Get recent updates for polling fallback
+  getRecentUpdates: async (params = {}) => {
+    const response = await apiClient.get('/admin/whatsapp/recent-updates', { params });
     return response.data;
   }
 };

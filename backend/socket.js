@@ -12,7 +12,9 @@ const initializeSocket = (server) => {  io = new Server(server, {
         'https://gaithtours.vercel.app',
         'https://gaith-tours.vercel.app',
         'https://gaith-tours-six.vercel.app',
+        'https://gaith-tours-one.vercel.app',
         'https://gaith-tours-backend.vercel.app',
+        'https://gaith-tours-backend-virid.vercel.app',
         process.env.FRONTEND_URL,
         process.env.BACKEND_URL
       ].filter(Boolean),
@@ -20,10 +22,15 @@ const initializeSocket = (server) => {  io = new Server(server, {
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization']
     },
-    // Additional configuration for better performance
-    transports: ['websocket', 'polling'],
+    // Configuration optimized for serverless/Vercel
+    transports: ['polling', 'websocket'],
     pingTimeout: 60000,
-    pingInterval: 25000
+    pingInterval: 25000,
+    // Serverless optimizations
+    allowEIO3: true,
+    maxHttpBufferSize: 1e6,
+    httpCompression: true,
+    perMessageDeflate: false
   });
   // Authentication middleware for socket connections
   io.use(async (socket, next) => {

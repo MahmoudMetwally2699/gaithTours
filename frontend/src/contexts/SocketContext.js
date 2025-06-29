@@ -38,21 +38,23 @@ export const SocketProvider = ({ children }) => {
       if (socket) {
         console.log('🧹 Closing existing socket before creating new one');
         socket.close();
-      }
-
-      const newSocket = io(socketUrl, {
+      }      const newSocket = io(socketUrl, {
         auth: {
           token: token
         },
         withCredentials: true,
-        transports: ['websocket', 'polling'],
+        // Use polling first for Vercel compatibility, then websocket as fallback
+        transports: ['polling', 'websocket'],
         timeout: 20000,
         forceNew: true,
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000
-      });      newSocket.on('connect', () => {
+        reconnectionDelayMax: 5000,
+        // Additional options for serverless compatibility
+        upgrade: true,
+        rememberUpgrade: false
+      });newSocket.on('connect', () => {
         console.log('✅ Socket connected successfully');
         console.log('🔗 Socket ID:', newSocket.id);
         console.log('🔗 Connected to:', socketUrl);

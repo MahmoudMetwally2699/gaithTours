@@ -3,6 +3,7 @@ import { Search, Filter, MoreVertical, Send, Phone, Star, Archive, UserPlus } fr
 import { formatDistanceToNow, format } from 'date-fns';
 import { whatsappService } from '../../services/whatsappService';
 import { useSocket } from '../../contexts/SocketContext';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import WhatsAppStats from './WhatsAppStats';
 import MessageBubble from './MessageBubble';
 import ConversationItem from './ConversationItem';
@@ -21,8 +22,8 @@ const WhatsAppInbox = () => {
   const [pagination, setPagination] = useState({ page: 1, total: 0 });
   const [messagePagination, setMessagePagination] = useState({ page: 1, total: 0 });
   const [stats, setStats] = useState(null);
-
   const { socket, isConnected, connectionAttempts } = useSocket();
+  const { pollingData } = usePollingFallback(isConnected, 3000); // Poll every 3 seconds when socket is not connected
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
 
@@ -359,6 +360,91 @@ const WhatsAppInbox = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Handle polling fallback data
+  useEffect(() => {
+    if (!pollingData || !pollingData.updates || isConnected) return;
+
+    console.log('🔄 Processing polling fallback data:', pollingData.updates.length, 'updates');
+
+    pollingData.updates.forEach(update => {
+      try {
+        if (update.type === 'new_message') {
+          const { message, conversation } = update.data;
+          
+          // Update conversations list
+          setConversations(prev => {
+            const existingIndex = prev.findIndex(conv => conv._id === conversation._id);
+            const updatedConversation = {
+              ...conversation,
+              lastMessage: message.message,
+              lastMessageTimestamp: message.timestamp,
+              lastMessageDirection: message.direction
+            };
+
+            let newConversations;
+            if (existingIndex >= 0) {
+              newConversations = [...prev];
+              newConversations[existingIndex] = updatedConversation;
+            } else {
+              newConversations = [updatedConversation, ...prev];
+            }
+
+            return newConversations.sort((a, b) => 
+              new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
+            );
+          });
+
+          // Add message to current conversation if it's selected
+          if (selectedConversation && message.conversationId === selectedConversation._id) {
+            setMessages(prev => {
+              const exists = prev.some(msg => msg._id === message._id || msg.messageId === message.messageId);
+              if (exists) return prev;
+              
+              const newMessages = [...prev, message];
+              scrollToBottom();
+              return newMessages;
+            });
+
+            // Mark as read immediately for incoming messages if conversation is selected
+            if (message.direction === 'incoming') {
+              setTimeout(() => {
+                whatsappService.markConversationAsRead(selectedConversation._id)
+                  .then(() => {
+                    updateConversationUnreadCount(selectedConversation._id, 0);
+                  })
+                  .catch(err => console.error('Error marking as read:', err));
+              }, 500);
+            }
+          }
+
+          // Show notification for new incoming messages
+          if (
+            message.direction === 'incoming' && 
+            Notification.permission === 'granted' && 
+            (!selectedConversation || message.conversationId !== selectedConversation._id)
+          ) {
+            new Notification(`New WhatsApp Message`, {
+              body: `${conversation.customerName || conversation.phoneNumber}: ${message.message}`,
+              icon: '/logo192.png'
+            });
+          }
+        } else if (update.type === 'conversation_update') {
+          const { conversation } = update.data;
+          
+          setConversations(prev =>
+            prev.map(conv =>
+              conv._id === conversation._id
+                ? { ...conv, ...conversation }
+                : conv
+            )
+          );
+        }
+      } catch (error) {
+        console.error('❌ Error processing polling update:', error);
+      }
+    });
+  }, [pollingData, isConnected, selectedConversation]);
+
   return (
     <div className="flex h-full bg-gray-50">
       {/* Sidebar - Conversations List */}
@@ -366,17 +452,27 @@ const WhatsAppInbox = () => {
         {/* Header */}
         <div className="p-4 border-b border-gray-200">          <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold text-gray-900">WhatsApp Messages</h1>
-            <div className="flex items-center space-x-2">
-              {/* Connection Status */}
+            <div className="flex items-center space-x-2">              {/* Connection Status */}
               <div className="flex items-center space-x-1">
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    isConnected ? 'bg-green-500' : 'bg-red-500'
+                    isConnected ? 'bg-green-500' : 'bg-yellow-500'
                   }`}
-                  title={isConnected ? 'Connected' : connectionAttempts > 0 ? 'Reconnecting...' : 'Disconnected'}
+                  title={
+                    isConnected 
+                      ? 'Connected via Socket.io' 
+                      : connectionAttempts > 0 
+                        ? 'Reconnecting...' 
+                        : 'Using polling fallback'
+                  }
                 ></div>
                 <span className="text-xs text-gray-500">
-                  {isConnected ? 'Live' : connectionAttempts > 0 ? 'Reconnecting...' : 'Offline'}
+                  {isConnected 
+                    ? 'Live' 
+                    : connectionAttempts > 0 
+                      ? 'Reconnecting...' 
+                      : 'Polling'
+                  }
                 </span>
               </div>
               <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
