@@ -6,6 +6,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import WhatsAppStats from './WhatsAppStats';
 import MessageBubble from './MessageBubble';
 import ConversationItem from './ConversationItem';
+import SocketDebugPanel from './SocketDebugPanel';
 
 const WhatsAppInbox = () => {
   const [conversations, setConversations] = useState([]);
@@ -21,7 +22,7 @@ const WhatsAppInbox = () => {
   const [messagePagination, setMessagePagination] = useState({ page: 1, total: 0 });
   const [stats, setStats] = useState(null);
 
-  const { socket } = useSocket();
+  const { socket, isConnected, connectionAttempts } = useSocket();
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
 
@@ -162,81 +163,178 @@ const WhatsAppInbox = () => {
       sendMessage();
     }
   };
-
   // Socket event handlers
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !socket.connected) {
+      console.warn('⚠️ Socket not connected - event listeners not set up');
+      return;
+    }
+
+    console.log('🔔 Setting up WhatsApp socket event listeners');
 
     // New message received
-    socket.on('new_whatsapp_message', (data) => {
-      const { message, conversation } = data;
+    const handleNewMessage = (data) => {
+      try {
+        console.log('🔔 Received new_whatsapp_message event:', data);
 
-      // Update conversations list
-      setConversations(prev => {
-        const existingIndex = prev.findIndex(conv => conv._id === conversation._id);
-        const updatedConversation = {
-          ...conversation,
-          lastMessage: message.message,
-          lastMessageTimestamp: message.timestamp,
-          lastMessageDirection: message.direction
-        };
-
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          updated[existingIndex] = updatedConversation;
-          return updated.sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp));
-        } else {
-          return [updatedConversation, ...prev];
+        if (!data || !data.message || !data.conversation) {
+          console.error('❌ Invalid message data received:', data);
+          return;
         }
-      });
 
-      // Add message to current conversation if it's selected
-      if (selectedConversation && message.conversationId === selectedConversation._id) {
-        setMessages(prev => [...prev, message]);
-        scrollToBottom();
+        const { message, conversation } = data;
 
-        // Mark as read immediately
-        whatsappService.markConversationAsRead(selectedConversation._id);
-        updateConversationUnreadCount(selectedConversation._id, 0);
-      }
+        // Update conversations list
+        setConversations(prev => {
+          const existingIndex = prev.findIndex(conv => conv._id === conversation._id);
+          const updatedConversation = {
+            ...conversation,
+            lastMessage: message.message,
+            lastMessageTimestamp: message.timestamp,
+            lastMessageDirection: message.direction,
+            // Only increment unread count for incoming messages
+            unreadCount: message.direction === 'incoming' ? conversation.unreadCount : prev[existingIndex]?.unreadCount || 0
+          };
 
-      // Show notification for new messages
-      if (Notification.permission === 'granted' && (!selectedConversation || message.conversationId !== selectedConversation._id)) {
-        new Notification(`New WhatsApp Message`, {
-          body: `${conversation.customerName || conversation.phoneNumber}: ${message.message}`,
-          icon: '/logo192.png'
+          let newConversations;
+          if (existingIndex >= 0) {
+            newConversations = [...prev];
+            newConversations[existingIndex] = updatedConversation;
+          } else {
+            newConversations = [updatedConversation, ...prev];
+          }
+
+          // Sort by timestamp
+          return newConversations.sort((a, b) =>
+            new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
+          );
         });
+
+        // Add message to current conversation if it's selected
+        if (selectedConversation && message.conversationId === selectedConversation._id) {
+          setMessages(prev => {
+            // Check if message already exists
+            const exists = prev.some(msg => msg._id === message._id || msg.messageId === message.messageId);
+            if (exists) {
+              console.log('🔄 Message already exists, skipping');
+              return prev;
+            }
+
+            console.log('📝 Adding message to current conversation');
+            const newMessages = [...prev, message];
+            scrollToBottom();
+            return newMessages;
+          });
+
+          // Mark as read immediately for incoming messages if conversation is selected
+          if (message.direction === 'incoming') {
+            setTimeout(() => {
+              whatsappService.markConversationAsRead(selectedConversation._id)
+                .then(() => {
+                  updateConversationUnreadCount(selectedConversation._id, 0);
+                })
+                .catch(err => console.error('Error marking as read:', err));
+            }, 500);
+          }
+        }
+
+        // Show notification for new incoming messages
+        if (
+          message.direction === 'incoming' &&
+          Notification.permission === 'granted' &&
+          (!selectedConversation || message.conversationId !== selectedConversation._id)
+        ) {
+          new Notification(`New WhatsApp Message`, {
+            body: `${conversation.customerName || conversation.phoneNumber}: ${message.message}`,
+            icon: '/logo192.png'
+          });
+        }
+
+        console.log('✅ New message processed successfully');
+      } catch (error) {
+        console.error('❌ Error handling new message:', error);
       }
-    });
+    };
 
     // Message status update
-    socket.on('whatsapp_message_status_update', (data) => {
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.messageId === data.messageId
-            ? { ...msg, status: data.status }
-            : msg
-        )
-      );
-    });
+    const handleStatusUpdate = (data) => {
+      try {
+        console.log('🔔 Received status update:', data);
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.messageId === data.messageId
+              ? { ...msg, status: data.status }
+              : msg
+          )
+        );
+      } catch (error) {
+        console.error('❌ Error handling status update:', error);
+      }
+    };
 
     // Reply sent confirmation
-    socket.on('whatsapp_reply_sent', (data) => {
-      const { message, conversation } = data;
+    const handleReplySent = (data) => {
+      try {
+        console.log('🔔 Received reply sent confirmation:', data);
 
-      // Update conversation in list
-      updateConversationLastMessage(
-        conversation._id,
-        message.message,
-        message.timestamp,
-        'outgoing'
-      );
-    });
+        if (!data || !data.message || !data.conversation) {
+          console.error('❌ Invalid reply data received:', data);
+          return;
+        }
 
+        const { message, conversation } = data;
+
+        // Update conversation in list
+        updateConversationLastMessage(
+          conversation._id,
+          message.message,
+          message.timestamp,
+          'outgoing'
+        );
+
+        console.log('✅ Reply confirmation processed successfully');
+      } catch (error) {
+        console.error('❌ Error handling reply sent:', error);
+      }
+    };
+
+    // Conversation update
+    const handleConversationUpdate = (data) => {
+      try {
+        console.log('🔔 Received conversation update:', data);
+
+        setConversations(prev =>
+          prev.map(conv =>
+            conv._id === data.conversationId
+              ? {
+                  ...conv,
+                  unreadCount: data.unreadCount,
+                  lastMessage: data.lastMessage,
+                  lastMessageAt: data.lastMessageAt,
+                  lastMessageDirection: data.lastMessageDirection
+                }
+              : conv
+          )
+        );
+      } catch (error) {
+        console.error('❌ Error handling conversation update:', error);
+      }
+    };
+
+    // Attach event listeners
+    socket.on('new_whatsapp_message', handleNewMessage);
+    socket.on('whatsapp_message_status_update', handleStatusUpdate);
+    socket.on('whatsapp_reply_sent', handleReplySent);
+    socket.on('whatsapp_conversation_updated', handleConversationUpdate);
+
+    // Cleanup function
     return () => {
-      socket.off('new_whatsapp_message');
-      socket.off('whatsapp_message_status_update');
-      socket.off('whatsapp_reply_sent');
+      console.log('🧹 Cleaning up WhatsApp socket event listeners');
+      socket.off('new_whatsapp_message', handleNewMessage);
+      socket.off('whatsapp_message_status_update', handleStatusUpdate);
+      socket.off('whatsapp_reply_sent', handleReplySent);
+      socket.off('whatsapp_conversation_updated', handleConversationUpdate);
     };
   }, [socket, selectedConversation]);
 
@@ -262,10 +360,21 @@ const WhatsAppInbox = () => {
       {/* Sidebar - Conversations List */}
       <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-4 border-b border-gray-200">          <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold text-gray-900">WhatsApp Messages</h1>
             <div className="flex items-center space-x-2">
+              {/* Connection Status */}
+              <div className="flex items-center space-x-1">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isConnected ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                  title={isConnected ? 'Connected' : connectionAttempts > 0 ? 'Reconnecting...' : 'Disconnected'}
+                ></div>
+                <span className="text-xs text-gray-500">
+                  {isConnected ? 'Live' : connectionAttempts > 0 ? 'Reconnecting...' : 'Offline'}
+                </span>
+              </div>
               <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
                 <Filter size={18} />
               </button>
@@ -431,9 +540,11 @@ const WhatsAppInbox = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">Select a conversation</h3>
               <p className="text-gray-500">Choose a conversation from the sidebar to start messaging</p>
             </div>
-          </div>
-        )}
+          </div>        )}
       </div>
+
+      {/* Debug Panel */}
+      {process.env.NODE_ENV === 'development' && <SocketDebugPanel />}
     </div>
   );
 };

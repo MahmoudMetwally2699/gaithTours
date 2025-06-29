@@ -77,6 +77,14 @@ export const whatsappService = {
       adminUserId
     });
     return response.data;
+  },
+
+  // Test socket events (for debugging)
+  testSocket: async (eventType = 'new_whatsapp_message') => {
+    const response = await apiClient.post('/admin/whatsapp/test-socket', {
+      eventType
+    });
+    return response.data;
   }
 };
 

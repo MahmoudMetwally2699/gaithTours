@@ -306,16 +306,57 @@ router.post('/reply', async (req, res) => {
     await conversation.save();
 
     // Populate admin user info
-    await newMessage.populate('adminUserId', 'name firstName lastName');
-
-    // Emit real-time event
+    await newMessage.populate('adminUserId', 'name firstName lastName');    // Emit real-time event
     const io = getIO();
     if (io) {
-      io.emit('whatsapp_reply_sent', {
-        message: newMessage,
-        conversation
-      });
-    }    res.json({
+      try {
+        console.log('🔔 Emitting whatsapp_reply_sent event:', {
+          messageId: newMessage._id,
+          conversationId: conversation._id,
+          to: phone
+        });
+
+        // Emit new message event (since it's a new message in the conversation)
+        io.to('whatsapp-admins').emit('new_whatsapp_message', {
+          message: {
+            _id: newMessage._id,
+            messageId: newMessage.messageId,
+            from: newMessage.from,
+            to: newMessage.to,
+            message: newMessage.message,
+            messageType: newMessage.messageType,
+            direction: newMessage.direction,
+            timestamp: newMessage.timestamp,
+            conversationId: newMessage.conversationId,
+            adminUserId: newMessage.adminUserId,
+            metadata: newMessage.metadata,
+            status: newMessage.status
+          },
+          conversation: {
+            _id: conversation._id,
+            phoneNumber: conversation.phoneNumber,
+            customerName: conversation.customerName,
+            lastMessage: message,
+            lastMessageTimestamp: newMessage.timestamp,
+            lastMessageDirection: 'outgoing',
+            unreadCount: conversation.unreadCount,
+            userId: conversation.userId
+          }
+        });
+
+        // Also emit reply sent event for specific handling
+        io.to('whatsapp-admins').emit('whatsapp_reply_sent', {
+          message: newMessage,
+          conversation: conversation
+        });
+
+        console.log('✅ Reply socket events emitted successfully');
+      } catch (socketError) {
+        console.error('❌ Error emitting reply socket events:', socketError);
+      }
+    } else {
+      console.warn('⚠️ Socket.io not available - reply events not emitted');
+    }res.json({
       success: true,
       message: newMessage,
       whatsappMessageId: messageId
@@ -752,6 +793,85 @@ router.post('/test-message', async (req, res) => {
   } catch (error) {
     console.error('Error creating test message:', error);
     res.status(500).json({ error: 'Failed to create test message' });
+  }
+});
+
+// POST /api/admin/whatsapp/test-socket - Test socket events
+router.post('/test-socket', async (req, res) => {
+  try {
+    const { eventType = 'new_whatsapp_message' } = req.body;
+
+    // Create a test message
+    const testMessage = {
+      _id: 'test_' + Date.now(),
+      messageId: 'test_msg_' + Date.now(),
+      from: '+1234567890',
+      to: process.env.WHATSAPP_PHONE_NUMBER_ID || 'test_phone',
+      message: 'This is a test message to verify real-time updates are working correctly at ' + new Date().toISOString(),
+      messageType: 'text',
+      direction: 'incoming',
+      timestamp: new Date(),
+      conversationId: 'test_conversation_id',
+      metadata: {},
+      status: 'received'
+    };
+
+    const testConversation = {
+      _id: 'test_conversation_id',
+      phoneNumber: '+1234567890',
+      customerName: 'Test Customer',
+      lastMessage: testMessage.message,
+      lastMessageTimestamp: testMessage.timestamp,
+      lastMessageDirection: 'incoming',
+      unreadCount: 1
+    };
+
+    // Emit socket event
+    const io = getIO();
+    if (io) {
+      console.log('🧪 Emitting test socket event:', eventType);
+
+      switch (eventType) {
+        case 'new_whatsapp_message':
+          io.to('whatsapp-admins').emit('new_whatsapp_message', {
+            message: testMessage,
+            conversation: testConversation
+          });
+          break;
+
+        case 'whatsapp_reply_sent':
+          io.to('whatsapp-admins').emit('whatsapp_reply_sent', {
+            message: { ...testMessage, direction: 'outgoing' },
+            conversation: { ...testConversation, lastMessageDirection: 'outgoing' }
+          });
+          break;
+
+        case 'whatsapp_message_status_update':
+          io.to('whatsapp-admins').emit('whatsapp_message_status_update', {
+            messageId: testMessage.messageId,
+            status: 'delivered',
+            timestamp: Date.now()
+          });
+          break;
+
+        default:
+          return res.status(400).json({ error: 'Invalid event type' });
+      }
+
+      console.log('✅ Test socket event emitted successfully');
+      res.json({
+        success: true,
+        message: 'Test event emitted successfully',
+        eventType,
+        testData: { message: testMessage, conversation: testConversation }
+      });
+    } else {
+      console.error('❌ Socket.io not available');
+      res.status(500).json({ error: 'Socket.io not available' });
+    }
+  } catch (error) {
+    console.error('❌ Error emitting test socket event:', error);
+    res.status(500).json({ error: 'Failed to emit test event', details: error.message });
   }
 });
 

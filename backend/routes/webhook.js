@@ -198,17 +198,58 @@ async function processIncomingMessages(data) {
       await conversation.save();      // Emit real-time update
       const io = getIO();
       if (io) {
-        io.emit('new_whatsapp_message', {
-          message: whatsAppMessage,
-          conversation: await conversation.populate('userId', 'name email')
-        });
+        try {
+          console.log('🔔 Emitting new_whatsapp_message event:', {
+            messageId: whatsAppMessage._id,
+            conversationId: conversation._id,
+            from: phoneNumber
+          });
 
-        io.emit('whatsapp_conversation_updated', {
-          conversationId: conversation._id,
-          unreadCount: conversation.unreadCount,
-          lastMessage: messageData.text,
-          lastMessageAt: timestamp
-        });
+          // Populate conversation with user data for frontend
+          const populatedConversation = await conversation.populate('userId', 'name email');
+
+          // Emit to all admin users
+          io.to('whatsapp-admins').emit('new_whatsapp_message', {
+            message: {
+              _id: whatsAppMessage._id,
+              messageId: whatsAppMessage.messageId,
+              from: whatsAppMessage.from,
+              to: whatsAppMessage.to,
+              message: whatsAppMessage.message,
+              messageType: whatsAppMessage.messageType,
+              direction: whatsAppMessage.direction,
+              timestamp: whatsAppMessage.timestamp,
+              conversationId: whatsAppMessage.conversationId,
+              metadata: whatsAppMessage.metadata,
+              status: whatsAppMessage.status
+            },
+            conversation: {
+              _id: populatedConversation._id,
+              phoneNumber: populatedConversation.phoneNumber,
+              customerName: populatedConversation.customerName,
+              lastMessage: messageData.text,
+              lastMessageTimestamp: timestamp,
+              lastMessageDirection: 'incoming',
+              unreadCount: populatedConversation.unreadCount,
+              userId: populatedConversation.userId
+            }
+          });
+
+          // Also emit conversation update
+          io.to('whatsapp-admins').emit('whatsapp_conversation_updated', {
+            conversationId: conversation._id,
+            unreadCount: conversation.unreadCount,
+            lastMessage: messageData.text,
+            lastMessageAt: timestamp,
+            lastMessageDirection: 'incoming'
+          });
+
+          console.log('✅ Socket events emitted successfully');
+        } catch (socketError) {
+          console.error('❌ Error emitting socket events:', socketError);
+        }
+      } else {
+        console.warn('⚠️ Socket.io not available - events not emitted');
       }
 
       console.log('New WhatsApp message processed:', {
@@ -244,11 +285,24 @@ async function processMessageStatuses(data) {
       );      // Emit status update
       const io = getIO();
       if (io) {
-        io.emit('whatsapp_message_status_update', {
-          messageId,
-          status: statusType,
-          timestamp: status.timestamp
-        });
+        try {
+          console.log('🔔 Emitting message status update:', {
+            messageId,
+            status: statusType
+          });
+
+          io.to('whatsapp-admins').emit('whatsapp_message_status_update', {
+            messageId,
+            status: statusType,
+            timestamp: status.timestamp
+          });
+
+          console.log('✅ Status update emitted successfully');
+        } catch (socketError) {
+          console.error('❌ Error emitting status update:', socketError);
+        }
+      } else {
+        console.warn('⚠️ Socket.io not available - status update not emitted');
       }
     }
   } catch (error) {
