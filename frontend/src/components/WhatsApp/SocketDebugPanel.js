@@ -16,7 +16,6 @@ const SocketDebugPanel = () => {
     };
     setDebugMessages(prev => [newMessage, ...prev.slice(0, 49)]); // Keep last 50 messages
   };
-
   const testSocketEvent = async (eventType) => {
     try {
       addDebugMessage(`Testing ${eventType} event...`, 'info');
@@ -30,6 +29,23 @@ const SocketDebugPanel = () => {
       }
     } catch (error) {
       addDebugMessage(`❌ Error testing ${eventType}: ${error.message}`, 'error');
+    }
+  };
+
+  const forceReconnect = () => {
+    try {
+      addDebugMessage('🔄 Forcing socket reconnection...', 'info');
+      if (socket) {
+        socket.disconnect();
+        setTimeout(() => {
+          socket.connect();
+          addDebugMessage('🔄 Reconnection attempted', 'info');
+        }, 1000);
+      } else {
+        addDebugMessage('❌ No socket instance available', 'error');
+      }
+    } catch (error) {
+      addDebugMessage(`❌ Error forcing reconnection: ${error.message}`, 'error');
     }
   };
 
@@ -107,13 +123,19 @@ const SocketDebugPanel = () => {
             disabled={!isConnected}
           >
             Reply Sent
-          </button>
-          <button
+          </button>          <button
             onClick={() => testSocketEvent('whatsapp_message_status_update')}
             className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
             disabled={!isConnected}
           >
             Status Update
+          </button>
+          <button
+            onClick={forceReconnect}
+            className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
+            disabled={isConnected}
+          >
+            Reconnect
           </button>
           <button
             onClick={clearDebugMessages}

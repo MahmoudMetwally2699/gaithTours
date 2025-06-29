@@ -29,12 +29,16 @@ export const SocketProvider = ({ children }) => {
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       // Remove /api from the URL for Socket.io connection
-      const socketUrl = apiUrl.replace('/api', '');
-
-      console.log('🔗 API URL:', apiUrl);
+      const socketUrl = apiUrl.replace('/api', '');      console.log('🔗 API URL:', apiUrl);
       console.log('🔗 Socket URL:', socketUrl);
       console.log('🔗 User Role:', user.role);
       console.log('🔗 Connecting to Socket.IO at:', socketUrl);
+
+      // Close existing socket if any
+      if (socket) {
+        console.log('🧹 Closing existing socket before creating new one');
+        socket.close();
+      }
 
       const newSocket = io(socketUrl, {
         auth: {
@@ -48,18 +52,15 @@ export const SocketProvider = ({ children }) => {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000
-      });
-
-      newSocket.on('connect', () => {
+      });      newSocket.on('connect', () => {
         console.log('✅ Socket connected successfully');
         console.log('🔗 Socket ID:', newSocket.id);
         console.log('🔗 Connected to:', socketUrl);
         setIsConnected(true);
         setConnectionAttempts(0);
 
-        // Join the WhatsApp admins room
-        newSocket.emit('join', 'whatsapp-admins');
-        console.log('🏠 Joined whatsapp-admins room');
+        // The backend automatically joins the whatsapp-admins room
+        console.log('🏠 Automatically joined whatsapp-admins room via backend');
       });
 
       newSocket.on('disconnect', (reason) => {
@@ -134,7 +135,7 @@ export const SocketProvider = ({ children }) => {
         setConnectionAttempts(0);
       }
     }
-  }, [isAuthenticated, user, socket]);
+  }, [isAuthenticated, user]); // Removed 'socket' from dependencies to prevent infinite loop
 
   const value = {
     socket,

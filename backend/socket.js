@@ -25,33 +25,46 @@ const initializeSocket = (server) => {  io = new Server(server, {
     pingTimeout: 60000,
     pingInterval: 25000
   });
-
   // Authentication middleware for socket connections
   io.use(async (socket, next) => {
     try {
+      console.log('🔐 Socket authentication attempt from:', socket.handshake.address);
+      console.log('🔐 Auth data:', socket.handshake.auth);
+      console.log('🔐 Headers:', socket.handshake.headers);
+
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
 
       if (!token) {
+        console.error('❌ No authentication token provided');
         return next(new Error('Authentication token required'));
       }
 
+      console.log('🔐 Token received (first 20 chars):', token.substring(0, 20) + '...');
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('🔐 Token decoded successfully for user ID:', decoded.id);
+
       const user = await User.findById(decoded.id).select('-password');
 
       if (!user) {
+        console.error('❌ User not found for ID:', decoded.id);
         return next(new Error('User not found'));
       }
 
+      console.log('🔐 User found:', user.name, 'Role:', user.role);
+
       if (user.role !== 'admin' && user.role !== 'superadmin') {
+        console.error('❌ User does not have admin access:', user.role);
         return next(new Error('Admin access required'));
       }
 
       socket.userId = user._id.toString();
       socket.user = user;
+      console.log('✅ Socket authentication successful for:', user.name);
       next();
     } catch (error) {
-      console.error('Socket authentication error:', error);
-      next(new Error('Authentication failed'));
+      console.error('❌ Socket authentication error:', error.message);
+      next(new Error('Authentication failed: ' + error.message));
     }
   });
 

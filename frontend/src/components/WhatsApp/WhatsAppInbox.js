@@ -162,11 +162,15 @@ const WhatsAppInbox = () => {
       e.preventDefault();
       sendMessage();
     }
-  };
-  // Socket event handlers
+  };  // Socket event handlers
   useEffect(() => {
-    if (!socket || !socket.connected) {
-      console.warn('⚠️ Socket not connected - event listeners not set up');
+    if (!socket) {
+      console.warn('⚠️ Socket not available - event listeners not set up');
+      return;
+    }
+
+    if (!isConnected) {
+      console.warn('⚠️ Socket not connected - waiting for connection...');
       return;
     }
 
@@ -336,7 +340,7 @@ const WhatsAppInbox = () => {
       socket.off('whatsapp_reply_sent', handleReplySent);
       socket.off('whatsapp_conversation_updated', handleConversationUpdate);
     };
-  }, [socket, selectedConversation]);
+  }, [socket, isConnected, selectedConversation]);
 
   // Load initial data
   useEffect(() => {
