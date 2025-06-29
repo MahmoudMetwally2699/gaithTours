@@ -3,6 +3,7 @@ import { Search, Filter, MoreVertical, Send, Phone, Star, Archive, UserPlus } fr
 import { formatDistanceToNow, format } from 'date-fns';
 import { whatsappService } from '../../services/whatsappService';
 import { useSocket } from '../../contexts/SocketContext';
+import { usePolling } from '../../contexts/PollingContext';
 import WhatsAppStats from './WhatsAppStats';
 import MessageBubble from './MessageBubble';
 import ConversationItem from './ConversationItem';
@@ -20,8 +21,8 @@ const WhatsAppInbox = () => {
   const [pagination, setPagination] = useState({ page: 1, total: 0 });
   const [messagePagination, setMessagePagination] = useState({ page: 1, total: 0 });
   const [stats, setStats] = useState(null);
-
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
+  const { isPolling } = usePolling();
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
 
@@ -239,11 +240,21 @@ const WhatsAppInbox = () => {
       socket.off('whatsapp_reply_sent');
     };
   }, [socket, selectedConversation]);
-
   // Load initial data
   useEffect(() => {
     loadConversations(1, true);
   }, [searchTerm, filterType]);
+
+  // Listen for polling updates as fallback
+  useEffect(() => {
+    const handlePollingUpdate = (event) => {
+      console.log('📥 Received polling update for WhatsApp');
+      loadConversations(1, true); // Refresh conversations when polling detects changes
+    };
+
+    window.addEventListener('whatsappUpdate', handlePollingUpdate);
+    return () => window.removeEventListener('whatsappUpdate', handlePollingUpdate);
+  }, []);
 
   // Request notification permission
   useEffect(() => {

@@ -27,15 +27,18 @@ export const SocketProvider = ({ children }) => {
 
       console.log('🔗 API URL:', apiUrl);
       console.log('🔗 Socket URL:', socketUrl);
-      console.log('🔗 Connecting to Socket.IO at:', socketUrl);
-
-      const newSocket = io(socketUrl, {
+      console.log('🔗 Connecting to Socket.IO at:', socketUrl);      const newSocket = io(socketUrl, {
         auth: {
           token: token
         },
         withCredentials: true,
-        transports: ['websocket', 'polling']
-      });      newSocket.on('connect', () => {
+        transports: ['polling', 'websocket'], // Prioritize polling for Vercel
+        timeout: 20000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      });newSocket.on('connect', () => {
         console.log('✅ Socket connected successfully');
         console.log('🔗 Socket ID:', newSocket.id);
         console.log('🔗 Connected to:', socketUrl);
