@@ -105,7 +105,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     const formData = new FormData();
     formData.append('attachment', file);
 
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/uploads/upload`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://gaith-tours-backend.vercel.app/api'}/uploads/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`

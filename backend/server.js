@@ -31,29 +31,45 @@ app.use(limiter);
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3001',
+  'http://localhost:3001', 
   'https://gaithtours.vercel.app',
   'https://gaith-tours-one.vercel.app',
-  'https://gaith-tours-one.vercel.app/',
   'https://gaith-tours-backend.vercel.app',
   process.env.FRONTEND_URL,
   process.env.BACKEND_URL
 ].filter(Boolean);
 
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+
 app.use(cors({
   origin: function (origin, callback) {
+    console.log('🔍 CORS check for origin:', origin);
+    
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ No origin - allowing request');
+      return callback(null, true);
+    }
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Check if origin is in allowed list (including with and without trailing slash)
+    const originWithoutSlash = origin.replace(/\/$/, '');
+    const originWithSlash = origin.endsWith('/') ? origin : origin + '/';
+    
+    if (allowedOrigins.includes(origin) || 
+        allowedOrigins.includes(originWithoutSlash) || 
+        allowedOrigins.includes(originWithSlash)) {
+      console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log('❌ Origin NOT allowed:', origin);
+      console.log('📋 Allowed origins:', allowedOrigins);
+      callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin'],
+  exposedHeaders: ['Access-Control-Allow-Origin'],
   preflightContinue: false,
   optionsSuccessStatus: 200
 }));
@@ -66,8 +82,24 @@ app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Handle preflight requests
-app.options('*', cors());
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  console.log('🔄 Preflight request for:', req.path);
+  console.log('🔄 Origin:', req.get('Origin'));
+  console.log('🔄 Headers:', req.headers);
+  
+  const origin = req.get('Origin');
+  if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(403);
+  }
+});
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -76,6 +108,14 @@ app.use((req, res, next) => {
   if (req.path !== '/api/payments/webhook') {
     console.log('Body:', req.body);
   }
+  
+  // Add CORS headers for all responses
+  const origin = req.get('Origin');
+  if (origin && allowedOrigins.indexOf(origin) !== -1) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
   next();
 });
 
@@ -164,11 +204,30 @@ try {
 
 // Test route to verify deployment
 app.get('/api/test', (req, res) => {
+  console.log('🧪 Test endpoint hit');
+  console.log('🌐 Origin:', req.get('Origin'));
+  console.log('🔗 Headers:', req.headers);
+  
   res.status(200).json({
     success: true,
     message: 'Backend API is working',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    origin: req.get('Origin'),
+    corsEnabled: true
+  });
+});
+
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  console.log('🧪 CORS test endpoint hit from origin:', req.get('Origin'));
+  
+  res.status(200).json({
+    success: true,
+    message: 'CORS is working!',
+    origin: req.get('Origin'),
+    allowedOrigins: allowedOrigins,
+    timestamp: new Date().toISOString()
   });
 });
 
