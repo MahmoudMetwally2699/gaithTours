@@ -10,9 +10,6 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
-// Trust proxy for Vercel
-app.set('trust proxy', 1);
-
 // Security middleware
 app.use(helmet());
 
@@ -22,8 +19,8 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
-    // Skip rate limiting for Socket.io connections and webhooks
-    return req.path.startsWith('/socket.io') || req.path.startsWith('/webhook');
+    // Skip rate limiting for Socket.io connections
+    return req.path.startsWith('/socket.io');
   }
 });
 app.use(limiter);
@@ -60,10 +57,6 @@ app.use(cors({
 // This route needs the raw body for signature verification
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
-// WhatsApp webhook route MUST be before express.json() middleware
-// This route needs the raw body for signature verification
-app.use('/webhook/whatsapp', express.raw({ type: 'application/json' }));
-
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -75,7 +68,7 @@ app.options('*', cors());
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   console.log('Headers:', req.headers);
-  if (req.path !== '/api/payments/webhook' && req.path !== '/webhook/whatsapp') {
+  if (req.path !== '/api/payments/webhook') {
     console.log('Body:', req.body);
   }
   next();

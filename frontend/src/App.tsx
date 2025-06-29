@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Route, Switch, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
-import { PollingProvider } from './contexts/PollingContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
@@ -106,11 +105,9 @@ function App() {
   return (
     <AuthProvider>
       <SocketProvider>
-        <PollingProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </PollingProvider>
+        <Router>
+          <AppContent />
+        </Router>
       </SocketProvider>
     </AuthProvider>
   );
