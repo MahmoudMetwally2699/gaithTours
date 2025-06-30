@@ -40,25 +40,45 @@ router.post('/upload', protect, upload.single('attachment'), async (req, res) =>
     const fileType = req.file.mimetype === 'application/pdf' ? 'pdf' : 'image';
 
     // Determine resource type for Cloudinary
-    const resourceType = fileType === 'pdf' ? 'raw' : 'image';
-
-    // Upload to Cloudinary
+    const resourceType = fileType === 'pdf' ? 'raw' : 'image';    // Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: resourceType,
-          folder: 'hotel-bookings/attachments',
-          public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`,
-          use_filename: true,
-          unique_filename: false,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
+      const uploadOptions = {
+        resource_type: resourceType,
+        folder: 'hotel-bookings/attachments',
+        public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`,
+        use_filename: true,
+        unique_filename: false,
+      };
 
-      uploadStream.end(req.file.buffer);
+      // For PDFs and documents, ensure proper raw upload handling
+      if (fileType === 'pdf') {
+        uploadOptions.resource_type = 'raw'; // Explicitly set as raw
+        uploadOptions.flags = 'attachment'; // Force download behavior
+        uploadOptions.public_id = `${Date.now()}_${req.file.originalname}`;
+        uploadOptions.use_filename = false;
+
+        // Use data URI for PDF uploads to avoid format detection issues
+        const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+        cloudinary.uploader.upload(dataUri, uploadOptions, (error, result) => {
+          if (error) {
+            console.error('❌ Cloudinary PDF upload error:', error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        });
+      } else {
+        // For images, use stream upload
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      }
     });    const attachmentData = {
       fileName: req.file.originalname,
       fileUrl: uploadResult.secure_url,
@@ -94,22 +114,44 @@ router.post('/upload-multiple', protect, upload.array('attachments', 5), async (
 
     const uploadPromises = req.files.map(async (file) => {
       const fileType = file.mimetype === 'application/pdf' ? 'pdf' : 'image';
-      const resourceType = fileType === 'pdf' ? 'raw' : 'image';
+      const resourceType = fileType === 'pdf' ? 'raw' : 'image';      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadOptions = {
+          resource_type: resourceType,
+          folder: 'hotel-bookings/attachments',
+          public_id: `${Date.now()}_${file.originalname.split('.')[0]}`,
+          use_filename: true,
+          unique_filename: false,
+        };
 
-      const uploadResult = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: 'hotel-bookings/attachments',
-            public_id: `${Date.now()}_${file.originalname.split('.')[0]}`,
-            use_filename: true,
-            unique_filename: false,
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
+        // For PDFs and documents, ensure proper raw upload handling
+        if (fileType === 'pdf') {
+          uploadOptions.resource_type = 'raw'; // Explicitly set as raw
+          uploadOptions.flags = 'attachment'; // Force download behavior
+          uploadOptions.public_id = `${Date.now()}_${file.originalname}`;
+          uploadOptions.use_filename = false;
+
+          // Use data URI for PDF uploads to avoid format detection issues
+          const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
+          cloudinary.uploader.upload(dataUri, uploadOptions, (error, result) => {
+            if (error) {
+              console.error('❌ Cloudinary PDF upload error:', error);
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          });
+        } else {
+          // For images, use stream upload
+          const uploadStream = cloudinary.uploader.upload_stream(
+            uploadOptions,
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          );
+          uploadStream.end(file.buffer);
+        }
 
         uploadStream.end(file.buffer);
       });      return {
