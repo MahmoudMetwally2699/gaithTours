@@ -68,7 +68,7 @@ router.get('/clients', protect, admin, async (req, res) => {
         ]
       };
     }
-
+//HI
     const clients = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 })
