@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, MoreVertical, Send, Phone, Star, Archive } from 'lucide-react';
+import { Search, Filter, MoreVertical, Send, Phone, Star, Archive, Paperclip, X, Image, FileText, Music, Video } from 'lucide-react';
 import { whatsappService } from '../../services/whatsappService';
 import { useSocket } from '../../contexts/SocketContext';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
@@ -30,6 +30,31 @@ interface WhatsAppMessage {
   timestamp: Date | string;
   status?: 'sent' | 'delivered' | 'read' | 'failed';
   messageType?: 'text' | 'image' | 'audio' | 'video' | 'document';
+  metadata?: {
+    media_id?: string;
+    media_url?: string;
+    mime_type?: string;
+    file_size?: number;
+    caption?: string;
+    filename?: string;
+    cloudinary_public_id?: string;
+    location?: {
+      latitude: number;
+      longitude: number;
+      name?: string;
+      address?: string;
+    };
+    contact?: {
+      name?: string;
+      phone?: string;
+    };
+  };
+  attachments?: Array<{
+    url: string;
+    type: string;
+    filename?: string;
+    size?: number;
+  }>;
 }
 
 interface WhatsAppStatsInterface {
@@ -48,6 +73,7 @@ interface Pagination {
 }
 
 interface PollingData {
+  timestamp: number;
   updates: Array<{
     type: 'new_message' | 'conversation_update' | 'status_update';
     data: any;
@@ -63,16 +89,23 @@ const WhatsAppInbox = () => {
   const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
   const [sendingMessage, setSendingMessage] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filterType, setFilterType] = useState<string>('all');  const [pagination, setPagination] = useState<Pagination>({ page: 1, total: 0 });
+  const [filterType, setFilterType] = useState<string>('all');
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, total: 0 });
   const [messagePagination, setMessagePagination] = useState<Pagination>({ page: 1, total: 0 });
-  const [stats, setStats] = useState<WhatsAppStatsInterface | null>(null);
+  const [stats, setStats] = useState<WhatsAppStatsInterface | null>(null);  // Attachment state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showAttachmentPreview, setShowAttachmentPreview] = useState<boolean>(false);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
   // Suppress unused variable warnings temporarily
   void pagination;
-  void messagePagination;const { socket, isConnected, connectionAttempts } = useSocket();
-  const { pollingData } = usePollingFallback(isConnected, 3000) as { pollingData: PollingData | null }; // Poll every 3 seconds when socket is not connected
+  void messagePagination;  const { socket, isConnected, connectionAttempts } = useSocket();
+  const { pollingData } = usePollingFallback(isConnected, 10000) as { pollingData: PollingData | null }; // Poll every 10 seconds when socket is not connected
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messageInputRef = useRef<HTMLTextAreaElement>(null);  // Load conversations
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const lastPollingTimestampRef = useRef<number>(0);
+
+  // Load conversations
   const loadConversations = useCallback(async (page: number = 1, reset: boolean = false) => {
     try {
       if (reset) setLoading(true);
@@ -102,6 +135,7 @@ const WhatsAppInbox = () => {
       setLoading(false);
     }
   }, [searchTerm, filterType]);
+
   // Load messages for selected conversation
   const loadMessages = async (phone: string, page: number = 1, reset: boolean = false) => {
     try {
@@ -132,29 +166,92 @@ const WhatsAppInbox = () => {
 
   // Send message
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || sendingMessage) return;
-
-    try {
+    if ((!newMessage.trim() && !selectedFile) || !selectedConversation || sendingMessage) return;    try {
       setSendingMessage(true);
 
-      const response = await whatsappService.sendReply(
-        selectedConversation.phoneNumber,
-        newMessage.trim()
-      );
+      let response: any;
 
-      if (response.success) {
-        setMessages(prev => [...prev, response.message]);
-        setNewMessage('');
-
-        // Update conversation in list
-        updateConversationLastMessage(
-          selectedConversation._id,
+      if (selectedFile) {
+        // Send message with attachment
+        response = await whatsappService.sendReplyWithAttachment(
+          selectedConversation.phoneNumber,
           newMessage.trim(),
-          new Date(),
-          'outgoing'
+          selectedFile
         );
+      } else {
+        // Send text message only
+        response = await whatsappService.sendReply(
+          selectedConversation.phoneNumber,
+          newMessage.trim()
+        );
+      }      if (response.success) {
+        // Handle different response formats
+        const messageData = response.data?.message || response.message;        if (messageData) {
+          // Check if message already exists to prevent duplicates
+          setMessages(prev => {
+            // Check for exact ID matches first
+            if (messageData._id && prev.some(msg => msg._id === messageData._id)) {
+              console.log('🔄 Message already exists (by _id), skipping duplicate');
+              return prev;
+            }
 
-        scrollToBottom();
+            if (messageData.messageId && prev.some(msg => msg.messageId === messageData.messageId)) {
+              console.log('🔄 Message already exists (by messageId), skipping duplicate');
+              return prev;
+            }
+
+            // For messages without IDs, check by content, direction, and timestamp
+            const exists = prev.some(msg => {
+              const sameDirection = msg.direction === messageData.direction;
+              const sameTimestamp = Math.abs(new Date(msg.timestamp).getTime() - new Date(messageData.timestamp).getTime()) < 5000; // 5 second window
+
+              // For text messages, compare message content
+              if (messageData.message && msg.message) {
+                return sameDirection && sameTimestamp && msg.message === messageData.message;
+              }
+                // For attachment messages, compare attachment info
+              if (messageData.attachments?.length > 0 && msg.attachments && msg.attachments.length > 0) {
+                const sameAttachment = messageData.attachments[0].filename === msg.attachments[0].filename &&
+                                     messageData.attachments[0].url === msg.attachments[0].url;
+                return sameDirection && sameTimestamp && sameAttachment;
+              }
+
+              // For mixed content (text + attachment), compare both
+              if (messageData.message && messageData.attachments?.length > 0 &&
+                  msg.message && msg.attachments && msg.attachments.length > 0) {
+                const sameText = msg.message === messageData.message;
+                const sameAttachment = messageData.attachments[0].filename === msg.attachments[0].filename;
+                return sameDirection && sameTimestamp && sameText && sameAttachment;
+              }
+
+              return false;
+            });
+
+            if (exists) {
+              console.log('🔄 Message already exists (by content/attachment), skipping duplicate');
+              return prev;
+            }
+
+            console.log('✅ Adding new message to conversation');
+            return [...prev, messageData];
+          });
+
+          setNewMessage('');
+          setSelectedFile(null);
+          setShowAttachmentPreview(false);
+
+          // Update conversation in list
+          updateConversationLastMessage(
+            selectedConversation._id,
+            messageData.message,
+            new Date(),
+            'outgoing'
+          );
+
+          scrollToBottom();
+        } else {
+          console.error('Invalid response format:', response);
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -163,6 +260,7 @@ const WhatsAppInbox = () => {
       setSendingMessage(false);
     }
   };
+
   // Update conversation unread count
   const updateConversationUnreadCount = (conversationId: string, newCount: number) => {
     setConversations(prev =>
@@ -173,6 +271,7 @@ const WhatsAppInbox = () => {
       )
     );
   };
+
   // Update conversation last message
   const updateConversationLastMessage = (conversationId: string, message: string, timestamp: Date | string, direction: 'incoming' | 'outgoing') => {
     setConversations(prev => {
@@ -185,7 +284,8 @@ const WhatsAppInbox = () => {
               lastMessageDirection: direction
             }
           : conv
-      );      // Sort by timestamp
+      );
+      // Sort by timestamp
       return updated.sort((a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime());
     });
   };
@@ -196,13 +296,84 @@ const WhatsAppInbox = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
+
   // Handle key press in message input
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
-  };  // Socket event handlers
+  };
+
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (16MB limit for WhatsApp)
+      if (file.size > 16 * 1024 * 1024) {
+        alert('File size must be less than 16MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      setShowAttachmentPreview(true);
+    }
+  };
+
+  // Remove selected file
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setShowAttachmentPreview(false);
+  };
+
+  // Handle drag and drop
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+
+      // Check file size
+      if (file.size > 16 * 1024 * 1024) {
+        alert('File size must be less than 16MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      setShowAttachmentPreview(true);
+    }
+  };
+
+  // Get file type icon
+  const getFileTypeIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return <Image size={20} className="text-blue-500" />;
+    if (file.type.startsWith('video/')) return <Video size={20} className="text-purple-500" />;
+    if (file.type.startsWith('audio/')) return <Music size={20} className="text-green-500" />;
+    return <FileText size={20} className="text-gray-500" />;
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Socket event handlers
   useEffect(() => {
     if (!socket) {
       console.warn('⚠️ Socket not available - event listeners not set up');
@@ -214,7 +385,9 @@ const WhatsAppInbox = () => {
       return;
     }
 
-    console.log('🔔 Setting up WhatsApp socket event listeners');    // New message received
+    console.log('🔔 Setting up WhatsApp socket event listeners');
+
+    // New message received
     const handleNewMessage = (data: any) => {
       try {
         console.log('🔔 Received new_whatsapp_message event:', data);
@@ -244,7 +417,8 @@ const WhatsAppInbox = () => {
             newConversations[existingIndex] = updatedConversation;
           } else {
             newConversations = [updatedConversation, ...prev];
-          }          // Sort by timestamp
+          }
+          // Sort by timestamp
           return newConversations.sort((a, b) =>
             new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
           );
@@ -294,7 +468,9 @@ const WhatsAppInbox = () => {
       } catch (error) {
         console.error('❌ Error handling new message:', error);
       }
-    };    // Message status update
+    };
+
+    // Message status update
     const handleStatusUpdate = (data: any) => {
       try {
         console.log('🔔 Received status update:', data);
@@ -309,7 +485,9 @@ const WhatsAppInbox = () => {
       } catch (error) {
         console.error('❌ Error handling status update:', error);
       }
-    };    // Reply sent confirmation
+    };
+
+    // Reply sent confirmation
     const handleReplySent = (data: any) => {
       try {
         console.log('🔔 Received reply sent confirmation:', data);
@@ -333,7 +511,9 @@ const WhatsAppInbox = () => {
       } catch (error) {
         console.error('❌ Error handling reply sent:', error);
       }
-    };    // Conversation update
+    };
+
+    // Conversation update
     const handleConversationUpdate = (data: any) => {
       try {
         console.log('🔔 Received conversation update:', data);
@@ -371,6 +551,7 @@ const WhatsAppInbox = () => {
       socket.off('whatsapp_conversation_updated', handleConversationUpdate);
     };
   }, [socket, isConnected, selectedConversation]);
+
   // Load initial data
   useEffect(() => {
     loadConversations(1, true);
@@ -386,11 +567,17 @@ const WhatsAppInbox = () => {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
-
-  // Handle polling fallback data
+  }, [messages]);  // Handle polling fallback data
   useEffect(() => {
-    if (!pollingData || !pollingData.updates || isConnected) return;
+    if (!pollingData || !pollingData.updates || pollingData.updates.length === 0 || isConnected) {
+      return;
+    }
+
+    // Prevent processing the same polling data multiple times
+    if (lastPollingTimestampRef.current === pollingData.timestamp) {
+      return;
+    }
+    lastPollingTimestampRef.current = pollingData.timestamp;
 
     console.log('🔄 Processing polling fallback data:', pollingData.updates.length, 'updates');
 
@@ -415,7 +602,8 @@ const WhatsAppInbox = () => {
               newConversations[existingIndex] = updatedConversation;
             } else {
               newConversations = [updatedConversation, ...prev];
-            }            return newConversations.sort((a, b) =>
+            }
+            return newConversations.sort((a, b) =>
               new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
             );
           });
@@ -469,7 +657,9 @@ const WhatsAppInbox = () => {
         console.error('❌ Error processing polling update:', error);
       }
     });
-  }, [pollingData, isConnected, selectedConversation]);  return (
+  }, [pollingData, isConnected, selectedConversation]);
+
+  return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Sidebar - Conversations List */}
       <div className="w-full lg:w-1/3 bg-white/80 backdrop-blur-xl border-r border-white/20 shadow-2xl flex flex-col">
@@ -686,8 +876,7 @@ const WhatsAppInbox = () => {
                         </svg>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </div>                </div>
               ) : (
                 messages.map((message, index) => (
                   <MessageBubble
@@ -698,11 +887,76 @@ const WhatsAppInbox = () => {
                 ))
               )}
               <div ref={messagesEndRef} />
-            </div>
+            </div>            {/* Message Input */}
+            <div
+              className={`bg-gradient-to-r from-green-50/30 to-emerald-50/30 backdrop-blur-xl border-t border-white/30 p-4 lg:p-6 shadow-lg transition-all duration-300 ${
+                isDragOver ? 'bg-gradient-to-r from-blue-50/50 to-green-50/50 border-blue-300' : ''
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {/* Attachment Preview */}
+              {showAttachmentPreview && selectedFile && (
+                <div className="mb-4 p-3 bg-white/90 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                      <Paperclip size={14} className="mr-2 text-green-600" />
+                      Attachment
+                    </h4>
+                    <button
+                      onClick={removeSelectedFile}
+                      className="p-1 text-gray-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all duration-300"
+                      title="Remove attachment"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {getFileTypeIcon(selectedFile)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-            {/* Message Input */}
-            <div className="bg-gradient-to-r from-green-50/30 to-emerald-50/30 backdrop-blur-xl border-t border-white/30 p-4 lg:p-6 shadow-lg">
+              {/* Drag & Drop Overlay */}
+              {isDragOver && (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-green-500/20 backdrop-blur-sm rounded-xl border-2 border-dashed border-blue-400 flex items-center justify-center z-10">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
+                      <Paperclip size={24} className="text-white" />
+                    </div>
+                    <p className="text-lg font-semibold text-gray-900">Drop file here to attach</p>
+                    <p className="text-sm text-gray-600">Images, documents, audio, and video files supported</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-end space-x-3 lg:space-x-4">
+                {/* Attachment Button */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="attachment-input"
+                    onChange={handleFileSelect}
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="attachment-input"
+                    className="cursor-pointer p-3 lg:p-4 text-gray-500 hover:text-green-600 rounded-xl hover:bg-green-50/50 transition-all duration-300 shadow-lg bg-white/60 backdrop-blur-sm border border-white/30 flex items-center justify-center"
+                    title="Attach file"
+                  >
+                    <Paperclip size={18} className="lg:w-5 lg:h-5" />
+                  </label>
+                </div>
+
+                {/* Message Input */}
                 <div className="flex-1 relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl blur-xl group-focus-within:blur-2xl transition-all duration-300"></div>
                   <textarea
@@ -710,15 +964,17 @@ const WhatsAppInbox = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
+                    placeholder={selectedFile ? "Add a caption (optional)..." : "Type a message..."}
                     rows={1}
                     className="relative w-full px-4 lg:px-6 py-3 lg:py-4 bg-white/80 backdrop-blur-xl border border-white/30 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 resize-none shadow-lg font-medium text-gray-700 placeholder-gray-500 transition-all duration-300 text-sm lg:text-base"
                     style={{ minHeight: '48px', maxHeight: '120px' }}
                   />
                 </div>
+
+                {/* Send Button */}
                 <button
                   onClick={sendMessage}
-                  disabled={!newMessage.trim() || sendingMessage}
+                  disabled={(!newMessage.trim() && !selectedFile) || sendingMessage}
                   className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100"
                 >
                   {sendingMessage ? (
@@ -727,8 +983,7 @@ const WhatsAppInbox = () => {
                     <Send size={16} className="lg:w-5 lg:h-5" />
                   )}
                 </button>
-              </div>
-            </div>
+              </div>            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50/30 to-white/30">

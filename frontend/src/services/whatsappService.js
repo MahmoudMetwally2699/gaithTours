@@ -41,6 +41,25 @@ export const whatsappService = {
     return response.data;
   },
 
+  // Send a reply with attachment
+  sendReplyWithAttachment: async (phone, message, attachment) => {
+    const formData = new FormData();
+    formData.append('phoneNumber', phone);
+    if (message) {
+      formData.append('message', message);
+    }
+    if (attachment) {
+      formData.append('attachment', attachment);
+    }
+
+    const response = await apiClient.post('/admin/whatsapp/reply-with-attachment', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // Mark message as read
   markMessageAsRead: async (messageId) => {
     const response = await apiClient.put(`/admin/whatsapp/messages/${messageId}/read`);

@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
 const WhatsAppMessage = require('../models/WhatsAppMessage');
 const WhatsAppConversation = require('../models/WhatsAppConversation');
 const User = require('../models/User');
@@ -7,6 +9,35 @@ const WhatsAppService = require('../utils/whatsappService');
 const { getIO } = require('../socket');
 
 const router = express.Router();
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+
+// File filter for attachments
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain', 'audio/mpeg', 'audio/mp4', 'audio/wav',
+    'video/mp4', 'video/mpeg', 'video/quicktime'
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images, documents, audio, and video files are allowed.'), false);
+  }
+};
+
+// Configure multer
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 16 * 1024 * 1024, // 16MB limit for WhatsApp media
+  }
+});
 
 // Middleware to check admin permissions
 const requireAdmin = (req, res, next) => {
@@ -232,6 +263,183 @@ router.post('/whatsapp/reply', auth, requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error sending reply:', error);
     res.status(500).json({ message: 'Error sending reply', error: error.message });
+  }
+});
+
+// POST /api/admin/whatsapp/reply-with-attachment - Send reply message with attachment
+router.post('/whatsapp/reply-with-attachment', auth, requireAdmin, upload.single('attachment'), async (req, res) => {
+  try {
+    const { phoneNumber, message = '', replyToMessageId } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ message: 'Phone number is required' });
+    }
+
+    if (!req.file && !message) {
+      return res.status(400).json({ message: 'Either attachment or message is required' });
+    }
+
+    // Find or create conversation
+    let conversation = await WhatsAppConversation.findOne({ phoneNumber });
+    if (!conversation) {
+      conversation = new WhatsAppConversation({
+        phoneNumber,
+        customerName: phoneNumber,
+      });
+      await conversation.save();
+    }
+
+    let whatsAppMessage;
+    let response;
+    const whatsappService = new WhatsAppService();
+
+    // If there's an attachment, upload it and send as media
+    if (req.file) {
+      // Determine file type and message type
+      const isImage = req.file.mimetype.startsWith('image/');
+      const isVideo = req.file.mimetype.startsWith('video/');
+      const isAudio = req.file.mimetype.startsWith('audio/');
+      const isDocument = !isImage && !isVideo && !isAudio;
+
+      let messageType;
+      let resourceType;
+
+      if (isImage) {
+        messageType = 'image';
+        resourceType = 'image';
+      } else if (isVideo) {
+        messageType = 'video';
+        resourceType = 'video';
+      } else if (isAudio) {
+        messageType = 'audio';
+        resourceType = 'raw';
+      } else {
+        messageType = 'document';
+        resourceType = 'raw';
+      }
+
+      // Upload to Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: resourceType,
+            folder: 'whatsapp-attachments',
+            public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`,
+            use_filename: true,
+            unique_filename: false,
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+
+        uploadStream.end(req.file.buffer);
+      });
+
+      // Send media message via WhatsApp API
+      response = await whatsappService.sendMediaMessage(
+        phoneNumber,
+        uploadResult.secure_url,
+        messageType,
+        message || '',
+        req.file.originalname
+      );
+
+      if (!response || !response.messages?.[0]?.id) {
+        throw new Error('Failed to send WhatsApp media message');
+      }
+
+      const messageId = response.messages[0].id;
+
+      // Create message record with media metadata
+      whatsAppMessage = new WhatsAppMessage({
+        messageId,
+        from: process.env.WHATSAPP_PHONE_NUMBER_ID,
+        to: phoneNumber,
+        message: message || `Sent ${messageType}`,
+        messageType,
+        timestamp: new Date(),
+        direction: 'outgoing',
+        conversationId: conversation._id,
+        adminUserId: req.user.id,
+        status: 'sent',
+        repliedTo: replyToMessageId || null,
+        metadata: {
+          media_url: uploadResult.secure_url,
+          mime_type: req.file.mimetype,
+          file_size: req.file.size,
+          caption: message || '',
+          filename: req.file.originalname,
+          cloudinary_public_id: uploadResult.public_id
+        }
+      });
+    } else {
+      // Send text message only
+      response = await whatsappService.sendMessage(phoneNumber, message);
+
+      if (!response || !response.messages?.[0]?.id) {
+        throw new Error('Failed to send WhatsApp message');
+      }
+
+      const messageId = response.messages[0].id;
+
+      whatsAppMessage = new WhatsAppMessage({
+        messageId,
+        from: process.env.WHATSAPP_PHONE_NUMBER_ID,
+        to: phoneNumber,
+        message,
+        messageType: 'text',
+        timestamp: new Date(),
+        direction: 'outgoing',
+        conversationId: conversation._id,
+        adminUserId: req.user.id,
+        status: 'sent',
+        repliedTo: replyToMessageId || null
+      });
+    }
+
+    await whatsAppMessage.save();
+
+    // Update conversation
+    conversation.lastMessageId = whatsAppMessage._id;
+    conversation.lastMessageAt = new Date();
+    conversation.lastMessagePreview = whatsAppMessage.message.substring(0, 100);
+    conversation.totalMessages += 1;
+
+    // Mark as replied if this is a response to an incoming message
+    if (conversation.unreadCount > 0) {
+      await WhatsAppMessage.updateMany(
+        {
+          conversationId: conversation._id,
+          direction: 'incoming',
+          isReplied: false
+        },
+        { isReplied: true }
+      );
+    }
+
+    await conversation.save();
+
+    // Emit real-time update
+    const io = getIO();
+    if (io) {
+      io.emit('newWhatsAppMessage', {
+        message: await whatsAppMessage.populate('adminUserId', 'name email'),
+        conversation
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: whatsAppMessage,
+        whatsappResponse: response
+      }
+    });
+  } catch (error) {
+    console.error('Error sending reply with attachment:', error);
+    res.status(500).json({ message: 'Error sending reply with attachment', error: error.message });
   }
 });
 
@@ -573,6 +781,29 @@ router.get('/whatsapp/search', auth, requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error searching messages:', error);
     res.status(500).json({ message: 'Error searching messages', error: error.message });
+  }
+});
+
+// POST /api/admin/whatsapp/upload - Upload media file
+router.post('/whatsapp/upload', auth, requireAdmin, upload.single('file'), async (req, res) => {
+  try {
+    const { path, mimetype } = req.file;
+
+    // Upload to Cloudinary
+    const cloudinaryResponse = await cloudinary.v2.uploader.upload(path, {
+      resource_type: 'auto', // Automatically detect resource type (image, video, etc.)
+      folder: 'whatsapp_media', // Cloudinary folder name
+      public_id: `whatsapp/${Date.now()}`, // Public ID for the file
+      overwrite: true // Overwrite file with same public_id
+    });
+
+    res.json({
+      success: true,
+      data: cloudinaryResponse
+    });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    res.status(500).json({ message: 'Error uploading file', error: error.message });
   }
 });
 

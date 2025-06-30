@@ -51,13 +51,14 @@ const whatsAppMessageSchema = new mongoose.Schema({
     type: String,
     enum: ['sent', 'delivered', 'read', 'failed'],
     default: 'sent'
-  },
-  metadata: {
+  },  metadata: {
     media_id: String,
     media_url: String,
     mime_type: String,
     file_size: Number,
     caption: String,
+    filename: String,
+    cloudinary_public_id: String,
     location: {
       latitude: Number,
       longitude: Number,

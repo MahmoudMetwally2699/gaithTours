@@ -45,7 +45,8 @@ class WhatsAppService {
       });
 
       console.log('WhatsApp message sent successfully:', response.data);
-      return response.data;    } catch (error) {
+      return response.data;
+    } catch (error) {
       if (error.response?.data?.error?.code === 133010) {
         console.error('❌ WhatsApp Account Error: Account is not registered with Meta Cloud API');
         console.error('🔧 Setup Required: Visit developers.facebook.com → WhatsApp → Complete business verification');
@@ -55,6 +56,89 @@ class WhatsAppService {
       throw error;
     }
   }
+
+  /**
+   * Send a WhatsApp media message using Meta's Cloud API
+   * @param {string} to - Recipient phone number (with country code, no + sign)
+   * @param {string} mediaUrl - URL of the media file
+   * @param {string} mediaType - Type of media (image, document, audio, video)
+   * @param {string} caption - Optional caption for the media
+   * @param {string} filename - Optional filename for documents
+   * @returns {Promise<Object>} API response
+   */
+  async sendMediaMessage(to, mediaUrl, mediaType, caption = '', filename = '') {
+    try {
+      // Check if credentials are available
+      if (!this.accessToken) {
+        throw new Error('WhatsApp access token is not configured');
+      }
+      if (!this.phoneNumberId) {
+        throw new Error('WhatsApp phone number ID is not configured');
+      }
+
+      // Format phone number - remove any non-numeric characters except country code
+      const formattedPhone = to.replace(/[^\d]/g, '');
+
+      let data = {
+        messaging_product: 'whatsapp',
+        to: formattedPhone,
+        type: mediaType
+      };
+
+      // Configure data based on media type
+      switch (mediaType) {
+        case 'image':
+          data.image = {
+            link: mediaUrl,
+            caption: caption
+          };
+          break;        case 'document':
+          data.document = {
+            link: mediaUrl,
+            caption: caption,
+            filename: filename || 'document'
+          };
+          console.log('📄 Sending document to WhatsApp:', {
+            filename: filename,
+            mediaUrl: mediaUrl,
+            caption: caption,
+            recipient: formattedPhone
+          });
+          break;
+        case 'audio':
+          data.audio = {
+            link: mediaUrl
+          };
+          break;
+        case 'video':
+          data.video = {
+            link: mediaUrl,
+            caption: caption
+          };
+          break;
+        default:
+          throw new Error(`Unsupported media type: ${mediaType}`);
+      }
+
+      console.log('Sending WhatsApp media message to:', formattedPhone);
+      console.log('Media type:', mediaType);
+      console.log('Media URL:', mediaUrl);
+
+      const response = await axios.post(this.baseUrl, data, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('WhatsApp media message sent successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('WhatsApp media message error:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+
   /**
    * Send booking approval notification using Arabic template
    * @param {Object} booking - Booking details

@@ -2,7 +2,17 @@ import React from 'react';
 import { format } from 'date-fns';
 import { Check, CheckCheck, Clock, AlertCircle, Image, File, MapPin, User, Phone } from 'lucide-react';
 
-const MessageBubble = ({ message, isOwn }) => {  const formatTime = (timestamp) => {
+const MessageBubble = ({ message, isOwn }) => {
+  // Format file size helper function
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatTime = (timestamp) => {
     // Handle null, undefined, or invalid timestamps
     if (!timestamp) {
       return '--:--';
@@ -55,21 +65,23 @@ const MessageBubble = ({ message, isOwn }) => {  const formatTime = (timestamp) 
       default:
         return null;
     }
-  };
-  const renderMessageContent = () => {
+  };  const renderMessageContent = () => {
     switch (message.messageType) {
       case 'image':
         return (
           <div>
             {message.metadata?.media_url && (
-              <img
-                src={message.metadata.media_url}
-                alt="Shared content"
-                className="max-w-full w-full sm:max-w-xs rounded-lg mb-2"
-              />
+              <div className="mb-2">
+                <img
+                  src={message.metadata.media_url}
+                  alt="Shared content"
+                  className="max-w-full w-full sm:max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => window.open(message.metadata.media_url, '_blank')}
+                />
+              </div>
             )}
-            {message.metadata?.caption && (
-              <p className="text-sm">{message.metadata.caption}</p>
+            {(message.metadata?.caption || message.message) && (
+              <p className="text-sm">{message.metadata?.caption || message.message}</p>
             )}
             {!message.metadata?.media_url && (
               <div className="flex items-center space-x-2 text-gray-500">
@@ -78,16 +90,109 @@ const MessageBubble = ({ message, isOwn }) => {  const formatTime = (timestamp) 
               </div>
             )}
           </div>
+        );      case 'document':
+        return (
+          <div>
+            {message.metadata?.media_url ? (
+              <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg mb-2 hover:bg-gray-200 transition-colors cursor-pointer"
+                   onClick={() => {
+                     console.log('🔍 Opening document:', message.metadata.media_url);
+                     window.open(message.metadata.media_url, '_blank');
+                   }}>
+                <File size={20} className="text-gray-600 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{message.metadata?.filename || 'Document'}</p>
+                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                    <span>{message.metadata?.mime_type}</span>
+                    {message.metadata?.file_size && (
+                      <>
+                        <span>•</span>
+                        <span>{formatFileSize(message.metadata.file_size)}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="text-xs text-blue-600 font-medium">
+                  {message.metadata?.mime_type === 'application/pdf' ? 'View PDF' : 'Open'}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
+                <File size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{message.metadata?.filename || 'Document'}</p>
+                  <p className="text-xs text-gray-500">{message.metadata?.mime_type}</p>
+                </div>
+              </div>
+            )}
+            {(message.metadata?.caption || (message.message && message.message !== 'Sent document')) && (
+              <p className="text-sm">{message.metadata?.caption || message.message}</p>
+            )}
+
+            {/* Debug info for PDFs - remove this in production */}
+            {process.env.NODE_ENV === 'development' && message.metadata?.mime_type === 'application/pdf' && (
+              <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
+                <strong>Debug PDF:</strong><br/>
+                URL: {message.metadata?.media_url}<br/>
+                Type: {message.messageType}<br/>
+                MIME: {message.metadata?.mime_type}
+              </div>
+            )}
+          </div>
         );
 
-      case 'document':
+      case 'video':
         return (
-          <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
-            <File size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{message.metadata?.filename || 'Document'}</p>
-              <p className="text-xs text-gray-500">{message.metadata?.mime_type}</p>
-            </div>
+          <div>
+            {message.metadata?.media_url && (
+              <div className="mb-2">
+                <video
+                  controls
+                  className="max-w-full w-full sm:max-w-xs rounded-lg"
+                  preload="metadata"
+                >
+                  <source src={message.metadata.media_url} type={message.metadata?.mime_type || 'video/mp4'} />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )}
+            {(message.metadata?.caption || message.message) && (
+              <p className="text-sm">{message.metadata?.caption || message.message}</p>
+            )}
+            {!message.metadata?.media_url && (
+              <div className="flex items-center space-x-2 text-gray-500">
+                <Phone size={16} />
+                <span className="text-sm">{message.message}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'audio':
+        return (
+          <div>
+            {message.metadata?.media_url ? (
+              <div className="flex items-center space-x-3 p-3 bg-gray-100 rounded-lg mb-2">
+                <Phone size={20} className="text-gray-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <audio controls className="w-full">
+                    <source src={message.metadata.media_url} type={message.metadata?.mime_type || 'audio/mpeg'} />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
+                <Phone size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">Voice Message</p>
+                  <p className="text-xs text-gray-500">Click to play</p>
+                </div>
+              </div>
+            )}
+            {(message.metadata?.caption || (message.message && message.message !== 'Sent audio')) && (
+              <p className="text-sm">{message.metadata?.caption || message.message}</p>
+            )}
           </div>
         );
 
@@ -104,8 +209,7 @@ const MessageBubble = ({ message, isOwn }) => {  const formatTime = (timestamp) 
                 <p className="text-xs text-gray-500 truncate">{message.metadata.location.address}</p>
               )}
             </div>
-          </div>
-        );
+          </div>        );
 
       case 'contact':
         return (
@@ -119,17 +223,6 @@ const MessageBubble = ({ message, isOwn }) => {  const formatTime = (timestamp) 
               {message.metadata?.contact?.phone && (
                 <p className="text-xs text-gray-500">{message.metadata.contact.phone}</p>
               )}
-            </div>
-          </div>
-        );
-
-      case 'audio':
-        return (
-          <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
-            <Phone size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">Voice Message</p>
-              <p className="text-xs text-gray-500">Click to play</p>
             </div>
           </div>
         );

@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const cloudinary = require('../config/cloudinary');
 const { protect, admin } = require('../middleware/auth');
 const WhatsAppMessage = require('../models/WhatsAppMessage');
 const WhatsAppConversation = require('../models/WhatsAppConversation');
@@ -6,8 +8,38 @@ const User = require('../models/User');
 const Reservation = require('../models/Reservation');
 const whatsappService = require('../utils/whatsappService');
 const { getIO } = require('../socket');
+const axios = require('axios');
 
 const router = express.Router();
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+
+// File filter for attachments
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain', 'audio/mpeg', 'audio/mp4', 'audio/wav',
+    'video/mp4', 'video/mpeg', 'video/quicktime'
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only images, documents, audio, and video files are allowed.'), false);
+  }
+};
+
+// Configure multer
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 16 * 1024 * 1024, // 16MB limit for WhatsApp media
+  }
+});
 
 // Apply auth middleware to all routes
 router.use(protect);
@@ -369,7 +401,7 @@ router.post('/reply', async (req, res) => {
       }
     } else {
       console.warn('⚠️ Socket.io not available - reply events not emitted');
-    }res.json({
+    }    res.json({
       success: true,
       message: newMessage,
       whatsappMessageId: messageId
@@ -377,6 +409,263 @@ router.post('/reply', async (req, res) => {
   } catch (error) {
     console.error('Error sending reply:', error);
     res.status(500).json({ error: 'Failed to send reply' });
+  }
+});
+
+// POST /api/admin/whatsapp/reply-with-attachment - Send reply message with attachment
+router.post('/reply-with-attachment', upload.single('attachment'), async (req, res) => {
+  try {
+    const { phoneNumber, message = '' } = req.body;
+    const adminUserId = req.user?.id;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    if (!req.file && !message) {
+      return res.status(400).json({ error: 'Either attachment or message is required' });
+    }
+
+    // Find or create conversation
+    const conversation = await WhatsAppConversation.findOrCreate(phoneNumber);
+
+    let whatsAppMessage;
+    let response;
+
+    // If there's an attachment, upload it and send as media
+    if (req.file) {
+      // Determine file type and message type
+      const isImage = req.file.mimetype.startsWith('image/');
+      const isVideo = req.file.mimetype.startsWith('video/');
+      const isAudio = req.file.mimetype.startsWith('audio/');
+      const isDocument = !isImage && !isVideo && !isAudio;
+
+      let messageType;
+      let resourceType;
+
+      if (isImage) {
+        messageType = 'image';
+        resourceType = 'image';
+      } else if (isVideo) {
+        messageType = 'video';
+        resourceType = 'video';
+      } else if (isAudio) {
+        messageType = 'audio';
+        resourceType = 'raw';
+      } else {
+        messageType = 'document';
+        resourceType = 'raw';
+      }      // Upload to Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadOptions = {
+          resource_type: resourceType,
+          folder: 'whatsapp-attachments',
+          public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`,
+          use_filename: true,
+          unique_filename: false,
+        };        // For documents (especially PDFs), ensure proper handling
+        if (isDocument) {
+          uploadOptions.format = req.file.originalname.split('.').pop(); // Preserve original extension
+          uploadOptions.flags = 'attachment'; // Force download behavior
+
+          // For PDFs specifically, ensure proper content type
+          if (req.file.mimetype === 'application/pdf') {
+            uploadOptions.content_type = 'application/pdf';
+            // Ensure the public_id ends with .pdf for proper recognition
+            uploadOptions.public_id = `${Date.now()}_${req.file.originalname.replace(/\.[^/.]+$/, '')}.pdf`;
+          }
+        }
+
+        console.log('📤 Uploading to Cloudinary:', {
+          filename: req.file.originalname,
+          mimetype: req.file.mimetype,
+          messageType,
+          resourceType,
+          uploadOptions
+        });
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, result) => {
+            if (error) {
+              console.error('❌ Cloudinary upload error:', error);
+              reject(error);
+            } else {
+              console.log('✅ Cloudinary upload success:', {
+                public_id: result.public_id,
+                secure_url: result.secure_url,
+                resource_type: result.resource_type,
+                format: result.format
+              });
+              resolve(result);
+            }
+          }
+        );
+
+        uploadStream.end(req.file.buffer);
+      });      // Send media message via WhatsApp API
+      let whatsappMediaUrl = uploadResult.secure_url;
+
+      // For PDFs, try different URL approaches for WhatsApp compatibility
+      if (messageType === 'document' && req.file.mimetype === 'application/pdf') {        // Try our own server URL first - WhatsApp often has better luck with direct server URLs
+        const serverBaseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : process.env.SERVER_BASE_URL || 'http://localhost:5000';
+        const fallbackUrl = `${serverBaseUrl}/api/admin/whatsapp/serve-file/${encodeURIComponent(uploadResult.public_id)}?filename=${encodeURIComponent(req.file.originalname)}`;
+
+        whatsappMediaUrl = fallbackUrl;
+
+        console.log('📄 PDF URL for WhatsApp:', {
+          original: uploadResult.secure_url,
+          cloudinary_url: uploadResult.url,
+          server_fallback: fallbackUrl,
+          filename: req.file.originalname,
+          public_id: uploadResult.public_id
+        });
+      }
+
+      response = await whatsappService.sendMediaMessage(
+        phoneNumber,
+        whatsappMediaUrl,
+        messageType,
+        message || '',
+        req.file.originalname
+      );
+
+      if (!response || !response.messages?.[0]?.id) {
+        throw new Error('Failed to send WhatsApp media message');
+      }
+
+      const messageId = response.messages[0].id;      // Create message record with media metadata
+      whatsAppMessage = new WhatsAppMessage({
+        messageId,
+        from: process.env.WHATSAPP_PHONE_NUMBER_ID,
+        to: phoneNumber,
+        message: message || (isDocument && req.file.mimetype === 'application/pdf' ? `📄 ${req.file.originalname}` : `Sent ${messageType}`),
+        messageType,
+        timestamp: new Date(),
+        direction: 'outgoing',
+        conversationId: conversation._id,
+        adminUserId,
+        status: 'sent',
+        metadata: {
+          media_url: whatsappMediaUrl, // Use the WhatsApp-optimized URL
+          original_url: uploadResult.secure_url, // Keep the original for reference
+          mime_type: req.file.mimetype,
+          file_size: req.file.size,
+          caption: message || '',
+          filename: req.file.originalname,
+          cloudinary_public_id: uploadResult.public_id
+        }
+      });
+    } else {
+      // Send text message only
+      response = await whatsappService.sendMessage(phoneNumber, message);
+
+      if (!response || !response.messages?.[0]?.id) {
+        throw new Error('Failed to send WhatsApp message');
+      }
+
+      const messageId = response.messages[0].id;
+
+      whatsAppMessage = new WhatsAppMessage({
+        messageId,
+        from: process.env.WHATSAPP_PHONE_NUMBER_ID,
+        to: phoneNumber,
+        message,
+        messageType: 'text',
+        timestamp: new Date(),
+        direction: 'outgoing',
+        conversationId: conversation._id,
+        adminUserId,
+        status: 'sent'
+      });
+    }
+
+    await whatsAppMessage.save();
+
+    // Update conversation
+    conversation.lastMessage = whatsAppMessage.message;
+    conversation.lastMessageTimestamp = whatsAppMessage.timestamp;
+    conversation.lastMessageDirection = 'outgoing';
+    conversation.totalMessages += 1;
+    conversation.lastActivity = new Date();
+
+    // Mark previous messages as replied
+    await WhatsAppMessage.updateMany(
+      {
+        conversationId: conversation._id,
+        direction: 'incoming',
+        isReplied: false
+      },
+      { isReplied: true }
+    );
+
+    await conversation.save();
+
+    // Populate admin user info
+    await whatsAppMessage.populate('adminUserId', 'name firstName lastName');
+
+    // Emit real-time event
+    const io = getIO();
+    if (io) {
+      try {
+        console.log('🔔 Emitting whatsapp_reply_sent event for attachment:', {
+          messageId: whatsAppMessage._id,
+          conversationId: conversation._id,
+          to: phoneNumber
+        });
+
+        // Emit new message event (since it's a new message in the conversation)
+        io.to('whatsapp-admins').emit('new_whatsapp_message', {
+          message: {
+            _id: whatsAppMessage._id,
+            messageId: whatsAppMessage.messageId,
+            from: whatsAppMessage.from,
+            to: whatsAppMessage.to,
+            message: whatsAppMessage.message,
+            messageType: whatsAppMessage.messageType,
+            direction: whatsAppMessage.direction,
+            timestamp: whatsAppMessage.timestamp,
+            conversationId: whatsAppMessage.conversationId,
+            adminUserId: whatsAppMessage.adminUserId,
+            metadata: whatsAppMessage.metadata,
+            status: whatsAppMessage.status
+          },
+          conversation: {
+            _id: conversation._id,
+            phoneNumber: conversation.phoneNumber,
+            customerName: conversation.customerName,
+            lastMessage: whatsAppMessage.message,
+            lastMessageTimestamp: whatsAppMessage.timestamp,
+            lastMessageDirection: 'outgoing',
+            unreadCount: conversation.unreadCount,
+            userId: conversation.userId
+          }
+        });
+
+        // Also emit reply sent event for specific handling
+        io.to('whatsapp-admins').emit('whatsapp_reply_sent', {
+          message: whatsAppMessage,
+          conversation: conversation
+        });
+
+        console.log('✅ Attachment reply socket events emitted successfully');
+      } catch (socketError) {
+        console.error('❌ Error emitting attachment reply socket events:', socketError);
+      }
+    } else {
+      console.warn('⚠️ Socket.io not available - attachment reply events not emitted');
+    }
+
+    res.json({
+      success: true,
+      message: whatsAppMessage,
+      whatsappMessageId: response.messages[0].id
+    });
+  } catch (error) {
+    console.error('Error sending reply with attachment:', error);
+    res.status(500).json({ error: 'Failed to send reply with attachment' });
   }
 });
 
@@ -988,6 +1277,56 @@ router.get('/recent-updates', async (req, res) => {
       error: 'Failed to get recent updates',
       details: error.message
     });
+  }
+});
+
+// GET /api/admin/whatsapp/serve-file/:publicId - Serve file for WhatsApp
+router.get('/serve-file/:publicId(*)', async (req, res) => {
+  try {
+    const publicId = req.params.publicId;
+    const filename = req.query.filename || 'document';
+
+    console.log('📥 Serving file for WhatsApp:', { publicId, filename });
+
+    // Get the file URL from Cloudinary
+    const fileUrl = cloudinary.url(publicId, {
+      resource_type: 'raw',
+      secure: false // Use HTTP for better WhatsApp compatibility
+    });
+
+    // Fetch the file from Cloudinary using axios
+    const response = await axios.get(fileUrl, {
+      responseType: 'arraybuffer'
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Failed to fetch file: ${response.statusText}`);
+    }
+
+    const buffer = Buffer.from(response.data);
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
+
+    // Set proper headers for WhatsApp
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      'Access-Control-Allow-Origin': '*'
+    });
+
+    res.send(buffer);
+
+    console.log('✅ File served successfully:', {
+      publicId,
+      filename,
+      contentType,
+      size: buffer.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error serving file:', error);
+    res.status(404).json({ error: 'File not found' });
   }
 });
 
