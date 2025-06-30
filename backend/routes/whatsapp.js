@@ -1,41 +1,18 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 const cloudinary = require('../config/cloudinary');
 const WhatsAppMessage = require('../models/WhatsAppMessage');
 const WhatsAppConversation = require('../models/WhatsAppConversation');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const WhatsAppService = require('../utils/whatsappService');
+const { sanitizeFilenameForCloudinary } = require('../utils/helpers');
 const { getIO } = require('../socket');
 
 const router = express.Router();
 
-// Static route to serve uploaded documents
-router.use('/uploads/whatsapp-documents', express.static(path.join(__dirname, '../uploads/whatsapp-documents')));
-
-// Configure multer for memory storage (for Cloudinary uploads)
+// Configure multer for memory storage
 const storage = multer.memoryStorage();
-
-// Configure multer for disk storage (for local PDF storage)
-const diskStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, '../uploads/whatsapp-documents');
-    // Ensure directory exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    cb(null, `${uniqueSuffix}_${name}${ext}`);
-  }
-});
 
 // File filter for attachments
 const fileFilter = (req, file, cb) => {
@@ -54,35 +31,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer with dynamic storage based on file type
+// Configure multer
 const upload = multer({
-  storage: multer.memoryStorage(), // Default to memory storage
+  storage: storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 16 * 1024 * 1024, // 16MB limit for WhatsApp media
-  }
-});
-
-// Separate multer instance for documents (disk storage)
-const uploadDocument = multer({
-  storage: diskStorage,
-  fileFilter: (req, file, cb) => {
-    // Only allow document types for disk storage
-    const documentTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-
-    if (documentTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid document type. Only PDF, DOC, DOCX, and TXT files are allowed for document upload.'), false);
-    }
-  },
-  limits: {
-    fileSize: 16 * 1024 * 1024, // 16MB limit
   }
 });
 
@@ -363,105 +317,77 @@ router.post('/whatsapp/reply-with-attachment', auth, requireAdmin, upload.single
       } else {
         messageType = 'document';
         resourceType = 'raw';
-      }      // Handle file upload based on type
-      let uploadResult;
-      let fileUrl;
+      }      // Upload to Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const sanitizedFilename = sanitizeFilenameForCloudinary(req.file.originalname);
 
-      if (isDocument) {
-        // For documents, save locally instead of Cloudinary
-        console.log('📄 Handling document upload locally...');
+        console.log('🔧 Filename sanitization:', {
+          original: req.file.originalname,
+          sanitized: sanitizedFilename
+        });
 
-        // If file is in memory (from memory storage), save it to disk
-        if (req.file.buffer) {
-          const uploadPath = path.join(__dirname, '../uploads/whatsapp-documents');
-
-          // Ensure directory exists
-          if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-          }
-
-          // Generate unique filename
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-          const ext = path.extname(req.file.originalname);
-          const name = path.basename(req.file.originalname, ext);
-          const filename = `${uniqueSuffix}_${name}${ext}`;
-          const filePath = path.join(uploadPath, filename);
-
-          // Write file to disk
-          fs.writeFileSync(filePath, req.file.buffer);
-
-          // Create URL for accessing the file
-          fileUrl = `${req.protocol}://${req.get('host')}/uploads/whatsapp-documents/${filename}`;
-
-          uploadResult = {
-            public_id: `local_${uniqueSuffix}_${name}`,
-            secure_url: fileUrl,
-            original_filename: req.file.originalname,
-            bytes: req.file.size,
-            resource_type: 'raw',
-            format: ext.substring(1), // Remove the dot from extension
-            local_path: filePath
+        // Create minimal upload options to avoid conflicts
+        let uploadOptions;
+          // Set resource type and specific options based on file type
+        if (isDocument) {
+          uploadOptions = {
+            resource_type: 'image', // Use 'image' for PDFs to enable transformations
+            format: 'pdf', // Explicitly specify PDF format
+            public_id: `whatsapp_doc_${Date.now()}_${sanitizedFilename}`,
+            pages: true, // Enable page extraction for PDFs
+            quality: 'auto', // Optimize file size
+            flags: 'attachment' // Force download behavior for non-image formats
           };
-        } else if (req.file.path) {
-          // File already saved to disk by multer
-          const filename = path.basename(req.file.path);
-          fileUrl = `${req.protocol}://${req.get('host')}/uploads/whatsapp-documents/${filename}`;
-
-          uploadResult = {
-            public_id: `local_${Date.now()}_${path.basename(req.file.originalname, path.extname(req.file.originalname))}`,
-            secure_url: fileUrl,
-            original_filename: req.file.originalname,
-            bytes: req.file.size,
-            resource_type: 'raw',
-            format: path.extname(req.file.originalname).substring(1),
-            local_path: req.file.path
+        } else if (isImage) {
+          uploadOptions = {
+            resource_type: 'image',
+            public_id: `whatsapp_img_${Date.now()}_${sanitizedFilename}`,
+            quality: 'auto',
+            fetch_format: 'auto'
           };
-        }
-
-        console.log('✅ Document saved locally:', {
+        } else if (isVideo) {
+          uploadOptions = {
+            resource_type: 'video',
+            public_id: `whatsapp_vid_${Date.now()}_${sanitizedFilename}`,
+            quality: 'auto'
+          };
+        } else if (isAudio) {
+          uploadOptions = {
+            resource_type: 'video', // Use 'video' for audio files
+            public_id: `whatsapp_aud_${Date.now()}_${sanitizedFilename}`,
+            quality: 'auto'
+          };
+        }        console.log('📤 Uploading to Cloudinary:', {
           filename: req.file.originalname,
-          size: req.file.size,
-          url: fileUrl
+          mimetype: req.file.mimetype,
+          messageType,
+          resourceType,
+          uploadOptions
         });
 
-      } else {
-        // For images, videos, and audio, use Cloudinary as before
-        console.log('☁️ Uploading media to Cloudinary...');
-
-        uploadResult = await new Promise((resolve, reject) => {
-          let uploadOptions = {
-            folder: 'whatsapp-attachments',
-            use_filename: true,
-            unique_filename: false,
-            public_id: `${Date.now()}_${req.file.originalname.split('.')[0]}`
-          };
-
-          // Set resource type based on file type
-          if (isImage) {
-            uploadOptions.resource_type = 'image';
-          } else if (isVideo) {
-            uploadOptions.resource_type = 'video';
-          } else if (isAudio) {
-            uploadOptions.resource_type = 'raw';
-            uploadOptions.use_filename = false;
-          }
-
-          // Use stream upload for Cloudinary
-          const uploadStream = cloudinary.uploader.upload_stream(
-            uploadOptions,
-            (error, result) => {
-              if (error) {
-                console.error('❌ Cloudinary upload error:', error);
-                reject(error);
-              } else {
-                console.log('✅ Cloudinary upload success');
-                resolve(result);
-              }
+        // Use stream upload for all file types (recommended by Cloudinary)
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, result) => {
+            if (error) {
+              console.error('❌ Cloudinary upload error:', error);
+              console.error('❌ Upload options that failed:', uploadOptions);
+              reject(error);
+            } else {
+              console.log('✅ Cloudinary upload success:', {
+                public_id: result.public_id,
+                secure_url: result.secure_url,
+                resource_type: result.resource_type,
+                format: result.format,
+                pages: result.pages || 'N/A'
+              });
+              resolve(result);
             }
-          );
-          uploadStream.end(req.file.buffer);
-        });
-      }
+          }
+        );
+
+        uploadStream.end(req.file.buffer);
+      });
 
       // Send media message via WhatsApp API
       response = await whatsappService.sendMediaMessage(
@@ -490,15 +416,14 @@ router.post('/whatsapp/reply-with-attachment', auth, requireAdmin, upload.single
         conversationId: conversation._id,
         adminUserId: req.user.id,
         status: 'sent',
-        repliedTo: replyToMessageId || null,        metadata: {
+        repliedTo: replyToMessageId || null,
+        metadata: {
           media_url: uploadResult.secure_url,
           mime_type: req.file.mimetype,
           file_size: req.file.size,
           caption: message || '',
           filename: req.file.originalname,
-          cloudinary_public_id: uploadResult.public_id,
-          storage_type: isDocument ? 'local' : 'cloudinary',
-          local_path: uploadResult.local_path || null
+          cloudinary_public_id: uploadResult.public_id
         }
       });
     } else {
@@ -914,13 +839,11 @@ router.get('/whatsapp/search', auth, requireAdmin, async (req, res) => {
 // POST /api/admin/whatsapp/upload - Upload media file
 router.post('/whatsapp/upload', auth, requireAdmin, upload.single('file'), async (req, res) => {
   try {
-    const { path, mimetype } = req.file;
-
-    // Upload to Cloudinary
+    const { path, mimetype } = req.file;    // Upload to Cloudinary
     const cloudinaryResponse = await cloudinary.v2.uploader.upload(path, {
       resource_type: 'auto', // Automatically detect resource type (image, video, etc.)
       folder: 'whatsapp_media', // Cloudinary folder name
-      public_id: `whatsapp/${Date.now()}`, // Public ID for the file
+      public_id: `whatsapp_${Date.now()}`, // Public ID for the file (underscore instead of slash)
       overwrite: true // Overwrite file with same public_id
     });
 

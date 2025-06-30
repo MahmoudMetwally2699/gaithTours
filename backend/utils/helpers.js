@@ -77,6 +77,20 @@ const sanitizeInput = (input) => {
     .trim(); // Remove leading/trailing whitespace
 };
 
+// Sanitize filename for Cloudinary public_id
+const sanitizeFilenameForCloudinary = (filename) => {
+  if (typeof filename !== 'string') return 'file';
+
+  return filename
+    .split('.')[0] // Remove file extension
+    .replace(/[\/\\:*?"<>|]/g, '_') // Replace invalid characters with underscore
+    .replace(/\s+/g, '_') // Replace spaces with underscore
+    .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+    .replace(/^_+|_+$/g, '') // Remove leading/trailing underscores
+    .toLowerCase() // Convert to lowercase for consistency
+    || 'file'; // Fallback if result is empty
+};
+
 // Format success response
 const successResponse = (res, data, message = 'Success', statusCode = 200) => {
   return res.status(statusCode).json({
@@ -103,6 +117,7 @@ module.exports = {
   isValidPassword,
   isValidPhone,
   sanitizeInput,
+  sanitizeFilenameForCloudinary,
   successResponse,
   errorResponse
 };
