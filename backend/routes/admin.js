@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Reservation = require('../models/Reservation');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
+const WhatsAppMessage = require('../models/WhatsAppMessage');
 const { protect, admin } = require('../middleware/auth');
 const { successResponse, errorResponse } = require('../utils/helpers');
 const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail } = require('../utils/emailService');
@@ -27,13 +28,19 @@ router.get('/stats', protect, admin, async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
 
+    // WhatsApp stats
+    const totalWhatsAppMessages = await WhatsAppMessage.countDocuments();
+    const unreadWhatsAppMessages = await WhatsAppMessage.countDocuments({ isRead: false, direction: 'incoming' });
+
     const stats = {
       totalClients,
       totalBookings,
       pendingBookings,
       totalInvoices,
       paidInvoices,
-      totalRevenue: totalRevenue[0]?.total || 0
+      totalRevenue: totalRevenue[0]?.total || 0,
+      totalWhatsAppMessages,
+      unreadWhatsAppMessages
     };
 
     successResponse(res, { stats }, 'Dashboard stats retrieved successfully');
@@ -104,6 +111,54 @@ router.get('/clients/:id', protect, admin, async (req, res) => {
   } catch (error) {
     console.error('Get client details error:', error);
     errorResponse(res, 'Failed to get client details', 500);
+  }
+});
+
+// Create new client
+router.post('/clients', protect, admin, [
+  body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters long'),
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  body('phone').optional().isMobilePhone().withMessage('Please enter a valid phone number'),
+  body('nationality').optional().isLength({ min: 2 }).withMessage('Nationality must be at least 2 characters long')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { name, email, password, phone, nationality, preferredLanguage } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return errorResponse(res, 'User already exists with this email', 400);
+    }
+
+    // Create new client
+    const client = await User.create({
+      name,
+      email,
+      password,
+      phone: phone || '',
+      nationality: nationality || '',
+      preferredLanguage: preferredLanguage || 'en',
+      role: 'user'
+    });
+
+    // Remove password from response
+    const clientResponse = await User.findById(client._id).select('-password');
+
+    successResponse(res, { client: clientResponse }, 'Client created successfully', 201);
+  } catch (error) {
+    console.error('Create client error:', error);
+    if (error.code === 11000) {
+      return errorResponse(res, 'Email already exists', 400);
+    }
+    errorResponse(res, 'Failed to create client', 500);
   }
 });
 

@@ -2,22 +2,28 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Redirect, useHistory } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import adminAPI from '../services/adminAPI';
 import toast from 'react-hot-toast';
-import WhatsAppInbox from '../components/WhatsApp/WhatsAppInbox';
+import {
+  ClientsTab,
+  BookingsTab,
+  InvoicesTab,
+  PaymentsTab,
+  WhatsAppTab
+} from '../components/AdminDashboard';
+import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import {
   UserGroupIcon,
   ClipboardDocumentListIcon,
   DocumentTextIcon,
   CreditCardIcon,
   ChartBarIcon,
-  MagnifyingGlassIcon,
   CheckIcon,
   XMarkIcon,
-  EyeIcon,
-  PencilIcon,
   ArrowRightOnRectangleIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
@@ -27,6 +33,8 @@ interface DashboardStats {
   totalInvoices: number;
   paidInvoices: number;
   totalRevenue: number;
+  totalWhatsAppMessages: number;
+  unreadWhatsAppMessages: number;
 }
 
 interface Client {
@@ -161,19 +169,19 @@ interface Payment {
 }
 
 export const AdminDashboard: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const history = useHistory();
   const isRTL = i18n.language === 'ar';
-
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // Clients state
   const [clients, setClients] = useState<Client[]>([]);
   const [clientSearch, setClientSearch] = useState('');
   const [clientPage] = useState(1); // TODO: Implement pagination
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
 
   // Bookings state
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -189,7 +197,7 @@ export const AdminDashboard: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentStatus, setPaymentStatus] = useState('');
   const [paymentPage] = useState(1); // TODO: Implement pagination  // Selected items for actions
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null); // TODO: Implement client details
+  // const [selectedClient, setSelectedClient] = useState<Client | null>(null); // TODO: Implement client details
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -199,18 +207,18 @@ export const AdminDashboard: React.FC = () => {
   const [showInvoiceDetailsModal, setShowInvoiceDetailsModal] = useState(false);
   const [showPaymentDetailsModal, setShowPaymentDetailsModal] = useState(false);
   const [denialReason, setDenialReason] = useState('');
-  const [approvalAmount, setApprovalAmount] = useState('1000');
-  const fetchStats = useCallback(async () => {
+  const [approvalAmount, setApprovalAmount] = useState('1000');  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminAPI.getStats();
       setStats(response.data.data.stats);
     } catch (error) {
-      toast.error('Failed to fetch dashboard stats');
+      toast.error(t('dashboard.messages.fetchStatsFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
+
   const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
@@ -220,11 +228,26 @@ export const AdminDashboard: React.FC = () => {
       });
       setClients(response.data.data.clients);
     } catch (error) {
-      toast.error('Failed to fetch clients');
+      toast.error(t('dashboard.messages.fetchClientsFailed'));
     } finally {
       setLoading(false);
+    }  }, [clientPage, clientSearch, t]);
+
+  const handleCreateClient = async (clientData: ClientFormData) => {
+    try {
+      setIsCreatingClient(true);
+      const response = await adminAPI.createClient(clientData);
+      setClients(prev => [response.data.data.client, ...prev]);
+      toast.success('Client created successfully!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to create client';
+      toast.error(errorMessage);
+      throw error; // Re-throw to let the modal handle it
+    } finally {
+      setIsCreatingClient(false);
     }
-  }, [clientPage, clientSearch]);
+  };
+
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
@@ -234,11 +257,12 @@ export const AdminDashboard: React.FC = () => {
       });
       setBookings(response.data.data.bookings);
     } catch (error) {
-      toast.error('Failed to fetch bookings');
+      toast.error(t('dashboard.messages.fetchBookingsFailed'));
     } finally {
       setLoading(false);
     }
-  }, [bookingPage, bookingStatus]);
+  }, [bookingPage, bookingStatus, t]);
+
   const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
@@ -248,11 +272,12 @@ export const AdminDashboard: React.FC = () => {
       });
       setInvoices(response.data.data.invoices);
     } catch (error) {
-      toast.error('Failed to fetch invoices');
+      toast.error(t('dashboard.messages.fetchInvoicesFailed'));
     } finally {
       setLoading(false);
     }
-  }, [invoicePage, invoiceStatus]);
+  }, [invoicePage, invoiceStatus, t]);
+
   const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
@@ -262,11 +287,27 @@ export const AdminDashboard: React.FC = () => {
       });
       setPayments(response.data.data.payments);
     } catch (error) {
-      toast.error('Failed to fetch payments');
+      toast.error(t('dashboard.messages.fetchPaymentsFailed'));
     } finally {
       setLoading(false);
     }
-  }, [paymentPage, paymentStatus]);
+  }, [paymentPage, paymentStatus, t]);
+  // Wrapper functions to handle type conversion for tab components
+  const handleSetSelectedBooking = (booking: any) => {
+    setSelectedBooking(booking);
+  };
+
+  const handleSetSelectedInvoice = (invoice: any) => {
+    setSelectedInvoice(invoice);
+  };
+
+  const handleSetSelectedPayment = (payment: any) => {
+    setSelectedPayment(payment);
+  };
+
+  const handleGetStatusBadge = (status: string, type: string) => {
+    return getStatusBadge(status, type as 'booking' | 'invoice' | 'payment');
+  };
 
   // Add useEffect after all functions are defined
   useEffect(() => {
@@ -282,7 +323,6 @@ export const AdminDashboard: React.FC = () => {
       fetchPayments();
     }
   }, [activeTab, fetchStats, fetchClients, fetchBookings, fetchInvoices, fetchPayments]);
-
   const handleApproveBooking = async () => {
     if (!selectedBooking) return;
 
@@ -291,12 +331,12 @@ export const AdminDashboard: React.FC = () => {
       await adminAPI.approveBooking(selectedBooking._id, {
         amount: parseFloat(approvalAmount)
       });
-      toast.success('Booking approved and invoice generated!');
+      toast.success(t('dashboard.messages.bookingApproved'));
       setShowApprovalModal(false);
       setSelectedBooking(null);
       fetchBookings();
     } catch (error) {
-      toast.error('Failed to approve booking');
+      toast.error(t('dashboard.messages.bookingApprovalFailed'));
     } finally {
       setLoading(false);
     }
@@ -310,18 +350,17 @@ export const AdminDashboard: React.FC = () => {
       await adminAPI.denyBooking(selectedBooking._id, {
         reason: denialReason
       });
-      toast.success('Booking denied and notification sent');
+      toast.success(t('dashboard.messages.bookingDenied'));
       setShowDenialModal(false);
       setSelectedBooking(null);
       setDenialReason('');
       fetchBookings();
     } catch (error) {
-      toast.error('Failed to deny booking');
+      toast.error(t('dashboard.messages.bookingDenialFailed'));
     } finally {
       setLoading(false);
     }
   };
-
   const getStatusBadge = (status: string, type: 'booking' | 'invoice' | 'payment') => {
     const statusClasses = {
       booking: {
@@ -349,531 +388,573 @@ export const AdminDashboard: React.FC = () => {
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {t(`dashboard.status.${status}`, status.charAt(0).toUpperCase() + status.slice(1))}
       </span>
     );
   };
-
   const handleLogout = async () => {
     try {
       await logout();
       history.push('/');
     } catch (error) {
-      toast.error('Failed to logout');
+      toast.error(t('dashboard.messages.logoutFailed'));
     }
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'ar' : 'en';
+    i18n.changeLanguage(newLang);
+    document.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
   // Check if user has admin role
   if (!user || user.role !== 'admin') {
     return <Redirect to="/" />;
-  }
-  const tabs = [
-    { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
-    { id: 'clients', name: 'Clients', icon: UserGroupIcon },
-    { id: 'bookings', name: 'Booking Requests', icon: ClipboardDocumentListIcon },
-    { id: 'invoices', name: 'Invoices', icon: DocumentTextIcon },
-    { id: 'payments', name: 'Payments', icon: CreditCardIcon },
-    { id: 'whatsapp', name: 'WhatsApp Messages', icon: ChatBubbleLeftRightIcon }
-  ];
+  }  const tabs = [
+    { id: 'dashboard', name: t('dashboard.tabs.dashboard'), icon: ChartBarIcon },
+    { id: 'clients', name: t('dashboard.tabs.clients'), icon: UserGroupIcon },
+    { id: 'bookings', name: t('dashboard.tabs.bookings'), icon: ClipboardDocumentListIcon },
+    { id: 'invoices', name: t('dashboard.tabs.invoices'), icon: DocumentTextIcon },
+    { id: 'payments', name: t('dashboard.tabs.payments'), icon: CreditCardIcon },
+    { id: 'whatsapp', name: t('dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon }
+  ];  return (
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 ${isRTL ? 'rtl' : 'ltr'}`}>
+      <div className="flex">        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg"
+        >
+          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isMobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
 
-  return (
-    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`}>
-      <div className="flex">        {/* Sidebar */}
-        <div className={`bg-white shadow-lg h-screen fixed ${isRTL ? 'right-0' : 'left-0'} w-64 z-10 flex flex-col`}>
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        {/* Mobile Overlay */}
+        {isMobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/50 z-30"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}        {/* Modern Sidebar */}
+        <div className={`bg-white/80 backdrop-blur-xl border-r border-white/20 shadow-2xl h-screen fixed ${isRTL ? 'right-0' : 'left-0'} w-64 z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${
+          isMobileMenuOpen ? 'translate-x-0' : `${isRTL ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}`
+        }`}>
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200/50">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <ChartBarIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  {t('dashboard.title')}
+                </h1>
+                <p className="text-xs text-gray-500">Admin Panel</p>
+              </div>
+            </div>
           </div>
-          <nav className="mt-6 flex-1">
-            {tabs.map((tab) => {
+
+          {/* Language Switcher */}
+          <div className="px-6 py-4 border-b border-gray-200/50">
+            <button
+              onClick={toggleLanguage}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
+            >
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-100 to-gray-200 group-hover:from-indigo-100 group-hover:to-purple-100 rounded-lg flex items-center justify-center transition-all duration-300">
+                <GlobeAltIcon className="w-4 h-4" />
+              </div>
+              <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium`}>
+                {i18n.language === 'en' ? 'العربية' : 'English'}
+              </span>
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="mt-6 flex-1 px-3">
+            {tabs.map((tab, index) => {
               const Icon = tab.icon;
-              return (
-                <button
+              const isActive = activeTab === tab.id;
+
+              // Define gradient colors for each tab
+              const gradients = [
+                'from-blue-500 to-cyan-500',
+                'from-indigo-500 to-purple-500',
+                'from-amber-500 to-orange-500',
+                'from-emerald-500 to-teal-500',
+                'from-rose-500 to-pink-500',
+                'from-violet-500 to-purple-500'
+              ];
+
+              const hoverGradients = [
+                'hover:from-blue-50 hover:to-cyan-50',
+                'hover:from-indigo-50 hover:to-purple-50',
+                'hover:from-amber-50 hover:to-orange-50',
+                'hover:from-emerald-50 hover:to-teal-50',
+                'hover:from-rose-50 hover:to-pink-50',
+                'hover:from-violet-50 hover:to-purple-50'
+              ];
+
+              const textColors = [
+                'text-blue-600',
+                'text-indigo-600',
+                'text-amber-600',
+                'text-emerald-600',
+                'text-rose-600',
+                'text-violet-600'
+              ];
+
+              return (                <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-primary-50 text-primary-700 border-r-2 border-primary-500'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center px-4 py-3 mb-2 text-sm font-medium transition-all duration-300 rounded-xl group ${
+                    isActive
+                      ? `bg-gradient-to-r ${gradients[index]} text-white shadow-lg transform scale-105`
+                      : `text-gray-600 hover:bg-gradient-to-r ${hoverGradients[index]} ${textColors[index]} hover:shadow-md hover:transform hover:scale-105`
                   } ${isRTL ? 'text-right' : 'text-left'}`}
                 >
-                  <Icon className={`w-5 h-5 ${isRTL ? 'ml-3' : 'mr-3'}`} />
-                  {tab.name}
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                    isActive
+                      ? 'bg-white/20'
+                      : `bg-gray-100 group-hover:bg-white group-hover:shadow-sm`
+                  }`}>
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : ''}`} />
+                  </div>
+                  <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium`}>
+                    {tab.name}
+                  </span>
+                  {isActive && (
+                    <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                  )}
                 </button>
               );
             })}
           </nav>
 
           {/* Logout Button */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-gray-200/50 p-4">
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors rounded-lg ${isRTL ? 'text-right' : 'text-left'}`}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
             >
-              <ArrowRightOnRectangleIcon className={`w-5 h-5 ${isRTL ? 'ml-3' : 'mr-3'}`} />
-              Logout
+              <div className="w-8 h-8 bg-red-100 group-hover:bg-red-200 rounded-lg flex items-center justify-center transition-all duration-300">
+                <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-600" />
+              </div>
+              <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium`}>
+                {t('dashboard.actions.logout')}
+              </span>
             </button>
           </div>
-        </div>
-
-        {/* Main Content */}
-        <div className={`flex-1 ${isRTL ? 'mr-64' : 'ml-64'} p-8`}>
-          {/* Dashboard Stats */}
-          {activeTab === 'dashboard' && (
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">Dashboard Overview</h2>
-              {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex items-center">
-                      <UserGroupIcon className="w-8 h-8 text-blue-500" />
-                      <div className={`${isRTL ? 'mr-4' : 'ml-4'}`}>
-                        <p className="text-sm font-medium text-gray-600">Total Clients</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalClients}</p>
+        </div>        {/* Main Content */}
+        <div className={`flex-1 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'} p-4 lg:p-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen pt-20 lg:pt-8`}>          {/* Dashboard Stats */}
+          {activeTab === 'dashboard' && (            <div className="space-y-6">
+              {/* Modern Header */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-center py-8"
+              >
+                <motion.h1
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="text-5xl md:text-6xl font-black mb-4"
+                >                  <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    {t('dashboard.header.title').split(' ')[0]}
+                  </span>
+                  <span className="text-gray-800 ml-3">{t('dashboard.header.title').split(' ')[1]}</span>
+                </motion.h1>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="text-xl text-gray-600 max-w-2xl mx-auto"
+                >
+                  {t('dashboard.header.subtitle')}
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.8, delay: 0.6, type: "spring", stiffness: 200 }}
+                  className="mt-6"
+                >
+                  <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-full border border-blue-200">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-gray-700 font-medium">{t('dashboard.header.systemOnline')}</span>
+                  </div>
+                </motion.div>
+              </motion.div>              {/* Modern Stats Grid */}
+              {stats && (                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.3, staggerChildren: 0.1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  {/* Total Clients - Minimalist Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-blue-50 rounded-2xl group-hover:bg-blue-100 transition-colors duration-300">
+                          <UserGroupIcon className="w-6 h-6 text-blue-600" />
+                        </div>                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gray-900">{stats.totalClients}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.clients')}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{t('dashboard.stats.totalRegistered')}</span>
+                        <div className="flex items-center text-green-600 text-sm">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          {t('dashboard.stats.active')}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex items-center">
-                      <ClipboardDocumentListIcon className="w-8 h-8 text-yellow-500" />
-                      <div className={`${isRTL ? 'mr-4' : 'ml-4'}`}>
-                        <p className="text-sm font-medium text-gray-600">Pending Bookings</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.pendingBookings}</p>
+                  {/* Pending Bookings - Warning Style */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.5 }}
+                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-amber-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-amber-50 rounded-2xl group-hover:bg-amber-100 transition-colors duration-300">
+                          <ClipboardDocumentListIcon className="w-6 h-6 text-amber-600" />
+                        </div>                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gray-900">{stats.pendingBookings}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.pending')}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{t('dashboard.stats.needReview')}</span>
+                        <div className="flex items-center text-amber-600 text-sm">
+                          <div className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></div>
+                          {t('dashboard.stats.urgent')}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex items-center">
-                      <DocumentTextIcon className="w-8 h-8 text-purple-500" />
-                      <div className={`${isRTL ? 'mr-4' : 'ml-4'}`}>
-                        <p className="text-sm font-medium text-gray-600">Total Invoices</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalInvoices}</p>
+                  {/* Total Invoices */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.6 }}
+                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-purple-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-purple-50 rounded-2xl group-hover:bg-purple-100 transition-colors duration-300">
+                          <DocumentTextIcon className="w-6 h-6 text-purple-600" />
+                        </div>                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gray-900">{stats.totalInvoices}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.invoices')}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{t('dashboard.stats.generated')}</span>
+                        <div className="text-sm text-purple-600 font-medium">
+                          {stats.paidInvoices}/{stats.totalInvoices} {t('dashboard.stats.paid')}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex items-center">
-                      <CreditCardIcon className="w-8 h-8 text-green-500" />
-                      <div className={`${isRTL ? 'mr-4' : 'ml-4'}`}>
-                        <p className="text-sm font-medium text-gray-600">Paid Invoices</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.paidInvoices}</p>
+                  {/* Total Revenue - Featured Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.7 }}
+                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 text-white">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-white/20 rounded-2xl group-hover:bg-white/30 transition-colors duration-300">
+                          <CreditCardIcon className="w-6 h-6 text-white" />
+                        </div>                        <div className="text-right">
+                          <div className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()}</div>
+                          <div className="text-xs text-emerald-100 uppercase tracking-wide">{t('dashboard.stats.revenue')}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-emerald-100">{t('dashboard.stats.totalEarnings')}</span>
+                        <div className="flex items-center text-white text-sm">
+                          <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                          {t('dashboard.stats.live')}
+                        </div>
+                      </div>
+                    </div>                  </motion.div>
+
+                  {/* Total WhatsApp Messages */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-green-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-green-50 rounded-2xl group-hover:bg-green-100 transition-colors duration-300">
+                          <ChatBubbleLeftRightIcon className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gray-900">{stats.totalWhatsAppMessages}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.whatsappMessages')}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{t('dashboard.stats.totalMessages')}</span>
+                        <div className="flex items-center text-green-600 text-sm">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          {t('dashboard.stats.allTime')}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex items-center">
-                      <ChartBarIcon className="w-8 h-8 text-indigo-500" />
-                      <div className={`${isRTL ? 'mr-4' : 'ml-4'}`}>
-                        <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalRevenue} SAR</p>
+                  {/* Unread WhatsApp Messages */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.9 }}
+                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                    className="group cursor-pointer"
+                  >
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-red-50 rounded-2xl group-hover:bg-red-100 transition-colors duration-300">
+                          <ChatBubbleLeftRightIcon className="w-6 h-6 text-red-600" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-gray-900">{stats.unreadWhatsAppMessages}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.unreadMessages')}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{t('dashboard.stats.needsAttention')}</span>
+                        <div className="flex items-center text-red-600 text-sm">
+                          <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                          {t('dashboard.stats.unread')}
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex items-center">
-                      <ClipboardDocumentListIcon className="w-8 h-8 text-gray-500" />
-                      <div className={`${isRTL ? 'mr-4' : 'ml-4'}`}>
-                        <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
-                      </div>
-                    </div>
-                  </div>
+                  </motion.div>
+                </motion.div>
+              )}{/* Modern Quick Actions */}              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="mt-12"
+              >                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.quickActions.title')}</h2>
+                  <p className="text-gray-600">{t('dashboard.quickActions.subtitle')}</p>
                 </div>
-              )}
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.7, staggerChildren: 0.1 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                >                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.8 }}
+                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setActiveTab('bookings');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-blue-200 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors duration-300">
+                        <ClipboardDocumentListIcon className="w-6 h-6 text-blue-600" />
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.manageBookings.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.manageBookings.description')}</p>
+                      <div className="mt-4 text-xs text-blue-600 font-medium">{t('dashboard.quickActions.manageBookings.action')}</div>
+                    </div>
+                  </motion.button>                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.9 }}
+                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setActiveTab('clients');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-amber-200 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors duration-300">
+                        <UserGroupIcon className="w-6 h-6 text-amber-600" />
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.clientDatabase.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.clientDatabase.description')}</p>
+                      <div className="mt-4 text-xs text-amber-600 font-medium">{t('dashboard.quickActions.clientDatabase.action')}</div>
+                    </div>
+                  </motion.button>                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 1.0 }}
+                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setActiveTab('invoices');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-purple-200 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors duration-300">
+                        <DocumentTextIcon className="w-6 h-6 text-purple-600" />
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.invoiceCenter.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.invoiceCenter.description')}</p>
+                      <div className="mt-4 text-xs text-purple-600 font-medium">{t('dashboard.quickActions.invoiceCenter.action')}</div>
+                    </div>
+                  </motion.button>                  <motion.button
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 1.1 }}
+                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setActiveTab('payments');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-emerald-200 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors duration-300">
+                        <CreditCardIcon className="w-6 h-6 text-emerald-600" />
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.paymentTracking.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.paymentTracking.description')}</p>
+                      <div className="mt-4 text-xs text-emerald-600 font-medium">{t('dashboard.quickActions.paymentTracking.action')}</div>
+                    </div>
+                  </motion.button>
+                </motion.div>
+
+                {/* Additional Summary Info */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 1.0 }}
+                  className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6"
+                >                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('dashboard.systemStatus.title')}</h3>
+                      <p className="text-gray-600">{t('dashboard.systemStatus.subtitle')}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-gray-600">{t('dashboard.systemStatus.database')}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-gray-600">{t('dashboard.systemStatus.api')}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-gray-600">{t('dashboard.systemStatus.payments')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
             </div>
-          )}
-
-          {/* Clients Tab */}
-          {activeTab === 'clients' && (
-            <div>
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900">Clients</h2>
-                <div className="relative">
-                  <MagnifyingGlassIcon className={`absolute top-3 ${isRTL ? 'right-3' : 'left-3'} w-5 h-5 text-gray-400`} />
-                  <input
-                    type="text"
-                    placeholder="Search clients..."
-                    value={clientSearch}
-                    onChange={(e) => setClientSearch(e.target.value)}
-                    className={`w-80 ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Name
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Email
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Phone
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Nationality
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Registration Date
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {clients.map((client) => (
-                      <tr key={client._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {client.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {client.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {client.phone}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {client.nationality}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(client.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => setSelectedClient(client)}
-                            className="text-primary-600 hover:text-primary-900 mr-4"
-                          >
-                            <EyeIcon className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => setSelectedClient(client)}
-                            className="text-gray-600 hover:text-gray-900"
-                          >
-                            <PencilIcon className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Bookings Tab */}
+          )}{/* Clients Tab */}          {activeTab === 'clients' && (
+            <ClientsTab
+              clients={clients}
+              clientSearch={clientSearch}
+              setClientSearch={setClientSearch}
+              isRTL={isRTL}
+              onCreateClient={handleCreateClient}
+              isCreatingClient={isCreatingClient}
+            />
+          )}{/* Bookings Tab */}
           {activeTab === 'bookings' && (
-            <div>
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900">Booking Requests</h2>
-                <select
-                  value={bookingStatus}
-                  onChange={(e) => setBookingStatus(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="denied">Denied</option>
-                  <option value="invoiced">Invoiced</option>
-                  <option value="paid">Paid</option>
-                  <option value="confirmed">Confirmed</option>
-                </select>
-              </div>
-
-              <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Client Name
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Email
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Hotel Name
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Submission Date
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Status
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {bookings.map((booking) => (
-                      <tr key={booking._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {booking.touristName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {booking.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {booking.hotel.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(booking.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(booking.status, 'booking')}
-                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => {
-                                setSelectedBooking(booking);
-                                setShowBookingDetailsModal(true);
-                              }}
-                              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200"
-                            >
-                              <EyeIcon className="w-4 h-4 inline mr-1" />
-                              View Details
-                            </button>
-                            {booking.status === 'pending' && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowApprovalModal(true);
-                                  }}
-                                  className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-green-200"
-                                >
-                                  <CheckIcon className="w-4 h-4 inline mr-1" />
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowDenialModal(true);
-                                  }}
-                                  className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-medium hover:bg-red-200"
-                                >
-                                  <XMarkIcon className="w-4 h-4 inline mr-1" />
-                                  Deny
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Invoices Tab */}
+            <BookingsTab
+              bookings={bookings}
+              bookingStatus={bookingStatus}
+              setBookingStatus={setBookingStatus}
+              isRTL={isRTL}
+              setSelectedBooking={handleSetSelectedBooking}
+              setShowBookingDetailsModal={setShowBookingDetailsModal}
+              setShowApprovalModal={setShowApprovalModal}
+              setShowDenialModal={setShowDenialModal}
+              getStatusBadge={handleGetStatusBadge}
+            />
+          )}{/* Invoices Tab */}
           {activeTab === 'invoices' && (
-            <div>
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900">Invoices</h2>
-                <select
-                  value={invoiceStatus}
-                  onChange={(e) => setInvoiceStatus(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="">All Status</option>
-                  <option value="invoiced">Invoiced</option>
-                  <option value="paid">Paid</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Invoice ID
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Client Name
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Email
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Hotel Name
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Amount
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Status
-                      </th>                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Issue Date
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {invoices.map((invoice) => (
-                      <tr key={invoice._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {invoice.invoiceId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {invoice.clientName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {invoice.clientEmail}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {invoice.hotelName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {invoice.amount} {invoice.currency}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(invoice.status, 'invoice')}
-                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {
-                              setSelectedInvoice(invoice);
-                              setShowInvoiceDetailsModal(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors duration-200 flex items-center space-x-1"
-                          >
-                            <EyeIcon className="w-4 h-4" />
-                            <span>View Details</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Payments Tab */}
-          {activeTab === 'payments' && (
-            <div>
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900">Payments</h2>
-                <select
-                  value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                >
-                  <option value="">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="completed">Completed</option>
-                  <option value="failed">Failed</option>
-                  <option value="processing">Processing</option>
-                </select>
-              </div>
-
-              <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Invoice ID
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Client Name
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Email
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Amount
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Status
-                      </th>                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Payment Date
-                      </th>
-                      <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider`}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {payments.map((payment) => (
-                      <tr key={payment._id} className="hover:bg-gray-50">                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {payment.invoice.invoiceId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {payment.user.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {payment.user.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {payment.amount} {payment.currency}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(payment.status, 'payment')}
-                        </td>                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {payment.processedAt ? new Date(payment.processedAt).toLocaleDateString() : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {
-                              setSelectedPayment(payment);
-                              setShowPaymentDetailsModal(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors duration-200 flex items-center space-x-1"
-                          >
-                            <EyeIcon className="w-4 h-4" />
-                            <span>View Details</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>                </table>
-              </div>
-            </div>
-          )}
-
-          {/* WhatsApp Messages Tab */}
+            <InvoicesTab
+              invoices={invoices}
+              invoiceStatus={invoiceStatus}
+              setInvoiceStatus={setInvoiceStatus}
+              isRTL={isRTL}
+              setSelectedInvoice={handleSetSelectedInvoice}
+              setShowInvoiceDetailsModal={setShowInvoiceDetailsModal}
+              getStatusBadge={handleGetStatusBadge}
+            />
+          )}{/* Payments Tab */}
+          {activeTab === 'payments' && (            <PaymentsTab
+              payments={payments}
+              paymentStatus={paymentStatus}
+              setPaymentStatus={setPaymentStatus}
+              isRTL={isRTL}
+              setSelectedPayment={handleSetSelectedPayment}
+              setShowPaymentDetailsModal={setShowPaymentDetailsModal}
+              getStatusBadge={handleGetStatusBadge}
+            />
+          )}{/* WhatsApp Messages Tab */}
           {activeTab === 'whatsapp' && (
-            <div className="h-full">
-              <WhatsAppInbox />
-            </div>
+            <WhatsAppTab />
           )}
         </div>
-      </div>
-
-      {/* Approval Modal */}
+      </div>      {/* Approval Modal */}
       {showApprovalModal && selectedBooking && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Approve Booking</h3>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+          <div className="relative top-4 lg:top-20 mx-auto p-5 border w-full max-w-md lg:max-w-lg shadow-lg rounded-md bg-white">
+            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('dashboard.bookings.approvalModal.title')}</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Approve booking for {selectedBooking.touristName} at {selectedBooking.hotel.name}?
+                {t('dashboard.bookings.approvalModal.description', {
+                  touristName: selectedBooking.touristName,
+                  hotelName: selectedBooking.hotel.name
+                })}
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Invoice Amount (SAR)
+                  {t('dashboard.bookings.approvalModal.amount')}
                 </label>
                 <input
                   type="number"
                   value={approvalAmount}
                   onChange={(e) => setApprovalAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Enter amount"
+                  placeholder={t('dashboard.bookings.approvalModal.amount')}
                 />
               </div>
               <div className="flex justify-end space-x-3">
@@ -881,40 +962,40 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setShowApprovalModal(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
-                  Cancel
+                  {t('dashboard.bookings.approvalModal.cancel')}
                 </button>
                 <button
                   onClick={handleApproveBooking}
                   disabled={loading}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
-                  {loading ? 'Approving...' : 'Approve & Generate Invoice'}
+                  {loading ? t('dashboard.bookings.approvalModal.approving') : t('dashboard.bookings.approvalModal.approve')}
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Denial Modal */}
+      )}      {/* Denial Modal */}
       {showDenialModal && selectedBooking && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Deny Booking</h3>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+          <div className="relative top-4 lg:top-20 mx-auto p-5 border w-full max-w-md lg:max-w-lg shadow-lg rounded-md bg-white">
+            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('dashboard.bookings.denialModal.title')}</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Deny booking for {selectedBooking.touristName} at {selectedBooking.hotel.name}?
+                {t('dashboard.bookings.denialModal.description', {
+                  touristName: selectedBooking.touristName,
+                  hotelName: selectedBooking.hotel.name
+                })}
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for Denial *
+                  {t('dashboard.bookings.denialModal.reason')}
                 </label>
                 <textarea
                   value={denialReason}
                   onChange={(e) => setDenialReason(e.target.value)}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Please provide a reason for denial..."
+                  placeholder={t('dashboard.bookings.denialModal.reasonPlaceholder')}
                 />
               </div>
               <div className="flex justify-end space-x-3">
@@ -922,27 +1003,26 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setShowDenialModal(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
-                  Cancel
+                  {t('dashboard.bookings.denialModal.cancel')}
                 </button>
                 <button
                   onClick={handleDenyBooking}
                   disabled={loading || !denialReason}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                >                  {loading ? 'Denying...' : 'Deny & Send Notification'}
+                >
+                  {loading ? t('dashboard.bookings.denialModal.denying') : t('dashboard.bookings.denialModal.deny')}
                 </button>
               </div>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Booking Details Modal */}
+      )}      {/* Booking Details Modal */}
       {showBookingDetailsModal && selectedBooking && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-0 border max-w-4xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-2 lg:p-4">
+          <div className="relative top-2 lg:top-10 mx-auto p-0 border w-full max-w-6xl shadow-lg rounded-md bg-white">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-md">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-900">Booking Details</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{t('dashboard.bookings.details.title')}</h3>
                 <button
                   onClick={() => setShowBookingDetailsModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -1207,7 +1287,9 @@ export const AdminDashboard: React.FC = () => {
               <div className="mb-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="text-2xl font-bold text-gray-900">Invoice #{selectedInvoice.invoiceId}</h4>
+                    <h4 className="text-2xl font-bold text-gray-900">
+                      Invoice #{selectedInvoice.invoiceId}
+                    </h4>
                     <p className="text-gray-600 mt-1">
                       Status: <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         selectedInvoice.status === 'paid' ? 'bg-green-100 text-green-800' :

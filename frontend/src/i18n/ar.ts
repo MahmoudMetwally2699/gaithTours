@@ -206,38 +206,23 @@ export const ar = {
     },
     tours: {
       title: 'جولات وتجارب بصحبة مرشدين',
-      description: 'جولات بقيادة خبراء تكشف أسرار وقصص أكثر الوجهات السعودية إثارة للاهتمام.',
-      feature1: 'مرشدون محترفون متعددو اللغات',
-      feature2: 'خيارات للمجموعات الصغيرة والخاصة',
-      feature3: 'مواقع التراث العالمي لليونسكو'
+      description: 'جولات بقيادة خبراء تكشف أسرار وقصص أكثر الوجهات السعودية إثارة للاهتمام.'
     },
     planning: {
       title: 'تخطيط رحلات مخصصة',
-      description: 'برامج سياحية شخصية مصممة لتناسب اهتماماتك وجدولك الزمني وأسلوب سفرك.',
-      feature1: 'تصميم برنامج سياحي مخصص',
-      feature2: 'خيارات جدولة مرنة',
-      feature3: 'مستشار سفر شخصي'
+      description: 'برامج سياحية شخصية مصممة لتناسب اهتماماتك وجدولك الزمني وأسلوب سفرك.'
     },
     transport: {
       title: 'نقل مميز',
-      description: 'خيارات نقل مريحة وآمنة وموثوقة لجميع احتياجات سفرك.',
-      feature1: 'أسطول مركبات فاخرة',
-      feature2: 'سائقون محترفون',
-      feature3: 'نقل المطار مشمول'
+      description: 'خيارات نقل مريحة وآمنة وموثوقة لجميع احتياجات سفرك.'
     },
     guides: {
       title: 'مرشدون محليون خبراء',
-      description: 'مرشدون على دراية يحيون تاريخ وثقافة المملكة العربية السعودية.',
-      feature1: 'خبراء ثقافيون معتمدون',
-      feature2: 'دعم متعدد اللغات',
-      feature3: 'معرفة محلية من الداخل'
+      description: 'مرشدون على دراية يحيون تاريخ وثقافة المملكة العربية السعودية.'
     },
     photography: {
       title: 'خدمات التصوير',
-      description: 'تصوير احترافي لالتقاط لحظاتك التي لا تُنسى وجمال المملكة العربية السعودية.',
-      feature1: 'مصورون محترفون',
-      feature2: 'تسليم صور عالية الجودة',
-      feature3: 'تصوير بالطائرات المسيرة متاح'
+      description: 'تصوير احترافي لالتقاط لحظاتك التي لا تُنسى وجمال المملكة العربية السعودية.'
     },
     cta: {
       title: 'مستعد لبدء رحلتك؟',
@@ -891,5 +876,218 @@ export const ar = {
     passwordsDoNotMatch: 'كلمات المرور غير متطابقة',
     minLength: 'يجب أن يحتوي على {{min}} أحرف على الأقل',
     maxLength: 'يجب ألا يزيد عن {{max}} حرف'
+  },
+  // Admin Dashboard
+  dashboard: {
+    title: 'لوحة تحكم الإدارة',
+    tabs: {
+      dashboard: 'لوحة التحكم',
+      clients: 'العملاء',
+      bookings: 'طلبات الحجز',
+      invoices: 'الفواتير',
+      payments: 'المدفوعات',
+      whatsapp: 'رسائل واتساب'
+    },
+    overview: 'نظرة عامة على لوحة التحكم',
+    header: {
+      title: 'مركز الإدارة',
+      subtitle: 'مركز التحكم لإدارة الحجوزات والعملاء وتدفقات الإيرادات',
+      systemOnline: 'النظام متصل'
+    },
+    stats: {
+      totalClients: 'إجمالي العملاء',
+      totalBookings: 'إجمالي الحجوزات',
+      pendingBookings: 'الحجوزات المعلقة',
+      totalInvoices: 'إجمالي الفواتير',
+      paidInvoices: 'الفواتير المدفوعة',
+      totalRevenue: 'إجمالي الإيرادات',
+      clients: 'العملاء',
+      pending: 'معلق',
+      invoices: 'الفواتير',
+      revenue: 'إيرادات بالريال',
+      totalRegistered: 'إجمالي المسجلين',
+      active: 'نشط',
+      needReview: 'يحتاج مراجعة',
+      urgent: 'عاجل',
+      generated: 'تم إنشاؤها',      paid: 'مدفوعة',
+      totalEarnings: 'إجمالي الأرباح',
+      live: 'مباشر',
+      whatsappMessages: 'رسائل واتساب',
+      unreadMessages: 'الرسائل غير المقروءة',
+      totalMessages: 'إجمالي الرسائل',
+      needsAttention: 'يحتاج انتباه',
+      unread: 'غير مقروءة',
+      allTime: 'طوال الوقت'
+    },
+    quickActions: {
+      title: 'الإجراءات السريعة',
+      subtitle: 'انتقل إلى أهم المهام',
+      manageBookings: {
+        title: 'إدارة الحجوزات',
+        description: 'مراجعة والموافقة على الحجوزات',
+        action: 'عرض الكل ←'
+      },
+      clientDatabase: {
+        title: 'قاعدة بيانات العملاء',
+        description: 'إدارة معلومات العملاء',
+        action: 'عرض الكل ←'
+      },
+      invoiceCenter: {
+        title: 'مركز الفواتير',
+        description: 'إنشاء وتتبع الفواتير',
+        action: 'عرض الكل ←'
+      },
+      paymentTracking: {
+        title: 'تتبع المدفوعات',
+        description: 'مراقبة المعاملات المالية',
+        action: 'عرض الكل ←'
+      }
+    },
+    systemStatus: {
+      title: 'حالة النظام',
+      subtitle: 'جميع الخدمات تعمل بشكل طبيعي',
+      database: 'قاعدة البيانات',
+      api: 'واجهة البرمجة',
+      payments: 'المدفوعات'
+    },
+    clients: {
+      title: 'العملاء',
+      search: 'البحث عن العملاء...',
+      name: 'الاسم',
+      email: 'البريد الإلكتروني',
+      phone: 'الهاتف',
+      nationality: 'الجنسية',
+      registrationDate: 'تاريخ التسجيل',
+      actions: 'الإجراءات'
+    },
+    bookings: {
+      title: 'طلبات الحجز',
+      clientName: 'اسم العميل',
+      email: 'البريد الإلكتروني',
+      hotelName: 'اسم الفندق',
+      submissionDate: 'تاريخ الإرسال',
+      status: 'الحالة',
+      actions: 'الإجراءات',
+      approve: 'موافقة',
+      deny: 'رفض',
+      viewDetails: 'عرض التفاصيل',
+      approveBooking: 'الموافقة على الحجز',
+      denyBooking: 'رفض الحجز',
+      approvalModal: {
+        title: 'الموافقة على الحجز',
+        description: 'الموافقة على حجز {{touristName}} في {{hotelName}}؟',
+        amount: 'مبلغ الفاتورة (ريال سعودي)',
+        approve: 'الموافقة وإنشاء الفاتورة',
+        approving: 'جاري الموافقة...',
+        cancel: 'إلغاء'
+      },
+      denialModal: {
+        title: 'رفض الحجز',
+        description: 'رفض حجز {{touristName}} في {{hotelName}}؟',
+        reason: 'سبب الرفض *',
+        reasonPlaceholder: 'يرجى تقديم سبب الرفض...',
+        deny: 'رفض وإرسال إشعار',
+        denying: 'جاري الرفض...',
+        cancel: 'إلغاء'
+      },
+      details: {
+        title: 'تفاصيل الحجز',
+        hotelInfo: 'معلومات الفندق',
+        visitWebsite: 'زيارة موقع الفندق',
+        expectedPrice: 'السعر المتوقع',
+        travelDetails: 'تفاصيل السفر',
+        bookingId: 'رقم الحجز',
+        checkIn: 'تسجيل الدخول',
+        checkOut: 'تسجيل المغادرة',
+        guests: 'الضيوف',
+        expectedCheckInTime: 'وقت تسجيل الدخول المتوقع',
+        roomAndStay: 'تفاصيل الغرفة والإقامة',
+        roomType: 'نوع الغرفة',
+        stayType: 'نوع الإقامة',
+        paymentMethod: 'طريقة الدفع',
+        submissionDate: 'تاريخ الإرسال',
+        personalInfo: 'المعلومات الشخصية',
+        fullName: 'الاسم الكامل',
+        nationality: 'الجنسية',
+        additionalGuests: 'ضيوف إضافيون',
+        guestName: 'اسم الضيف',
+        attachments: 'المرفقات',
+        specialRequests: 'طلبات خاصة'
+      }
+    },
+    invoices: {
+      title: 'الفواتير',
+      invoiceId: 'رقم الفاتورة',
+      clientName: 'اسم العميل',
+      email: 'البريد الإلكتروني',
+      hotelName: 'اسم الفندق',
+      amount: 'المبلغ',
+      status: 'الحالة',
+      issueDate: 'تاريخ الإصدار',
+      actions: 'الإجراءات',
+      viewDetails: 'عرض التفاصيل',
+      details: {
+        title: 'تفاصيل الفاتورة',
+        issueDate: 'تاريخ الإصدار',
+        dueDate: 'تاريخ الاستحقاق',
+        billTo: 'إرسال الفاتورة إلى',
+        clientId: 'رقم العميل',
+        serviceDetails: 'تفاصيل الخدمة',
+        relatedBooking: 'الحجز المرتبط'
+      }
+    },
+    payments: {
+      title: 'المدفوعات',
+      paymentId: 'رقم الدفعة',
+      clientName: 'اسم العميل',
+      email: 'البريد الإلكتروني',
+      amount: 'المبلغ',
+      status: 'الحالة',
+      processedDate: 'تاريخ المعالجة',
+      actions: 'الإجراءات',
+      viewDetails: 'عرض التفاصيل',
+      details: {
+        title: 'تفاصيل الدفعة',
+        paymentInfo: 'معلومات الدفع',
+        processingFees: 'رسوم المعالجة',
+        netAmount: 'المبلغ الصافي',
+        paymentMethod: 'طريقة الدفع',
+        gateway: 'بوابة الدفع',
+        invoiceInfo: 'معلومات الفاتورة',
+        invoiceId: 'رقم الفاتورة',
+        invoiceAmount: 'مبلغ الفاتورة',
+        customer: 'العميل',
+        relatedBooking: 'الحجز المرتبط'
+      }
+    },
+    status: {
+      pending: 'معلق',
+      approved: 'مُوافق عليه',
+      denied: 'مرفوض',
+      invoiced: 'تم إصدار فاتورة',
+      paid: 'مدفوع',
+      confirmed: 'مؤكد',
+      completed: 'مكتمل',
+      failed: 'فشل',
+      processing: 'قيد المعالجة',
+      cancelled: 'ملغي'
+    },
+    actions: {
+      logout: 'تسجيل الخروج',
+      close: 'إغلاق',
+      view: 'عرض'
+    },
+    messages: {
+      logoutFailed: 'فشل في تسجيل الخروج',
+      bookingApproved: 'تم الموافقة على الحجز وإنشاء الفاتورة!',
+      bookingDenied: 'تم رفض الحجز وإرسال الإشعار',
+      bookingApprovalFailed: 'فشل في الموافقة على الحجز',
+      bookingDenialFailed: 'فشل في رفض الحجز',
+      fetchStatsFailed: 'فشل في جلب إحصائيات لوحة التحكم',
+      fetchClientsFailed: 'فشل في جلب العملاء',
+      fetchBookingsFailed: 'فشل في جلب الحجوزات',
+      fetchInvoicesFailed: 'فشل في جلب الفواتير',
+      fetchPaymentsFailed: 'فشل في جلب المدفوعات'
+    }
   }
 };

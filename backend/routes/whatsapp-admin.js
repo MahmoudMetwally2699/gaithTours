@@ -132,11 +132,18 @@ router.get('/conversations', async (req, res) => {
     console.log('📈 Total conversations in database:', totalCount);
 
     const filteredCount = await WhatsAppConversation.countDocuments(query);
-    console.log('📈 Conversations matching filter:', filteredCount);
-
-    // Calculate pagination
+    console.log('📈 Conversations matching filter:', filteredCount);    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };    // Get conversations
+
+    // Fix sort field mapping - map frontend field names to database field names
+    let dbSortField = sortBy;
+    if (sortBy === 'lastMessageTimestamp') {
+      dbSortField = 'lastMessageAt';
+    }
+
+    const sort = { [dbSortField]: sortOrder === 'desc' ? -1 : 1 };
+
+    // Get conversations
     const conversations = await WhatsAppConversation.find(query)
       .populate('userId', 'name firstName lastName email')
       .populate('assignedToAdmin', 'name firstName lastName')
@@ -146,6 +153,14 @@ router.get('/conversations', async (req, res) => {
       .lean();
 
     console.log('💬 Found conversations:', conversations.length);
+
+    // Map database fields to frontend expected fields
+    const mappedConversations = conversations.map(conv => ({
+      ...conv,
+      lastMessageTimestamp: conv.lastMessageAt, // Map database field to frontend expected field
+      lastMessage: conv.lastMessagePreview, // Map preview to lastMessage
+      lastMessageDirection: conv.lastMessageDirection || 'incoming' // Add default if not present
+    }));
 
     // Get total count
     const total = await WhatsAppConversation.countDocuments(query);
@@ -169,10 +184,8 @@ router.get('/conversations', async (req, res) => {
           }
         }
       }
-    ]);
-
-    res.json({
-      conversations,
+    ]);    res.json({
+      conversations: mappedConversations,
       pagination: {
         current: parseInt(page),
         total: Math.ceil(total / parseInt(limit)),

@@ -2,9 +2,25 @@ import React from 'react';
 import { format } from 'date-fns';
 import { Check, CheckCheck, Clock, AlertCircle, Image, File, MapPin, User, Phone } from 'lucide-react';
 
-const MessageBubble = ({ message, isOwn }) => {
-  const formatTime = (timestamp) => {
-    return format(new Date(timestamp), 'HH:mm');
+const MessageBubble = ({ message, isOwn }) => {  const formatTime = (timestamp) => {
+    // Handle null, undefined, or invalid timestamps
+    if (!timestamp) {
+      return '--:--';
+    }
+
+    try {
+      const date = new Date(timestamp);
+
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return '--:--';
+      }
+
+      return format(date, 'HH:mm');
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return '--:--';
+    }
   };
 
   const getStatusIcon = () => {
@@ -12,15 +28,15 @@ const MessageBubble = ({ message, isOwn }) => {
 
     switch (message.status) {
       case 'sent':
-        return <Check size={14} className="text-gray-400" />;
+        return <Check size={14} className="text-white/70" />;
       case 'delivered':
-        return <CheckCheck size={14} className="text-gray-400" />;
+        return <CheckCheck size={14} className="text-white/70" />;
       case 'read':
-        return <CheckCheck size={14} className="text-blue-500" />;
+        return <CheckCheck size={14} className="text-white/90" />;
       case 'failed':
-        return <AlertCircle size={14} className="text-red-500" />;
+        return <AlertCircle size={14} className="text-red-300" />;
       default:
-        return <Clock size={14} className="text-gray-400" />;
+        return <Clock size={14} className="text-white/70" />;
     }
   };
 
@@ -40,16 +56,16 @@ const MessageBubble = ({ message, isOwn }) => {
         return null;
     }
   };
-
   const renderMessageContent = () => {
     switch (message.messageType) {
       case 'image':
         return (
           <div>
-            {message.metadata?.media_url && (              <img
+            {message.metadata?.media_url && (
+              <img
                 src={message.metadata.media_url}
                 alt="Shared content"
-                className="max-w-xs rounded-lg mb-2"
+                className="max-w-full w-full sm:max-w-xs rounded-lg mb-2"
               />
             )}
             {message.metadata?.caption && (
@@ -66,10 +82,10 @@ const MessageBubble = ({ message, isOwn }) => {
 
       case 'document':
         return (
-          <div className="flex items-center space-x-2 p-3 bg-gray-100 rounded-lg">
-            <File size={20} className="text-gray-600" />
-            <div>
-              <p className="text-sm font-medium">{message.metadata?.filename || 'Document'}</p>
+          <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
+            <File size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">{message.metadata?.filename || 'Document'}</p>
               <p className="text-xs text-gray-500">{message.metadata?.mime_type}</p>
             </div>
           </div>
@@ -77,15 +93,15 @@ const MessageBubble = ({ message, isOwn }) => {
 
       case 'location':
         return (
-          <div className="flex items-center space-x-2 p-3 bg-gray-100 rounded-lg">
-            <MapPin size={20} className="text-gray-600" />
-            <div>
+          <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
+            <MapPin size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">Location Shared</p>
               {message.metadata?.location?.name && (
-                <p className="text-xs text-gray-500">{message.metadata.location.name}</p>
+                <p className="text-xs text-gray-500 truncate">{message.metadata.location.name}</p>
               )}
               {message.metadata?.location?.address && (
-                <p className="text-xs text-gray-500">{message.metadata.location.address}</p>
+                <p className="text-xs text-gray-500 truncate">{message.metadata.location.address}</p>
               )}
             </div>
           </div>
@@ -93,12 +109,12 @@ const MessageBubble = ({ message, isOwn }) => {
 
       case 'contact':
         return (
-          <div className="flex items-center space-x-2 p-3 bg-gray-100 rounded-lg">
-            <User size={20} className="text-gray-600" />
-            <div>
+          <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
+            <User size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">Contact Shared</p>
               {message.metadata?.contact?.name && (
-                <p className="text-xs text-gray-500">{message.metadata.contact.name}</p>
+                <p className="text-xs text-gray-500 truncate">{message.metadata.contact.name}</p>
               )}
               {message.metadata?.contact?.phone && (
                 <p className="text-xs text-gray-500">{message.metadata.contact.phone}</p>
@@ -109,9 +125,9 @@ const MessageBubble = ({ message, isOwn }) => {
 
       case 'audio':
         return (
-          <div className="flex items-center space-x-2 p-3 bg-gray-100 rounded-lg">
-            <Phone size={20} className="text-gray-600" />
-            <div>
+          <div className="flex items-center space-x-2 p-2 sm:p-3 bg-gray-100 rounded-lg">
+            <Phone size={16} className="sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">Voice Message</p>
               <p className="text-xs text-gray-500">Click to play</p>
             </div>
@@ -119,45 +135,52 @@ const MessageBubble = ({ message, isOwn }) => {
         );
 
       default:
-        return <p className="text-sm whitespace-pre-wrap">{message.message}</p>;
+        return <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>;
     }
-  };
-
-  return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${
+  };return (
+    <div className={`flex mb-3 lg:mb-4 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-[85%] sm:max-w-xs lg:max-w-md xl:max-w-lg transform transition-all duration-300 hover:scale-105 ${
         isOwn ? 'order-2' : 'order-1'
       }`}>
-        <div className={`px-4 py-2 rounded-lg ${
+        <div className={`px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-2xl shadow-lg relative ${
           isOwn
-            ? 'bg-blue-500 text-white'
-            : 'bg-white text-gray-900 border border-gray-200'
+            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+            : 'bg-white text-gray-900 border border-gray-200 shadow-md'
         }`}>
+          {/* Message tail */}
+          <div className={`absolute top-2 sm:top-3 w-2 h-2 sm:w-3 sm:h-3 transform rotate-45 ${
+            isOwn
+              ? '-right-1 bg-gradient-to-r from-green-500 to-emerald-500'
+              : '-left-1 bg-white border-l border-b border-gray-200'
+          }`}></div>
+
           {/* Message type indicator */}
           {message.messageType !== 'text' && (
-            <div className={`flex items-center space-x-1 mb-1 ${
-              isOwn ? 'text-blue-100' : 'text-gray-500'
+            <div className={`flex items-center space-x-2 mb-2 ${
+              isOwn ? 'text-white/80' : 'text-gray-600'
             }`}>
               {getMessageTypeIcon()}
-              <span className="text-xs capitalize">{message.messageType}</span>
+              <span className="text-xs font-semibold capitalize">{message.messageType}</span>
             </div>
           )}
 
           {/* Message content */}
-          {renderMessageContent()}
+          <div className={isOwn ? 'text-white' : 'text-gray-800'}>
+            {renderMessageContent()}
+          </div>
 
           {/* Timestamp and status */}
-          <div className={`flex items-center justify-end space-x-1 mt-1 ${
-            isOwn ? 'text-blue-100' : 'text-gray-500'
+          <div className={`flex items-center justify-end space-x-1 sm:space-x-2 mt-1 sm:mt-2 ${
+            isOwn ? 'text-white/70' : 'text-gray-500'
           }`}>
-            <span className="text-xs">{formatTime(message.timestamp)}</span>
+            <span className="text-xs font-medium">{formatTime(message.timestamp)}</span>
             {getStatusIcon()}
           </div>
         </div>
 
         {/* Admin info for outgoing messages */}
         {isOwn && message.adminUserId && (
-          <div className="text-xs text-gray-500 mt-1 text-right">
+          <div className="text-xs text-gray-500 mt-1 sm:mt-2 text-right font-medium">
             Sent by {message.adminUserId.name || message.adminUserId.firstName}
           </div>
         )}

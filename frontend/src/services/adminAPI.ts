@@ -4,10 +4,10 @@ import api from './api';
 export const adminAPI = {
   // Dashboard stats
   getStats: () => api.get('/admin/stats'),
-
   // Clients management
   getClients: (params = {}) => api.get('/admin/clients', { params }),
   getClient: (id: string) => api.get(`/admin/clients/${id}`),
+  createClient: (data: any) => api.post('/admin/clients', data),
   updateClient: (id: string, data: any) => api.put(`/admin/clients/${id}`, data),
 
   // Booking requests management

@@ -880,5 +880,218 @@ export const en = {
     passwordsDoNotMatch: 'Passwords do not match',
     minLength: 'Must be at least {{min}} characters',
     maxLength: 'Must be no more than {{max}} characters'
+  },
+  // Admin Dashboard
+  dashboard: {
+    title: 'Admin Dashboard',
+    tabs: {
+      dashboard: 'Dashboard',
+      clients: 'Clients',
+      bookings: 'Booking Requests',
+      invoices: 'Invoices',
+      payments: 'Payments',
+      whatsapp: 'WhatsApp Messages'
+    },
+    overview: 'Dashboard Overview',
+    header: {
+      title: 'Admin Hub',
+      subtitle: 'Your command center for managing bookings, clients, and revenue streams',
+      systemOnline: 'System Online'
+    },
+    stats: {
+      totalClients: 'Total Clients',
+      totalBookings: 'Total Bookings',
+      pendingBookings: 'Pending Bookings',
+      totalInvoices: 'Total Invoices',
+      paidInvoices: 'Paid Invoices',
+      totalRevenue: 'Total Revenue',
+      clients: 'Clients',
+      pending: 'Pending',
+      invoices: 'Invoices',
+      revenue: 'SAR Revenue',
+      totalRegistered: 'Total Registered',
+      active: 'Active',
+      needReview: 'Need Review',
+      urgent: 'Urgent',
+      generated: 'Generated',      paid: 'Paid',
+      totalEarnings: 'Total Earnings',
+      live: 'Live',
+      whatsappMessages: 'WhatsApp Messages',
+      unreadMessages: 'Unread Messages',
+      totalMessages: 'Total Messages',
+      needsAttention: 'Needs Attention',
+      unread: 'Unread',
+      allTime: 'All Time'
+    },
+    quickActions: {
+      title: 'Quick Actions',
+      subtitle: 'Jump to the most important tasks',
+      manageBookings: {
+        title: 'Manage Bookings',
+        description: 'Review and approve reservations',
+        action: 'View All →'
+      },
+      clientDatabase: {
+        title: 'Client Database',
+        description: 'Manage customer information',
+        action: 'View All →'
+      },
+      invoiceCenter: {
+        title: 'Invoice Center',
+        description: 'Create and track billing',
+        action: 'View All →'
+      },
+      paymentTracking: {
+        title: 'Payment Tracking',
+        description: 'Monitor financial transactions',
+        action: 'View All →'
+      }
+    },
+    systemStatus: {
+      title: 'System Status',
+      subtitle: 'All services operational',
+      database: 'Database',
+      api: 'API',
+      payments: 'Payments'
+    },
+    clients: {
+      title: 'Clients',
+      search: 'Search clients...',
+      name: 'Name',
+      email: 'Email',
+      phone: 'Phone',
+      nationality: 'Nationality',
+      registrationDate: 'Registration Date',
+      actions: 'Actions'
+    },
+    bookings: {
+      title: 'Booking Requests',
+      clientName: 'Client Name',
+      email: 'Email',
+      hotelName: 'Hotel Name',
+      submissionDate: 'Submission Date',
+      status: 'Status',
+      actions: 'Actions',
+      approve: 'Approve',
+      deny: 'Deny',
+      viewDetails: 'View Details',
+      approveBooking: 'Approve Booking',
+      denyBooking: 'Deny Booking',
+      approvalModal: {
+        title: 'Approve Booking',
+        description: 'Approve booking for {{touristName}} at {{hotelName}}?',
+        amount: 'Invoice Amount (SAR)',
+        approve: 'Approve & Generate Invoice',
+        approving: 'Approving...',
+        cancel: 'Cancel'
+      },
+      denialModal: {
+        title: 'Deny Booking',
+        description: 'Deny booking for {{touristName}} at {{hotelName}}?',
+        reason: 'Reason for Denial *',
+        reasonPlaceholder: 'Please provide a reason for denial...',
+        deny: 'Deny & Send Notification',
+        denying: 'Denying...',
+        cancel: 'Cancel'
+      },
+      details: {
+        title: 'Booking Details',
+        hotelInfo: 'Hotel Information',
+        visitWebsite: 'Visit Hotel Website',
+        expectedPrice: 'Expected Price',
+        travelDetails: 'Travel Details',
+        bookingId: 'Booking ID',
+        checkIn: 'Check-in',
+        checkOut: 'Check-out',
+        guests: 'Guests',
+        expectedCheckInTime: 'Expected Check-in Time',
+        roomAndStay: 'Room & Stay Details',
+        roomType: 'Room Type',
+        stayType: 'Stay Type',
+        paymentMethod: 'Payment Method',
+        submissionDate: 'Submission Date',
+        personalInfo: 'Personal Information',
+        fullName: 'Full Name',
+        nationality: 'Nationality',
+        additionalGuests: 'Additional Guests',
+        guestName: 'Guest\'s Name',
+        attachments: 'Attachments',
+        specialRequests: 'Special Requests'
+      }
+    },
+    invoices: {
+      title: 'Invoices',
+      invoiceId: 'Invoice ID',
+      clientName: 'Client Name',
+      email: 'Email',
+      hotelName: 'Hotel Name',
+      amount: 'Amount',
+      status: 'Status',
+      issueDate: 'Issue Date',
+      actions: 'Actions',
+      viewDetails: 'View Details',
+      details: {
+        title: 'Invoice Details',
+        issueDate: 'Issue Date',
+        dueDate: 'Due Date',
+        billTo: 'Bill To',
+        clientId: 'Client ID',
+        serviceDetails: 'Service Details',
+        relatedBooking: 'Related Booking'
+      }
+    },
+    payments: {
+      title: 'Payments',
+      paymentId: 'Payment ID',
+      clientName: 'Client Name',
+      email: 'Email',
+      amount: 'Amount',
+      status: 'Status',
+      processedDate: 'Processed Date',
+      actions: 'Actions',
+      viewDetails: 'View Details',
+      details: {
+        title: 'Payment Details',
+        paymentInfo: 'Payment Information',
+        processingFees: 'Processing Fees',
+        netAmount: 'Net Amount',
+        paymentMethod: 'Payment Method',
+        gateway: 'Gateway',
+        invoiceInfo: 'Invoice Information',
+        invoiceId: 'Invoice ID',
+        invoiceAmount: 'Invoice Amount',
+        customer: 'Customer',
+        relatedBooking: 'Related Booking'
+      }
+    },
+    status: {
+      pending: 'Pending',
+      approved: 'Approved',
+      denied: 'Denied',
+      invoiced: 'Invoiced',
+      paid: 'Paid',
+      confirmed: 'Confirmed',
+      completed: 'Completed',
+      failed: 'Failed',
+      processing: 'Processing',
+      cancelled: 'Cancelled'
+    },
+    actions: {
+      logout: 'Logout',
+      close: 'Close',
+      view: 'View'
+    },
+    messages: {
+      logoutFailed: 'Failed to logout',
+      bookingApproved: 'Booking approved and invoice generated!',
+      bookingDenied: 'Booking denied and notification sent',
+      bookingApprovalFailed: 'Failed to approve booking',
+      bookingDenialFailed: 'Failed to deny booking',
+      fetchStatsFailed: 'Failed to fetch dashboard stats',
+      fetchClientsFailed: 'Failed to fetch clients',
+      fetchBookingsFailed: 'Failed to fetch bookings',
+      fetchInvoicesFailed: 'Failed to fetch invoices',
+      fetchPaymentsFailed: 'Failed to fetch payments'
+    }
   }
 };
