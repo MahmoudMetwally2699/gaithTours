@@ -308,7 +308,6 @@ export const AdminDashboard: React.FC = () => {
   const handleGetStatusBadge = (status: string, type: string) => {
     return getStatusBadge(status, type as 'booking' | 'invoice' | 'payment');
   };
-
   // Add useEffect after all functions are defined
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -317,6 +316,7 @@ export const AdminDashboard: React.FC = () => {
       fetchClients();
     } else if (activeTab === 'bookings') {
       fetchBookings();
+      fetchClients(); // Also fetch clients when on bookings tab for the booking modal
     } else if (activeTab === 'invoices') {
       fetchInvoices();
     } else if (activeTab === 'payments') {
@@ -907,6 +907,9 @@ export const AdminDashboard: React.FC = () => {
               setShowApprovalModal={setShowApprovalModal}
               setShowDenialModal={setShowDenialModal}
               getStatusBadge={handleGetStatusBadge}
+              clients={clients}
+              onRefreshBookings={fetchBookings}
+              isCreatingBooking={loading}
             />
           )}{/* Invoices Tab */}
           {activeTab === 'invoices' && (

@@ -6,8 +6,8 @@ const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const WhatsAppMessage = require('../models/WhatsAppMessage');
 const { protect, admin } = require('../middleware/auth');
-const { successResponse, errorResponse } = require('../utils/helpers');
-const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail } = require('../utils/emailService');
+const { successResponse, errorResponse, sanitizeInput } = require('../utils/helpers');
+const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail, sendReservationConfirmation, sendAgencyNotification } = require('../utils/emailService');
 const whatsappService = require('../utils/whatsappService');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
@@ -495,6 +495,260 @@ router.post('/test-whatsapp', protect, admin, async (req, res) => {
   } catch (error) {
     console.error('Test WhatsApp error:', error);
     errorResponse(res, 'Failed to send WhatsApp message', 500);
+  }
+});
+
+// Create booking for client (Admin functionality)
+router.post('/bookings/create', protect, admin, [
+  body('clientId').isMongoId().withMessage('Valid client ID is required'),
+  body('touristName').trim().isLength({ min: 2 }).withMessage('Tourist name must be at least 2 characters long'),
+  body('phone').isLength({ min: 8 }).withMessage('Please enter a valid phone number'),
+  body('nationality').trim().isLength({ min: 2 }).withMessage('Nationality must be at least 2 characters long'),
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('roomType').trim().isLength({ min: 2 }).withMessage('Room type is required'),
+  body('stayType').trim().isLength({ min: 2 }).withMessage('Stay type is required'),
+  body('paymentMethod').trim().isLength({ min: 2 }).withMessage('Payment method is required'),
+  body('hotel.name').trim().isLength({ min: 2 }).withMessage('Hotel name is required'),
+  body('hotel.address').trim().isLength({ min: 5 }).withMessage('Hotel address is required'),
+  body('hotel.city').trim().isLength({ min: 2 }).withMessage('Hotel city is required'),
+  body('hotel.country').trim().isLength({ min: 2 }).withMessage('Hotel country is required'),
+  body('hotel.url').optional().isURL().withMessage('Please enter a valid URL'),
+  body('hotel.price').optional().isNumeric().withMessage('Price must be a valid number')
+], async (req, res) => {
+  const startTime = Date.now();
+  console.log('🚀 ===== ADMIN BACKEND: Starting booking creation =====');
+  console.log('⏰ Request start time:', new Date().toISOString());
+  console.log('👤 Admin ID:', req.user?.id);
+  console.log('📍 Request IP:', req.ip || req.connection.remoteAddress);
+
+  try {
+    // Log the incoming request data for debugging
+    console.log('📥 Incoming admin booking request:', JSON.stringify(req.body, null, 2));
+
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.error('❌ Validation errors:', errors.array());
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    console.log('✅ Validation passed, proceeding with admin booking creation');
+
+    const {
+      clientId,
+      touristName,
+      phone,
+      nationality,
+      email,
+      expectedCheckInTime,
+      roomType,
+      stayType,
+      paymentMethod,
+      guests,
+      hotel,
+      checkInDate,
+      checkOutDate,
+      numberOfGuests,
+      notes,
+      attachments
+    } = req.body;
+
+    // Verify client exists and is a regular user
+    const client = await User.findById(clientId);
+    if (!client || client.role !== 'user') {
+      console.error('❌ Client not found or invalid role:', clientId);
+      return errorResponse(res, 'Client not found or invalid', 404);
+    }
+
+    console.log('✅ Client verified:', client.name, client.email);
+
+    // Sanitize inputs
+    const sanitizedData = {
+      touristName: sanitizeInput(touristName),
+      phone: sanitizeInput(phone),
+      nationality: sanitizeInput(nationality),
+      email: sanitizeInput(email),
+      expectedCheckInTime: expectedCheckInTime ? sanitizeInput(expectedCheckInTime) : undefined,
+      roomType: sanitizeInput(roomType),
+      stayType: sanitizeInput(stayType),
+      paymentMethod: sanitizeInput(paymentMethod),
+      guests: guests && Array.isArray(guests) ? guests.map(guest => ({
+        fullName: sanitizeInput(guest.fullName),
+        phoneNumber: sanitizeInput(guest.phoneNumber)
+      })) : [],
+      notes: notes ? sanitizeInput(notes) : undefined
+    };
+
+    // Log the data that will be sent to MongoDB
+    const reservationData = {
+      user: clientId, // Use the selected client's ID instead of admin's ID
+      touristName: sanitizedData.touristName,
+      phone: sanitizedData.phone,
+      nationality: sanitizedData.nationality,
+      email: sanitizedData.email,
+      expectedCheckInTime: sanitizedData.expectedCheckInTime,
+      roomType: sanitizedData.roomType,
+      stayType: sanitizedData.stayType,
+      paymentMethod: sanitizedData.paymentMethod,
+      guests: sanitizedData.guests,
+      hotel: {
+        name: sanitizeInput(hotel.name),
+        address: sanitizeInput(hotel.address),
+        city: sanitizeInput(hotel.city),
+        country: sanitizeInput(hotel.country),
+        coordinates: hotel.coordinates,
+        rating: hotel.rating,
+        image: hotel.image,
+        hotelId: hotel.hotelId,
+        url: hotel.url ? sanitizeInput(hotel.url) : undefined,
+        price: hotel.price ? parseFloat(hotel.price) : undefined
+      },
+      checkInDate: checkInDate ? new Date(checkInDate) : undefined,
+      checkOutDate: checkOutDate ? new Date(checkOutDate) : undefined,
+      numberOfGuests: numberOfGuests || 1,
+      notes: sanitizedData.notes,
+      attachments: attachments || [],
+      status: 'pending' // Default status for admin-created bookings
+    };
+
+    console.log('📊 Admin booking data being sent to MongoDB:', JSON.stringify(reservationData, null, 2));
+
+    console.log('💾 Creating admin booking in database...');
+    const dbStartTime = Date.now();
+
+    // Create reservation
+    const reservation = await Reservation.create(reservationData);
+
+    const dbEndTime = Date.now();
+    const dbDuration = dbEndTime - dbStartTime;
+    console.log(`✅ Admin booking created in database in ${dbDuration}ms`);
+    console.log('📝 Created booking ID:', reservation._id);
+
+    console.log('🔄 Populating user data...');
+    const populateStartTime = Date.now();
+
+    // Populate user data for response
+    await reservation.populate('user', 'name email phone nationality');
+
+    const populateEndTime = Date.now();
+    const populateDuration = populateEndTime - populateStartTime;
+    console.log(`✅ User data populated in ${populateDuration}ms`);
+
+    console.log('📤 Sending response to admin...');
+    const responseStartTime = Date.now();
+
+    // Send response immediately to prevent timeout
+    successResponse(res, { reservation }, 'Booking created successfully for client', 201);
+
+    const responseEndTime = Date.now();
+    const responseDuration = responseEndTime - responseStartTime;
+    const totalDuration = responseEndTime - startTime;
+    console.log(`✅ Response sent in ${responseDuration}ms`);
+    console.log(`🎯 Total admin request processing time: ${totalDuration}ms`);
+
+    // Send emails in background (non-blocking)
+    setImmediate(async () => {
+      console.log('📧 Starting background email processing for admin booking...');
+      const emailStartTime = Date.now();
+
+      // Send confirmation email to client
+      try {
+        console.log('📬 Sending client confirmation email...');
+        const clientEmailStartTime = Date.now();
+
+        await sendReservationConfirmation({
+          reservation,
+          touristName: sanitizedData.touristName,
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          nationality: sanitizedData.nationality,
+          expectedCheckInTime: sanitizedData.expectedCheckInTime,
+          roomType: sanitizedData.roomType,
+          stayType: sanitizedData.stayType,
+          paymentMethod: sanitizedData.paymentMethod,
+          numberOfGuests: numberOfGuests || 1,
+          guests: sanitizedData.guests,
+          hotel,
+          checkInDate,
+          checkOutDate,
+          notes: sanitizedData.notes,
+          isAdminCreated: true // Flag to indicate this was created by admin
+        });
+
+        const clientEmailEndTime = Date.now();
+        const clientEmailDuration = clientEmailEndTime - clientEmailStartTime;
+        console.log(`✅ Client confirmation email sent successfully in ${clientEmailDuration}ms`);
+      } catch (emailError) {
+        const clientEmailEndTime = Date.now();
+        const clientEmailDuration = clientEmailEndTime - clientEmailStartTime;
+        console.error(`❌ Client confirmation email failed after ${clientEmailDuration}ms:`, emailError);
+      }
+
+      // Send notification email to agency (with admin info)
+      try {
+        console.log('📬 Sending agency notification email for admin booking...');
+        const agencyEmailStartTime = Date.now();
+
+        await sendAgencyNotification({
+          reservation,
+          touristName: sanitizedData.touristName,
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          nationality: sanitizedData.nationality,
+          expectedCheckInTime: sanitizedData.expectedCheckInTime,
+          roomType: sanitizedData.roomType,
+          stayType: sanitizedData.stayType,
+          paymentMethod: sanitizedData.paymentMethod,
+          numberOfGuests: numberOfGuests || 1,
+          guests: sanitizedData.guests,
+          hotel,
+          checkInDate,
+          checkOutDate,
+          notes: sanitizedData.notes,
+          isAdminCreated: true,
+          adminName: req.user.name,
+          adminEmail: req.user.email
+        });
+
+        const agencyEmailEndTime = Date.now();
+        const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
+        console.log(`✅ Agency notification email sent successfully in ${agencyEmailDuration}ms`);
+
+        const totalEmailTime = Date.now() - emailStartTime;
+        console.log(`📧 All background emails for admin booking completed in ${totalEmailTime}ms`);
+      } catch (emailError) {
+        const agencyEmailEndTime = Date.now();
+        const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
+        console.error(`❌ Agency notification email failed after ${agencyEmailDuration}ms:`, emailError);
+
+        const totalEmailTime = Date.now() - emailStartTime;
+        console.log(`📧 Background email processing completed (with errors) in ${totalEmailTime}ms`);
+      }
+    });
+
+  } catch (error) {
+    const errorTime = Date.now();
+    const totalErrorTime = errorTime - startTime;
+    console.error('❌ ===== ADMIN BACKEND: Booking creation failed =====');
+    console.error('⏰ Error occurred after:', totalErrorTime, 'ms');
+    console.error('🔍 Error details:', error);
+    console.error('📝 Error name:', error.name);
+    console.error('💬 Error message:', error.message);
+    console.error('📚 Error stack:', error.stack);
+
+    // If it's a MongoDB validation error, log the details
+    if (error.name === 'ValidationError') {
+      console.error('💾 MongoDB validation errors:', error.errors);
+      const validationErrors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message,
+        value: err.value
+      }));
+      console.error('📋 Formatted validation errors:', validationErrors);
+      return errorResponse(res, 'Validation failed', 400, validationErrors);
+    }
+
+    errorResponse(res, 'Failed to create booking for client', 500);
   }
 });
 

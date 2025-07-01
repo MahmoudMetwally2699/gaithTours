@@ -4,3 +4,4 @@ export { InvoicesTab } from './InvoicesTab';
 export { PaymentsTab } from './PaymentsTab';
 export { WhatsAppTab } from './WhatsAppTab';
 export { AddClientModal } from './AddClientModal';
+export { AdminBookingModal } from './AdminBookingModal';

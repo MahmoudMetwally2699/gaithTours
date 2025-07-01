@@ -14,6 +14,7 @@ export const adminAPI = {
   getBookings: (params = {}) => api.get('/admin/bookings', { params }),
   approveBooking: (id: string, data: any) => api.patch(`/admin/bookings/${id}/approve`, data),
   denyBooking: (id: string, data: any) => api.patch(`/admin/bookings/${id}/deny`, data),
+  createBooking: (data: any) => api.post('/admin/bookings/create', data),
 
   // Invoices management
   getInvoices: (params = {}) => api.get('/admin/invoices', { params }),

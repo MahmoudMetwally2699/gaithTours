@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-hot-toast';
 import {
   ClipboardDocumentListIcon,
   UserGroupIcon,
   EyeIcon,
   CheckIcon,
   XMarkIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
+import { AdminBookingModal } from './AdminBookingModal';
+
+interface Client {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  nationality: string;
+}
 
 interface Hotel {
   name: string;
@@ -34,6 +45,9 @@ interface BookingsTabProps {
   setShowBookingDetailsModal: (show: boolean) => void;
   setShowApprovalModal: (show: boolean) => void;
   setShowDenialModal: (show: boolean) => void;
+  clients: Client[];
+  onRefreshBookings: () => void;
+  isCreatingBooking?: boolean;
 }
 
 export const BookingsTab: React.FC<BookingsTabProps> = ({
@@ -46,8 +60,12 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
   setShowBookingDetailsModal,
   setShowApprovalModal,
   setShowDenialModal,
+  clients,
+  onRefreshBookings,
+  isCreatingBooking = false,
 }) => {
   const { t } = useTranslation();
+  const [showCreateBookingModal, setShowCreateBookingModal] = useState(false);
 
   // Filter bookings based on status
   const filteredBookings = bookingStatus
@@ -63,8 +81,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
     >
       {/* Header Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-3xl"></div>
-        <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl blur-3xl"></div>        <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
@@ -78,23 +95,35 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
               </div>
             </div>
 
-            {/* Modern Status Filter */}
-            <div className="relative group w-full md:w-auto">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-              <div className="relative bg-white/80 backdrop-blur-xl border border-white/30 rounded-2xl p-1 shadow-lg">
-                <select
-                  value={bookingStatus}
-                  onChange={(e) => setBookingStatus(e.target.value)}
-                  className="w-full md:w-48 px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 rounded-xl font-medium cursor-pointer"
-                >
-                  <option value="">All Bookings</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="denied">Denied</option>
-                  <option value="invoiced">Invoiced</option>
-                  <option value="paid">Paid</option>
-                  <option value="confirmed">Confirmed</option>
-                </select>
+            <div className="flex items-center space-x-4">
+              {/* Create Booking Button */}
+              <button
+                onClick={() => setShowCreateBookingModal(true)}
+                disabled={isCreatingBooking}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <PlusIcon className="w-5 h-5 mr-2" />
+                <span className="font-medium">Create Booking</span>
+              </button>
+
+              {/* Modern Status Filter */}
+              <div className="relative group w-full md:w-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                <div className="relative bg-white/80 backdrop-blur-xl border border-white/30 rounded-2xl p-1 shadow-lg">
+                  <select
+                    value={bookingStatus}
+                    onChange={(e) => setBookingStatus(e.target.value)}
+                    className="w-full md:w-48 px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 rounded-xl font-medium cursor-pointer"
+                  >
+                    <option value="">All Bookings</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="denied">Denied</option>
+                    <option value="invoiced">Invoiced</option>
+                    <option value="paid">Paid</option>
+                    <option value="confirmed">Confirmed</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -297,8 +326,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                       }}
                       className="flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-300 hover:scale-105 shadow-lg"
                     >
-                      <XMarkIcon className="w-4 h-4" />
-                      <span className="text-xs font-medium">Deny</span>
+                      <XMarkIcon className="w-4 h-4" />                      <span className="text-xs font-medium">Deny</span>
                     </button>
                   </>
                 )}
@@ -307,6 +335,18 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Admin Booking Modal */}
+      <AdminBookingModal
+        isOpen={showCreateBookingModal}
+        onClose={() => setShowCreateBookingModal(false)}
+        onSuccess={() => {
+          onRefreshBookings();
+          toast.success('Booking created successfully!');
+        }}
+        clients={clients}
+        isLoading={isCreatingBooking}
+      />
     </motion.div>
   );
 };
