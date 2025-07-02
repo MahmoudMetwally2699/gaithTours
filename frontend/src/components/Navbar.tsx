@@ -99,25 +99,23 @@ export const Navbar: React.FC = () => {
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="flex items-center">
-                  <div className="relative">
-                    {/* Modern logo container with actual logo image */}
+                <div className="flex items-center">                  <div className="relative">
+                    {/* Logo image container */}
                     <motion.div
                       whileHover={{ scale: 1.05, rotate: 3 }}
                       transition={{ duration: 0.5, ease: "easeInOut" }}
-                      className="w-14 h-14 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300 border-2 border-white/50 overflow-hidden relative z-20"
+                      className="w-24 h-24 flex items-center justify-center relative z-20"
                     >
                       {/* Logo image with styling */}
                       <motion.img
-                        src="/logo-no-background.png"
+                        src="/Group.svg"
                         alt="Gaith Tours Logo"
-                        className="w-10 h-10 object-contain drop-shadow-lg relative z-30"
+                        className="w-20 h-20 object-contain relative z-30"
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
                         draggable={false}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 to-yellow-600/20 rounded-2xl animate-pulse"></div>
                     </motion.div>
 
                     {/* Enhanced sparkle effects - positioned outside interactive area */}

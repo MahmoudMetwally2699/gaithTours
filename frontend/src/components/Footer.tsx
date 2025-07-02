@@ -153,15 +153,15 @@ export const Footer: React.FC = () => {
               className="space-y-6"
             >              {/* Logo Section - Enhanced with actual logo and RTL support */}
               <div className="flex items-center space-x-4 space-x-reverse">
-                <div className="relative">                  {/* Modern logo container with actual logo image */}
-                  <div className="w-16 h-16 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 rounded-2xl flex items-center justify-center shadow-2xl border-2 border-white/20 overflow-hidden">
+                <div className="relative">
+                  {/* Logo image container */}
+                  <div className="w-24 h-24 flex items-center justify-center">
                     {/* Logo image with styling */}
                     <img
-                      src="/logo-no-background.png"
+                      src="/Group.svg"
                       alt="Gaith Tours Logo"
-                      className="w-12 h-12 object-contain drop-shadow-lg z-10"
+                      className="w-20 h-20 object-contain z-10"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 to-yellow-600/20 rounded-2xl animate-pulse"></div>
                   </div>
 
                   {/* Enhanced sparkle effects */}

@@ -10,6 +10,7 @@ const { successResponse, errorResponse, sanitizeInput } = require('../utils/help
 const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail, sendReservationConfirmation, sendAgencyNotification } = require('../utils/emailService');
 const whatsappService = require('../utils/whatsappService');
 const PDFDocument = require('pdfkit');
+const InvoicePDFGenerator = require('../utils/invoicePdfGenerator');
 const fs = require('fs');
 const path = require('path');
 
@@ -749,6 +750,100 @@ router.post('/bookings/create', protect, admin, [
     }
 
     errorResponse(res, 'Failed to create booking for client', 500);
+  }
+});
+
+// Test invoice PDF generation
+router.get('/test-invoice-pdf/:invoiceId', protect, admin, async (req, res) => {
+  try {
+    const { invoiceId } = req.params;
+    const { language = 'en' } = req.query;
+
+    // Find the invoice
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) {
+      return errorResponse(res, 'Invoice not found', 404);
+    }
+
+    // Find the associated reservation/booking
+    const booking = await Reservation.findById(invoice.reservationId);
+    if (!booking) {
+      // Fallback to basic invoice data if no booking found
+      const invoiceDataForPDF = {
+        invoiceId: invoice.invoiceId,
+        createdAt: invoice.createdAt,
+        paymentStatus: invoice.paymentStatus,
+        clientName: invoice.clientName,
+        clientEmail: invoice.clientEmail,
+        clientPhone: invoice.clientPhone,
+        clientNationality: invoice.clientNationality,
+        hotelName: invoice.hotelName,
+        amount: invoice.amount,
+        currency: invoice.currency
+      };
+
+      const pdfGenerator = new InvoicePDFGenerator();
+      const pdfBuffer = await pdfGenerator.generateInvoicePDF(invoiceDataForPDF, language);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Invoice_${invoice.invoiceId}_${language.toUpperCase()}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      return res.send(pdfBuffer);
+    }
+
+    // Prepare complete invoice data for PDF generation
+    const invoiceDataForPDF = {
+      // Invoice details
+      invoiceId: invoice.invoiceId,
+      createdAt: invoice.createdAt,
+      paymentStatus: invoice.paymentStatus,
+      amount: invoice.amount,
+      currency: invoice.currency,
+
+      // Client information (use booking data for complete info)
+      clientName: invoice.clientName || booking.touristName,
+      clientEmail: invoice.clientEmail || booking.email,
+      clientPhone: invoice.clientPhone || booking.phone,
+      clientNationality: invoice.clientNationality || booking.nationality,
+
+      // Tourist/Booker details
+      touristName: booking.touristName,
+      bookerName: booking.touristName,
+      phone: booking.phone,
+      email: booking.email,
+      nationality: booking.nationality,
+        // Hotel information
+      hotelName: booking.hotel.name,
+      hotelAddress: booking.hotel.address,
+      hotelImage: booking.hotel.image,
+      hotel: booking.hotel, // Pass complete hotel object
+
+      // Booking details
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+      expectedCheckInTime: booking.expectedCheckInTime,
+      roomType: booking.roomType,
+      stayType: booking.stayType,
+      paymentMethod: booking.paymentMethod,
+      numberOfGuests: booking.numberOfGuests,
+      guests: booking.guests,
+      notes: booking.notes
+    };
+
+    // Generate PDF
+    const pdfGenerator = new InvoicePDFGenerator();
+    const pdfBuffer = await pdfGenerator.generateInvoicePDF(invoiceDataForPDF, language);
+
+    // Set response headers for PDF display
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Invoice_${invoice.invoiceId}_${language.toUpperCase()}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Send PDF buffer
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Test invoice PDF generation error:', error);
+    errorResponse(res, 'Failed to generate invoice PDF', 500);
   }
 });
 

@@ -11,8 +11,10 @@
     "test-whatsapp-single": "node test-whatsapp-templates.js"
   },
   "dependencies": {
+    "arabic-reshaper": "^1.1.0",
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
+    "bidi-js": "^1.0.3",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -21,14 +23,19 @@
     "express-rate-limit": "^7.5.1",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
+    "html-pdf": "^3.0.1",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.1",
     "mongoose": "^8.0.0",
     "multer": "^2.0.0",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^6.10.1",
     "pdfkit": "^0.17.1",
+    "pdfkit-table": "^0.1.99",
+    "pdfmake": "^0.2.20",
     "socket.io": "^4.8.1",
-    "stripe": "^18.2.0"
+    "stripe": "^18.2.0",
+    "svg2png-wasm": "^1.4.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

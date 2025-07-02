@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const path = require('path');
+const InvoicePDFGenerator = require('./invoicePdfGenerator');
 require('dotenv').config();
 
 // Create email transporter
@@ -571,10 +573,55 @@ const sendInvoiceEmail = async (invoiceData) => {
     const transporter = createTransporter();
     const { email, name, invoice, booking } = invoiceData;
 
+    // Generate PDF invoices in both languages
+    const pdfGenerator = new InvoicePDFGenerator();    const invoiceDataForPDF = {
+      // Invoice details
+      invoiceId: invoice.invoiceId,
+      createdAt: invoice.createdAt,
+      paymentStatus: invoice.paymentStatus,
+      amount: invoice.amount,
+      currency: invoice.currency,
+
+      // Client information (use booking data for complete info)
+      clientName: invoice.clientName || booking.touristName,
+      clientEmail: invoice.clientEmail || booking.email,
+      clientPhone: invoice.clientPhone || booking.phone,
+      clientNationality: invoice.clientNationality || booking.nationality,
+
+      // Tourist/Booker details
+      touristName: booking.touristName,
+      bookerName: booking.touristName, // In case different from clientName
+      phone: booking.phone,
+      email: booking.email,
+      nationality: booking.nationality,
+        // Hotel information
+      hotelName: booking.hotel.name,
+      hotelAddress: booking.hotel.address,
+      hotelImage: booking.hotel.image,
+      hotel: booking.hotel, // Pass complete hotel object for city/country access
+
+      // Booking details
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+      expectedCheckInTime: booking.expectedCheckInTime,
+      roomType: booking.roomType,
+      stayType: booking.stayType,
+      paymentMethod: booking.paymentMethod,
+      numberOfGuests: booking.numberOfGuests,
+      guests: booking.guests,
+      notes: booking.notes
+    };
+
+    // Generate PDFs for both languages
+    const [englishPDF, arabicPDF] = await Promise.all([
+      pdfGenerator.generateInvoicePDF(invoiceDataForPDF, 'en'),
+      pdfGenerator.generateInvoicePDF(invoiceDataForPDF, 'ar')
+    ]);
+
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
-      subject: `📄 Invoice #${invoice.invoiceId} - Gaith Tours`,
+      subject: `📄 Invoice #${invoice.invoiceId} - Gaith Tours | فاتورة رقم ${invoice.invoiceId} - قايث تورز`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -589,46 +636,107 @@ const sendInvoiceEmail = async (invoiceData) => {
         </head>
         <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); font-family: 'Plus+Jakarta Sans', sans-serif;">
           <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
-            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); padding: 45px 30px; text-align: center;">
-              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
-              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
-                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">📄 Invoice Ready</p>
+
+            <!-- Header with Logo -->
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); padding: 45px 30px; text-align: center; position: relative;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1);"></div>
+              <div style="position: relative; z-index: 1;">
+                <div style="margin-bottom: 20px;">
+                  <img src="cid:logo" alt="Gaith Tours Logo" style="height: 60px; width: auto;" />
+                </div>
+                <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Gaith Tours</h1>
+                <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
+                  <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">📄 Invoice Ready | الفاتورة جاهزة</p>
+                </div>
               </div>
             </div>
 
             <div style="padding: 40px 30px;">
-              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Hello ${name}!</h2>
-              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
-                Your booking has been approved! Please find your invoice details below and proceed with payment to confirm your reservation.
-              </p>
+              <!-- English Section -->
+              <div style="margin-bottom: 40px;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Hello ${name}!</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                  Your booking has been approved! Please find your invoice details below and proceed with payment to confirm your reservation. Both English and Arabic versions of your invoice are attached to this email.
+                </p>
+              </div>
 
+              <!-- Arabic Section -->
+              <div style="margin-bottom: 40px; text-align: right; direction: rtl;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">مرحباً ${name}!</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                  تم الموافقة على حجزك! يرجى مراجعة تفاصيل الفاتورة أدناه والمتابعة للدفع لتأكيد حجزك. تم إرفاق النسختين الإنجليزية والعربية من فاتورتك بهذا البريد الإلكتروني.
+                </p>
+              </div>
+
+              <!-- Invoice Details -->
               <div style="background: #f8fafc; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #4f46e5;">
-                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Invoice Details</h3>
-                <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${invoice.hotelName}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Amount:</strong> ${invoice.amount} ${invoice.currency}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Issue Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
-              </div>              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.FRONTEND_URL}/profile?tab=invoices&invoice=${invoice._id}" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3); margin-right: 15px;">
-                  💳 Pay Now (${invoice.amount} ${invoice.currency})
+                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Invoice Details | تفاصيل الفاتورة</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${invoice.hotelName}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Amount:</strong> ${invoice.amount} ${invoice.currency}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>Issue Date:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div style="text-align: right; direction: rtl;">
+                    <p style="margin: 8px 0; color: #374151;"><strong>رقم الفاتورة:</strong> ${invoice.invoiceId}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>الفندق:</strong> ${invoice.hotelName}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>المبلغ:</strong> ${invoice.amount} ${invoice.currency}</p>
+                    <p style="margin: 8px 0; color: #374151;"><strong>تاريخ الإصدار:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Call to Action Buttons -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.FRONTEND_URL}/profile?tab=invoices&invoice=${invoice._id}" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3); margin: 10px;">
+                  💳 Pay Now (${invoice.amount} ${invoice.currency}) | ادفع الآن
                 </a>
-                <a href="${process.env.FRONTEND_URL}/profile" style="background: #6b7280; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3);">
-                  View Invoice
+                <br>
+                <a href="${process.env.FRONTEND_URL}/profile" style="background: #6b7280; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(107, 114, 128, 0.3); margin: 10px;">
+                  View Invoice | عرض الفاتورة
                 </a>
               </div>
 
+              <!-- Attachments Notice -->
+              <div style="background: #e0f2fe; border-radius: 12px; padding: 20px; margin: 25px 0; border-left: 4px solid #0284c7;">
+                <p style="color: #0c4a6e; font-size: 14px; margin: 0; text-align: center;">
+                  📎 <strong>Attached Files | الملفات المرفقة:</strong><br>
+                  • Invoice_${invoice.invoiceId}_English.pdf<br>
+                  • Invoice_${invoice.invoiceId}_Arabic.pdf
+                </p>
+              </div>
+
               <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
-                Please log in to your account to view the invoice and make payment.
+                Please log in to your account to view the invoice and make payment.<br>
+                <span style="direction: rtl; display: block; margin-top: 5px;">يرجى تسجيل الدخول إلى حسابك لعرض الفاتورة والدفع.</span>
               </p>
             </div>
           </div>
         </body>
         </html>
-      `
+      `,
+      attachments: [
+        {
+          filename: `Invoice_${invoice.invoiceId}_English.pdf`,
+          content: englishPDF,
+          contentType: 'application/pdf'
+        },
+        {
+          filename: `Invoice_${invoice.invoiceId}_Arabic.pdf`,
+          content: arabicPDF,
+          contentType: 'application/pdf'
+        },
+        {
+          filename: 'logo.svg',
+          path: path.join(__dirname, '../public/Group.svg'),
+          cid: 'logo'
+        }
+      ]
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Invoice email sent successfully:', info.messageId);
+    console.log('Invoice email sent successfully with PDF attachments:', info.messageId);
     return true;
   } catch (error) {
     console.error('Failed to send invoice email:', error);
