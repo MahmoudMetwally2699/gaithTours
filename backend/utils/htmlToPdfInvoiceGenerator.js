@@ -22,6 +22,22 @@ const crypto = require('crypto');
  * 2. Secondary: Auto-installation of Chrome when possible
  * 3. Fallback: Direct HTML rendering with embedded print styles
  * 4. Emergency: Static HTML file generation
+ *
+ * VERCEL DEPLOYMENT INSTRUCTIONS:
+ * For PDF generation on Vercel, you'll need to add Chrome to your project:
+ *
+ * 1. Install chrome-aws-lambda as a dependency:
+ *    npm install chrome-aws-lambda@latest --save
+ *
+ * 2. Add the Chrome AWS Lambda Layer to your Vercel project:
+ *    See: https://github.com/vercel/vercel/tree/main/examples/chrome-aws-lambda
+ *
+ * 3. Set the CHROME_EXECUTABLE_PATH environment variable in your Vercel project settings:
+ *    Key: CHROME_EXECUTABLE_PATH
+ *    Value: /opt/chrome/chrome (or the path provided by your Chrome layer)
+ *
+ * 4. If you're getting timeout errors, increase the function timeout in vercel.json:
+ *    { "functions": { "api/**": { "maxDuration": 30 } } }
  */
 class HTMLToPDFInvoiceGenerator {
   constructor() {
@@ -32,21 +48,30 @@ class HTMLToPDFInvoiceGenerator {
     // Determine environment constraints
     const isLowMemoryEnv = process.env.LOW_MEMORY === 'true';
     const memoryLimit = process.env.CHROME_MEMORY_LIMIT || '512';
-    
+
     // Chrome executable path (will be set after detection)
     this.chromePath = undefined;
-    
+
     // Whether PDF generation is possible at all
     this.pdfGenerationPossible = undefined;
-    
-    // Environment detection
-    this.isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || 
-                        process.env.VERCEL || 
-                        process.env.NETLIFY;
-                        
-    this.isDockerContainer = fs.existsSync('/.dockerenv') || 
-                           fs.existsSync('/proc/1/cgroup') && 
-                           fs.readFileSync('/proc/1/cgroup', 'utf-8').includes('docker');
+      // Environment detection - more comprehensive
+    this.isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME ||
+                        process.env.VERCEL ||
+                        process.env.VERCEL_ENV ||
+                        process.env.VERCEL_REGION ||
+                        process.env.NETLIFY ||
+                        process.env.AWS_REGION ||
+                        process.env.LAMBDA_TASK_ROOT;
+
+    // Specific Vercel detection
+    this.isVercel = !!process.env.VERCEL ||
+                   !!process.env.VERCEL_ENV ||
+                   !!process.env.VERCEL_REGION ||
+                   !!process.env.NOW_REGION;
+
+    this.isDockerContainer = fs.existsSync('/.dockerenv') ||
+                           (fs.existsSync('/proc/1/cgroup') &&
+                           fs.readFileSync('/proc/1/cgroup', 'utf-8').includes('docker'));
 
     // Puppeteer launch options for maximum stability
     this.puppeteerOptions = {
@@ -87,36 +112,65 @@ class HTMLToPDFInvoiceGenerator {
       pipe: false,
       dumpio: false
     };
-    
+
     // Add a static counter for limiting concurrent operations
     this.constructor.concurrentOperations = this.constructor.concurrentOperations || 0;
     this.constructor.maxConcurrentOperations = 1;
-    
+
     // Add a sequential lock to prevent parallel runs
     this.constructor.pdfLock = this.constructor.pdfLock || Promise.resolve();
-    
+
     // Cache for browser capability results
     this.constructor.browserChecked = this.constructor.browserChecked || false;
     this.constructor.browserAvailable = this.constructor.browserAvailable || false;
-    
+
     // Track if we've tested system compatibility
     this.constructor.systemChecked = this.constructor.systemChecked || false;
-    
+
     // Initialize browser detection
     this.initializeEnvironment();
   }
-    /**
+  /**
    * Initialize the environment and detect browser capabilities
    * @returns {Promise<void>}
    */
   async initializeEnvironment() {
     if (!this.constructor.browserChecked) {
       try {
+        console.log('🔍 Checking runtime environment...');
+
+        // Early environment detection for Vercel
+        if (this.isVercel) {
+          console.log('🌐 Running in Vercel serverless environment');
+          console.log('⚠️ PDF generation in Vercel requires special handling');
+
+          // Check for Vercel specific environment variables
+          if (process.env.CHROME_EXECUTABLE_PATH) {
+            // Vercel has specified a Chrome path
+            this.chromePath = process.env.CHROME_EXECUTABLE_PATH;
+            this.constructor.browserAvailable = true;
+            console.log(`✅ Using custom Chrome path from CHROME_EXECUTABLE_PATH: ${this.chromePath}`);
+          } else {
+            // On Vercel without custom Chrome path
+            console.warn('⚠️ Running on Vercel without Chrome configuration');
+            console.warn('⚠️ Add CHROME_EXECUTABLE_PATH environment variable in Vercel project settings');
+            console.warn('⚠️ Falling back to HTML-only mode');
+            this.constructor.browserAvailable = false;
+            this.constructor.browserChecked = true;
+            this.pdfGenerationPossible = false;
+            return;
+          }
+        } else if (this.isServerless) {
+          console.log('☁️ Running in generic serverless environment');
+        }
+
         console.log('🔍 Checking for Chrome installation...');
-        
+
         // Check for Chrome installation
-        const chromePath = await this.findChromePath();
-        
+        const chromePath = this.isVercel && this.chromePath ?
+                           this.chromePath :
+                           await this.findChromePath();
+
         if (chromePath) {
           // Chrome is available
           this.constructor.browserAvailable = true;
@@ -124,13 +178,13 @@ class HTMLToPDFInvoiceGenerator {
           console.log(`✅ Chrome is available for PDF generation at: ${chromePath}`);
         } else {
           console.log('⚠️ Chrome not found in default locations');
-          
+
           // Try auto-installation if not in a restricted environment
           if (!this.isServerless && !this.isDockerContainer) {
             console.log('🔄 Attempting to install Chrome automatically...');
             const installed = await this.tryInstallChrome();
             this.constructor.browserAvailable = installed;
-            
+
             if (installed) {
               // Re-check path after installation
               this.chromePath = await this.findChromePath();
@@ -148,21 +202,33 @@ class HTMLToPDFInvoiceGenerator {
         console.error(`❌ Browser detection failed: ${error.message}`);
         this.constructor.browserAvailable = false;
       }
-      
+
       this.constructor.browserChecked = true;
-      
+
       // Log status
       if (this.constructor.browserAvailable) {
         console.log('✅ PDF generation is available and will be used');
       } else {
-        console.warn('⚠️ PDF generation is NOT available, HTML fallback will be used');
+        let reason = 'unknown reason';
+        if (this.isVercel) {
+          reason = 'Vercel serverless environment without Chrome configuration';
+        } else if (this.isServerless) {
+          reason = 'serverless environment restrictions';
+        } else if (this.isDockerContainer) {
+          reason = 'Docker container without Chrome installed';
+        } else if (!this.chromePath) {
+          reason = 'Chrome not found on system';
+        }
+
+        console.warn(`⚠️ PDF generation is NOT available (${reason})`);
+        console.warn('⚠️ HTML fallback will be used instead of PDF');
       }
     }
-    
+
     // Set flag for PDF generation possibility
     this.pdfGenerationPossible = this.constructor.browserAvailable;
   }
-  
+
   // Call this at module load time
   static async initialize() {
     const generator = new HTMLToPDFInvoiceGenerator();
@@ -209,22 +275,38 @@ class HTMLToPDFInvoiceGenerator {
    * @param {string} language - Language code
    * @param {string} outputPath - Optional output path
    * @returns {Promise<Buffer|boolean>} PDF buffer or success status
-   */  async generatePDFWithRetry(invoiceData, language = 'en', outputPath = null) {
-    // If PDF generation is not possible, return early
+   */  async generatePDFWithRetry(invoiceData, language = 'en', outputPath = null) {    // If PDF generation is not possible, return early
     if (this.pdfGenerationPossible === false) {
-      console.warn('⚠️ PDF generation not possible, skipping and returning HTML');
+      let message = '⚠️ PDF generation not possible';
+
+      // Add environment-specific messaging
+      if (this.isVercel) {
+        message += ' in Vercel serverless environment';
+        console.warn(message);
+        console.warn('⚠️ To enable PDF generation on Vercel:');
+        console.warn('⚠️ 1. Add Chrome Layer: https://github.com/vercel/vercel/tree/main/examples/chrome-aws-lambda');
+        console.warn('⚠️ 2. Set CHROME_EXECUTABLE_PATH environment variable');
+      } else if (this.isServerless) {
+        message += ' in serverless environment';
+        console.warn(message);
+      } else {
+        console.warn(message + ', skipping and returning HTML');
+      }
+
       if (outputPath) {
         // Write HTML to file instead
         const htmlPath = outputPath.replace(/\.pdf$/i, '.html');
         const html = this.generateHTMLTemplate(invoiceData, language);
         fs.writeFileSync(htmlPath, html);
+        console.warn(`⚠️ Writing HTML to file instead: ${htmlPath}`);
         return false;
       } else {
         // Return HTML content as buffer
+        console.warn('⚠️ Returning HTML content instead of PDF');
         return Buffer.from(this.generateHTMLTemplate(invoiceData, language), 'utf-8');
       }
     }
-    
+
     const maxRetries = 3;
     let lastError;    // Use a sequential locking pattern to prevent concurrent puppeteer instances
     // This creates a chain of promises that execute one after another
@@ -236,11 +318,11 @@ class HTMLToPDFInvoiceGenerator {
         this.pdfGenerationPossible = false; // Update the flag to prevent future attempts
         throw new Error('Chrome not available for PDF generation');
       }
-      
+
       // Update chrome path and generation flag
       this.chromePath = chromePath;
       this.pdfGenerationPossible = true;
-      
+
       // Inside the lock, we'll retry up to maxRetries times
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -277,14 +359,14 @@ class HTMLToPDFInvoiceGenerator {
             console.log('🔄 Trying file-based approach...');
             result = await this.generatePDFFromFile(invoiceData, language, outputPath);
           }
-          
+
           return result;
         } catch (error) {
           lastError = error;
           console.error(`❌ Attempt ${attempt} failed:`, error.message);
 
           // If Chrome wasn't found or couldn't be launched, mark PDF generation as not possible
-          if (error.message.includes('Could not find Chrome') || 
+          if (error.message.includes('Could not find Chrome') ||
               error.message.includes('Failed to launch browser')) {
             this.constructor.browserAvailable = false;
             this.pdfGenerationPossible = false;
@@ -294,7 +376,7 @@ class HTMLToPDFInvoiceGenerator {
           // If it's a browser connection issue, try more aggressive cleanup
           if (error.message.includes('Target closed') || error.message.includes('Protocol error')) {
             console.log('🔧 Browser connection issue detected, forcing cleanup...');
-            
+
             // Additional delay for browser connection issues
             if (attempt < maxRetries) {
               await new Promise(resolve => setTimeout(resolve, 5000));
@@ -333,12 +415,12 @@ class HTMLToPDFInvoiceGenerator {
       if (!chromePath) {
         throw new Error('Chrome executable not found');
       }
-      
+
       console.log(`🚀 Launching Chrome from: ${chromePath}`);
-      
+
       // Determine which puppeteer module to use
       const puppeteerToUse = puppeteerWithBrowser || puppeteer;
-      
+
       // Launch browser with enhanced options
       browser = await puppeteerToUse.launch({
         ...this.puppeteerOptions,
@@ -480,12 +562,12 @@ class HTMLToPDFInvoiceGenerator {
         console.warn('⚠️ No Chrome found, browser launch test will fail');
         return { canLaunch: false, canGeneratePdf: false };
       }
-      
+
       console.log(`🧪 Testing browser launch with Chrome: ${chromePath}`);
-      
+
       // Determine which puppeteer module to use
       const puppeteerToUse = puppeteerWithBrowser || puppeteer;
-      
+
       // Use minimal browser options for testing
       browser = await puppeteerToUse.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -584,10 +666,10 @@ class HTMLToPDFInvoiceGenerator {
           if (!chromePath) {
             throw new Error('Chrome executable not found');
           }
-          
+
           // Determine which puppeteer module to use
           const puppeteerToUse = puppeteerWithBrowser || puppeteer;
-          
+
           // Launch browser with Chrome path
           const browser = await puppeteerToUse.launch({
             ...minimalist,
@@ -1378,8 +1460,7 @@ class HTMLToPDFInvoiceGenerator {
    * @param {Object} invoiceData - Invoice data
    * @param {string} language - 'en' or 'ar'
    * @returns {Promise<Buffer|string>} PDF buffer or HTML content as fallback
-   */
-  async generateInvoicePDF(invoiceData, language = 'en') {
+   */  async generateInvoicePDF(invoiceData, language = 'en') {
     try {
       // First try with fallback mechanism
       const result = await this.generatePDFWithFallback(invoiceData, language);
@@ -1387,7 +1468,21 @@ class HTMLToPDFInvoiceGenerator {
       // If result is a string, it's HTML content (fallback mode)
       if (typeof result === 'string') {
         console.log('⚠️ Returning HTML content instead of PDF (fallback mode)');
-        return Buffer.from(result, 'utf-8');
+
+        // Add a clear notification banner to the HTML content
+        let enhancedHtml = result;
+        if (this.isVercel) {
+          // Insert a notification banner after the body tag
+          const bannerHtml = `
+          <div style="position:fixed; top:0; left:0; right:0; background:#ff6b35; color:white; padding:8px; text-align:center; z-index:9999; font-size:14px; font-family:Arial, sans-serif;">
+            ⚠️ Viewing HTML version - PDF generation is not available on this Vercel deployment
+          </div>
+          <div style="height:40px;"></div>`;
+
+          enhancedHtml = result.replace('<body>', '<body>' + bannerHtml);
+        }
+
+        return Buffer.from(enhancedHtml, 'utf-8');
       }
 
       return result;
@@ -1395,7 +1490,18 @@ class HTMLToPDFInvoiceGenerator {
       console.error('❌ All PDF generation methods failed:', error.message);
 
       // Ultimate fallback - generate minimal HTML
-      const html = this.generateSimplifiedHTMLTemplate(invoiceData, language);
+      let html = this.generateSimplifiedHTMLTemplate(invoiceData, language);
+
+      // Add a notification to the simplified HTML as well
+      if (this.isVercel || this.isServerless) {
+        const fallbackNotice = `
+        <div style="background:#ff6b35; color:white; padding:10px; margin:10px 0; text-align:center;">
+          ⚠️ PDF generation failed - Viewing HTML fallback version
+        </div>`;
+
+        html = html.replace('<div class="invoice-box">', '<div class="invoice-box">' + fallbackNotice);
+      }
+
       return Buffer.from(html, 'utf-8');
     }
   }
@@ -1598,12 +1704,12 @@ class HTMLToPDFInvoiceGenerator {
       if (!chromePath) {
         throw new Error('Chrome executable not found');
       }
-      
+
       console.log(`🚀 Launching Chrome minimal mode from: ${chromePath}`);
-      
+
       // Determine which puppeteer module to use
       const puppeteerToUse = puppeteerWithBrowser || puppeteer;
-      
+
       // Super minimal browser options
       browser = await puppeteerToUse.launch({
         args: [
@@ -1690,12 +1796,12 @@ class HTMLToPDFInvoiceGenerator {
       if (!chromePath) {
         throw new Error('Chrome executable not found');
       }
-      
+
       console.log(`🚀 Launching Chrome file-based mode from: ${chromePath}`);
-      
+
       // Determine which puppeteer module to use
       const puppeteerToUse = puppeteerWithBrowser || puppeteer;
-      
+
       // Super minimal browser
       browser = await puppeteerToUse.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -1747,7 +1853,6 @@ class HTMLToPDFInvoiceGenerator {
       this.releaseSlot();
     }
   }
-
   /**
    * Check if Chrome is installed and get its path
    * @returns {Promise<string|null>} Path to Chrome executable or null if not found
@@ -1759,7 +1864,19 @@ class HTMLToPDFInvoiceGenerator {
     }
 
     try {
-      // Try to detect installed Chrome
+      // For Vercel or serverless environments, use specialized detection first
+      if (this.isVercel || this.isServerless) {
+        console.log('🔍 Looking for Chrome in serverless environment...');
+        const serverlessChrome = await this.detectVercelChrome();
+        if (serverlessChrome) {
+          this.chromePath = serverlessChrome;
+          return this.chromePath;
+        }
+
+        console.log('⚠️ No serverless-specific Chrome installation found');
+      }
+
+      // Try to detect standard installed Chrome
       const possiblePaths = await this.detectInstalledChrome();
       if (possiblePaths && possiblePaths.length > 0) {
         // Use the first found path
@@ -1771,6 +1888,7 @@ class HTMLToPDFInvoiceGenerator {
       // Try to use puppeteer's bundled Chromium if available
       if (puppeteerWithBrowser) {
         try {
+          console.log('🔍 Trying to use Puppeteer\'s bundled Chromium...');
           const browserFetcher = puppeteerWithBrowser.createBrowserFetcher();
           const revisionInfo = await browserFetcher.download('latest');
           if (revisionInfo && revisionInfo.executablePath) {
@@ -1827,7 +1945,7 @@ class HTMLToPDFInvoiceGenerator {
         'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
         'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
       ];
-      
+
       // Add direct paths first as they're most common
       for (const path of directPaths) {
         try {
@@ -1860,7 +1978,7 @@ class HTMLToPDFInvoiceGenerator {
         const regQuery = await this.executeCommand(
           'powershell -Command "Get-ItemProperty -Path \'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\' -Name Path -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path"'
         );
-        
+
         if (regQuery && regQuery.trim()) {
           const regPath = path.join(regQuery.trim(), 'chrome.exe');
           if (fs.existsSync(regPath)) {
@@ -1916,13 +2034,83 @@ class HTMLToPDFInvoiceGenerator {
   }
 
   /**
+   * Special Chrome detection for Vercel and serverless environments
+   * @returns {Promise<string|null>} Chrome executable path if found
+   */
+  async detectVercelChrome() {
+    // Common paths in serverless environments where Chrome might be installed
+    const serverlessPaths = [
+      // AWS Lambda and Vercel potential locations
+      '/opt/bin/chromium',
+      '/opt/bin/chromium-browser',
+      '/opt/chrome/chrome',
+      '/opt/chrome-linux/chrome',
+      '/opt/chrome/headless-chromium',
+      '/tmp/chromium',
+      '/tmp/chrome',
+      '/layers/chrome-aws-lambda/bin/chromium',
+      // For custom Lambda Layers
+      '/opt/chrome-aws-lambda/bin/chromium',
+      '/var/task/node_modules/chromium/bin/chromium',
+      '/var/task/node_modules/chrome-aws-lambda/bin/chromium'
+    ];
+
+    // Check all paths
+    for (const chromePath of serverlessPaths) {
+      try {
+        if (fs.existsSync(chromePath)) {
+          // Test if the file is executable
+          try {
+            fs.accessSync(chromePath, fs.constants.X_OK);
+            console.log(`✅ Found serverless Chrome at: ${chromePath}`);
+            return chromePath;
+          } catch (e) {
+            console.warn(`⚠️ Found Chrome at ${chromePath} but it is not executable`);
+          }
+        }
+      } catch (e) {
+        // Ignore errors checking file existence
+      }
+    }
+
+    // Look for environment variable configurations
+    if (process.env.CHROME_EXECUTABLE_PATH) {
+      const chromePath = process.env.CHROME_EXECUTABLE_PATH;
+      try {
+        if (fs.existsSync(chromePath)) {
+          console.log(`✅ Found Chrome from CHROME_EXECUTABLE_PATH: ${chromePath}`);
+          return chromePath;
+        } else {
+          console.warn(`⚠️ CHROME_EXECUTABLE_PATH set but not found: ${chromePath}`);
+        }
+      } catch (e) {
+        console.warn(`⚠️ Error checking CHROME_EXECUTABLE_PATH: ${e.message}`);
+      }
+    }
+
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      try {
+        if (fs.existsSync(chromePath)) {
+          console.log(`✅ Found Chrome from PUPPETEER_EXECUTABLE_PATH: ${chromePath}`);
+          return chromePath;
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Try to install Chrome using npm
    * @returns {Promise<boolean>} Whether the installation was successful
    */
   async tryInstallChrome() {
     try {
       console.log('🔄 Attempting to install Chromium via Puppeteer...');
-      
+
       // Check if we have write access to the npm directory
       const canWriteToNpm = await this.checkNpmWriteAccess();
       if (!canWriteToNpm) {
@@ -1932,17 +2120,17 @@ class HTMLToPDFInvoiceGenerator {
 
       // Try to install puppeteer which includes Chromium
       await this.executeCommand('npm install puppeteer --no-save');
-      
+
       // Verify installation
       try {
         // Re-require puppeteer after installation
         delete require.cache[require.resolve('puppeteer')];
         puppeteerWithBrowser = require('puppeteer');
-        
+
         // Try to get executable path
         const browserFetcher = puppeteerWithBrowser.createBrowserFetcher();
         const revisionInfo = browserFetcher.revisionInfo('latest');
-        
+
         if (revisionInfo && revisionInfo.executablePath && fs.existsSync(revisionInfo.executablePath)) {
           this.chromePath = revisionInfo.executablePath;
           console.log(`✅ Successfully installed Chromium at: ${this.chromePath}`);
@@ -1951,7 +2139,7 @@ class HTMLToPDFInvoiceGenerator {
       } catch (e) {
         console.warn(`⚠️ Failed to verify Chromium installation: ${e.message}`);
       }
-      
+
       return false;
     } catch (error) {
       console.error(`❌ Failed to install Chrome: ${error.message}`);
@@ -1970,12 +2158,12 @@ class HTMLToPDFInvoiceGenerator {
       if (!npmRoot) {
         return false;
       }
-      
+
       // Try to write a temporary file
       const testFile = path.join(os.tmpdir(), `test-npm-write-${Date.now()}.txt`);
       fs.writeFileSync(testFile, 'test');
       fs.unlinkSync(testFile);
-      
+
       return true;
     } catch (e) {
       return false;
