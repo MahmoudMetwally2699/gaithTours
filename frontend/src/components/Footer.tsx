@@ -152,15 +152,15 @@ export const Footer: React.FC = () => {
               variants={itemVariants}
               className="space-y-6"
             >              {/* Logo Section - Enhanced with actual logo and RTL support */}
-              <div className="flex items-center space-x-4 space-x-reverse">
+              <div className="flex items-center justify-center">
                 <div className="relative">
                   {/* Logo image container */}
-                  <div className="w-24 h-24 flex items-center justify-center">
+                  <div className="w-32 h-32 flex items-center justify-center">
                     {/* Logo image with styling */}
                     <img
                       src="/Group.svg"
                       alt="Gaith Tours Logo"
-                      className="w-20 h-20 object-contain z-10"
+                      className="w-28 h-28 object-contain z-10"
                     />
                   </div>
 
@@ -189,13 +189,7 @@ export const Footer: React.FC = () => {
                       delay: 0.5
                     }}
                     className="absolute -bottom-1 -left-1 w-2 h-2 bg-orange-400 rounded-full shadow-lg shadow-orange-400/50"
-                  ></motion.div>
-                </div>                <div className="mr-6">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400 bg-clip-text text-transparent tracking-wide" style={{ fontFamily: 'TIDO, serif' }}>
-                    {t('brand.name', 'Gaith Tours')}
-                  </h2>
-                  <p className="text-orange-300 text-sm font-medium mt-1">Premium Travel Experience</p>
-                </div>
+                  ></motion.div>                </div>
               </div>
 
               <p className="text-gray-300 leading-relaxed">

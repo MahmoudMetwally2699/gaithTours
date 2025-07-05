@@ -93,84 +93,22 @@ export const Navbar: React.FC = () => {
               to="/"
               className="group relative block focus:outline-none focus:ring-4 focus:ring-orange-300/50 rounded-3xl"
               style={{ pointerEvents: 'auto' }}
-            >
-              <motion.div
+            >              <div
                 className="flex items-center relative z-10"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
               >
                 <div className="flex items-center">                  <div className="relative">
                     {/* Logo image container */}
-                    <motion.div
-                      whileHover={{ scale: 1.05, rotate: 3 }}
-                      transition={{ duration: 0.5, ease: "easeInOut" }}
-                      className="w-24 h-24 flex items-center justify-center relative z-20"
-                    >
-                      {/* Logo image with styling */}
-                      <motion.img
+                    <div className="w-32 h-32 flex items-center justify-center">
+                      {/* Logo image with clean styling */}
+                      <img
                         src="/Group.svg"
                         alt="Gaith Tours Logo"
-                        className="w-20 h-20 object-contain relative z-30"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5 }}
+                        className="w-28 h-28 object-contain"
                         draggable={false}
                       />
-                    </motion.div>
-
-                    {/* Enhanced sparkle effects - positioned outside interactive area */}
-                    <motion.div
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.5, 1, 0.5]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                      className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full shadow-lg shadow-yellow-400/50 pointer-events-none"
-                    ></motion.div>
-                    <motion.div
-                      animate={{
-                        scale: [1, 1.3, 1],
-                        opacity: [0.3, 0.8, 0.3]
-                      }}
-                      transition={{
-                        duration: 2.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 0.5
-                      }}
-                      className="absolute -bottom-1 -left-1 w-2 h-2 bg-orange-400 rounded-full shadow-lg shadow-orange-400/50 pointer-events-none"
-                    ></motion.div>
-                    <motion.div
-                      animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.3, 0.6, 0.3]
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: 1
-                      }}
-                      className="absolute bottom-2 -right-1 w-2 h-2 bg-amber-300 rounded-full shadow-lg shadow-amber-300/50 pointer-events-none"
-                    ></motion.div>
-                  </div>                  <div className={`${isRTL ? 'mr-4' : 'ml-4'} relative z-20`}>
-                    <motion.h1
-                      className="text-2xl font-bold bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 bg-clip-text text-transparent group-hover:from-orange-700 group-hover:via-amber-700 group-hover:to-yellow-700 transition-all duration-300 select-none"
-                      style={{ fontFamily: 'TIDO, serif' }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      {t('brand.name', 'Gaith Tours')}
-                    </motion.h1>
-                    <p className="text-xs text-gray-600 font-medium opacity-80 group-hover:opacity-100 transition-opacity duration-300 select-none">
-                      Premium Travel Experience
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
+                    </div>
+                  </div>                </div>
+              </div>
             </Link>
           </motion.div>          {/* Desktop Navigation - Premium Design with proper RTL spacing */}
           <div className={`hidden md:flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-6 relative z-40`}>
