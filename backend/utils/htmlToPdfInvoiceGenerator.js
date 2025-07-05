@@ -1,16 +1,27 @@
-const puppeteer = require('puppeteer');
+// Use puppeteer-core as a base dependency, which doesn't bundle Chromium
+const puppeteer = require('puppeteer-core');
+// Optionally try to use puppeteer if available (which includes the browser)
+let puppeteerWithBrowser;
+try {
+  puppeteerWithBrowser = require('puppeteer');
+} catch (e) {
+  // Puppeteer not installed, will use puppeteer-core with fallbacks
+  puppeteerWithBrowser = null;
+}
+
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const os = require('os');
 const crypto = require('crypto');
 
 /**
  * HTML-to-PDF Invoice Generator with perfect Arabic support and fallback mechanisms
  * Uses a combination of strategies for reliable PDF generation:
- * 1. Primary: Puppeteer with optimized settings
- * 2. Fallback: Direct HTML rendering with embedded print styles
- * 3. Emergency: Static HTML file generation
+ * 1. Primary: Puppeteer with optimized settings if Chrome is available
+ * 2. Secondary: Auto-installation of Chrome when possible
+ * 3. Fallback: Direct HTML rendering with embedded print styles
+ * 4. Emergency: Static HTML file generation
  */
 class HTMLToPDFInvoiceGenerator {
   constructor() {
@@ -21,6 +32,21 @@ class HTMLToPDFInvoiceGenerator {
     // Determine environment constraints
     const isLowMemoryEnv = process.env.LOW_MEMORY === 'true';
     const memoryLimit = process.env.CHROME_MEMORY_LIMIT || '512';
+    
+    // Chrome executable path (will be set after detection)
+    this.chromePath = undefined;
+    
+    // Whether PDF generation is possible at all
+    this.pdfGenerationPossible = undefined;
+    
+    // Environment detection
+    this.isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || 
+                        process.env.VERCEL || 
+                        process.env.NETLIFY;
+                        
+    this.isDockerContainer = fs.existsSync('/.dockerenv') || 
+                           fs.existsSync('/proc/1/cgroup') && 
+                           fs.readFileSync('/proc/1/cgroup', 'utf-8').includes('docker');
 
     // Puppeteer launch options for maximum stability
     this.puppeteerOptions = {
@@ -46,8 +72,7 @@ class HTMLToPDFInvoiceGenerator {
         '--disable-features=IsolateOrigins',
         '--disable-features=site-per-process',
         `--js-flags=--max-old-space-size=${memoryLimit}`,
-        '--font-render-hinting=none',
-        isLowMemoryEnv ? '--single-process' : ''
+        '--font-render-hinting=none'
       ].filter(Boolean),
       headless: true,
       timeout: 30000, // 30 seconds max
@@ -59,29 +84,90 @@ class HTMLToPDFInvoiceGenerator {
         deviceScaleFactor: 1,
         isLandscape: false
       },
-      pipe: false, // Use WebSocket as pipe can cause issues in some environments
-      dumpio: false,
-      handleSIGINT: false,
-      handleSIGTERM: false,
-      handleSIGHUP: false,
-      waitForInitialPage: false
+      pipe: false,
+      dumpio: false
     };
-
+    
     // Add a static counter for limiting concurrent operations
     this.constructor.concurrentOperations = this.constructor.concurrentOperations || 0;
     this.constructor.maxConcurrentOperations = 1;
-
+    
     // Add a sequential lock to prevent parallel runs
     this.constructor.pdfLock = this.constructor.pdfLock || Promise.resolve();
-
-    // Add capability detection
-    this.constructor.browserCapabilities = this.constructor.browserCapabilities || null;
-
+    
+    // Cache for browser capability results
+    this.constructor.browserChecked = this.constructor.browserChecked || false;
+    this.constructor.browserAvailable = this.constructor.browserAvailable || false;
+    
     // Track if we've tested system compatibility
     this.constructor.systemChecked = this.constructor.systemChecked || false;
-
-    // Last successful approach
-    this.lastSuccessfulApproach = null;
+    
+    // Initialize browser detection
+    this.initializeEnvironment();
+  }
+    /**
+   * Initialize the environment and detect browser capabilities
+   * @returns {Promise<void>}
+   */
+  async initializeEnvironment() {
+    if (!this.constructor.browserChecked) {
+      try {
+        console.log('🔍 Checking for Chrome installation...');
+        
+        // Check for Chrome installation
+        const chromePath = await this.findChromePath();
+        
+        if (chromePath) {
+          // Chrome is available
+          this.constructor.browserAvailable = true;
+          this.chromePath = chromePath;
+          console.log(`✅ Chrome is available for PDF generation at: ${chromePath}`);
+        } else {
+          console.log('⚠️ Chrome not found in default locations');
+          
+          // Try auto-installation if not in a restricted environment
+          if (!this.isServerless && !this.isDockerContainer) {
+            console.log('🔄 Attempting to install Chrome automatically...');
+            const installed = await this.tryInstallChrome();
+            this.constructor.browserAvailable = installed;
+            
+            if (installed) {
+              // Re-check path after installation
+              this.chromePath = await this.findChromePath();
+              console.log(`✅ Successfully installed Chrome at: ${this.chromePath}`);
+            } else {
+              console.warn('⚠️ Chrome installation failed, PDF generation will not be available');
+            }
+          } else {
+            console.log('⚠️ Running in restricted environment, skipping Chrome installation');
+            console.log('⚠️ PDF generation will not be available, will use HTML fallback');
+            this.constructor.browserAvailable = false;
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Browser detection failed: ${error.message}`);
+        this.constructor.browserAvailable = false;
+      }
+      
+      this.constructor.browserChecked = true;
+      
+      // Log status
+      if (this.constructor.browserAvailable) {
+        console.log('✅ PDF generation is available and will be used');
+      } else {
+        console.warn('⚠️ PDF generation is NOT available, HTML fallback will be used');
+      }
+    }
+    
+    // Set flag for PDF generation possibility
+    this.pdfGenerationPossible = this.constructor.browserAvailable;
+  }
+  
+  // Call this at module load time
+  static async initialize() {
+    const generator = new HTMLToPDFInvoiceGenerator();
+    await generator.initializeEnvironment();
+    return generator.constructor.browserAvailable;
   }
 
   /**
@@ -124,12 +210,37 @@ class HTMLToPDFInvoiceGenerator {
    * @param {string} outputPath - Optional output path
    * @returns {Promise<Buffer|boolean>} PDF buffer or success status
    */  async generatePDFWithRetry(invoiceData, language = 'en', outputPath = null) {
+    // If PDF generation is not possible, return early
+    if (this.pdfGenerationPossible === false) {
+      console.warn('⚠️ PDF generation not possible, skipping and returning HTML');
+      if (outputPath) {
+        // Write HTML to file instead
+        const htmlPath = outputPath.replace(/\.pdf$/i, '.html');
+        const html = this.generateHTMLTemplate(invoiceData, language);
+        fs.writeFileSync(htmlPath, html);
+        return false;
+      } else {
+        // Return HTML content as buffer
+        return Buffer.from(this.generateHTMLTemplate(invoiceData, language), 'utf-8');
+      }
+    }
+    
     const maxRetries = 3;
-    let lastError;
-
-    // Use a sequential locking pattern to prevent concurrent puppeteer instances
+    let lastError;    // Use a sequential locking pattern to prevent concurrent puppeteer instances
     // This creates a chain of promises that execute one after another
     this.constructor.pdfLock = this.constructor.pdfLock.then(async () => {
+      // Check if Chrome is available first
+      const chromePath = await this.findChromePath();
+      if (chromePath === null) {
+        console.warn('⚠️ No Chrome executable found, PDF generation not possible');
+        this.pdfGenerationPossible = false; // Update the flag to prevent future attempts
+        throw new Error('Chrome not available for PDF generation');
+      }
+      
+      // Update chrome path and generation flag
+      this.chromePath = chromePath;
+      this.pdfGenerationPossible = true;
+      
       // Inside the lock, we'll retry up to maxRetries times
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -166,16 +277,24 @@ class HTMLToPDFInvoiceGenerator {
             console.log('🔄 Trying file-based approach...');
             result = await this.generatePDFFromFile(invoiceData, language, outputPath);
           }
-
+          
           return result;
         } catch (error) {
           lastError = error;
           console.error(`❌ Attempt ${attempt} failed:`, error.message);
 
+          // If Chrome wasn't found or couldn't be launched, mark PDF generation as not possible
+          if (error.message.includes('Could not find Chrome') || 
+              error.message.includes('Failed to launch browser')) {
+            this.constructor.browserAvailable = false;
+            this.pdfGenerationPossible = false;
+            throw new Error('Chrome not available: ' + error.message);
+          }
+
           // If it's a browser connection issue, try more aggressive cleanup
           if (error.message.includes('Target closed') || error.message.includes('Protocol error')) {
             console.log('🔧 Browser connection issue detected, forcing cleanup...');
-
+            
             // Additional delay for browser connection issues
             if (attempt < maxRetries) {
               await new Promise(resolve => setTimeout(resolve, 5000));
@@ -209,11 +328,21 @@ class HTMLToPDFInvoiceGenerator {
     let page = null;
 
     try {
-      console.log(`🚀 Starting PDF generation for ${language}...`);
-
+      console.log(`🚀 Starting PDF generation for ${language}...`);      // Get Chrome path
+      const chromePath = await this.findChromePath();
+      if (!chromePath) {
+        throw new Error('Chrome executable not found');
+      }
+      
+      console.log(`🚀 Launching Chrome from: ${chromePath}`);
+      
+      // Determine which puppeteer module to use
+      const puppeteerToUse = puppeteerWithBrowser || puppeteer;
+      
       // Launch browser with enhanced options
-      browser = await puppeteer.launch({
+      browser = await puppeteerToUse.launch({
         ...this.puppeteerOptions,
+        executablePath: chromePath,
         // Remove problematic options that might cause instability
         args: this.puppeteerOptions.args.filter(arg =>
           !arg.includes('--disable-javascript') &&
@@ -345,11 +474,22 @@ class HTMLToPDFInvoiceGenerator {
     };
 
     try {
-      console.log('🧪 Testing browser launch capability...');
-
+      console.log('🧪 Testing browser launch capability...');      // Get Chrome path
+      const chromePath = await this.findChromePath();
+      if (!chromePath) {
+        console.warn('⚠️ No Chrome found, browser launch test will fail');
+        return { canLaunch: false, canGeneratePdf: false };
+      }
+      
+      console.log(`🧪 Testing browser launch with Chrome: ${chromePath}`);
+      
+      // Determine which puppeteer module to use
+      const puppeteerToUse = puppeteerWithBrowser || puppeteer;
+      
       // Use minimal browser options for testing
-      browser = await puppeteer.launch({
+      browser = await puppeteerToUse.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        executablePath: chromePath,
         headless: true,
         timeout: 10000
       });
@@ -439,9 +579,20 @@ class HTMLToPDFInvoiceGenerator {
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
             headless: true,
             timeout: 30000
-          };
-
-          const browser = await puppeteer.launch(minimalist);
+          };          // Get Chrome path
+          const chromePath = await this.findChromePath();
+          if (!chromePath) {
+            throw new Error('Chrome executable not found');
+          }
+          
+          // Determine which puppeteer module to use
+          const puppeteerToUse = puppeteerWithBrowser || puppeteer;
+          
+          // Launch browser with Chrome path
+          const browser = await puppeteerToUse.launch({
+            ...minimalist,
+            executablePath: chromePath
+          });
           const page = await browser.newPage();
 
           // Load from file
@@ -1442,14 +1593,25 @@ class HTMLToPDFInvoiceGenerator {
     let browser = null;
     let page = null;
 
-    try {
+    try {      // Get Chrome path
+      const chromePath = await this.findChromePath();
+      if (!chromePath) {
+        throw new Error('Chrome executable not found');
+      }
+      
+      console.log(`🚀 Launching Chrome minimal mode from: ${chromePath}`);
+      
+      // Determine which puppeteer module to use
+      const puppeteerToUse = puppeteerWithBrowser || puppeteer;
+      
       // Super minimal browser options
-      browser = await puppeteer.launch({
+      browser = await puppeteerToUse.launch({
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage'
         ],
+        executablePath: chromePath,
         headless: true,
         timeout: 30000
       });
@@ -1523,11 +1685,21 @@ class HTMLToPDFInvoiceGenerator {
       // Create temporary HTML file
       tempFile = this.getTempFilePath('html');
       const html = this.generateHTMLTemplate(invoiceData, language);
-      fs.writeFileSync(tempFile, html);
-
+      fs.writeFileSync(tempFile, html);      // Get Chrome path
+      const chromePath = await this.findChromePath();
+      if (!chromePath) {
+        throw new Error('Chrome executable not found');
+      }
+      
+      console.log(`🚀 Launching Chrome file-based mode from: ${chromePath}`);
+      
+      // Determine which puppeteer module to use
+      const puppeteerToUse = puppeteerWithBrowser || puppeteer;
+      
       // Super minimal browser
-      browser = await puppeteer.launch({
+      browser = await puppeteerToUse.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        executablePath: chromePath,
         headless: true,
         timeout: 25000
       });
@@ -1575,6 +1747,249 @@ class HTMLToPDFInvoiceGenerator {
       this.releaseSlot();
     }
   }
+
+  /**
+   * Check if Chrome is installed and get its path
+   * @returns {Promise<string|null>} Path to Chrome executable or null if not found
+   */
+  async findChromePath() {
+    // Cache the result to avoid multiple checks
+    if (this.chromePath !== undefined) {
+      return this.chromePath;
+    }
+
+    try {
+      // Try to detect installed Chrome
+      const possiblePaths = await this.detectInstalledChrome();
+      if (possiblePaths && possiblePaths.length > 0) {
+        // Use the first found path
+        this.chromePath = possiblePaths[0];
+        console.log(`✅ Found Chrome at: ${this.chromePath}`);
+        return this.chromePath;
+      }
+
+      // Try to use puppeteer's bundled Chromium if available
+      if (puppeteerWithBrowser) {
+        try {
+          const browserFetcher = puppeteerWithBrowser.createBrowserFetcher();
+          const revisionInfo = await browserFetcher.download('latest');
+          if (revisionInfo && revisionInfo.executablePath) {
+            this.chromePath = revisionInfo.executablePath;
+            console.log(`✅ Using Puppeteer's bundled Chromium: ${this.chromePath}`);
+            return this.chromePath;
+          }
+        } catch (e) {
+          console.warn(`⚠️ Failed to download Chromium: ${e.message}`);
+        }
+      }
+
+      // Chrome not found
+      console.warn('⚠️ Chrome not found on system');
+      this.chromePath = null;
+      return null;
+    } catch (error) {
+      console.error(`❌ Error finding Chrome: ${error.message}`);
+      this.chromePath = null;
+      return null;
+    }
+  }
+
+  /**
+   * Detect installed Chrome on various platforms
+   * @returns {Promise<string[]>} Array of possible Chrome paths
+   */  async detectInstalledChrome() {
+    const platform = process.platform;
+    const possiblePaths = [];
+
+    if (platform === 'win32') {
+      // Windows paths
+      const programFiles = [
+        process.env['PROGRAMFILES(X86)'],
+        process.env.PROGRAMFILES,
+        process.env.LOCALAPPDATA,
+        process.env.PROGRAMDATA
+      ].filter(Boolean);
+
+      const suffixes = [
+        'Google/Chrome/Application/chrome.exe',
+        'Google/Chrome Beta/Application/chrome.exe',
+        'Google/Chrome Canary/Application/chrome.exe',
+        'Google/Chrome Dev/Application/chrome.exe',
+        'Microsoft/Edge/Application/msedge.exe',
+        'chrome-win/chrome.exe', // Puppeteer's chromium location
+        'Chrome/Application/chrome.exe' // Alternative path
+      ];
+
+      // Check direct paths first (common installations)
+      const directPaths = [
+        'C:/Program Files/Google/Chrome/Application/chrome.exe',
+        'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+        'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+        'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+      ];
+      
+      // Add direct paths first as they're most common
+      for (const path of directPaths) {
+        try {
+          if (fs.existsSync(path)) {
+            possiblePaths.push(path);
+          }
+        } catch (e) {
+          // Ignore access errors
+        }
+      }
+
+      // Then check all program folders
+      for (const prefix of programFiles) {
+        if (!prefix) continue;
+        for (const suffix of suffixes) {
+          try {
+            // Use path.join for proper Windows path handling
+            const chromePath = path.join(prefix, suffix.replace(/\//g, '\\'));
+            if (fs.existsSync(chromePath)) {
+              possiblePaths.push(chromePath);
+            }
+          } catch (e) {
+            // Ignore access errors
+          }
+        }
+      }
+        // Try Windows registry query as last resort
+      try {
+        // Use PowerShell to query the registry for Chrome path
+        const regQuery = await this.executeCommand(
+          'powershell -Command "Get-ItemProperty -Path \'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\' -Name Path -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Path"'
+        );
+        
+        if (regQuery && regQuery.trim()) {
+          const regPath = path.join(regQuery.trim(), 'chrome.exe');
+          if (fs.existsSync(regPath)) {
+            possiblePaths.push(regPath);
+          }
+        }
+      } catch (e) {
+        // Ignore registry query errors
+      }
+    } else if (platform === 'darwin') {
+      // macOS paths
+      const paths = [
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+        '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+      ];
+
+      for (const path of paths) {
+        if (fs.existsSync(path)) {
+          possiblePaths.push(path);
+        }
+      }
+    } else {
+      // Linux paths
+      const paths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/snap/bin/chromium',
+        '/usr/bin/microsoft-edge'
+      ];
+
+      for (const path of paths) {
+        if (fs.existsSync(path)) {
+          possiblePaths.push(path);
+        }
+      }
+
+      // Try using which command
+      try {
+        const chromePath = (await this.executeCommand('which google-chrome || which chromium || which chromium-browser')).trim();
+        if (chromePath && fs.existsSync(chromePath)) {
+          possiblePaths.push(chromePath);
+        }
+      } catch (e) {
+        // Ignore command errors
+      }
+    }
+
+    return possiblePaths;
+  }
+
+  /**
+   * Try to install Chrome using npm
+   * @returns {Promise<boolean>} Whether the installation was successful
+   */
+  async tryInstallChrome() {
+    try {
+      console.log('🔄 Attempting to install Chromium via Puppeteer...');
+      
+      // Check if we have write access to the npm directory
+      const canWriteToNpm = await this.checkNpmWriteAccess();
+      if (!canWriteToNpm) {
+        console.warn('⚠️ No write access to npm directories, skipping Chrome installation');
+        return false;
+      }
+
+      // Try to install puppeteer which includes Chromium
+      await this.executeCommand('npm install puppeteer --no-save');
+      
+      // Verify installation
+      try {
+        // Re-require puppeteer after installation
+        delete require.cache[require.resolve('puppeteer')];
+        puppeteerWithBrowser = require('puppeteer');
+        
+        // Try to get executable path
+        const browserFetcher = puppeteerWithBrowser.createBrowserFetcher();
+        const revisionInfo = browserFetcher.revisionInfo('latest');
+        
+        if (revisionInfo && revisionInfo.executablePath && fs.existsSync(revisionInfo.executablePath)) {
+          this.chromePath = revisionInfo.executablePath;
+          console.log(`✅ Successfully installed Chromium at: ${this.chromePath}`);
+          return true;
+        }
+      } catch (e) {
+        console.warn(`⚠️ Failed to verify Chromium installation: ${e.message}`);
+      }
+      
+      return false;
+    } catch (error) {
+      console.error(`❌ Failed to install Chrome: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Check if we have write access to npm directories
+   * @returns {Promise<boolean>} Whether we have write access
+   */
+  async checkNpmWriteAccess() {
+    try {
+      // Get npm root directory
+      const npmRoot = await this.executeCommand('npm root -g');
+      if (!npmRoot) {
+        return false;
+      }
+      
+      // Try to write a temporary file
+      const testFile = path.join(os.tmpdir(), `test-npm-write-${Date.now()}.txt`);
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
+
+// Initialize the browser detection when the module is loaded
+HTMLToPDFInvoiceGenerator.initialize()
+  .then(isAvailable => {
+    console.log(`PDF generator initialization complete. PDF generation available: ${isAvailable ? 'YES' : 'NO'}`);
+  })
+  .catch(err => {
+    console.warn(`PDF generator initialization failed: ${err.message}`);
+  });
 
 module.exports = HTMLToPDFInvoiceGenerator;
