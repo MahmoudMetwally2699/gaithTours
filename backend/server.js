@@ -179,12 +179,12 @@ app.get('/api/whatsapp/messages/poll', require('./middleware/auth').protect, asy
     // This can be used as a fallback when Socket.IO doesn't work
     const WhatsAppMessage = require('./models/WhatsAppMessage');
     const since = req.query.since ? new Date(req.query.since) : new Date(Date.now() - 60000); // Last minute
-    
+
     const newMessages = await WhatsAppMessage.find({
       receivedAt: { $gte: since },
       isFromCustomer: true
     }).sort({ receivedAt: -1 }).limit(50);
-    
+
     res.json({
       success: true,
       messages: newMessages,

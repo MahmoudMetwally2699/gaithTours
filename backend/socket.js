@@ -6,7 +6,7 @@ let io;
 
 const initializeSocket = (server) => {
   console.log('🔄 Initializing Socket.IO server...');
-  
+
   io = new Server(server, {
     cors: {
       origin: [
@@ -56,7 +56,7 @@ const initializeSocket = (server) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-      
+
       if (!token) {
         console.error('❌ No authentication token provided');
         return next(new Error('Authentication token required'));
@@ -84,7 +84,7 @@ const initializeSocket = (server) => {
 
   io.on('connection', (socket) => {
     console.log('🔌 New Socket.IO connection:', socket.id, 'User:', socket.user?.name || 'Unknown');
-    
+
     // Join admin room for WhatsApp notifications
     socket.join('whatsapp-admins');
     console.log('👥 User joined whatsapp-admins room:', socket.user?.name);
@@ -112,7 +112,7 @@ const initializeSocket = (server) => {
     });    // Handle disconnection
     socket.on('disconnect', (reason) => {
       console.log('🔌 Socket.IO disconnection:', socket.id, 'Reason:', reason);
-      
+
       // Notify other admins
       socket.broadcast.to('whatsapp-admins').emit('adminDisconnected', {
         userId: socket.userId,
