@@ -546,12 +546,13 @@ router.get('/search', async (req, res) => {
       const bWordMatches = destWords.filter(word => bNameLower.includes(word)).length * 10;
 
       const aScore = aExactMatch + aStartsWith + aContains + aWordMatches + a.rating;
-      const bScore = bExactMatch + bStartsWith + bContains + bWordMatches + b.rating;
+      const bScore = bExactMatch + bStartsWith + bContains + bWordMatches + b.rating;      return bScore - aScore; // Higher score first
+    });
 
-      return bScore - aScore; // Higher score first
-    });    // Implement pagination on the final sorted results    const startIndex = (pageNumber - 1) * actualLimit;
-    const endIndex = startIndex + actualLimit;
-    const paginatedHotels = sortedHotels.slice(startIndex, endIndex);
+    // Implement pagination on the final sorted results
+    const startIndex = (pageNumber - 1) * actualLimit;
+    const endIndex = startIndex + actualLimit;    const paginatedHotels = sortedHotels.slice(startIndex, endIndex);
+    
     // Create cache key for this specific search and page (include search type)
     const cacheKey = `${destination.toLowerCase()}_${searchTypeIndicator}_page_${pageNumber}_limit_${actualLimit}`;    // Check if we have cached results for this exact search and page
     if (hotelPaginationCache.has(cacheKey)) {
@@ -565,7 +566,9 @@ router.get('/search', async (req, res) => {
       totalDestinationsFound: destinations.length,
       timestamp: Date.now(),
       searchType: searchTypeIndicator // Store the search type for debugging
-    });// Cache the paginated results for this specific page
+    });
+
+    // Cache the paginated results for this specific page
     const responseData = {
       hotels: paginatedHotels,
       total: Math.max(sortedHotels.length, totalCount), // Use the larger of collected hotels or estimated total
