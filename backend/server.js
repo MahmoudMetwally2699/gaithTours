@@ -22,7 +22,6 @@ const allowedOrigins = [
   'http://localhost:3001',
   'https://gaithtours.vercel.app',
   'https://gaith-tours-one.vercel.app',
-  'https://gaith-tours-one.vercel.app/',
   'https://gaith-tours-backend.vercel.app',
   'https://gaithtours.com',
   'https://api.gaithtours.com',
