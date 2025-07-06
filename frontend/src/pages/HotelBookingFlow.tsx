@@ -303,7 +303,16 @@ export const HotelBookingFlow: React.FC = () => {
                 { id: 'bank_card', label: t('booking.payment.bankCard', 'Bank Card'), icon: '💳', desc: 'Debit/Credit Card' },
                 { id: 'bank_transfer', label: t('booking.payment.bankTransfer', 'Bank Transfer'), icon: '🏦', desc: 'Wire transfer' },
                 { id: 'website_payment', label: t('booking.payment.websitePayment', 'Website Payment'), icon: '💻', desc: 'Pay through website' },
-                { id: 'payment_link', label: t('booking.payment.paymentLink', 'Payment Link'), icon: '�', desc: 'Secure payment link' }
+                {
+                  id: 'payment_link',
+                  label: t('booking.payment.paymentLink', 'Payment Link'),
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+                      <path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z"/>
+                    </svg>
+                  ),
+                  desc: 'Secure payment link'
+                }
               ].map((method) => (
                 <label
                   key={method.id}                  className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
@@ -319,9 +328,16 @@ export const HotelBookingFlow: React.FC = () => {
                     checked={formData.paymentMethod === method.id}
                     onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
                     className="sr-only"
-                  />
-                  <div className="text-center">
-                    <span className="text-lg sm:text-2xl mb-1 block">{method.icon}</span>
+                  />                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-1">
+                      {typeof method.icon === 'string' ? (
+                        <span className="text-lg sm:text-2xl">{method.icon}</span>
+                      ) : (
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
+                          {method.icon}
+                        </div>
+                      )}
+                    </div>
                     <span className={`font-bold text-xs sm:text-sm text-gray-900 block text-center leading-tight`}>
                       {method.label}
                     </span>

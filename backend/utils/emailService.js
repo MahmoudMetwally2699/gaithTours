@@ -621,7 +621,7 @@ const sendInvoiceEmail = async (invoiceData) => {
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
-      subject: `📄 Invoice #${invoice.invoiceId} - Gaith Tours | فاتورة رقم ${invoice.invoiceId} - قايث تورز`,
+      subject: `📄 Invoice #${invoice.invoiceId} - Gaith Tours | فاتورة رقم ${invoice.invoiceId} - غيث تورز`,
       html: `
         <!DOCTYPE html>
         <html lang="en">

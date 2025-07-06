@@ -564,7 +564,7 @@ export const ar = {
       fileName: 'الملف {{number}}',
       modalConfirmBooking: 'تأكيد الحجز',
       bookingSubmitted: 'تم تقديم الحجز!',
-      submissionMessage: 'تم تقديم طلب حجز الفندق بنجاح. سيتواصل معك فريقنا خلال 24 ساعة لتأكيد حجزك.',
+      submissionMessage: 'تم تقديم طلب حجز الفندق بنجاح. سيتواصل معك فريقنا في أقرب وقت ويمكنك متابعة حالة طلبك عن طريق الواتساب.',
       processingRequest: 'جاري معالجة طلبك...'    },
     yourStay: 'إقامتك',
     aboutProperty: 'عن هذا العقار',

@@ -577,7 +577,7 @@ export const en = {
       fileName: 'File {{number}}',
       modalConfirmBooking: 'Confirm Booking',
       bookingSubmitted: 'Booking Submitted!',
-      submissionMessage: 'Your hotel reservation request has been successfully submitted. Our team will contact you within 24 hours to confirm your booking.',
+      submissionMessage: 'Your hotel reservation request has been successfully submitted. Our team will contact you as soon as possible and you can follow up on your request status via WhatsApp.',
       processingRequest: 'Processing your request...'},
     yourStay: 'Your stay',
     aboutProperty: 'About this property',
