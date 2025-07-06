@@ -44,7 +44,7 @@ export const SocketProvider = ({ children }) => {
         },
         withCredentials: true,
         // Use polling first for Vercel compatibility, then websocket as fallback
-        transports: ['polling', 'websocket'],
+        transports: ['polling'],
         timeout: 20000,
         forceNew: true,
         reconnection: true,
