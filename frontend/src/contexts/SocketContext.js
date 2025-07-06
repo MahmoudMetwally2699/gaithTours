@@ -113,7 +113,7 @@ export const SocketProvider = ({ children }) => {
         setConnectionAttempts(0);
       }
     }
-  }, [isAuthenticated, user, socket]);
+  }, [isAuthenticated, user]);
 
   const value = {
     socket,
