@@ -23,13 +23,7 @@ const verifyWebhookSignature = (req, res, next) => {
     const signature = req.get('X-Hub-Signature-256');
     const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
 
-    console.log('🔐 Verifying webhook signature...');
-    console.log('Signature header:', signature);
-    console.log('Webhook secret exists:', !!webhookSecret);
-    console.log('Body type:', typeof req.body, 'Is Buffer:', Buffer.isBuffer(req.body));
-
     if (!signature || !webhookSecret) {
-      console.error('❌ Missing signature or webhook secret');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -45,25 +39,17 @@ const verifyWebhookSignature = (req, res, next) => {
       bodyString = req.body;
     }
 
-    console.log('📝 Body string (first 200 chars):', bodyString.substring(0, 200));
 
     const expectedHash = crypto
       .createHmac('sha256', webhookSecret)
       .update(bodyString, 'utf8')
       .digest('hex');
 
-    console.log('🔍 Expected hash:', expectedHash);
-    console.log('🔍 Received hash:', signatureHash);
-    console.log('✅ Signatures match:', signatureHash === expectedHash);
 
     if (signatureHash !== expectedHash) {
-      console.error('❌ Invalid webhook signature');
-      console.error('Expected:', expectedHash);
-      console.error('Received:', signatureHash);
 
       // In production, this should return 401, but for debugging let's continue
       if (process.env.NODE_ENV === 'production') {
-        console.log('🚨 PRODUCTION MODE: Allowing webhook for debugging...');
         // Temporarily allow for debugging - REMOVE THIS IN PRODUCTION
         // return res.status(401).json({ error: 'Invalid signature' });
       }    }
@@ -75,7 +61,6 @@ const verifyWebhookSignature = (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('❌ Error verifying webhook signature:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -87,17 +72,13 @@ router.get('/whatsapp', (req, res) => {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    console.log('Webhook verification request:', { mode, token, challenge });
 
     if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-      console.log('Webhook verified successfully');
       res.status(200).send(challenge);
     } else {
-      console.error('Webhook verification failed');
       res.status(403).json({ error: 'Forbidden' });
     }
   } catch (error) {
-    console.error('Error in webhook verification:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -105,8 +86,6 @@ router.get('/whatsapp', (req, res) => {
 // POST /webhook/whatsapp - Receive messages
 router.post('/whatsapp', webhookLimiter, verifyWebhookSignature, async (req, res) => {
   try {
-    console.log('✅ Webhook signature verified, processing message...');
-    console.log('Received webhook:', JSON.stringify(req.body, null, 2));
 
     // Respond immediately to Meta
     res.status(200).json({ success: true });
@@ -128,7 +107,6 @@ router.post('/whatsapp', webhookLimiter, verifyWebhookSignature, async (req, res
       }
     }
   } catch (error) {
-    console.error('Error processing webhook:', error);
     // Still return 200 to prevent Meta from retrying
     res.status(200).json({ success: false, error: error.message });
   }
@@ -147,7 +125,6 @@ async function processIncomingMessages(data) {
       // Check if message already exists
       const existingMessage = await WhatsAppMessage.findOne({ messageId });
       if (existingMessage) {
-        console.log('Message already processed:', messageId);
         continue;
       }
 
@@ -199,11 +176,6 @@ async function processIncomingMessages(data) {
       const io = getIO();
       if (io) {
         try {
-          console.log('🔔 Emitting new_whatsapp_message event:', {
-            messageId: whatsAppMessage._id,
-            conversationId: conversation._id,
-            from: phoneNumber
-          });
 
           // Populate conversation with user data for frontend
           const populatedConversation = await conversation.populate('userId', 'name email');
@@ -244,26 +216,16 @@ async function processIncomingMessages(data) {
             lastMessageDirection: 'incoming'
           });
 
-          console.log('✅ Socket events emitted successfully');
         } catch (socketError) {
-          console.error('❌ Error emitting socket events:', socketError);
         }
       } else {
-        console.warn('⚠️ Socket.io not available - events not emitted');
       }
 
-      console.log('New WhatsApp message processed:', {
-        messageId,
-        from: phoneNumber,
-        type: messageData.type,
-        conversationId: conversation._id
-      });
 
       // Check for auto-reply rules
       await checkAutoReplyRules(conversation, whatsAppMessage);
     }
   } catch (error) {
-    console.error('Error processing incoming messages:', error);
   }
 }
 
@@ -286,10 +248,6 @@ async function processMessageStatuses(data) {
       const io = getIO();
       if (io) {
         try {
-          console.log('🔔 Emitting message status update:', {
-            messageId,
-            status: statusType
-          });
 
           io.to('whatsapp-admins').emit('whatsapp_message_status_update', {
             messageId,
@@ -297,16 +255,12 @@ async function processMessageStatuses(data) {
             timestamp: status.timestamp
           });
 
-          console.log('✅ Status update emitted successfully');
         } catch (socketError) {
-          console.error('❌ Error emitting status update:', socketError);
         }
       } else {
-        console.warn('⚠️ Socket.io not available - status update not emitted');
       }
     }
   } catch (error) {
-    console.error('Error processing message statuses:', error);
   }
 }
 
@@ -435,7 +389,6 @@ async function checkAutoReplyRules(conversation, message) {
       await conversation.save();
     }
   } catch (error) {
-    console.error('Error in auto-reply:', error);
   }
 }
 
@@ -444,7 +397,6 @@ router.post('/test-message', async (req, res) => {
   try {
     const { phoneNumber = '+1234567890', message = 'Test message from webhook simulation' } = req.body;
 
-    console.log('🧪 Simulating webhook message:', { phoneNumber, message });
 
     // Find or create conversation
     let conversation = await WhatsAppConversation.findOne({ phoneNumber });
@@ -488,9 +440,7 @@ router.post('/test-message', async (req, res) => {
         message: whatsAppMessage,
         conversation
       });
-      console.log('📡 Emitted Socket.IO event');
     } else {
-      console.log('⚠️ Socket.IO not available');
     }
 
     res.json({
@@ -502,7 +452,6 @@ router.post('/test-message', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Test message error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -522,7 +471,6 @@ router.get('/debug/config', (req, res) => {
       webhookSecretLength: process.env.WHATSAPP_WEBHOOK_SECRET ? process.env.WHATSAPP_WEBHOOK_SECRET.length : 0
     };
 
-    console.log('🔧 Webhook Configuration:', config);
 
     res.json({
       success: true,
@@ -530,7 +478,6 @@ router.get('/debug/config', (req, res) => {
       message: 'Webhook configuration check'
     });
   } catch (error) {
-    console.error('❌ Error checking webhook config:', error);
     res.status(500).json({ error: 'Failed to check config' });
   }
 });
@@ -541,15 +488,10 @@ router.post('/debug/test-signature', express.raw({ type: 'application/json' }), 
     const signature = req.get('X-Hub-Signature-256');
     const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
 
-    console.log('🧪 Testing signature verification...');
-    console.log('Signature header:', signature);
-    console.log('Webhook secret exists:', !!webhookSecret);
-    console.log('Body type:', typeof req.body);
-    console.log('Body is Buffer:', Buffer.isBuffer(req.body));
+
 
     if (Buffer.isBuffer(req.body)) {
       const bodyString = req.body.toString('utf8');
-      console.log('Body string:', bodyString);
 
       if (signature && webhookSecret) {
         const signatureHash = signature.replace('sha256=', '');
@@ -558,9 +500,6 @@ router.post('/debug/test-signature', express.raw({ type: 'application/json' }), 
           .update(bodyString, 'utf8')
           .digest('hex');
 
-        console.log('Expected hash:', expectedHash);
-        console.log('Received hash:', signatureHash);
-        console.log('Signatures match:', signatureHash === expectedHash);
       }
     }
 
@@ -572,7 +511,6 @@ router.post('/debug/test-signature', express.raw({ type: 'application/json' }), 
       isBuffer: Buffer.isBuffer(req.body)
     });
   } catch (error) {
-    console.error('❌ Test signature error:', error);
     res.status(500).json({ error: error.message });
   }
 });

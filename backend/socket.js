@@ -33,66 +33,41 @@ const initializeSocket = (server) => {  io = new Server(server, {
     maxHttpBufferSize: 1e6,
     httpCompression: true,
     perMessageDeflate: false
-  });
-  // Authentication middleware for socket connections
+  });  // Authentication middleware for socket connections
   io.use(async (socket, next) => {
     try {
-      console.log('🔐 Socket authentication attempt from:', socket.handshake.address);
-      console.log('🔐 Auth data:', socket.handshake.auth);
-      console.log('🔐 Headers:', socket.handshake.headers);
-
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-
-      if (!token) {
+      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');if (!token) {
         console.error('❌ No authentication token provided');
         return next(new Error('Authentication token required'));
       }
 
-      console.log('🔐 Token received (first 20 chars):', token.substring(0, 20) + '...');
-
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('🔐 Token decoded successfully for user ID:', decoded.id);
 
       const user = await User.findById(decoded.id).select('-password');
 
       if (!user) {
-        console.error('❌ User not found for ID:', decoded.id);
-        return next(new Error('User not found'));
+        console.error('❌ User not found for ID:', decoded.id);        return next(new Error('User not found'));
       }
-
-      console.log('🔐 User found:', user.name, 'Role:', user.role);
 
       if (user.role !== 'admin' && user.role !== 'superadmin') {
         console.error('❌ User does not have admin access:', user.role);
         return next(new Error('Admin access required'));
-      }
-
-      socket.userId = user._id.toString();
+      }      socket.userId = user._id.toString();
       socket.user = user;
-      console.log('✅ Socket authentication successful for:', user.name);
       next();
     } catch (error) {
       console.error('❌ Socket authentication error:', error.message);
       next(new Error('Authentication failed: ' + error.message));
     }
   });
-
   io.on('connection', (socket) => {
-    console.log(`Admin user connected: ${socket.user.name} (${socket.userId})`);
-
     // Join admin room for WhatsApp notifications
-    socket.join('whatsapp-admins');
-
-    // Handle joining specific conversation rooms
+    socket.join('whatsapp-admins');    // Handle joining specific conversation rooms
     socket.on('joinConversation', (conversationId) => {
       socket.join(`conversation-${conversationId}`);
-      console.log(`User ${socket.userId} joined conversation ${conversationId}`);
-    });
-
-    // Handle leaving conversation rooms
+    });// Handle leaving conversation rooms
     socket.on('leaveConversation', (conversationId) => {
       socket.leave(`conversation-${conversationId}`);
-      console.log(`User ${socket.userId} left conversation ${conversationId}`);
     });
 
     // Handle typing indicators
@@ -131,11 +106,7 @@ const initializeSocket = (server) => {  io = new Server(server, {
         userName: socket.user.name,
         status
       });
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`Admin user disconnected: ${socket.user.name} (${socket.userId})`);
-
+    });    socket.on('disconnect', () => {
       // Notify other admins
       socket.broadcast.to('whatsapp-admins').emit('adminDisconnected', {
         userId: socket.userId,

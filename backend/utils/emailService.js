@@ -254,7 +254,6 @@ const sendReservationConfirmation = async (reservationData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Reservation confirmation email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Email sending error:', error);
@@ -492,7 +491,6 @@ const sendAgencyNotification = async (reservationData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Agency notification email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Agency notification email error:', error);
@@ -529,7 +527,6 @@ const sendWelcomeEmail = async (userData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Welcome email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Welcome email error:', error);
@@ -559,7 +556,6 @@ const sendCancellationEmail = async (reservationData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Cancellation email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Cancellation email error:', error);
@@ -736,7 +732,6 @@ const sendInvoiceEmail = async (invoiceData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Invoice email sent successfully with PDF attachments:', info.messageId);
     return true;
   } catch (error) {
     console.error('Failed to send invoice email:', error);
@@ -803,7 +798,6 @@ const sendBookingDenialEmail = async (denialData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Booking denial email sent successfully:', info.messageId);
     return true;
   } catch (error) {
     console.error('Failed to send booking denial email:', error);
@@ -873,7 +867,6 @@ const sendBookingConfirmationEmail = async (confirmationData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Booking confirmation email sent successfully:', info.messageId);
     return true;
   } catch (error) {
     console.error('Failed to send booking confirmation email:', error);
@@ -959,7 +952,6 @@ const sendPaymentConfirmationEmail = async (paymentData) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('Payment confirmation email sent successfully:', info.messageId);
     return true;
   } catch (error) {
     console.error('Failed to send payment confirmation email:', error);

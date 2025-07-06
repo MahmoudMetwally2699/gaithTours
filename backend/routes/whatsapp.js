@@ -321,10 +321,6 @@ router.post('/whatsapp/reply-with-attachment', auth, requireAdmin, upload.single
       const uploadResult = await new Promise((resolve, reject) => {
         const sanitizedFilename = sanitizeFilenameForCloudinary(req.file.originalname);
 
-        console.log('🔧 Filename sanitization:', {
-          original: req.file.originalname,
-          sanitized: sanitizedFilename
-        });
 
         // Create minimal upload options to avoid conflicts
         let uploadOptions;
@@ -357,13 +353,7 @@ router.post('/whatsapp/reply-with-attachment', auth, requireAdmin, upload.single
             public_id: `whatsapp_aud_${Date.now()}_${sanitizedFilename}`,
             quality: 'auto'
           };
-        }        console.log('📤 Uploading to Cloudinary:', {
-          filename: req.file.originalname,
-          mimetype: req.file.mimetype,
-          messageType,
-          resourceType,
-          uploadOptions
-        });
+        }
 
         // Use stream upload for all file types (recommended by Cloudinary)
         const uploadStream = cloudinary.uploader.upload_stream(
@@ -374,13 +364,7 @@ router.post('/whatsapp/reply-with-attachment', auth, requireAdmin, upload.single
               console.error('❌ Upload options that failed:', uploadOptions);
               reject(error);
             } else {
-              console.log('✅ Cloudinary upload success:', {
-                public_id: result.public_id,
-                secure_url: result.secure_url,
-                resource_type: result.resource_type,
-                format: result.format,
-                pages: result.pages || 'N/A'
-              });
+
               resolve(result);
             }
           }

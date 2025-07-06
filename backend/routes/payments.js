@@ -31,7 +31,6 @@ router.post('/create-session', protect, async (req, res) => {
     }, 'Payment session created successfully');
 
   } catch (error) {
-    console.error('Create payment session error:', error);
 
     if (error.message === 'Invoice not found') {
       return errorResponse(res, 'Invoice not found', 404);
@@ -70,29 +69,19 @@ router.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  console.log('Webhook received');
-  console.log('Signature exists:', !!sig);
-  console.log('Endpoint secret exists:', !!endpointSecret);
-  console.log('Raw body type:', typeof req.body);
-  console.log('Raw body is Buffer:', Buffer.isBuffer(req.body));
-  console.log('Raw body length:', req.body ? req.body.length : 'undefined');
 
   if (!endpointSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set');
     return res.status(500).json({ error: 'Webhook secret not configured' });
   }
 
   if (!sig) {
-    console.error('No stripe-signature header found');
     return res.status(400).json({ error: 'No signature header' });
   }
   let event;
   try {
     // Use Stripe's direct webhook verification instead of custom wrapper
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    console.log('Webhook verified successfully:', event.type);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -102,17 +91,12 @@ router.post('/webhook', async (req, res) => {
         const session = event.data.object;
         const sessionId = session.id;
 
-        console.log('Processing checkout.session.completed for session:', sessionId);
 
         // Handle successful payment
         try {
           const result = await stripeService.handlePaymentSuccess(sessionId);
 
-          console.log('Payment success handled:', {
-            invoiceId: result.invoice._id,
-            paymentId: result.payment._id,
-            status: result.payment.status
-          });          // Send payment confirmation email
+          // Send payment confirmation email
           try {
             await sendPaymentConfirmationEmail({
               email: result.invoice.clientEmail,
@@ -120,9 +104,7 @@ router.post('/webhook', async (req, res) => {
               invoice: result.invoice,
               payment: result.payment
             });
-            console.log('Payment confirmation email sent');
           } catch (emailError) {
-            console.error('Failed to send payment confirmation email:', emailError);
           }
 
           // Send WhatsApp notification for payment confirmation
@@ -140,37 +122,29 @@ router.post('/webhook', async (req, res) => {
             };
 
             await whatsappService.sendBookingConfirmation(booking, result.payment);
-            console.log('Payment confirmation WhatsApp sent');
           } catch (whatsappError) {
-            console.error('Failed to send payment confirmation WhatsApp:', whatsappError);
           }
         } catch (paymentError) {
-          console.error('Error handling payment success:', paymentError);
         }
         break;
 
       case 'checkout.session.expired':
         const expiredSession = event.data.object;
-        console.log('Checkout session expired:', expiredSession.id);
         // Update payment status to expired
         try {
           await stripeService.handlePaymentFailure(expiredSession.id, 'Session expired');
         } catch (error) {
-          console.error('Error handling expired session:', error);
         }
         break;
 
       case 'payment_intent.payment_failed':
         const failedPayment = event.data.object;
-        console.log('Payment failed:', failedPayment.id);
         break;
 
       default:
-        console.log('Unhandled webhook event type:', event.type);
+
     }    res.json({ received: true });
   } catch (err) {
-    console.error('Webhook processing error:', err.message);
-    console.error('Webhook processing error stack:', err.stack);
     return res.status(500).send(`Webhook Processing Error: ${err.message}`);
   }
 });
@@ -187,7 +161,6 @@ router.get('/session/:sessionId', async (req, res) => {
 
     successResponse(res, status, 'Payment status retrieved');
   } catch (error) {
-    console.error('Get payment status error:', error);
     errorResponse(res, 'Failed to get payment status', 500);
   }
 });
@@ -212,7 +185,6 @@ router.post('/success', protect, async (req, res) => {
     }, 'Payment processed successfully');
 
   } catch (error) {
-    console.error('Payment success handler error:', error);
     errorResponse(res, 'Failed to process payment success', 500);
   }
 });
@@ -234,7 +206,6 @@ router.post('/failure', protect, async (req, res) => {
     successResponse(res, { payment }, 'Payment failure recorded');
 
   } catch (error) {
-    console.error('Payment failure handler error:', error);
     errorResponse(res, 'Failed to handle payment failure', 500);
   }
 });
@@ -252,7 +223,6 @@ router.get('/status/:sessionId', protect, async (req, res) => {
     successResponse(res, result, 'Payment status retrieved successfully');
 
   } catch (error) {
-    console.error('Get payment status error:', error);
     errorResponse(res, 'Failed to get payment status', 500);
   }
 });
@@ -270,12 +240,10 @@ router.get('/invoices', protect, async (req, res) => {
     // Get payment information for each invoice
     const invoicesWithPayments = await Promise.all(
       invoices.map(async (invoice) => {
-        const payment = await Payment.findOne({ invoice: invoice._id })
-          .sort({ createdAt: -1 });
-
+        const payment = await Payment.findOne({ invoice: invoice._id });
         return {
           ...invoice.toObject(),
-          payment: payment || null
+          paymentStatus: payment ? payment.status : 'unpaid'
         };
       })
     );
@@ -283,7 +251,6 @@ router.get('/invoices', protect, async (req, res) => {
     successResponse(res, { invoices: invoicesWithPayments }, 'User invoices retrieved successfully');
 
   } catch (error) {
-    console.error('Get user invoices error:', error);
     errorResponse(res, 'Failed to get user invoices', 500);
   }
 });
@@ -301,7 +268,6 @@ router.get('/history', protect, async (req, res) => {
     successResponse(res, { payments }, 'Payment history retrieved successfully');
 
   } catch (error) {
-    console.error('Get payment history error:', error);
     errorResponse(res, 'Failed to get payment history', 500);
   }
 });
@@ -373,7 +339,6 @@ router.get('/invoices/:id', protect, async (req, res) => {
     successResponse(res, { invoice: invoiceWithPayment }, 'Invoice details retrieved successfully');
 
   } catch (error) {
-    console.error('Get invoice details error:', error);
     errorResponse(res, 'Failed to get invoice details', 500);
   }
 });
@@ -467,7 +432,6 @@ router.get('/invoices/:id/receipt', protect, async (req, res) => {
     doc.end();
 
   } catch (error) {
-    console.error('Generate receipt PDF error:', error);
     errorResponse(res, 'Failed to generate receipt', 500);
   }
 });

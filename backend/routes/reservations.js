@@ -51,23 +51,15 @@ router.post('/', protect, [
   body('hotel.price').optional().isNumeric().withMessage('Price must be a valid number')
 ], async (req, res) => {
   const startTime = Date.now();
-  console.log('🚀 ===== BACKEND: Starting reservation creation =====');
-  console.log('⏰ Request start time:', new Date().toISOString());
-  console.log('👤 User ID:', req.user?.id);
-  console.log('📍 Request IP:', req.ip || req.connection.remoteAddress);
 
   try {
-    // Log the incoming request data for debugging
-    console.log('📥 Incoming request body:', JSON.stringify(req.body, null, 2));
-
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('❌ Validation errors:', errors.array());
       return errorResponse(res, 'Validation failed', 400, errors.array());
     }
 
-    console.log('✅ Validation passed, proceeding with reservation creation');const {
+    const {
       touristName,
       phone,
       nationality,
@@ -128,9 +120,7 @@ router.post('/', protect, [
       numberOfGuests: numberOfGuests || 1,
       notes: sanitizedData.notes,
       attachments: attachments || []
-    };    console.log('📊 Data being sent to MongoDB:', JSON.stringify(reservationData, null, 2));
-
-    console.log('💾 Creating reservation in database...');
+    };
     const dbStartTime = Date.now();
 
     // Create reservation
@@ -138,10 +128,7 @@ router.post('/', protect, [
 
     const dbEndTime = Date.now();
     const dbDuration = dbEndTime - dbStartTime;
-    console.log(`✅ Reservation created in database in ${dbDuration}ms`);
-    console.log('📝 Created reservation ID:', reservation._id);
 
-    console.log('🔄 Populating user data...');
     const populateStartTime = Date.now();
 
     // Populate user data for response
@@ -149,9 +136,7 @@ router.post('/', protect, [
 
     const populateEndTime = Date.now();
     const populateDuration = populateEndTime - populateStartTime;
-    console.log(`✅ User data populated in ${populateDuration}ms`);
 
-    console.log('📤 Sending response to client...');
     const responseStartTime = Date.now();
 
     // Send response immediately to prevent timeout
@@ -160,15 +145,12 @@ router.post('/', protect, [
     const responseEndTime = Date.now();
     const responseDuration = responseEndTime - responseStartTime;
     const totalDuration = responseEndTime - startTime;
-    console.log(`✅ Response sent in ${responseDuration}ms`);
-    console.log(`🎯 Total request processing time: ${totalDuration}ms`);    // Send emails in background (non-blocking)
+    // Send emails in background (non-blocking)
     setImmediate(async () => {
-      console.log('📧 Starting background email processing...');
       const emailStartTime = Date.now();
 
       // Send confirmation email to user
       try {
-        console.log('📬 Sending user confirmation email...');
         const userEmailStartTime = Date.now();
 
         await sendReservationConfirmation({
@@ -190,16 +172,13 @@ router.post('/', protect, [
 
         const userEmailEndTime = Date.now();
         const userEmailDuration = userEmailEndTime - userEmailStartTime;
-        console.log(`✅ User confirmation email sent successfully in ${userEmailDuration}ms`);
       } catch (emailError) {
         const userEmailEndTime = Date.now();
         const userEmailDuration = userEmailEndTime - userEmailStartTime;
-        console.error(`❌ User confirmation email failed after ${userEmailDuration}ms:`, emailError);
       }
 
       // Send notification email to agency
       try {
-        console.log('📬 Sending agency notification email...');
         const agencyEmailStartTime = Date.now();
 
         await sendAgencyNotification({
@@ -221,38 +200,26 @@ router.post('/', protect, [
 
         const agencyEmailEndTime = Date.now();
         const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
-        console.log(`✅ Agency notification email sent successfully in ${agencyEmailDuration}ms`);
 
         const totalEmailTime = Date.now() - emailStartTime;
-        console.log(`📧 All background emails completed in ${totalEmailTime}ms`);
       } catch (emailError) {
         const agencyEmailEndTime = Date.now();
         const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
-        console.error(`❌ Agency notification email failed after ${agencyEmailDuration}ms:`, emailError);
 
         const totalEmailTime = Date.now() - emailStartTime;
-        console.log(`📧 Background email processing completed (with errors) in ${totalEmailTime}ms`);
       }
     });
   } catch (error) {
     const errorTime = Date.now();
     const totalErrorTime = errorTime - startTime;
-    console.error('❌ ===== BACKEND: Reservation creation failed =====');
-    console.error('⏰ Error occurred after:', totalErrorTime, 'ms');
-    console.error('🔍 Error details:', error);
-    console.error('📝 Error name:', error.name);
-    console.error('💬 Error message:', error.message);
-    console.error('📚 Error stack:', error.stack);
 
     // If it's a MongoDB validation error, log the details
     if (error.name === 'ValidationError') {
-      console.error('💾 MongoDB validation errors:', error.errors);
       const validationErrors = Object.values(error.errors).map(err => ({
         field: err.path,
         message: err.message,
         value: err.value
       }));
-      console.error('📋 Formatted validation errors:', validationErrors);
       return errorResponse(res, 'Validation failed', 400, validationErrors);
     }
 
@@ -288,7 +255,6 @@ router.get('/', protect, async (req, res) => {
     }, 'Reservations retrieved successfully');
 
   } catch (error) {
-    console.error('Get reservations error:', error);
     errorResponse(res, 'Failed to get reservations', 500);
   }
 });
@@ -313,7 +279,6 @@ router.get('/:id', protect, async (req, res) => {
     successResponse(res, { reservation }, 'Reservation retrieved successfully');
 
   } catch (error) {
-    console.error('Get reservation error:', error);
     errorResponse(res, 'Failed to get reservation', 500);
   }
 });
@@ -348,7 +313,6 @@ router.put('/:id/status', protect, [
     successResponse(res, { reservation }, 'Reservation status updated successfully');
 
   } catch (error) {
-    console.error('Update reservation error:', error);
     errorResponse(res, 'Failed to update reservation', 500);
   }
 });
@@ -376,13 +340,11 @@ router.delete('/:id', protect, async (req, res) => {
         reservationId: reservation._id
       });
     } catch (emailError) {
-      console.error('Cancellation email failed:', emailError);
     }
 
     successResponse(res, { reservation }, 'Reservation cancelled successfully');
 
   } catch (error) {
-    console.error('Cancel reservation error:', error);
     errorResponse(res, 'Failed to cancel reservation', 500);
   }
 });

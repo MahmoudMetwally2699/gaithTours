@@ -30,7 +30,6 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 10000) =
   useEffect(() => {
     // Don't poll if socket is connected
     if (isSocketConnected) {
-      console.log('✅ Socket connected - stopping polling');
       // Clear any existing intervals/timeouts
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -43,7 +42,6 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 10000) =
       return;
     }
 
-    console.log('🔄 Socket not available - starting polling fallback with', safePollingInterval, 'ms interval');
 
     const pollForUpdates = async () => {
       const now = Date.now();
@@ -57,7 +55,6 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 10000) =
 
       try {
         setIsPolling(true);
-        console.log('🔄 Polling for recent updates...');
 
         // Poll for new messages since last check
         const params = {
@@ -70,7 +67,6 @@ export const usePollingFallback = (isSocketConnected, pollingInterval = 10000) =
         if (!mountedRef.current) return; // Component unmounted
 
         if (response.success && response.updates?.length > 0) {
-          console.log('📊 Found', response.updates.length, 'updates since', new Date(lastPollingTimeRef.current).toISOString());
           setPollingData({
             timestamp: Date.now(),
             updates: response.updates

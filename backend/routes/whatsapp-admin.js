@@ -49,7 +49,6 @@ router.use(admin);
 // Debug endpoint to check conversations and create test data
 router.get('/debug/conversations', async (req, res) => {
   try {
-    console.log('🔍 DEBUG: Checking conversations...');
 
     // Get all conversations
     const conversations = await WhatsAppConversation.find({})
@@ -57,18 +56,15 @@ router.get('/debug/conversations', async (req, res) => {
       .sort({ lastMessageAt: -1 })
       .limit(10);
 
-    console.log(`📊 Found ${conversations.length} conversations`);
 
     // Get all messages
     const messages = await WhatsAppMessage.find({})
       .sort({ timestamp: -1 })
       .limit(20);
 
-    console.log(`💬 Found ${messages.length} messages`);
 
     // If no conversations exist, create a test conversation
     if (conversations.length === 0) {
-      console.log('📝 Creating test conversation...');
 
       const testConversation = new WhatsAppConversation({
         phoneNumber: '+1234567890',
@@ -95,7 +91,6 @@ router.get('/debug/conversations', async (req, res) => {
 
       await testMessage.save();
 
-      console.log('✅ Test conversation and message created');
     }
 
     res.json({
@@ -110,7 +105,6 @@ router.get('/debug/conversations', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Debug endpoint error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -122,7 +116,6 @@ router.get('/debug/conversations', async (req, res) => {
 // GET /api/admin/whatsapp/conversations - Get all conversations with pagination
 router.get('/conversations', async (req, res) => {
   try {
-    console.log('🔍 Getting WhatsApp conversations...');
 
     const {
       page = 1,
@@ -133,7 +126,6 @@ router.get('/conversations', async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    console.log('📊 Query params:', { page, limit, search, filter, sortBy, sortOrder });
 
     // Build query
     let query = {};
@@ -158,14 +150,12 @@ router.get('/conversations', async (req, res) => {
       ];
     }
 
-    console.log('🔎 Query filter:', JSON.stringify(query, null, 2));
 
     // Check total count first
     const totalCount = await WhatsAppConversation.countDocuments({});
-    console.log('📈 Total conversations in database:', totalCount);
 
     const filteredCount = await WhatsAppConversation.countDocuments(query);
-    console.log('📈 Conversations matching filter:', filteredCount);    // Calculate pagination
+    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Fix sort field mapping - map frontend field names to database field names
@@ -185,7 +175,6 @@ router.get('/conversations', async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
-    console.log('💬 Found conversations:', conversations.length);
 
     // Map database fields to frontend expected fields
     const mappedConversations = conversations.map(conv => ({
@@ -217,7 +206,8 @@ router.get('/conversations', async (req, res) => {
           }
         }
       }
-    ]);    res.json({
+    ]);
+    res.json({
       conversations: mappedConversations,
       pagination: {
         current: parseInt(page),
@@ -233,7 +223,6 @@ router.get('/conversations', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching conversations:', error);
     res.status(500).json({ error: 'Failed to fetch conversations' });
   }
 });
@@ -291,7 +280,6 @@ router.get('/messages/:phone', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Failed to fetch messages' });
   }
 });
@@ -304,7 +292,8 @@ router.post('/reply', async (req, res) => {
 
     if (!phone || !message) {
       return res.status(400).json({ error: 'Phone and message are required' });
-    }    // Find or create conversation
+    }
+    // Find or create conversation
     const conversation = await WhatsAppConversation.findOrCreate(phone);
 
     // Send message via WhatsApp API
@@ -352,15 +341,11 @@ router.post('/reply', async (req, res) => {
     await conversation.save();
 
     // Populate admin user info
-    await newMessage.populate('adminUserId', 'name firstName lastName');    // Emit real-time event
+    await newMessage.populate('adminUserId', 'name firstName lastName');
+    // Emit real-time event
     const io = getIO();
     if (io) {
       try {
-        console.log('🔔 Emitting whatsapp_reply_sent event:', {
-          messageId: newMessage._id,
-          conversationId: conversation._id,
-          to: phone
-        });
 
         // Emit new message event (since it's a new message in the conversation)
         io.to('whatsapp-admins').emit('new_whatsapp_message', {
@@ -396,19 +381,16 @@ router.post('/reply', async (req, res) => {
           conversation: conversation
         });
 
-        console.log('✅ Reply socket events emitted successfully');
       } catch (socketError) {
-        console.error('❌ Error emitting reply socket events:', socketError);
       }
     } else {
-      console.warn('⚠️ Socket.io not available - reply events not emitted');
-    }    res.json({
+    }
+    res.json({
       success: true,
       message: newMessage,
       whatsappMessageId: messageId
     });
   } catch (error) {
-    console.error('Error sending reply:', error);
     res.status(500).json({ error: 'Failed to send reply' });
   }
 });
@@ -456,14 +438,11 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
       } else {
         messageType = 'document';
         resourceType = 'raw';
-      }      // Upload to Cloudinary
+      }
+      // Upload to Cloudinary
       const uploadResult = await new Promise((resolve, reject) => {
         const sanitizedFilename = sanitizeFilenameForCloudinary(req.file.originalname);
 
-        console.log('🔧 Filename sanitization:', {
-          original: req.file.originalname,
-          sanitized: sanitizedFilename
-        });
 
         // Create minimal upload options to avoid conflicts
         let uploadOptions;
@@ -496,37 +475,21 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
             public_id: `whatsapp_aud_${Date.now()}_${sanitizedFilename}`,
             quality: 'auto'
           };
-        }        console.log('📤 Uploading to Cloudinary:', {
-          filename: req.file.originalname,
-          mimetype: req.file.mimetype,
-          messageType,
-          resourceType,
-          uploadOptions
-        });
-
-        // Use stream upload for all file types (recommended by Cloudinary)
-        const uploadStream = cloudinary.uploader.upload_stream(
+        }
+        const stream = cloudinary.uploader.upload_stream(
           uploadOptions,
           (error, result) => {
             if (error) {
-              console.error('❌ Cloudinary upload error:', error);
-              console.error('❌ Upload options that failed:', uploadOptions);
               reject(error);
             } else {
-              console.log('✅ Cloudinary upload success:', {
-                public_id: result.public_id,
-                secure_url: result.secure_url,
-                resource_type: result.resource_type,
-                format: result.format,
-                pages: result.pages || 'N/A'
-              });
               resolve(result);
             }
           }
         );
 
-        uploadStream.end(req.file.buffer);
-      });      // Send media message via WhatsApp API using direct Cloudinary URL
+        stream.end(req.file.buffer);
+      });
+      // Send media message via WhatsApp API using direct Cloudinary URL
       let whatsappMediaUrl = uploadResult.secure_url;
 
       response = await whatsappService.sendMediaMessage(
@@ -541,7 +504,8 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
         throw new Error('Failed to send WhatsApp media message');
       }
 
-      const messageId = response.messages[0].id;      // Create message record with media metadata
+      const messageId = response.messages[0].id;
+      // Create message record with media metadata
       whatsAppMessage = new WhatsAppMessage({
         messageId,
         from: process.env.WHATSAPP_PHONE_NUMBER_ID,
@@ -552,8 +516,11 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
         direction: 'outgoing',
         conversationId: conversation._id,
         adminUserId,
-        status: 'sent',        metadata: {
-          media_url: whatsappMediaUrl,          original_url: uploadResult.secure_url,          mime_type: req.file.mimetype,
+        status: 'sent',
+        metadata: {
+          media_url: whatsappMediaUrl,
+          original_url: uploadResult.secure_url,
+          mime_type: req.file.mimetype,
           file_size: req.file.size,
           caption: message || '',
           filename: req.file.originalname,
@@ -612,11 +579,6 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
     const io = getIO();
     if (io) {
       try {
-        console.log('🔔 Emitting whatsapp_reply_sent event for attachment:', {
-          messageId: whatsAppMessage._id,
-          conversationId: conversation._id,
-          to: phoneNumber
-        });
 
         // Emit new message event (since it's a new message in the conversation)
         io.to('whatsapp-admins').emit('new_whatsapp_message', {
@@ -652,12 +614,9 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
           conversation: conversation
         });
 
-        console.log('✅ Attachment reply socket events emitted successfully');
       } catch (socketError) {
-        console.error('❌ Error emitting attachment reply socket events:', socketError);
       }
     } else {
-      console.warn('⚠️ Socket.io not available - attachment reply events not emitted');
     }
 
     res.json({
@@ -666,7 +625,6 @@ router.post('/reply-with-attachment', upload.single('attachment'), async (req, r
       whatsappMessageId: response.messages[0].id
     });
   } catch (error) {
-    console.error('Error sending reply with attachment:', error);
     res.status(500).json({ error: 'Failed to send reply with attachment' });
   }
 });
@@ -706,7 +664,6 @@ router.put('/messages/:id/read', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error marking message as read:', error);
     res.status(500).json({ error: 'Failed to mark message as read' });
   }
 });
@@ -745,7 +702,6 @@ router.put('/conversations/:id/read-all', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error marking conversation as read:', error);
     res.status(500).json({ error: 'Failed to mark conversation as read' });
   }
 });
@@ -872,7 +828,6 @@ router.get('/stats', async (req, res) => {
 
     res.json(stats);
   } catch (error) {
-    console.error('Error fetching stats:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
@@ -895,7 +850,6 @@ router.put('/conversations/:id/toggle-vip', async (req, res) => {
       isVip: conversation.isVip
     });
   } catch (error) {
-    console.error('Error toggling VIP status:', error);
     res.status(500).json({ error: 'Failed to toggle VIP status' });
   }
 });
@@ -918,7 +872,6 @@ router.put('/conversations/:id/archive', async (req, res) => {
       isArchived: conversation.isArchived
     });
   } catch (error) {
-    console.error('Error toggling archive status:', error);
     res.status(500).json({ error: 'Failed to toggle archive status' });
   }
 });
@@ -939,7 +892,8 @@ router.post('/conversations/:id/assign', async (req, res) => {
       if (!admin || admin.role !== 'admin') {
         return res.status(400).json({ error: 'Invalid admin user' });
       }
-    }    conversation.assignedToAdmin = adminUserId || null;
+    }
+    conversation.assignedToAdmin = adminUserId || null;
     await conversation.save();
 
     await conversation.populate('assignedToAdmin', 'name firstName lastName');
@@ -949,7 +903,6 @@ router.post('/conversations/:id/assign', async (req, res) => {
       assignedTo: conversation.assignedToAdmin
     });
   } catch (error) {
-    console.error('Error assigning conversation:', error);
     res.status(500).json({ error: 'Failed to assign conversation' });
   }
 });
@@ -965,15 +918,12 @@ router.get('/webhook-config', async (req, res) => {
       webhookUrl: process.env.API_URL ? `${process.env.API_URL}/webhook/whatsapp` : 'Not configured'
     };
 
-    console.log('📋 WhatsApp Configuration Check:', config);
-
     res.json({
       success: true,
       config,
       message: 'Webhook configuration status'
     });
   } catch (error) {
-    console.error('❌ Error checking webhook config:', error);
     res.status(500).json({ error: 'Failed to check webhook config' });
   }
 });
@@ -981,7 +931,6 @@ router.get('/webhook-config', async (req, res) => {
 // Test endpoint to create a sample conversation (for debugging)
 router.post('/test-conversation', async (req, res) => {
   try {
-    console.log('🧪 Creating test conversation...');
 
     // Check if test conversation already exists
     const existingConversation = await WhatsAppConversation.findOne({
@@ -989,7 +938,6 @@ router.post('/test-conversation', async (req, res) => {
     });
 
     if (existingConversation) {
-      console.log('✅ Test conversation already exists');
       return res.json({
         success: true,
         message: 'Test conversation already exists',
@@ -1013,7 +961,6 @@ router.post('/test-conversation', async (req, res) => {
     });
 
     await testConversation.save();
-    console.log('✅ Test conversation created');
 
     res.json({
       success: true,
@@ -1021,7 +968,6 @@ router.post('/test-conversation', async (req, res) => {
       conversation: testConversation
     });
   } catch (error) {
-    console.error('❌ Error creating test conversation:', error);
     res.status(500).json({ error: 'Failed to create test conversation' });
   }
 });
@@ -1068,7 +1014,6 @@ router.post('/test-message', async (req, res) => {
     // Emit real-time event
     const io = getIO();
     if (io) {
-      console.log('🚀 Emitting test new_whatsapp_message event...');
       io.emit('new_whatsapp_message', {
         message: whatsAppMessage,
         conversation: await conversation.populate('userId', 'name email')
@@ -1081,9 +1026,6 @@ router.post('/test-message', async (req, res) => {
         lastMessageAt: new Date()
       });
 
-      console.log('✅ Real-time events emitted successfully');
-    } else {
-      console.error('❌ Socket.IO not available');
     }
 
     res.json({
@@ -1095,7 +1037,6 @@ router.post('/test-message', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error creating test message:', error);
     res.status(500).json({ error: 'Failed to create test message' });
   }
 });
@@ -1133,7 +1074,6 @@ router.post('/test-socket', async (req, res) => {
     // Emit socket event
     const io = getIO();
     if (io) {
-      console.log('🧪 Emitting test socket event:', eventType);
 
       switch (eventType) {
         case 'new_whatsapp_message':
@@ -1162,7 +1102,6 @@ router.post('/test-socket', async (req, res) => {
           return res.status(400).json({ error: 'Invalid event type' });
       }
 
-      console.log('✅ Test socket event emitted successfully');
       res.json({
         success: true,
         message: 'Test event emitted successfully',
@@ -1170,11 +1109,9 @@ router.post('/test-socket', async (req, res) => {
         testData: { message: testMessage, conversation: testConversation }
       });
     } else {
-      console.error('❌ Socket.io not available');
       res.status(500).json({ error: 'Socket.io not available' });
     }
   } catch (error) {
-    console.error('❌ Error emitting test socket event:', error);
     res.status(500).json({ error: 'Failed to emit test event', details: error.message });
   }
 });
@@ -1182,7 +1119,6 @@ router.post('/test-socket', async (req, res) => {
 // GET /api/admin/whatsapp/recent-updates - Get recent updates for polling fallback
 router.get('/recent-updates', async (req, res) => {
   try {
-    console.log('🔄 Polling for recent updates...');
 
     const { since, limit = 20 } = req.query;
     const sinceDate = since ? new Date(since) : new Date(Date.now() - 5 * 60 * 1000); // Default: last 5 minutes
@@ -1264,8 +1200,6 @@ router.get('/recent-updates', async (req, res) => {
     // Sort by timestamp
     updates.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    console.log(`📊 Found ${updates.length} updates since ${sinceDate.toISOString()}`);
-
     res.json({
       success: true,
       updates,
@@ -1273,7 +1207,6 @@ router.get('/recent-updates', async (req, res) => {
       pollingTimestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('❌ Error getting recent updates:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to get recent updates',

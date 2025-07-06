@@ -191,12 +191,10 @@ const WhatsAppInbox = () => {
           setMessages(prev => {
             // Check for exact ID matches first
             if (messageData._id && prev.some(msg => msg._id === messageData._id)) {
-              console.log('🔄 Message already exists (by _id), skipping duplicate');
               return prev;
             }
 
             if (messageData.messageId && prev.some(msg => msg.messageId === messageData.messageId)) {
-              console.log('🔄 Message already exists (by messageId), skipping duplicate');
               return prev;
             }
 
@@ -228,11 +226,9 @@ const WhatsAppInbox = () => {
             });
 
             if (exists) {
-              console.log('🔄 Message already exists (by content/attachment), skipping duplicate');
               return prev;
             }
 
-            console.log('✅ Adding new message to conversation');
             return [...prev, messageData];
           });
 
@@ -385,12 +381,10 @@ const WhatsAppInbox = () => {
       return;
     }
 
-    console.log('🔔 Setting up WhatsApp socket event listeners');
 
     // New message received
     const handleNewMessage = (data: any) => {
       try {
-        console.log('🔔 Received new_whatsapp_message event:', data);
 
         if (!data || !data.message || !data.conversation) {
           console.error('❌ Invalid message data received:', data);
@@ -430,11 +424,9 @@ const WhatsAppInbox = () => {
             // Check if message already exists
             const exists = prev.some(msg => msg._id === message._id || msg.messageId === message.messageId);
             if (exists) {
-              console.log('🔄 Message already exists, skipping');
               return prev;
             }
 
-            console.log('📝 Adding message to current conversation');
             const newMessages = [...prev, message];
             scrollToBottom();
             return newMessages;
@@ -464,7 +456,6 @@ const WhatsAppInbox = () => {
           });
         }
 
-        console.log('✅ New message processed successfully');
       } catch (error) {
         console.error('❌ Error handling new message:', error);
       }
@@ -473,7 +464,6 @@ const WhatsAppInbox = () => {
     // Message status update
     const handleStatusUpdate = (data: any) => {
       try {
-        console.log('🔔 Received status update:', data);
 
         setMessages(prev =>
           prev.map(msg =>
@@ -490,7 +480,6 @@ const WhatsAppInbox = () => {
     // Reply sent confirmation
     const handleReplySent = (data: any) => {
       try {
-        console.log('🔔 Received reply sent confirmation:', data);
 
         if (!data || !data.message || !data.conversation) {
           console.error('❌ Invalid reply data received:', data);
@@ -506,8 +495,6 @@ const WhatsAppInbox = () => {
           message.timestamp,
           'outgoing'
         );
-
-        console.log('✅ Reply confirmation processed successfully');
       } catch (error) {
         console.error('❌ Error handling reply sent:', error);
       }
@@ -516,7 +503,6 @@ const WhatsAppInbox = () => {
     // Conversation update
     const handleConversationUpdate = (data: any) => {
       try {
-        console.log('🔔 Received conversation update:', data);
 
         setConversations(prev =>
           prev.map(conv =>
@@ -544,7 +530,6 @@ const WhatsAppInbox = () => {
 
     // Cleanup function
     return () => {
-      console.log('🧹 Cleaning up WhatsApp socket event listeners');
       socket.off('new_whatsapp_message', handleNewMessage);
       socket.off('whatsapp_message_status_update', handleStatusUpdate);
       socket.off('whatsapp_reply_sent', handleReplySent);
@@ -579,7 +564,6 @@ const WhatsAppInbox = () => {
     }
     lastPollingTimestampRef.current = pollingData.timestamp;
 
-    console.log('🔄 Processing polling fallback data:', pollingData.updates.length, 'updates');
 
     pollingData.updates.forEach((update: any) => {
       try {

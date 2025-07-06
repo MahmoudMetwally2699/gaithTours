@@ -61,11 +61,6 @@ app.options('*', cors());
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  if (req.path !== '/api/payments/webhook') {
-    console.log('Body:', req.body);
-  }
   next();
 });
 
@@ -75,10 +70,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtour
   useUnifiedTopology: true
 })
 .then(() => {
-  console.log('MongoDB connected successfully');
   // Initialize Socket.io after MongoDB connection
   initializeSocket(server);
-  console.log('Socket.io initialized successfully');
 })
 .catch(err => {
   console.error('MongoDB connection error:', err);
@@ -86,52 +79,44 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtour
 });
 
 // Routes
-console.log('Setting up routes...');
 try {
   app.use('/api/auth', require('./routes/auth'));
-  console.log('Auth routes loaded successfully');
 } catch (error) {
   console.error('Error loading auth routes:', error);
 }
 
 try {
   app.use('/api/users', require('./routes/users'));
-  console.log('Users routes loaded successfully');
 } catch (error) {
   console.error('Error loading users routes:', error);
 }
 
 try {
   app.use('/api/hotels', require('./routes/hotels'));
-  console.log('Hotels routes loaded successfully');
 } catch (error) {
   console.error('Error loading hotels routes:', error);
 }
 
 try {
   app.use('/api/reservations', require('./routes/reservations'));
-  console.log('Reservations routes loaded successfully');
 } catch (error) {
   console.error('Error loading reservations routes:', error);
 }
 
 try {
   app.use('/api/admin', require('./routes/admin'));
-  console.log('Admin routes loaded successfully');
 } catch (error) {
   console.error('Error loading admin routes:', error);
 }
 
 try {
   app.use('/api/payments', require('./routes/payments'));
-  console.log('Payments routes loaded successfully');
 } catch (error) {
   console.error('Error loading payments routes:', error);
 }
 
 try {
   app.use('/api/uploads', require('./routes/uploads'));
-  console.log('Uploads routes loaded successfully');
 } catch (error) {
   console.error('Error loading uploads routes:', error);
 }
@@ -139,7 +124,6 @@ try {
 // WhatsApp webhook routes (must be before other routes to avoid conflicts)
 try {
   app.use('/webhook', require('./routes/webhook'));
-  console.log('Webhook routes loaded successfully');
 } catch (error) {
   console.error('Error loading webhook routes:', error);
 }
@@ -147,7 +131,6 @@ try {
 // WhatsApp admin routes
 try {
   app.use('/api/admin/whatsapp', require('./routes/whatsapp-admin'));
-  console.log('WhatsApp admin routes loaded successfully');
 } catch (error) {
   console.error('Error loading WhatsApp admin routes:', error);
 }
@@ -188,5 +171,5 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  // Server started
 });

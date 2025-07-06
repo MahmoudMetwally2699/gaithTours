@@ -34,8 +34,6 @@ class WhatsAppService {
         }
       };
 
-      console.log('Sending WhatsApp message to:', formattedPhone);
-      console.log('Using phone number ID:', this.phoneNumberId);
 
       const response = await axios.post(this.baseUrl, data, {
         headers: {
@@ -44,7 +42,6 @@ class WhatsAppService {
         }
       });
 
-      console.log('WhatsApp message sent successfully:', response.data);
       return response.data;
     } catch (error) {
       if (error.response?.data?.error?.code === 133010) {
@@ -98,12 +95,7 @@ class WhatsAppService {
             caption: caption,
             filename: filename || 'document'
           };
-          console.log('📄 Sending document to WhatsApp:', {
-            filename: filename,
-            mediaUrl: mediaUrl,
-            caption: caption,
-            recipient: formattedPhone
-          });
+
           break;
         case 'audio':
           data.audio = {
@@ -120,9 +112,7 @@ class WhatsAppService {
           throw new Error(`Unsupported media type: ${mediaType}`);
       }
 
-      console.log('Sending WhatsApp media message to:', formattedPhone);
-      console.log('Media type:', mediaType);
-      console.log('Media URL:', mediaUrl);
+
 
       const response = await axios.post(this.baseUrl, data, {
         headers: {
@@ -131,7 +121,6 @@ class WhatsAppService {
         }
       });
 
-      console.log('WhatsApp media message sent successfully:', response.data);
       return response.data;
     } catch (error) {
       console.error('WhatsApp media message error:', error.response?.data || error.message);
@@ -221,7 +210,6 @@ class WhatsAppService {
         }
       });
 
-      console.log('Arabic booking approval template sent successfully:', response.data);
       return response.data;
     } catch (error) {
       this.handleWhatsAppError(error, 'Arabic booking approval');
@@ -267,7 +255,7 @@ class WhatsAppService {
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json'
         }
-      });      console.log('Arabic payment reminder template sent successfully:', response.data);
+      });
       return response.data;
     } catch (error) {
       this.handleWhatsAppError(error, 'Arabic payment reminder');
@@ -322,7 +310,6 @@ class WhatsAppService {
         }
       });
 
-      console.log('Arabic booking confirmation template sent successfully:', response.data);
       return response.data;
     } catch (error) {
       this.handleWhatsAppError(error, 'Arabic booking confirmation');
@@ -373,7 +360,6 @@ class WhatsAppService {
         }
       });
 
-      console.log('Arabic booking denial template sent successfully:', response.data);
       return response.data;
     } catch (error) {
       this.handleWhatsAppError(error, 'Arabic booking denial');

@@ -14,7 +14,6 @@ const ArabicTextProcessor = require('./arabicTextProcessor');
 try {
   // Simple require - this should automatically extend jsPDF
   require('jspdf-autotable');
-  console.log('✅ jspdf-autotable plugin loaded successfully');
 } catch (error) {
   console.error(`❌ Error loading jspdf-autotable: ${error.message}`);
   console.warn('⚠️ PDF tables will not be available, falling back to simple tables');
@@ -55,7 +54,6 @@ class JsPDFInvoiceGenerator {
     const isArabic = language === 'ar';
 
     try {
-      console.log(`🔄 Generating PDF invoice using jsPDF for language: ${language}`);
 
       // Create new jsPDF instance with RTL support for Arabic
       const doc = new jsPDF({
@@ -84,12 +82,10 @@ class JsPDFInvoiceGenerator {
 
         // Save to file
         fs.writeFileSync(outputPath, doc.output());
-        console.log(`✅ PDF saved to: ${outputPath}`);
         return true;
       } else {
         // Return as buffer
         const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-        console.log(`✅ PDF buffer generated for ${language}`);
         return pdfBuffer;
       }
 
@@ -131,7 +127,6 @@ class JsPDFInvoiceGenerator {
 
       // Register regular font if available
       if (regularExists) {
-        console.log('✅ Found Arabic regular font, registering with jsPDF...');
         const regularFontBuffer = fs.readFileSync(this.fontPaths.arabic.regular);
         doc.addFileToVFS('NotoSansArabic-Regular.ttf', regularFontBuffer.toString('base64'));
         doc.addFont('NotoSansArabic-Regular.ttf', 'NotoSansArabic', 'normal');
@@ -139,7 +134,6 @@ class JsPDFInvoiceGenerator {
 
       // Register bold font if available
       if (boldExists) {
-        console.log('✅ Found Arabic bold font, registering with jsPDF...');
         const boldFontBuffer = fs.readFileSync(this.fontPaths.arabic.bold);
         doc.addFileToVFS('NotoSansArabic-Bold.ttf', boldFontBuffer.toString('base64'));
         doc.addFont('NotoSansArabic-Bold.ttf', 'NotoSansArabic', 'bold');
@@ -234,7 +228,6 @@ class JsPDFInvoiceGenerator {
 
         // Add logo on top of white background
         doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
-        console.log('✅ Logo added successfully');
       } else {
         console.log('⚠️ Logo file not found at:', this.logoPath);
       }

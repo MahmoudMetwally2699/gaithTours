@@ -113,7 +113,6 @@ invoiceSchema.pre('save', async function(next) {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
 
-      console.log('🔍 Generating invoice ID for date:', `${year}${month}${day}`);
 
       // Find the last invoice of the day using this.constructor
       const lastInvoice = await this.constructor.findOne({
@@ -122,13 +121,11 @@ invoiceSchema.pre('save', async function(next) {
 
       let sequence = 1;
       if (lastInvoice) {
-        console.log('📄 Last invoice found:', lastInvoice.invoiceId);
         const lastSequence = parseInt(lastInvoice.invoiceId.split('-')[2]);
         sequence = lastSequence + 1;
       }
 
       this.invoiceId = `INV-${year}${month}${day}-${String(sequence).padStart(3, '0')}`;
-      console.log('✅ Generated invoice ID:', this.invoiceId);
     }
 
     this.updatedAt = Date.now();

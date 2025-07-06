@@ -18,7 +18,6 @@ class InvoicePDFGenerator {
    */
   async generateInvoicePDF(invoiceData, language = 'en') {
     try {
-      console.log(`🔄 Generating invoice PDF using jsPDF approach (${language})`);
       return await this.jsPdfGenerator.generateInvoicePDF(invoiceData, language);
     } catch (error) {
       console.error('❌ Error generating invoice PDF:', error);
@@ -35,7 +34,6 @@ class InvoicePDFGenerator {
    */
   async generateInvoicePDFToFile(invoiceData, language = 'en', outputPath) {
     try {
-      console.log(`🔄 Generating invoice PDF to file using jsPDF approach (${language})`);
       return await this.jsPdfGenerator.generateInvoicePDFToFile(invoiceData, language, outputPath);
     } catch (error) {
       console.error('❌ Error generating invoice PDF to file:', error);

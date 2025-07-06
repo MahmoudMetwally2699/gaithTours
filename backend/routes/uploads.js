@@ -70,13 +70,7 @@ router.post('/upload', protect, upload.single('attachment'), async (req, res) =>
             console.error('❌ Cloudinary upload error:', error);
             reject(error);
           } else {
-            console.log('✅ Cloudinary upload success:', {
-              public_id: result.public_id,
-              secure_url: result.secure_url,
-              resource_type: result.resource_type,
-              format: result.format,
-              pages: result.pages || 'N/A'
-            });
+
             resolve(result);
           }
         }
@@ -148,13 +142,7 @@ router.post('/upload-multiple', protect, upload.array('attachments', 5), async (
               console.error('❌ Cloudinary upload error:', error);
               reject(error);
             } else {
-              console.log('✅ Cloudinary upload success:', {
-                public_id: result.public_id,
-                secure_url: result.secure_url,
-                resource_type: result.resource_type,
-                format: result.format,
-                pages: result.pages || 'N/A'
-              });
+
               resolve(result);
             }
           }

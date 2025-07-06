@@ -46,7 +46,6 @@ router.get('/stats', protect, admin, async (req, res) => {
 
     successResponse(res, { stats }, 'Dashboard stats retrieved successfully');
   } catch (error) {
-    console.error('Get dashboard stats error:', error);
     errorResponse(res, 'Failed to get dashboard stats', 500);
   }
 });
@@ -69,7 +68,7 @@ router.get('/clients', protect, admin, async (req, res) => {
         ]
       };
     }
-//HI
+
     const clients = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 })
@@ -89,7 +88,6 @@ router.get('/clients', protect, admin, async (req, res) => {
       }
     }, 'Clients retrieved successfully');
   } catch (error) {
-    console.error('Get clients error:', error);
     errorResponse(res, 'Failed to get clients', 500);
   }
 });
@@ -110,7 +108,6 @@ router.get('/clients/:id', protect, admin, async (req, res) => {
 
     successResponse(res, { client, bookings, invoices }, 'Client details retrieved successfully');
   } catch (error) {
-    console.error('Get client details error:', error);
     errorResponse(res, 'Failed to get client details', 500);
   }
 });
@@ -155,7 +152,6 @@ router.post('/clients', protect, admin, [
 
     successResponse(res, { client: clientResponse }, 'Client created successfully', 201);
   } catch (error) {
-    console.error('Create client error:', error);
     if (error.code === 11000) {
       return errorResponse(res, 'Email already exists', 400);
     }
@@ -196,7 +192,6 @@ router.put('/clients/:id', protect, admin, [
 
     successResponse(res, { client }, 'Client updated successfully');
   } catch (error) {
-    console.error('Update client error:', error);
     errorResponse(res, 'Failed to update client', 500);
   }
 });
@@ -233,7 +228,6 @@ router.get('/bookings', protect, admin, async (req, res) => {
       }
     }, 'Booking requests retrieved successfully');
   } catch (error) {
-    console.error('Get booking requests error:', error);
     errorResponse(res, 'Failed to get booking requests', 500);
   }
 });
@@ -285,19 +279,6 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
 
     const invoiceId = `INV-${year}${month}${day}-${String(sequence).padStart(3, '0')}`;
 
-    console.log('Creating invoice with data:', {
-      invoiceId: invoiceId,
-      user: booking.user._id,
-      reservation: booking._id,
-      clientName: booking.touristName,
-      clientEmail: booking.email,
-      clientPhone: booking.phone,
-      clientNationality: booking.nationality,
-      hotelName: booking.hotel.name,
-      hotelAddress: booking.hotel.address || booking.hotel.name,
-      amount: amount
-    });
-
     const invoice = new Invoice({
       invoiceId: invoiceId,
       user: booking.user._id,
@@ -311,9 +292,7 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
       amount: amount
     });
 
-    console.log('Invoice before save:', invoice);
     await invoice.save();
-    console.log('Invoice after save:', invoice);
 
     // Update booking status to invoiced
     booking.status = 'invoiced';
@@ -326,19 +305,16 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
         booking: booking
       });
     } catch (emailError) {
-      console.error('Failed to send invoice email:', emailError);
     }
 
     // Send WhatsApp notification
     try {
       await whatsappService.sendBookingApprovalNotification(booking, invoice);
     } catch (whatsappError) {
-      console.error('Failed to send WhatsApp notification:', whatsappError);
     }
 
     successResponse(res, { booking, invoice }, 'Booking approved and invoice generated successfully');
   } catch (error) {
-    console.error('Approve booking error:', error);
     errorResponse(res, 'Failed to approve booking', 500);
   }
 });
@@ -371,19 +347,16 @@ router.patch('/bookings/:id/deny', protect, admin, [
         reason: reason
       });
     } catch (emailError) {
-      console.error('Failed to send denial email:', emailError);
     }
 
     // Send WhatsApp notification
     try {
       await whatsappService.sendBookingDenialNotification(booking, reason);
     } catch (whatsappError) {
-      console.error('Failed to send denial WhatsApp notification:', whatsappError);
     }
 
     successResponse(res, { booking }, 'Booking denied successfully');
   } catch (error) {
-    console.error('Deny booking error:', error);
     errorResponse(res, 'Failed to deny booking', 500);
   }
 });
@@ -421,7 +394,6 @@ router.get('/invoices', protect, admin, async (req, res) => {
       }
     }, 'Invoices retrieved successfully');
   } catch (error) {
-    console.error('Get invoices error:', error);
     errorResponse(res, 'Failed to get invoices', 500);
   }
 });
@@ -439,7 +411,6 @@ router.get('/invoices/:id', protect, admin, async (req, res) => {
 
     successResponse(res, { invoice }, 'Invoice details retrieved successfully');
   } catch (error) {
-    console.error('Get invoice details error:', error);
     errorResponse(res, 'Failed to get invoice details', 500);
   }
 });
@@ -477,7 +448,6 @@ router.get('/payments', protect, admin, async (req, res) => {
       }
     }, 'Payments retrieved successfully');
   } catch (error) {
-    console.error('Get payments error:', error);
     errorResponse(res, 'Failed to get payments', 500);
   }
 });
@@ -494,7 +464,6 @@ router.post('/test-whatsapp', protect, admin, async (req, res) => {
     await whatsappService.sendMessage(phoneNumber, message);
     successResponse(res, {}, 'WhatsApp message sent successfully');
   } catch (error) {
-    console.error('Test WhatsApp error:', error);
     errorResponse(res, 'Failed to send WhatsApp message', 500);
   }
 });
@@ -517,23 +486,14 @@ router.post('/bookings/create', protect, admin, [
   body('hotel.price').optional().isNumeric().withMessage('Price must be a valid number')
 ], async (req, res) => {
   const startTime = Date.now();
-  console.log('🚀 ===== ADMIN BACKEND: Starting booking creation =====');
-  console.log('⏰ Request start time:', new Date().toISOString());
-  console.log('👤 Admin ID:', req.user?.id);
-  console.log('📍 Request IP:', req.ip || req.connection.remoteAddress);
 
   try {
-    // Log the incoming request data for debugging
-    console.log('📥 Incoming admin booking request:', JSON.stringify(req.body, null, 2));
-
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('❌ Validation errors:', errors.array());
       return errorResponse(res, 'Validation failed', 400, errors.array());
     }
 
-    console.log('✅ Validation passed, proceeding with admin booking creation');
 
     const {
       clientId,
@@ -557,11 +517,9 @@ router.post('/bookings/create', protect, admin, [
     // Verify client exists and is a regular user
     const client = await User.findById(clientId);
     if (!client || client.role !== 'user') {
-      console.error('❌ Client not found or invalid role:', clientId);
       return errorResponse(res, 'Client not found or invalid', 404);
     }
 
-    console.log('✅ Client verified:', client.name, client.email);
 
     // Sanitize inputs
     const sanitizedData = {
@@ -612,49 +570,23 @@ router.post('/bookings/create', protect, admin, [
       status: 'pending' // Default status for admin-created bookings
     };
 
-    console.log('📊 Admin booking data being sent to MongoDB:', JSON.stringify(reservationData, null, 2));
-
-    console.log('💾 Creating admin booking in database...');
-    const dbStartTime = Date.now();
 
     // Create reservation
     const reservation = await Reservation.create(reservationData);
 
-    const dbEndTime = Date.now();
-    const dbDuration = dbEndTime - dbStartTime;
-    console.log(`✅ Admin booking created in database in ${dbDuration}ms`);
-    console.log('📝 Created booking ID:', reservation._id);
-
-    console.log('🔄 Populating user data...');
-    const populateStartTime = Date.now();
 
     // Populate user data for response
     await reservation.populate('user', 'name email phone nationality');
 
-    const populateEndTime = Date.now();
-    const populateDuration = populateEndTime - populateStartTime;
-    console.log(`✅ User data populated in ${populateDuration}ms`);
-
-    console.log('📤 Sending response to admin...');
-    const responseStartTime = Date.now();
-
     // Send response immediately to prevent timeout
     successResponse(res, { reservation }, 'Booking created successfully for client', 201);
 
-    const responseEndTime = Date.now();
-    const responseDuration = responseEndTime - responseStartTime;
-    const totalDuration = responseEndTime - startTime;
-    console.log(`✅ Response sent in ${responseDuration}ms`);
-    console.log(`🎯 Total admin request processing time: ${totalDuration}ms`);
-
     // Send emails in background (non-blocking)
     setImmediate(async () => {
-      console.log('📧 Starting background email processing for admin booking...');
       const emailStartTime = Date.now();
 
       // Send confirmation email to client
       try {
-        console.log('📬 Sending client confirmation email...');
         const clientEmailStartTime = Date.now();
 
         await sendReservationConfirmation({
@@ -678,16 +610,13 @@ router.post('/bookings/create', protect, admin, [
 
         const clientEmailEndTime = Date.now();
         const clientEmailDuration = clientEmailEndTime - clientEmailStartTime;
-        console.log(`✅ Client confirmation email sent successfully in ${clientEmailDuration}ms`);
       } catch (emailError) {
         const clientEmailEndTime = Date.now();
         const clientEmailDuration = clientEmailEndTime - clientEmailStartTime;
-        console.error(`❌ Client confirmation email failed after ${clientEmailDuration}ms:`, emailError);
       }
 
       // Send notification email to agency (with admin info)
       try {
-        console.log('📬 Sending agency notification email for admin booking...');
         const agencyEmailStartTime = Date.now();
 
         await sendAgencyNotification({
@@ -713,39 +642,27 @@ router.post('/bookings/create', protect, admin, [
 
         const agencyEmailEndTime = Date.now();
         const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
-        console.log(`✅ Agency notification email sent successfully in ${agencyEmailDuration}ms`);
 
         const totalEmailTime = Date.now() - emailStartTime;
-        console.log(`📧 All background emails for admin booking completed in ${totalEmailTime}ms`);
       } catch (emailError) {
         const agencyEmailEndTime = Date.now();
         const agencyEmailDuration = agencyEmailEndTime - agencyEmailStartTime;
-        console.error(`❌ Agency notification email failed after ${agencyEmailDuration}ms:`, emailError);
 
         const totalEmailTime = Date.now() - emailStartTime;
-        console.log(`📧 Background email processing completed (with errors) in ${totalEmailTime}ms`);
       }
     });
 
   } catch (error) {
     const errorTime = Date.now();
     const totalErrorTime = errorTime - startTime;
-    console.error('❌ ===== ADMIN BACKEND: Booking creation failed =====');
-    console.error('⏰ Error occurred after:', totalErrorTime, 'ms');
-    console.error('🔍 Error details:', error);
-    console.error('📝 Error name:', error.name);
-    console.error('💬 Error message:', error.message);
-    console.error('📚 Error stack:', error.stack);
 
     // If it's a MongoDB validation error, log the details
     if (error.name === 'ValidationError') {
-      console.error('💾 MongoDB validation errors:', error.errors);
       const validationErrors = Object.values(error.errors).map(err => ({
         field: err.path,
         message: err.message,
         value: err.value
       }));
-      console.error('📋 Formatted validation errors:', validationErrors);
       return errorResponse(res, 'Validation failed', 400, validationErrors);
     }
 
@@ -842,7 +759,6 @@ router.get('/test-invoice-pdf/:invoiceId', protect, admin, async (req, res) => {
     // Send PDF buffer
     res.send(pdfBuffer);
   } catch (error) {
-    console.error('Test invoice PDF generation error:', error);
     errorResponse(res, 'Failed to generate invoice PDF', 500);
   }
 });

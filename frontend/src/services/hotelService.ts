@@ -34,13 +34,7 @@ const searchHotels = async (destination: string, page: number = 1, limit: number
     }const data = await response.json();
 
     // Debug logging
-    console.log('API Response:', data);
-    console.log('Data structure:', {
-      success: data.success,
-      hasData: !!data.data,
-      dataKeys: data.data ? Object.keys(data.data) : 'no data',
-      hotelsCount: data.data?.hotels?.length || 0
-    });
+
 
     // Check if the response is successful
     if (!data.success) {
@@ -88,7 +82,6 @@ const getHotelDetails = async (hotelId: string) => {
     const data = await response.json();
 
     // Debug logging
-    console.log('Hotel details response:', data);
 
     // Check if the response is successful
     if (!data.success) {

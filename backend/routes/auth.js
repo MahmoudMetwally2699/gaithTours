@@ -29,20 +29,14 @@ router.post('/register', [
   body('nationality').isLength({ min: 2 }).withMessage('Nationality must be at least 2 characters long')
 ], async (req, res) => {
   try {
-    console.log('=== REGISTRATION REQUEST START ===');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
-
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('Validation errors:', JSON.stringify(errors.array(), null, 2));
       return errorResponse(res, 'Validation failed', 400, errors.array());
     }
 
-    console.log('Validation passed successfully');
     const { name, email, password, phone, nationality, preferredLanguage } = req.body;
-    console.log('Extracted fields:', { name, email, phone, nationality, preferredLanguage });    // Sanitize inputs
+    // Sanitize inputs
     const sanitizedData = {
       name: sanitizeInput(name),
       email: sanitizeInput(email),
@@ -50,26 +44,14 @@ router.post('/register', [
       nationality: sanitizeInput(nationality),
       preferredLanguage: preferredLanguage || 'en'
     };
-    console.log('Sanitized data:', JSON.stringify(sanitizedData, null, 2));
 
     // Check if user already exists
-    console.log('Checking if user exists with email:', sanitizedData.email);
     const existingUser = await User.findOne({ email: sanitizedData.email });
     if (existingUser) {
-      console.log('User already exists:', existingUser._id);
       return errorResponse(res, 'User already exists with this email', 400);
     }
-    console.log('No existing user found - proceeding with creation');
 
     // Create user
-    console.log('Creating user with data:', {
-      name: sanitizedData.name,
-      email: sanitizedData.email,
-      phone: sanitizedData.phone,
-      nationality: sanitizedData.nationality,
-      preferredLanguage: sanitizedData.preferredLanguage
-    });
-
     const user = await User.create({
       name: sanitizedData.name,
       email: sanitizedData.email,
@@ -78,37 +60,26 @@ router.post('/register', [
       nationality: sanitizedData.nationality,
       preferredLanguage: sanitizedData.preferredLanguage
     });
-    console.log('User created successfully:', user._id);    // Generate token
+    // Generate token
     const token = generateToken(user._id);
-    console.log('Token generated successfully');    // Send welcome email
+    // Send welcome email
     try {
-      console.log('Attempting to send welcome email to:', user.email);
       await sendWelcomeEmail({
         email: user.email,
         name: user.name
       });
-      console.log('Welcome email sent successfully');
     } catch (emailError) {
-      console.error('Welcome email sending failed:', emailError);
       // Don't fail registration if email fails
     }
 
-    console.log('Sending success response');
     successResponse(res, {
       user,
       token
     }, 'User registered successfully', 201);
-    console.log('=== REGISTRATION REQUEST END ===');
 
   } catch (error) {
-    console.error('=== REGISTRATION ERROR ===');
-    console.error('Error details:', error);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     if (error.name === 'ValidationError') {
-      console.error('Mongoose validation errors:', error.errors);
     }
-    console.error('=== END REGISTRATION ERROR ===');
     errorResponse(res, 'Registration failed', 500);
   }
 });
@@ -146,7 +117,6 @@ router.post('/login', [
     }, 'Login successful');
 
   } catch (error) {
-    console.error('Login error:', error);
     errorResponse(res, 'Login failed', 500);
   }
 });
@@ -157,7 +127,6 @@ router.get('/me', protect, async (req, res) => {
     const user = await User.findById(req.user.id);
     successResponse(res, { user }, 'User data retrieved successfully');
   } catch (error) {
-    console.error('Get user error:', error);
     errorResponse(res, 'Failed to get user data', 500);
   }
 });
@@ -201,7 +170,6 @@ router.put('/profile', protect, [
     successResponse(res, { user }, 'Profile updated successfully');
 
   } catch (error) {
-    console.error('Profile update error:', error);
     errorResponse(res, 'Failed to update profile', 500);
   }
 });
@@ -239,7 +207,6 @@ router.put('/change-password', protect, [
     successResponse(res, null, 'Password changed successfully');
 
   } catch (error) {
-    console.error('Change password error:', error);
     errorResponse(res, 'Failed to change password', 500);
   }
 });

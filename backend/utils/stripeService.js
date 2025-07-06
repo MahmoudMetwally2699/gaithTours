@@ -105,7 +105,7 @@ const handlePaymentSuccess = async (sessionId) => {
       throw new Error('Invoice or payment not found');
     }
 
-    console.log('🔍 Invoice found:', {
+    ('🔍 Invoice found:', {
       id: invoice._id,
       status: invoice.status,
       reservationId: invoice.reservation
@@ -121,7 +121,7 @@ const handlePaymentSuccess = async (sessionId) => {
     };
     await invoice.save();
 
-    // Update payment status
+    // Upconsole.logdate payment status
     payment.status = 'completed';
     payment.stripePaymentIntentId = session.payment_intent.id;
     payment.transactionId = session.payment_intent.id;
@@ -131,23 +131,16 @@ const handlePaymentSuccess = async (sessionId) => {
       paymentIntentId: session.payment_intent.id
     };
     await payment.save();    // Update reservation status to confirmed when payment is completed
-    console.log('🔄 Checking reservation update:', {
-      hasReservation: !!invoice.reservation,
-      reservationId: invoice.reservation
-    });
+
 
     if (invoice.reservation) {
       const reservation = await Reservation.findById(invoice.reservation);
-      console.log('📋 Found reservation:', {
-        id: reservation?._id,
-        currentStatus: reservation?.status
-      });
+
 
       if (reservation) {
         const oldStatus = reservation.status;
         reservation.status = 'confirmed';
         await reservation.save();
-        console.log(`✅ Reservation ${reservation._id} status updated from ${oldStatus} to confirmed`);
       } else {
         console.log('❌ Reservation not found with ID:', invoice.reservation);
       }
