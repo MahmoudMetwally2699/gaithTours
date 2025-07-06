@@ -25,10 +25,10 @@ const initializeSocket = (server) => {  io = new Server(server, {
       allowedHeaders: ['Content-Type', 'Authorization']
     },
     // Configuration optimized for serverless/Vercel
-    transports: ['polling', 'websocket'],
-    pingTimeout: 60000,
-    pingInterval: 25000,
-    // Serverless optimizations
+    transports: ['polling'], // Only use polling for serverless
+    pingTimeout: 10000, // Shorter timeout
+    pingInterval: 5000, // Shorter interval
+    maxHttpBufferSize: 1e6,
     allowEIO3: true,
     maxHttpBufferSize: 1e6,
     httpCompression: true,
