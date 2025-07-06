@@ -1,24 +1,25 @@
-const HTMLToPDFInvoiceGenerator = require('./htmlToPdfInvoiceGenerator');
+const JsPDFInvoiceGenerator = require('./jspdfInvoiceGenerator');
 
 /**
- * Invoice PDF Generator using HTML-to-PDF for perfect Arabic support
+ * Invoice PDF Generator using jsPDF for perfect Arabic support
  * This class acts as a wrapper to maintain compatibility with existing code
+ * while using the more reliable jsPDF-based generator for better Arabic text rendering
  */
 class InvoicePDFGenerator {
   constructor() {
-    this.htmlToPdfGenerator = new HTMLToPDFInvoiceGenerator();
+    this.jsPdfGenerator = new JsPDFInvoiceGenerator();
   }
 
   /**
-   * Generate invoice PDF buffer using HTML-to-PDF approach
+   * Generate invoice PDF buffer using jsPDF approach
    * @param {Object} invoiceData - Invoice data
    * @param {string} language - 'en' or 'ar'
    * @returns {Promise<Buffer>} PDF buffer
    */
   async generateInvoicePDF(invoiceData, language = 'en') {
     try {
-      console.log(`🔄 Generating invoice PDF using HTML-to-PDF approach (${language})`);
-      return await this.htmlToPdfGenerator.generateInvoicePDF(invoiceData, language);
+      console.log(`🔄 Generating invoice PDF using jsPDF approach (${language})`);
+      return await this.jsPdfGenerator.generateInvoicePDF(invoiceData, language);
     } catch (error) {
       console.error('❌ Error generating invoice PDF:', error);
       throw error;
@@ -34,8 +35,8 @@ class InvoicePDFGenerator {
    */
   async generateInvoicePDFToFile(invoiceData, language = 'en', outputPath) {
     try {
-      console.log(`🔄 Generating invoice PDF to file using HTML-to-PDF approach (${language})`);
-      return await this.htmlToPdfGenerator.generateInvoicePDFToFile(invoiceData, language, outputPath);
+      console.log(`🔄 Generating invoice PDF to file using jsPDF approach (${language})`);
+      return await this.jsPdfGenerator.generateInvoicePDFToFile(invoiceData, language, outputPath);
     } catch (error) {
       console.error('❌ Error generating invoice PDF to file:', error);
       throw error;
