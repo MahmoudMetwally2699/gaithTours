@@ -32,23 +32,27 @@ export const SocketProvider = ({ children }) => {
       // Close existing socket if any
       if (socket) {
         socket.close();
-      }
-      const newSocket = io(socketUrl, {
+      }      const newSocket = io(socketUrl, {
         auth: {
           token: token
         },
         withCredentials: true,
-        // Use polling first for Vercel compatibility, then websocket as fallback
+        // Use polling for Vercel serverless compatibility
         transports: ['polling'],
-        timeout: 20000,
+        timeout: 30000, // Longer timeout for serverless
         forceNew: true,
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 10, // More attempts for serverless
+        reconnectionDelay: 2000, // Longer delay
+        reconnectionDelayMax: 10000,
         // Additional options for serverless compatibility
-        upgrade: true,
-        rememberUpgrade: false
+        upgrade: false, // Disable upgrade for serverless
+        rememberUpgrade: false,
+        // Longer polling intervals for serverless
+        autoConnect: true,
+        query: {
+          EIO: '4' // Ensure Engine.IO v4
+        }
       });
       newSocket.on('connect', () => {
         setIsConnected(true);
@@ -100,19 +104,21 @@ export const SocketProvider = ({ children }) => {
       newSocket.on('whatsapp_reply_sent', (data) => {
       });
 
-      setSocket(newSocket);
-
-      return () => {
+      setSocket(newSocket);      return () => {
         newSocket.close();
       };
     } else {
-      if (socket) {
-        socket.close();
-        setSocket(null);
-        setIsConnected(false);
-        setConnectionAttempts(0);
-      }
+      // Close existing socket if user is not authenticated or not admin
+      setSocket(prevSocket => {
+        if (prevSocket) {
+          prevSocket.close();
+          setIsConnected(false);
+          setConnectionAttempts(0);
+        }
+        return null;
+      });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
   const value = {

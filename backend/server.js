@@ -64,18 +64,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Initialize Socket.io immediately (not dependent on MongoDB)
+initializeSocket(server);
+console.log('Socket.IO initialized');
+
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtours', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
 .then(() => {
-  // Initialize Socket.io after MongoDB connection
-  initializeSocket(server);
+  console.log('MongoDB connected successfully');
 })
 .catch(err => {
   console.error('MongoDB connection error:', err);
-  process.exit(1);
+  // Don't exit process in serverless environment
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 // Routes
@@ -141,8 +147,56 @@ app.get('/api/test', (req, res) => {
     success: true,
     message: 'Backend API is working',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    socketInitialized: !!require('./socket').getIO()
   });
+});
+
+// Socket.IO test endpoint
+app.get('/api/socket-test', (req, res) => {
+  try {
+    const io = require('./socket').getIO();
+    res.status(200).json({
+      success: true,
+      message: 'Socket.IO status',
+      socketInitialized: !!io,
+      connected: io ? io.engine.clientsCount : 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Socket.IO error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Fallback polling endpoint for when Socket.IO doesn't work
+app.get('/api/whatsapp/messages/poll', require('./middleware/auth').protect, async (req, res) => {
+  try {
+    // This can be used as a fallback when Socket.IO doesn't work
+    const WhatsAppMessage = require('./models/WhatsAppMessage');
+    const since = req.query.since ? new Date(req.query.since) : new Date(Date.now() - 60000); // Last minute
+    
+    const newMessages = await WhatsAppMessage.find({
+      receivedAt: { $gte: since },
+      isFromCustomer: true
+    }).sort({ receivedAt: -1 }).limit(50);
+    
+    res.json({
+      success: true,
+      messages: newMessages,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch messages',
+      error: error.message
+    });
+  }
 });
 
 // Health check endpoint
@@ -170,6 +224,12 @@ app.use('*', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  // Server started
-});
+// Export the server for Vercel
+module.exports = server;
+
+// Only start listening if not in serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
