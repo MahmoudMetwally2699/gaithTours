@@ -25,6 +25,7 @@ const allowedOrigins = [
   'https://gaith-tours-backend.vercel.app',
   'https://gaithtours.com',
   'https://api.gaithtours.com',
+  'https://www.gaithtours.com'
   process.env.FRONTEND_URL,
   process.env.BACKEND_URL
 ].filter(Boolean);
