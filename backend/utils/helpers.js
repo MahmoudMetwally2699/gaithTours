@@ -29,12 +29,19 @@ const sendEmail = async (options) => {
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: options.email,
+      to: options.to || options.email, // Support both 'to' and 'email' properties
       subject: options.subject,
       html: options.html || options.message
     };
 
+    console.log('Sending email to:', mailOptions.to); // Debug log
+
+    if (!mailOptions.to) {
+      throw new Error('No recipient email address provided');
+    }
+
     const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId); // Debug log
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Email sending error:', error);

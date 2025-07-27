@@ -200,6 +200,26 @@ export const authAPI = {  login: async (credentials: { email: string; password: 
       throw error;
     }
   },
+
+  forgotPassword: async (email: string): Promise<ApiResponse> => {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to send reset email';
+      throw new Error(message);
+    }
+  },
+
+  resetPassword: async (token: string, password: string): Promise<ApiResponse> => {
+    try {
+      const response = await api.post('/auth/reset-password', { token, password });
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to reset password';
+      throw new Error(message);
+    }
+  },
 };
 
 // Hotels API
@@ -488,5 +508,16 @@ export const reservationsAPI = {  create: async (reservationData: {
     }
   },
 };
+
+// Individual export functions for convenience
+export const login = authAPI.login;
+export const register = authAPI.register;
+export const logout = authAPI.logout;
+export const getCurrentUser = authAPI.getCurrentUser;
+export const changePassword = authAPI.changePassword;
+export const forgotPassword = authAPI.forgotPassword;
+export const resetPassword = authAPI.resetPassword;
+
+export const searchHotels = hotelsAPI.search;
 
 export default api;

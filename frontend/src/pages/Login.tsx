@@ -248,13 +248,11 @@ export const Login: React.FC = () => {
                   <label htmlFor="remember-me" className="text-sm text-gray-700 font-medium">
                     {t('auth.rememberMe')}
                   </label>
-                </div>
-
-                <Link
+                </div>                <Link
                   to="/forgot-password"
                   className="text-sm font-semibold text-orange-600 hover:text-orange-500 transition-colors duration-200"
                 >
-                  {t('auth.forgotPassword')}
+                  {t('auth.login.forgotPassword')}
                 </Link>
               </motion.div>
 

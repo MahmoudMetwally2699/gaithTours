@@ -12,6 +12,8 @@ import { HotelDetails } from './pages/HotelDetails';
 import { HotelBookingFlow } from './pages/HotelBookingFlow';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { Profile } from './pages/Profile';
 import { PaymentSuccess } from './pages/PaymentSuccess';
 import { PaymentFailure } from './pages/PaymentFailure';
@@ -65,6 +67,8 @@ const AppContent = () => {
           />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
           <Route path="/payment/success" component={PaymentSuccess} />
           <Route path="/payment/failure" component={PaymentFailure} />
           <Route path="/admin/login" component={AdminLogin} />

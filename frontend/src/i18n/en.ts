@@ -2,8 +2,7 @@
 export const en = {
   // Brand
   brand: {
-    name: 'Gaith Tours'
-  },
+    name: 'Gaith Tours'  },
 
   // Navigation
   nav: {
@@ -329,9 +328,7 @@ export const en = {
     phonePlaceholder: 'Enter your phone number',
     nationality: 'Nationality',
     nationalityPlaceholder: 'Enter your nationality',
-    rememberMe: 'Remember me',
-    forgotPassword: 'Forgot Password?',
-    agreeToTerms: 'I agree to the',
+    rememberMe: 'Remember me',    agreeToTerms: 'I agree to the',
     termsOfService: 'Terms of Service',
     and: 'and',
     privacyPolicy: 'Privacy Policy',
@@ -350,28 +347,34 @@ export const en = {
       signUp: 'Sign Up',
       invalidCredentials: 'Invalid email or password',
       error: 'Login failed. Please try again.'
-    },    register: {
-      title: 'Create Account',
-      subtitle: 'Join Gaith Tours today',
+    },
+    forgotPassword: {
+      title: 'Reset Password',
+      subtitle: 'Enter your email address and we\'ll send you a link to reset your password',
       email: 'Email Address',
-      password: 'Password',
-      confirmPassword: 'Confirm Password',
-      phone: 'Phone Number',
-      nationality: 'Nationality',
-      createAccount: 'Create Account',
-      button: 'Create Account',
-      hasAccount: 'Already have an account?',
-      signIn: 'Sign In',
-      passwordRequirements: 'Password must be at least 8 characters with uppercase, lowercase, number and special character',
-      passwordMismatch: 'Passwords do not match',
-      passwordLength: 'Password must be at least 6 characters',
-      agreeTerms: 'You must agree to the terms and conditions',
-      error: 'Registration failed. Please try again.',
+      emailPlaceholder: 'Enter your email address',
+      button: 'Send Reset Link',
+      backToLogin: 'Back to Login',
       success: {
-        title: 'Registration Successful!',
-        message: 'Please check your email to verify your account.',
-        redirect: 'Redirecting to login page...'
-      }
+        title: 'Check Your Email',
+        message: 'We\'ve sent a password reset link to your email address.',
+        instructions: 'Click the link in the email to reset your password. If you don\'t see it, check your spam folder.'
+      },
+      error: 'Failed to send reset email. Please try again.',
+      invalidEmail: 'Please enter a valid email address',
+      emailNotFound: 'No account found with this email address'
+    },
+    resetPassword: {
+      title: 'Create New Password',
+      subtitle: 'Enter your new password below',
+      password: 'New Password',
+      confirmPassword: 'Confirm New Password',
+      button: 'Reset Password',
+      success: 'Password reset successfully! You can now log in with your new password.',
+      error: 'Failed to reset password. Please try again.',
+      tokenExpired: 'Reset link has expired. Please request a new one.',
+      tokenInvalid: 'Invalid reset link. Please request a new one.',
+      passwordMismatch: 'Passwords do not match'
     },
     secureEncryption: 'Secure Encryption',
     globalAccess: 'Global Access'
