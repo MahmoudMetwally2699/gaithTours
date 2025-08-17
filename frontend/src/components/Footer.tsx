@@ -239,14 +239,16 @@ export const Footer: React.FC = () => {
               >                <div className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
                   <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 shrink-0">
                     <MapPinIcon className="h-4 w-4 text-white" />
-                  </div>                  <p className="text-white font-medium text-sm mr-3" dir="rtl">
-                    {t('footer.location', 'الرياض، المملكة العربية السعودية')}
+                  </div>
+                  <p className="text-white font-medium text-sm mr-3" dir="rtl">
+                    النصر، قسم أول الغردقة، محافظة البحر األحمر 19662 ،مصر.
                   </p>
                 </div>                <div className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 shrink-0">
                     <PhoneIcon className="h-4 w-4 text-white" />
-                  </div>                  <p className="text-white font-medium text-sm font-mono mr-3" dir="ltr">
-                    {t('footer.phoneNumber', '٩٦٦+ ١٢٣ ٤٥٦ ٧٨٩')}
+                  </div>
+                  <p className="text-white font-medium text-sm font-mono mr-3" dir="ltr">
+                    +201060074053
                   </p>
                 </div>                <div className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300">
                   <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 shrink-0">
