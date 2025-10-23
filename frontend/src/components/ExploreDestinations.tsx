@@ -7,19 +7,11 @@ import { useDirection } from '../hooks/useDirection';
 
 // Extended city data with cities from different countries
 const cityData = [
-  // Saudi Arabia
-  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', country: 'Saudi Arabia', image: '/saudi-cities/مدينة العلا.jpg' },
-  { id: 'mecca', arabicName: 'مكة', englishName: 'Mecca', country: 'Saudi Arabia', image: '/saudi-cities/مدينة مكة.jpg' },
-  { id: 'medina', arabicName: 'المدينة', englishName: 'Medina', country: 'Saudi Arabia', image: '/saudi-cities/المدينة.jpg' },
-  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', country: 'Saudi Arabia', image: '/saudi-cities/مدينة الدمام.jpg' },
-  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', country: 'Saudi Arabia', image: '/saudi-cities/مدينة أبها.jpg' },
-  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', country: 'Saudi Arabia', image: '/saudi-cities/مدينة الطائف.jpg' },
-  { id: 'tabuk', arabicName: 'تبوك', englishName: 'Tabuk', country: 'Saudi Arabia', image: '/saudi-cities/مدينة تبوك.jpeg' },
-  { id: 'buraidah', arabicName: 'بريدة', englishName: 'Buraidah', country: 'Saudi Arabia', image: '/saudi-cities/مدينة بريدة.jpeg' },
-  { id: 'khamismushait', arabicName: 'خميس مشيط', englishName: 'Khamis Mushait', country: 'Saudi Arabia', image: '/saudi-cities/مدينة خميس مشيط.jpg' },
-  { id: 'hail', arabicName: 'حائل', englishName: 'Hail', country: 'Saudi Arabia', image: '/saudi-cities/حائل.jpg' },
-  { id: 'najran', arabicName: 'نجران', englishName: 'Najran', country: 'Saudi Arabia', image: '/saudi-cities/نجران.jpg' },
-  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', country: 'Saudi Arabia', image: '/saudi-cities/مدينة الجبيل.jpg' },
+  // UAE
+  { id: 'dubai', arabicName: 'دبي', englishName: 'Dubai', country: 'UAE', image: '/united-arab-emirates/Dubai.jpg' },
+  { id: 'abudhabi', arabicName: 'أبو ظبي', englishName: 'Abu Dhabi', country: 'UAE', image: '/united-arab-emirates/Abu Dhabi.jpg' },
+  { id: 'sharjah', arabicName: 'الشارقة', englishName: 'Sharjah', country: 'UAE', image: '/united-arab-emirates/sharjah-hd.jpg' },
+  { id: 'alain', arabicName: 'العين', englishName: 'Al Ain', country: 'UAE', image: '/united-arab-emirates/Al Ain-city.jpg' },
 
   // Egypt
   { id: 'cairo', arabicName: 'القاهرة', englishName: 'Cairo', country: 'Egypt', image: '/egypt/cairo.jpg' },

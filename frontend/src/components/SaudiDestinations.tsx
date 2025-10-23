@@ -7,10 +7,14 @@ import { useDirection } from '../hooks/useDirection';
 
 // Saudi Arabia cities data
 const saudiCityData = [
-  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', image: '/saudi-cities/مدينة العلا.jpg' },
+  { id: 'riyadh', arabicName: 'الرياض', englishName: 'Riyadh', image: '/saudi-cities/Riyadh.jpeg' },
+  { id: 'jeddah', arabicName: 'جدة', englishName: 'Jeddah', image: '/saudi-cities/Jeddah.jpg' },
   { id: 'mecca', arabicName: 'مكة المكرمة', englishName: 'Mecca', image: '/saudi-cities/مدينة مكة.jpg' },
   { id: 'medina', arabicName: 'المدينة المنورة', englishName: 'Medina', image: '/saudi-cities/المدينة.jpg' },
   { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', image: '/saudi-cities/مدينة الدمام.jpg' },
+  { id: 'khobar', arabicName: 'الخبر', englishName: 'Al Khobar', image: '/saudi-cities/Al-Khobar.jpg' },
+  { id: 'dhahran', arabicName: 'الظهران', englishName: 'Dhahran', image: '/saudi-cities/Dhahran.jpg' },
+  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', image: '/saudi-cities/مدينة العلا.jpg' },
   { id: 'abha', arabicName: 'أبها', englishName: 'Abha', image: '/saudi-cities/مدينة أبها.jpg' },
   { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', image: '/saudi-cities/مدينة الطائف.jpg' },
   { id: 'tabuk', arabicName: 'تبوك', englishName: 'Tabuk', image: '/saudi-cities/مدينة تبوك.jpeg' },
@@ -18,7 +22,8 @@ const saudiCityData = [
   { id: 'khamismushait', arabicName: 'خميس مشيط', englishName: 'Khamis Mushait', image: '/saudi-cities/مدينة خميس مشيط.jpg' },
   { id: 'hail', arabicName: 'حائل', englishName: 'Hail', image: '/saudi-cities/حائل.jpg' },
   { id: 'najran', arabicName: 'نجران', englishName: 'Najran', image: '/saudi-cities/نجران.jpg' },
-  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', image: '/saudi-cities/مدينة الجبيل.jpg' }
+  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', image: '/saudi-cities/مدينة الجبيل.jpg' },
+  { id: 'yanbu', arabicName: 'ينبع', englishName: 'Yanbu', image: '/saudi-cities/Yanbu.jpg' }
 ];
 
 export const SaudiDestinations: React.FC = () => {
