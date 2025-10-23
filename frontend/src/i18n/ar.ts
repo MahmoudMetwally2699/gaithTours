@@ -270,7 +270,7 @@ export const ar = {
     customItineraries: 'مسارات مخصصة',    contactInfo: 'معلومات الاتصال',
     location: 'الرياض، المملكة العربية السعودية',
     phoneNumber: '+966 123 456 789',
-    emailAddress: 'info@gaithtours.com',
+    emailAddress: 'contact@gaithtours.com',
     address: {
       line1: '123 شارع السفر',
       line2: 'دبي، الإمارات العربية المتحدة'

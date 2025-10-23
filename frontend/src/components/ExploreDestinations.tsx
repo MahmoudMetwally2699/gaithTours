@@ -8,74 +8,25 @@ import { useDirection } from '../hooks/useDirection';
 // Extended city data with cities from different countries
 const cityData = [
   // Saudi Arabia
-  { id: 'riyadh', arabicName: 'الرياض', englishName: 'Riyadh', country: 'Saudi Arabia', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
-  { id: 'jeddah', arabicName: 'جدة', englishName: 'Jeddah', country: 'Saudi Arabia', image: '/hero/Jeddah Corniche.webp' },
-  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', country: 'Saudi Arabia', image: '/hero/al-ul-old-town.jpeg' },
-  { id: 'mecca', arabicName: 'مكة', englishName: 'Mecca', country: 'Saudi Arabia', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
-  { id: 'medina', arabicName: 'المدينة', englishName: 'Medina', country: 'Saudi Arabia', image: '/hero/Riyadh-city-predictions_00_Adobe-Stock-1.jpg' },
-  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', country: 'Saudi Arabia', image: '/hero/riyadh-1600x900.webp' },
-  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', country: 'Saudi Arabia', image: '/hero/10_Parks_river.jpg' },
-  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', country: 'Saudi Arabia', image: '/hero/1034971-1524699631.jpg' },
-
-  // UAE
-  { id: 'dubai', arabicName: 'دبي', englishName: 'Dubai', country: 'UAE', image: '/hero/98.jpg' },
-  { id: 'abudhabi', arabicName: 'أبو ظبي', englishName: 'Abu Dhabi', country: 'UAE', image: '/hero/2158333.jpg' },
-  { id: 'sharjah', arabicName: 'الشارقة', englishName: 'Sharjah', country: 'UAE', image: '/hero/161652_7693.jpg' },
-  { id: 'ajman', arabicName: 'عجمان', englishName: 'Ajman', country: 'UAE', image: '/hero/1deb1aec3cc3568b1ec867c18005532a.webp' },
-  { id: 'rasalkhaimah', arabicName: 'رأس الخيمة', englishName: 'Ras Al Khaimah', country: 'UAE', image: '/hero/k7h4b0O.jpeg' },
+  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', country: 'Saudi Arabia', image: '/saudi-cities/مدينة العلا.jpg' },
+  { id: 'mecca', arabicName: 'مكة', englishName: 'Mecca', country: 'Saudi Arabia', image: '/saudi-cities/مدينة مكة.jpg' },
+  { id: 'medina', arabicName: 'المدينة', englishName: 'Medina', country: 'Saudi Arabia', image: '/saudi-cities/المدينة.jpg' },
+  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', country: 'Saudi Arabia', image: '/saudi-cities/مدينة الدمام.jpg' },
+  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', country: 'Saudi Arabia', image: '/saudi-cities/مدينة أبها.jpg' },
+  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', country: 'Saudi Arabia', image: '/saudi-cities/مدينة الطائف.jpg' },
+  { id: 'tabuk', arabicName: 'تبوك', englishName: 'Tabuk', country: 'Saudi Arabia', image: '/saudi-cities/مدينة تبوك.jpeg' },
+  { id: 'buraidah', arabicName: 'بريدة', englishName: 'Buraidah', country: 'Saudi Arabia', image: '/saudi-cities/مدينة بريدة.jpeg' },
+  { id: 'khamismushait', arabicName: 'خميس مشيط', englishName: 'Khamis Mushait', country: 'Saudi Arabia', image: '/saudi-cities/مدينة خميس مشيط.jpg' },
+  { id: 'hail', arabicName: 'حائل', englishName: 'Hail', country: 'Saudi Arabia', image: '/saudi-cities/حائل.jpg' },
+  { id: 'najran', arabicName: 'نجران', englishName: 'Najran', country: 'Saudi Arabia', image: '/saudi-cities/نجران.jpg' },
+  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', country: 'Saudi Arabia', image: '/saudi-cities/مدينة الجبيل.jpg' },
 
   // Egypt
-  { id: 'cairo', arabicName: 'القاهرة', englishName: 'Cairo', country: 'Egypt', image: '/hero/shutterstock_1882829362_LR.jpg' },
-  { id: 'alexandria', arabicName: 'الإسكندرية', englishName: 'Alexandria', country: 'Egypt', image: '/hero/Things-To-Do-in-Jeddah.webp' },
-  { id: 'luxor', arabicName: 'الأقصر', englishName: 'Luxor', country: 'Egypt', image: '/hero/Al-Taybat-International-City-Museum-building.jpg' },
-  { id: 'aswan', arabicName: 'أسوان', englishName: 'Aswan', country: 'Egypt', image: '/hero/At-Turaif.webp' },
-  { id: 'sharmelsheikh', arabicName: 'شرم الشيخ', englishName: 'Sharm El Sheikh', country: 'Egypt', image: '/hero/Djeddah.jpg' },
-  { id: 'hurghada', arabicName: 'الغردقة', englishName: 'Hurghada', country: 'Egypt', image: '/hero/GettyImages-1226582429_8by10.avif' },
-
-  // Kuwait
-  { id: 'kuwait', arabicName: 'الكويت', englishName: 'Kuwait City', country: 'Kuwait', image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif' },
-  { id: 'hawalli', arabicName: 'حولي', englishName: 'Hawalli', country: 'Kuwait', image: '/hero/salwa-palace-1024x768.jpg' },
-
-  // Qatar
-  { id: 'doha', arabicName: 'الدوحة', englishName: 'Doha', country: 'Qatar', image: '/hero/What-to-do-in-Jeddah-modern-things-to-see-Al-Rahma-Mosque.jpg' },
-  { id: 'alrayyan', arabicName: 'الريان', englishName: 'Al Rayyan', country: 'Qatar', image: '/hero/Xe8JF2Zv-Riyadh-skyline2011-1200x800.jpg' },
-
-  // Bahrain
-  { id: 'manama', arabicName: 'المنامة', englishName: 'Manama', country: 'Bahrain', image: '/hero/230216140003-05-diriyah-gallery.jpg' },
-  { id: 'muharraq', arabicName: 'المحرق', englishName: 'Muharraq', country: 'Bahrain', image: '/hero/1536x864_cmsv2_df295417-c41e-543d-a0ba-95a37a1efd16-9097266.webp' },
-
-  // Oman
-  { id: 'muscat', arabicName: 'مسقط', englishName: 'Muscat', country: 'Oman', image: '/hero/10_Parks_river.jpg' },
-  { id: 'salalah', arabicName: 'صلالة', englishName: 'Salalah', country: 'Oman', image: '/hero/1034971-1524699631.jpg' },
-  { id: 'nizwa', arabicName: 'نزوى', englishName: 'Nizwa', country: 'Oman', image: '/hero/98.jpg' },
-
-  // Jordan
-  { id: 'amman', arabicName: 'عمان', englishName: 'Amman', country: 'Jordan', image: '/hero/2158333.jpg' },
-  { id: 'petra', arabicName: 'البتراء', englishName: 'Petra', country: 'Jordan', image: '/hero/161652_7693.jpg' },
-  { id: 'aqaba', arabicName: 'العقبة', englishName: 'Aqaba', country: 'Jordan', image: '/hero/1deb1aec3cc3568b1ec867c18005532a.webp' },
-
-  // Lebanon
-  { id: 'beirut', arabicName: 'بيروت', englishName: 'Beirut', country: 'Lebanon', image: '/hero/k7h4b0O.jpeg' },
-  { id: 'tripoli', arabicName: 'طرابلس', englishName: 'Tripoli', country: 'Lebanon', image: '/hero/shutterstock_1882829362_LR.jpg' },
-
-  // Morocco
-  { id: 'casablanca', arabicName: 'الدار البيضاء', englishName: 'Casablanca', country: 'Morocco', image: '/hero/Things-To-Do-in-Jeddah.webp' },
-  { id: 'marrakech', arabicName: 'مراكش', englishName: 'Marrakech', country: 'Morocco', image: '/hero/Al-Taybat-International-City-Museum-building.jpg' },
-  { id: 'rabat', arabicName: 'الرباط', englishName: 'Rabat', country: 'Morocco', image: '/hero/At-Turaif.webp' },
-  { id: 'fez', arabicName: 'فاس', englishName: 'Fez', country: 'Morocco', image: '/hero/Djeddah.jpg' },
-
-  // Tunisia
-  { id: 'tunis', arabicName: 'تونس', englishName: 'Tunis', country: 'Tunisia', image: '/hero/GettyImages-1226582429_8by10.avif' },
-  { id: 'sousse', arabicName: 'سوسة', englishName: 'Sousse', country: 'Tunisia', image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif' },
-
-  // Turkey
-  { id: 'istanbul', arabicName: 'إسطنبول', englishName: 'Istanbul', country: 'Turkey', image: '/hero/salwa-palace-1024x768.jpg' },
-  { id: 'ankara', arabicName: 'أنقرة', englishName: 'Ankara', country: 'Turkey', image: '/hero/What-to-do-in-Jeddah-modern-things-to-see-Al-Rahma-Mosque.jpg' },
-  { id: 'antalya', arabicName: 'أنطاليا', englishName: 'Antalya', country: 'Turkey', image: '/hero/Xe8JF2Zv-Riyadh-skyline2011-1200x800.jpg' },
-
-  // Malaysia
-  { id: 'kualalumpur', arabicName: 'كوالالمبور', englishName: 'Kuala Lumpur', country: 'Malaysia', image: '/hero/230216140003-05-diriyah-gallery.jpg' },
-  { id: 'penang', arabicName: 'بينانغ', englishName: 'Penang', country: 'Malaysia', image: '/hero/1536x864_cmsv2_df295417-c41e-543d-a0ba-95a37a1efd16-9097266.webp' }
+  { id: 'cairo', arabicName: 'القاهرة', englishName: 'Cairo', country: 'Egypt', image: '/egypt/cairo.jpg' },
+  { id: 'alexandria', arabicName: 'الإسكندرية', englishName: 'Alexandria', country: 'Egypt', image: '/egypt/Alexandria.jpg' },
+  { id: 'luxor', arabicName: 'الأقصر', englishName: 'Luxor', country: 'Egypt', image: '/egypt/luxor.jpg' },
+  { id: 'aswan', arabicName: 'أسوان', englishName: 'Aswan', country: 'Egypt', image: '/egypt/aswan.jpg' },
+  { id: 'sharmelsheikh', arabicName: 'شرم الشيخ', englishName: 'Sharm El Sheikh', country: 'Egypt', image: '/egypt/sharm-el-sheihk.jpg' }
 ];
 
 export const ExploreDestinations: React.FC = () => {

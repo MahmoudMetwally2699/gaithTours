@@ -7,21 +7,18 @@ import { useDirection } from '../hooks/useDirection';
 
 // Saudi Arabia cities data
 const saudiCityData = [
-  { id: 'riyadh', arabicName: 'الرياض', englishName: 'Riyadh', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
-  { id: 'jeddah', arabicName: 'جدة', englishName: 'Jeddah', image: '/hero/Jeddah Corniche.webp' },
-  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', image: '/hero/al-ul-old-town.jpeg' },
-  { id: 'mecca', arabicName: 'مكة المكرمة', englishName: 'Mecca', image: '/hero/Kingdom-Centre-Riyadh-Saudi-Arabia.webp' },
-  { id: 'medina', arabicName: 'المدينة المنورة', englishName: 'Medina', image: '/hero/Riyadh-city-predictions_00_Adobe-Stock-1.jpg' },
-  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', image: '/hero/riyadh-1600x900.webp' },
-  { id: 'khobar', arabicName: 'الخبر', englishName: 'Al Khobar', image: '/hero/98.jpg' },
-  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', image: '/hero/10_Parks_river.jpg' },
-  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', image: '/hero/1034971-1524699631.jpg' },
-  { id: 'tabuk', arabicName: 'تبوك', englishName: 'Tabuk', image: '/hero/2158333.jpg' },
-  { id: 'buraidah', arabicName: 'بريدة', englishName: 'Buraidah', image: '/hero/161652_7693.jpg' },
-  { id: 'khamismushait', arabicName: 'خميس مشيط', englishName: 'Khamis Mushait', image: '/hero/1deb1aec3cc3568b1ec867c18005532a.webp' },
-  { id: 'hail', arabicName: 'حائل', englishName: 'Hail', image: '/hero/k7h4b0O.jpeg' },
-  { id: 'najran', arabicName: 'نجران', englishName: 'Najran', image: '/hero/shutterstock_1882829362_LR.jpg' },
-  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', image: '/hero/Things-To-Do-in-Jeddah.webp' }
+  { id: 'alula', arabicName: 'العلا', englishName: 'AlUla', image: '/saudi-cities/مدينة العلا.jpg' },
+  { id: 'mecca', arabicName: 'مكة المكرمة', englishName: 'Mecca', image: '/saudi-cities/مدينة مكة.jpg' },
+  { id: 'medina', arabicName: 'المدينة المنورة', englishName: 'Medina', image: '/saudi-cities/المدينة.jpg' },
+  { id: 'dammam', arabicName: 'الدمام', englishName: 'Dammam', image: '/saudi-cities/مدينة الدمام.jpg' },
+  { id: 'abha', arabicName: 'أبها', englishName: 'Abha', image: '/saudi-cities/مدينة أبها.jpg' },
+  { id: 'taif', arabicName: 'الطائف', englishName: 'Taif', image: '/saudi-cities/مدينة الطائف.jpg' },
+  { id: 'tabuk', arabicName: 'تبوك', englishName: 'Tabuk', image: '/saudi-cities/مدينة تبوك.jpeg' },
+  { id: 'buraidah', arabicName: 'بريدة', englishName: 'Buraidah', image: '/saudi-cities/مدينة بريدة.jpeg' },
+  { id: 'khamismushait', arabicName: 'خميس مشيط', englishName: 'Khamis Mushait', image: '/saudi-cities/مدينة خميس مشيط.jpg' },
+  { id: 'hail', arabicName: 'حائل', englishName: 'Hail', image: '/saudi-cities/حائل.jpg' },
+  { id: 'najran', arabicName: 'نجران', englishName: 'Najran', image: '/saudi-cities/نجران.jpg' },
+  { id: 'jubail', arabicName: 'الجبيل', englishName: 'Jubail', image: '/saudi-cities/مدينة الجبيل.jpg' }
 ];
 
 export const SaudiDestinations: React.FC = () => {

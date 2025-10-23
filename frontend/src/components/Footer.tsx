@@ -255,7 +255,7 @@ export const Footer: React.FC = () => {
                     <AtSymbolIcon className="h-4 w-4 text-white" />
                   </div>
                   <p className="text-white font-medium text-sm font-mono mr-3" dir="ltr">
-                    {t('footer.emailAddress', 'info@gaithtours.com')}
+                    {t('footer.emailAddress', 'contact@gaithtours.com')}
                   </p>
                 </div>
               </motion.div>

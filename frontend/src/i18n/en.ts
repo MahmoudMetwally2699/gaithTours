@@ -288,7 +288,7 @@ export const en = {
     customItineraries: 'Custom Itineraries',    contactInfo: 'Contact Info',
     location: 'Riyadh, Saudi Arabia',
     phoneNumber: '+966 123 456 789',
-    emailAddress: 'info@gaithtours.com',
+    emailAddress: 'contact@gaithtours.com',
     address: {
       line1: '123 Travel Street',
       line2: 'Dubai, UAE'
