@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
 import { FileUpload, UploadedFile } from '../components/FileUpload';
 import { HotelBookingModal } from '../components/HotelBookingModal';
+import { toast } from 'react-hot-toast';
 
 interface BookingStep {
   id: number;
@@ -48,6 +49,15 @@ export const HotelBookingFlow: React.FC = () => {
     adults: parseInt(searchParams.get('adults') || '2'),
     children: parseInt(searchParams.get('children') || '0')
   };
+
+  // Extract selected rate data from URL parameters
+  const selectedRateData = {
+    matchHash: searchParams.get('matchHash') || '',
+    roomName: searchParams.get('roomName') || '',
+    meal: searchParams.get('meal') || '',
+    price: searchParams.get('price') || '',
+    currency: searchParams.get('currency') || ''
+  };
   const [currentStep, setCurrentStep] = useState(1);
   const [showBookingModal, setShowBookingModal] = useState(false);  const [formData, setFormData] = useState({
     // Step 1: Check-in Time & Room Type
@@ -78,7 +88,7 @@ export const HotelBookingFlow: React.FC = () => {
     phoneCountryCode: 'SA'
   });  const steps: BookingStep[] = [
     { id: 1, title: t('booking.steps.checkIn', 'Check-in Time'), completed: false },
-    { id: 2, title: t('booking.steps.roomType', 'Room Type'), completed: false },
+    { id: 2, title: selectedRateData.matchHash ? t('booking.steps.roomDetails', 'Room Details') : t('booking.steps.roomType', 'Room Type'), completed: false },
     { id: 3, title: t('booking.steps.payment', 'Payment Method'), completed: false },
     { id: 4, title: t('booking.steps.guests', 'Additional Guests'), completed: false },
     { id: 5, title: t('booking.steps.requests', 'Special Requests'), completed: false },
@@ -104,23 +114,24 @@ export const HotelBookingFlow: React.FC = () => {
     switch (currentStep) {
       case 1:
         if (!formData.expectedCheckInTime) {
-          alert(t('booking.validation.checkInTime', 'Please select your expected check-in time'));
+          toast.error(t('booking.validation.checkInTime', 'Please select your expected check-in time'));
           return false;
         }
         break;
       case 2:
-        if (!formData.roomType) {
-          alert(t('booking.validation.roomType', 'Please select a room type'));
+        // Skip room type validation if rate is pre-selected
+        if (!selectedRateData.matchHash && !formData.roomType) {
+          toast.error(t('booking.validation.roomType', 'Please select a room type'));
           return false;
         }
         if (!formData.stayType) {
-          alert(t('booking.validation.stayType', 'Please select the purpose of your stay'));
+          toast.error(t('booking.validation.stayType', 'Please select the purpose of your stay'));
           return false;
         }
         break;
       case 3:
         if (!formData.paymentMethod) {
-          alert(t('booking.validation.paymentMethod', 'Please select a payment method'));
+          toast.error(t('booking.validation.paymentMethod', 'Please select a payment method'));
           return false;
         }
         break;
@@ -196,55 +207,115 @@ export const HotelBookingFlow: React.FC = () => {
           </div>
         );
 
-      case 2:        return (
+      case 2:
+        return (
           <div className="space-y-4 sm:space-y-8">
-            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
+            <div className={`text-center mb-4 sm:mb-8 ${isRTL ? 'text-right' : 'text-left'} sm:text-center`}>
+              <div className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 bg-gradient-to-r from-orange-100 to-orange-200 rounded-full mb-2 sm:mb-4">
                 <UserIcon className="h-5 w-5 sm:h-10 sm:w-10 text-orange-600" />
               </div>
               <h2 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
-                {t('booking.roomType.title', 'Choose Your Room')}
+                {selectedRateData.matchHash
+                  ? t('booking.roomDetails.title', 'Room Details')
+                  : t('booking.roomType.title', 'Choose Your Room')}
               </h2>
               <p className="text-sm sm:text-lg text-gray-600 max-w-md mx-auto">
-                {t('booking.roomType.subtitle', 'Select the perfect room for your stay')}
+                {selectedRateData.matchHash
+                  ? t('booking.roomDetails.subtitle', 'Review your selected room')
+                  : t('booking.roomType.subtitle', 'Select the perfect room for your stay')}
               </p>
             </div>
 
             <div className="max-w-3xl mx-auto">
-              <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
-                {t('booking.roomType.label', 'Room Type')} *
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {[
-                  { id: 'Standard Room', label: t('booking.roomType.standard', 'Standard Room'), icon: '🛏️', desc: 'Comfortable stay' },
-                  { id: 'Deluxe Room', label: t('booking.roomType.deluxe', 'Deluxe Room'), icon: '🏨', desc: 'Enhanced amenities' },
-                  { id: 'Suite', label: t('booking.roomType.suite', 'Suite'), icon: '🏛️', desc: 'Spacious luxury' },
-                  { id: 'Family Room', label: t('booking.roomType.family', 'Family Room'), icon: '👨‍👩‍👧‍👦', desc: 'Perfect for families' }
-                ].map((room) => (
-                  <label
-                    key={room.id}                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
-                      formData.roomType === room.id
-                        ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="roomType"
-                      value={room.id}
-                      checked={formData.roomType === room.id}
-                      onChange={(e) => handleInputChange('roomType', e.target.value)}
-                      className="sr-only"
-                    />
-                    <div className="text-center">
-                      <span className="text-lg sm:text-2xl mb-1 block">{room.icon}</span>
-                      <span className={`font-bold text-xs sm:text-sm text-gray-900 block text-center leading-tight`}>
-                        {room.label}
-                      </span>
-                      <span className="text-xs text-gray-600 hidden sm:block">{room.desc}</span>
+              {/* Show selected room details if matchHash exists */}
+              {selectedRateData.matchHash ? (
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 rounded-2xl p-6 shadow-lg">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        {selectedRateData.roomName || 'Selected Room'}
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center text-gray-700">
+                          <span className="text-2xl mr-2">
+                            {selectedRateData.meal === 'breakfast' && '🍳'}
+                            {selectedRateData.meal === 'all_inclusive' && '🍽️'}
+                            {selectedRateData.meal === 'nomeal' && '🚫'}
+                          </span>
+                          <span className="font-medium">
+                            {selectedRateData.meal === 'breakfast' && 'Breakfast included'}
+                            {selectedRateData.meal === 'all_inclusive' && 'All inclusive'}
+                            {selectedRateData.meal === 'nomeal' && 'No meals included'}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline">
+                          <span className="text-3xl font-bold text-orange-600">
+                            {selectedRateData.price} {selectedRateData.currency}
+                          </span>
+                          <span className="text-sm text-gray-600 ml-2">per night</span>
+                        </div>
+                      </div>
                     </div>
+                    <div className="ml-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                        ✓ Selected
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-orange-200">
+                    <p className="text-sm text-gray-600 mb-3">
+                      💡 Need a different room? You can go back to the hotel details page to select another option.
+                    </p>
+                    <button
+                      onClick={() => history.goBack()}
+                      className="text-orange-600 hover:text-orange-700 font-medium text-sm underline"
+                    >
+                      ← Change Room Selection
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // Fallback: Show generic room type selection if no rate is pre-selected
+                <>
+                  <label className={`block text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    {t('booking.roomType.label', 'Room Type')} *
                   </label>
-                ))}
-              </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                    {[
+                      { id: 'Standard Room', label: t('booking.roomType.standard', 'Standard Room'), icon: '🛏️', desc: 'Comfortable stay' },
+                      { id: 'Deluxe Room', label: t('booking.roomType.deluxe', 'Deluxe Room'), icon: '🏨', desc: 'Enhanced amenities' },
+                      { id: 'Suite', label: t('booking.roomType.suite', 'Suite'), icon: '🏛️', desc: 'Spacious luxury' },
+                      { id: 'Family Room', label: t('booking.roomType.family', 'Family Room'), icon: '👨‍👩‍👧‍👦', desc: 'Perfect for families' }
+                    ].map((room) => (
+                      <label
+                        key={room.id}
+                        className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                          formData.roomType === room.id
+                            ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="roomType"
+                          value={room.id}
+                          checked={formData.roomType === room.id}
+                          onChange={(e) => handleInputChange('roomType', e.target.value)}
+                          className="sr-only"
+                        />
+                        <div className="text-center">
+                          <span className="text-lg sm:text-2xl mb-1 block">{room.icon}</span>
+                          <span className={`font-bold text-xs sm:text-sm text-gray-900 block text-center leading-tight`}>
+                            {room.label}
+                          </span>
+                          <span className="text-xs text-gray-600 hidden sm:block">{room.desc}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Purpose of Stay */}
@@ -260,7 +331,8 @@ export const HotelBookingFlow: React.FC = () => {
                   { id: 'other', label: t('booking.stayType.other', 'Other'), icon: '📝', desc: 'Other purpose' }
                 ].map((stay) => (
                   <label
-                    key={stay.id}                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                    key={stay.id}
+                    className={`group flex flex-col p-2 sm:p-3 border-2 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
                       formData.stayType === stay.id
                         ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100 shadow-lg'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
@@ -831,10 +903,15 @@ export const HotelBookingFlow: React.FC = () => {
             nationality: user?.nationality || 'SA',
             email: user?.email || '',
             hotelUrl: '',
-            hotelPrice: '0',
+            hotelPrice: selectedRateData.price,
             guests_list: formData.additionalGuests,
             notes: formData.specialRequests,
-            attachments: formData.attachments
+            attachments: formData.attachments,
+            // Add selected rate data
+            matchHash: selectedRateData.matchHash,
+            roomName: selectedRateData.roomName,
+            meal: selectedRateData.meal,
+            currency: selectedRateData.currency
           }}
           onClose={() => setShowBookingModal(false)}
         />

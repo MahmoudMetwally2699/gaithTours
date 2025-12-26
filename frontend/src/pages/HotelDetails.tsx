@@ -28,6 +28,10 @@ import {
 import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { Hotel } from '../types/hotel';
 import { getHotelDetails } from '../services/hotelService';
+import { RoomRow } from '../components/RoomRow';
+import { PriceBreakdownCard } from '../components/PriceBreakdownCard';
+import { CancellationPolicyCard } from '../components/CancellationPolicyCard';
+import { HotelPoliciesCard } from '../components/HotelPoliciesCard';
 
 interface HotelDetailsParams {
   hotelId: string;
@@ -56,6 +60,7 @@ export const HotelDetails: React.FC = () => {
   const [error, setError] = useState('');  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
+  const [selectedRate, setSelectedRate] = useState<any>(null); // Selected room/rate for booking
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -140,7 +145,8 @@ export const HotelDetails: React.FC = () => {
           description: hotelData.description || '',
           reviewScore: hotelData.reviewScore || hotelData.rating || 0,
           reviewCount: hotelData.reviewCount || 0,
-          facilities: hotelData.facilities || [],
+          amenities: hotelData.amenities || [], // Get amenities from API
+          facilities: hotelData.facilities || [], // Legacy field
           propertyClass: hotelData.propertyClass || 0,
           reviewScoreWord: hotelData.reviewScoreWord || null,
           isPreferred: hotelData.isPreferred || false,
@@ -149,7 +155,8 @@ export const HotelDetails: React.FC = () => {
           coordinates: hotelData.coordinates || {
             latitude: 0,
             longitude: 0
-          }
+          },
+          rates: hotelData.rates || [] // Available rooms/rates
         };
 
         setHotel(transformedHotel);
@@ -166,19 +173,20 @@ export const HotelDetails: React.FC = () => {
   const handleBookNow = () => {
     if (!hotel) return;
 
-    // Navigate to progressive booking form
-    const params = new URLSearchParams({
-      ...Object.fromEntries(searchParams),
-      hotelId: hotel.id,
-      hotelName: hotel.name,
-      hotelAddress: hotel.address,
-      hotelCity: hotel.city,
-      hotelCountry: hotel.country,
-      hotelRating: hotel.rating.toString(),
-      hotelImage: hotel.image || ''
-    });
+    // Check if a rate is selected
+    if (!selectedRate) {
+      alert(t('hotels.selectRoomFirst', 'Please select a room first'));
+      return;
+    }
 
-    history.push(`/hotels/booking?${params.toString()}`);
+    // Navigate to new booking page with state
+    history.push(`/hotels/booking/${hotel.id}`, {
+      hotel,
+      selectedRate,
+      checkIn: searchParams.get('checkIn') || '',
+      checkOut: searchParams.get('checkOut') || '',
+      guests: parseInt(searchParams.get('guests') || '2', 10)
+    });
 
     // Scroll to top after navigation
     setTimeout(() => {
@@ -445,6 +453,37 @@ export const HotelDetails: React.FC = () => {
         </div>        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-8">
 
+            {/* Available Rooms */}
+            {hotel.rates && hotel.rates.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 border border-orange-100">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
+                  <HomeIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-orange-500" />
+                  {t('hotels.availableRooms', 'Available Rooms')}
+                </h2>
+
+                {/* Table Header - Desktop only */}
+                <div className="hidden md:grid grid-cols-12 gap-4 pb-4 border-b-2 border-gray-300 font-semibold text-gray-700 text-sm">
+                  <div className="col-span-3">{t('hotels.roomType', 'Room type')}</div>
+                  <div className="col-span-2">{t('hotels.numberOfGuests', 'Number of guests')}</div>
+                  <div className="col-span-2">{t('hotels.todaysPrice', "Today's Price")}</div>
+                  <div className="col-span-3">{t('hotels.yourChoices', 'Your choices')}</div>
+                  <div className="col-span-2 text-center">{t('hotels.selectRooms', 'Select Rooms')}</div>
+                </div>
+
+                {/* Room Rows */}
+                <div className="space-y-4 mt-4">
+                  {hotel.rates.map((rate, index) => (
+                    <RoomRow
+                      key={rate.match_hash || index}
+                      rate={rate}
+                      onSelect={() => setSelectedRate(rate)}
+                      isSelected={selectedRate?.match_hash === rate.match_hash}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 lg:p-8 border border-orange-100">
               <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
@@ -462,20 +501,55 @@ export const HotelDetails: React.FC = () => {
                 <CheckCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 mr-2 sm:mr-3 text-orange-500" />
                 {t('hotels.amenities', 'Amenities & Services')}
               </h2><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
-                {hotel.facilities.map((facility, index) => (
-                  <div key={index} className="flex items-center space-x-2 sm:space-x-3 bg-orange-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-orange-100 hover:bg-orange-100 transition-colors duration-200">
-                    <div className="flex-shrink-0">
-                      {getAmenityIcon(facility)}
+                {hotel.amenities && hotel.amenities.map((amenity, index) => (
+                    <div key={index} className="flex items-center space-x-2 sm:space-x-3 bg-orange-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-orange-100 hover:bg-orange-100 transition-colors duration-200">
+                      <div className="flex-shrink-0">
+                        {getAmenityIcon(amenity)}
+                      </div>
+                      <span className="text-gray-800 font-medium text-xs sm:text-base truncate leading-tight">{amenity}</span>
                     </div>
-                    <span className="text-gray-800 font-medium text-xs sm:text-base truncate leading-tight">{facility}</span>
-                  </div>
                 ))}
               </div>            </div>
+
+            {/* Hotel Policies */}
+            {(hotel.check_in_time || hotel.check_out_time || hotel.metapolicy_extra_info) && (
+              <HotelPoliciesCard
+                checkInTime={hotel.check_in_time}
+                checkOutTime={hotel.check_out_time}
+                metapolicyInfo={hotel.metapolicy_extra_info}
+              />
+            )}
           </div>
 
           {/* Booking Card */}
           <div className="lg:col-span-1 order-first lg:order-last">
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 lg:sticky lg:top-24 border-2 border-orange-200">
+              {/* Price Breakdown - Show for selected rate */}
+              {selectedRate && selectedRate.taxes && selectedRate.taxes.length > 0 && (
+                <div className="mb-6">
+                  <PriceBreakdownCard
+                    basePrice={parseFloat(selectedRate.price)}
+                    taxes={selectedRate.taxes}
+                    totalPrice={parseFloat(selectedRate.price)}
+                    currency={selectedRate.currency}
+                    nights={nights}
+                    dailyPrices={selectedRate.daily_prices?.map((p: string) => parseFloat(p))}
+                  />
+                </div>
+              )}
+
+              {/* Cancellation Policy - Show for selected rate */}
+              {selectedRate && selectedRate.cancellation_details && (
+                <div className="mb-6">
+                  <CancellationPolicyCard
+                    policies={selectedRate.cancellation_details}
+                    freeCancellationBefore={selectedRate.free_cancellation_before}
+                    isRefundable={selectedRate.is_free_cancellation || false}
+                    currency={selectedRate.currency}
+                  />
+                </div>
+              )}
+
               {/* Booking Summary */}
               <div className="space-y-4 mb-6">                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
                   <h3 className="font-bold text-orange-900 mb-4 text-lg flex items-center">
@@ -496,7 +570,7 @@ export const HotelDetails: React.FC = () => {
                       <span className="font-bold text-orange-900">{nights}</span>
                     </div>
                     <div className="flex justify-between items-center bg-white/50 p-2 rounded-lg">
-                      <span className="text-orange-700 font-medium">{t('hotels.guests', 'Guests')}</span>
+                      <span className="text-orange-700 font-medium">{t('hero.guests', 'Guests')}</span>
                       <span className="font-bold text-orange-900">
                         {bookingParams.adults} {t('hotels.adults', 'adults')}
                         {bookingParams.children > 0 && `, ${bookingParams.children} ${t('hotels.children', 'children')}`}
@@ -508,12 +582,11 @@ export const HotelDetails: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>              {/* Book Now Button */}
-              <button
+              </div>              <button
                 onClick={handleBookNow}
                 className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0"
               >
-                {t('hotels.bookWithBestPrice', 'Book with Best Price')}
+                {t('hotels.bookNow', 'Book Now')}
               </button>
             </div>
           </div>

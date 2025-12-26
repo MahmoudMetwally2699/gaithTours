@@ -117,9 +117,23 @@ export const HotelSearchResults: React.FC = () => {
         return true;
       }
       return hotel.price >= filters.priceRange[0] && hotel.price <= filters.priceRange[1];
-    });    // Sort hotels - prioritize name matches first, then by selected criteria
+    });    // Sort hotels - prioritize searched hotel first, then name matches, then by selected criteria
     filtered.sort((a, b) => {
-      // First priority: exact/partial name matches with search destination
+      // HIGHEST PRIORITY: The specifically searched hotel (marked by backend)
+      const aIsSearched = (a as any).isSearchedHotel === true;
+      const bIsSearched = (b as any).isSearchedHotel === true;
+
+      if (aIsSearched && !bIsSearched) return -1;
+      if (!aIsSearched && bIsSearched) return 1;
+
+      // Second priority: Hotels with noRatesAvailable (fetched from Content API)
+      const aNoRates = (a as any).noRatesAvailable === true;
+      const bNoRates = (b as any).noRatesAvailable === true;
+
+      if (aNoRates && !bNoRates) return -1;
+      if (!aNoRates && bNoRates) return 1;
+
+      // Third priority: exact/partial name matches with search destination
       const searchTerm = searchQuery.destination.toLowerCase();
       const aNameMatch = a.name.toLowerCase().includes(searchTerm);
       const bNameMatch = b.name.toLowerCase().includes(searchTerm);
@@ -151,11 +165,13 @@ export const HotelSearchResults: React.FC = () => {
 
   const handleHotelClick = (hotel: Hotel) => {
     // Navigate to hotel details page with search parameters
+    // Use HID (numeric) instead of ID (string) for the details page
+    const hotelIdentifier = hotel.hid || hotel.id;
     const params = new URLSearchParams({
       ...Object.fromEntries(searchParams),
-      hotelId: hotel.id
+      hotelId: String(hotelIdentifier)
     });
-    history.push(`/hotels/details/${hotel.id}?${params.toString()}`);
+    history.push(`/hotels/details/${hotelIdentifier}?${params.toString()}`);
   };
 
   const handlePageChange = (page: number) => {
@@ -472,13 +488,15 @@ export const HotelSearchResults: React.FC = () => {
                                 )}
                               </div>
 
-                              {/* Location - Centered */}
-                              <div className="flex items-center justify-center text-gray-600 mb-3">
-                                <MapPinIcon className="h-4 w-4 flex-shrink-0 mr-1 text-orange-500" />
-                                <span className="text-sm text-center">
-                                  {hotel.city}, {hotel.country}
-                                </span>
-                              </div>                              {/* Important Info Section */}
+                              {/* Location */}
+                              {(hotel.city || hotel.address) && (
+                                <div className="flex items-center justify-center text-gray-600 mb-3">
+                                  <MapPinIcon className="h-4 w-4 flex-shrink-0 mr-1 text-orange-500" />
+                                  <span className="text-sm text-center">
+                                    {hotel.city || hotel.address}
+                                  </span>
+                                </div>
+                              )}                              {/* Important Info Section */}
                               {(hotel.description || (hotel.facilities && hotel.facilities.length > 0)) && (
                                 <div className="bg-gray-50 rounded-lg p-3 mb-3">
                                   <div className="text-center">

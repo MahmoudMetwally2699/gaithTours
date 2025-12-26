@@ -11,42 +11,42 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api
  * @returns Promise that resolves to hotel search results
  */
 const searchHotels = async (destination: string, page: number = 1, limit: number = 10): Promise<HotelSearchResponse> => {
-  try {
-    // Get auth token from localStorage (optional for search)
-    const token = localStorage.getItem('token');
+    try {
+        // Get auth token from localStorage (optional for search)
+        const token = localStorage.getItem('token');
 
-    const options: RequestInit = {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      }
-    };
+        const options: RequestInit = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+        };
 
-    // URL with destination, page, and limit parameters
-    const url = `${API_BASE_URL}/hotels/search?destination=${encodeURIComponent(destination)}&page=${page}&limit=${limit}`;
+        // URL with destination, page, and limit parameters
+        const url = `${API_BASE_URL}/hotels/search?destination=${encodeURIComponent(destination)}&page=${page}&limit=${limit}`;
 
-    const response = await fetch(url, options);
+        const response = await fetch(url, options);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }const data = await response.json();
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        } const data = await response.json();
 
-    // Debug logging
+        // Debug logging
 
 
-    // Check if the response is successful
-    if (!data.success) {
-      throw new Error(data.message || 'Hotel search failed');
+        // Check if the response is successful
+        if (!data.success) {
+            throw new Error(data.message || 'Hotel search failed');
+        }
+
+        return data.data; // Return the data object containing hotels, total, page info
+
+    } catch (error) {
+        console.error('Error searching hotels:', error);
+        throw error;
     }
-
-    return data.data; // Return the data object containing hotels, total, page info
-
-  } catch (error) {
-    console.error('Error searching hotels:', error);
-    throw error;
-  }
 };
 
 /**
@@ -55,45 +55,42 @@ const searchHotels = async (destination: string, page: number = 1, limit: number
  * @returns {Promise<Object>} - Promise that resolves to hotel details
  */
 const getHotelDetails = async (hotelId: string) => {
-  try {
-    const token = localStorage.getItem('token');
+    try {
+        // Get auth token from localStorage (optional for hotel details)
+        const token = localStorage.getItem('token');
 
-    if (!token) {
-      throw new Error('Authentication required');
+        const options: RequestInit = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+        };
+
+        const url = `${API_BASE_URL}/hotels/details/${hotelId}`;
+
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Debug logging
+
+        // Check if the response is successful
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to get hotel details');
+        }
+
+        return data.data.hotel; // Return the hotel object
+
+    } catch (error) {
+        console.error('Error getting hotel details:', error);
+        throw error;
     }
-
-    const options = {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    };
-
-    const url = `${API_BASE_URL}/hotels/details/${hotelId}`;
-
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Debug logging
-
-    // Check if the response is successful
-    if (!data.success) {
-      throw new Error(data.message || 'Failed to get hotel details');
-    }
-
-    return data.data.hotel; // Return the hotel object
-
-  } catch (error) {
-    console.error('Error getting hotel details:', error);
-    throw error;
-  }
 };
 
 /**
@@ -101,29 +98,29 @@ const getHotelDetails = async (hotelId: string) => {
  * @returns {Promise<Object>} - Promise that resolves to popular destinations
  */
 const getPopularDestinations = async () => {
-  try {
-    const options = {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
+    try {
+        const options = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
 
-    const url = `${API_BASE_URL}/hotels/popular`;
+        const url = `${API_BASE_URL}/hotels/popular`;
 
-    const response = await fetch(url, options);
+        const response = await fetch(url, options);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.data;
+
+    } catch (error) {
+        console.error('Error getting popular destinations:', error);
+        throw error;
     }
-
-    const data = await response.json();
-    return data.data;
-
-  } catch (error) {
-    console.error('Error getting popular destinations:', error);
-    throw error;
-  }
 };
 
 /**
@@ -132,37 +129,71 @@ const getPopularDestinations = async () => {
  * @returns {Promise<Object>} - Promise that resolves to location suggestions
  */
 const searchDestinations = async (query: string) => {
-  try {
-    const token = localStorage.getItem('token');
+    try {
+        const token = localStorage.getItem('token');
 
-    if (!token) {
-      throw new Error('Authentication required');
+        if (!token) {
+            throw new Error('Authentication required');
+        }
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        };
+
+        const url = `${API_BASE_URL}/hotels/locations?query=${encodeURIComponent(query)}`;
+
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.data;
+
+    } catch (error) {
+        console.error('Error searching destinations:', error);
+        throw error;
     }
-
-    const options = {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    };
-
-    const url = `${API_BASE_URL}/hotels/locations?query=${encodeURIComponent(query)}`;
-
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data;
-
-  } catch (error) {
-    console.error('Error searching destinations:', error);
-    throw error;
-  }
 };
 
-export { searchHotels, getHotelDetails, getPopularDestinations, searchDestinations };
+/**
+ * Suggest hotels worldwide for autocomplete (no dates required)
+ * @param {string} query - The search query
+ * @returns {Promise<Object>} - Promise that resolves to hotel and region suggestions
+ */
+const suggestHotels = async (query: string) => {
+    try {
+        // Get auth token from localStorage (optional for autocomplete)
+        const token = localStorage.getItem('token');
+
+        const options: RequestInit = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+        };
+
+        const url = `${API_BASE_URL}/hotels/suggest?query=${encodeURIComponent(query)}`;
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.data;
+
+    } catch (error) {
+        console.error('Error suggesting hotels:', error);
+        throw error;
+    }
+};
+
+export { searchHotels, getHotelDetails, getPopularDestinations, searchDestinations, suggestHotels };
 export default searchHotels;

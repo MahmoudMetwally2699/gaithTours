@@ -9,6 +9,7 @@ import { Home } from './pages/Home';
 import { Hotels } from './pages/Hotels';
 import { HotelSearchResults } from './pages/HotelSearchResults';
 import { HotelDetails } from './pages/HotelDetails';
+import { BookingPage } from './pages/BookingPage';
 import { HotelBookingFlow } from './pages/HotelBookingFlow';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -33,38 +34,10 @@ const AppContent = () => {
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />
-          <Route
-            path="/hotels/search"
-            render={() => (
-              <ProtectedRoute>
-                <HotelSearchResults />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/hotels/details/:hotelId"
-            render={() => (
-              <ProtectedRoute>
-                <HotelDetails />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/hotels/booking"
-            render={() => (
-              <ProtectedRoute>
-                <HotelBookingFlow />
-              </ProtectedRoute>
-            )}
-          />
-          <Route
-            path="/hotels"
-            render={() => (
-              <ProtectedRoute>
-                <Hotels />
-              </ProtectedRoute>
-            )}
-          />
+          <Route path="/hotels/search" component={HotelSearchResults} />
+          <Route path="/hotels/details/:hotelId" component={HotelDetails} />
+          <Route path="/hotels/booking/:hotelId" component={BookingPage} />
+          <Route path="/hotels" component={Hotels} />
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
           <Route path="/forgot-password" component={ForgotPassword} />

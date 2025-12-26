@@ -111,6 +111,12 @@ try {
 }
 
 try {
+  app.use('/api/bookings', require('./routes/bookings'));
+} catch (error) {
+  console.error('Error loading bookings routes:', error);
+}
+
+try {
   app.use('/api/admin', require('./routes/admin'));
 } catch (error) {
   console.error('Error loading admin routes:', error);
@@ -140,6 +146,16 @@ try {
   app.use('/api/admin/whatsapp', require('./routes/whatsapp-admin'));
 } catch (error) {
   console.error('Error loading WhatsApp admin routes:', error);
+}
+
+// Debug routes (development only)
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    app.use('/api/debug', require('./routes/debug'));
+    console.log('✅ Debug routes loaded');
+  } catch (error) {
+    console.error('Error loading debug routes:', error);
+  }
 }
 
 // Test route to verify deployment

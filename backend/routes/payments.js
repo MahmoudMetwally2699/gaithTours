@@ -96,6 +96,41 @@ router.post('/webhook', async (req, res) => {
         try {
           const result = await stripeService.handlePaymentSuccess(sessionId);
 
+          // Create RateHawk booking after successful payment
+          try {
+            const rateHawkService = require('../utils/RateHawkService');
+            const Reservation = require('../models/Reservation');
+
+            // Get the reservation to access book_hash
+            const reservation = await Reservation.findById(result.reservation._id);
+
+            if (reservation && reservation.hotel.rateHawkBookHash) {
+              const bookingResult = await rateHawkService.createBooking(
+                reservation.hotel.rateHawkBookHash,
+                {
+                  partner_order_id: result.invoice.invoiceId,
+                  user_ip: session.customer_details?.address?.country || '0.0.0.0',
+                  language: 'en'
+                }
+              );
+
+              // Update reservation with RateHawk order ID
+              if (bookingResult.success && bookingResult.order_id) {
+                reservation.hotel.rateHawkOrderId = bookingResult.order_id;
+                reservation.status = 'confirmed';
+                await reservation.save();
+                console.log('✅ RateHawk booking created:', bookingResult.order_id);
+              } else if (bookingResult.sandbox_mode) {
+                console.log('⚠️ Sandbox mode: Booking simulated');
+                reservation.status = 'confirmed'; // Still confirm in sandbox
+                await reservation.save();
+              }
+            }
+          } catch (rateHawkError) {
+            console.error('❌ RateHawk booking failed:', rateHawkError.message);
+            // Don't fail the payment webhook - booking can be created manually
+          }
+
           // Send payment confirmation email
           try {
             await sendPaymentConfirmationEmail({

@@ -4,7 +4,7 @@ const reservationSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false // Allow guest bookings without user account
   },
   touristName: {
     type: String,
@@ -102,6 +102,23 @@ const reservationSchema = new mongoose.Schema({
     hotelId: {
       type: String,
       required: false // RapidAPI hotel ID
+    },
+    // RateHawk specific fields
+    hid: {
+      type: Number,
+      required: false // RateHawk numeric hotel ID
+    },
+    rateHawkMatchHash: {
+      type: String,
+      required: false // Match hash from search results
+    },
+    rateHawkBookHash: {
+      type: String,
+      required: false // Book hash for booking creation
+    },
+    rateHawkOrderId: {
+      type: String,
+      required: false // RateHawk order confirmation ID
     }
   },  checkInDate: {
     type: Date,
@@ -195,6 +212,15 @@ const reservationSchema = new mongoose.Schema({
   notes: {
     type: String,
     maxlength: [500, 'Notes cannot exceed 500 characters']
+  },
+  // RateHawk booking tracking
+  ratehawkOrderId: {
+    type: String,
+    required: false // RateHawk order ID from booking confirmation
+  },
+  ratehawkStatus: {
+    type: String,
+    required: false // RateHawk booking status (ok, error, sandbox, etc.)
   },
   createdAt: {
     type: Date,

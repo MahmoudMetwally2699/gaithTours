@@ -48,13 +48,8 @@ export const FeaturedHotels: React.FC = () => {
   const location = useLocation();
 
   const handleBookNow = () => {
-    if (isAuthenticated) {
-      // For authenticated users, redirect to hotels page
-      history.push('/hotels');
-    } else {
-      // For unauthenticated users, redirect to login with current location
-      history.push('/login', { from: location });
-    }
+    // Allow all users (guest and authenticated) to view hotels
+    history.push('/hotels');
   };
 
   return (

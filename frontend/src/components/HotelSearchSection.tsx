@@ -13,7 +13,7 @@ import {
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useDirection } from '../hooks/useDirection';
-import { searchHotels } from '../services/hotelService';
+import { suggestHotels } from '../services/hotelService';
 import { Hotel } from '../types/hotel';
 
 interface HotelSearchSectionProps {
@@ -48,7 +48,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
 //    Start loading state
     setLoadingHotels(true);
     try {
-      const response = await searchHotels(query, 1, 8); // Limit to 8 suggestions
+      const response = await suggestHotels(query); // Worldwide suggest - no dates needed
       if (response?.hotels) {
         setHotels(response.hotels);
         setShowSuggestions(true);
@@ -91,9 +91,10 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
   };
 
   const handleHotelSelect = (hotel: Hotel) => {
+    // Only use hotel name since suggest API doesn't return city/country
     setSearchParams(prev => ({
       ...prev,
-      destination: `${hotel.name}, ${hotel.city}, ${hotel.country}`
+      destination: hotel.name
     }));
     setShowSuggestions(false);
     setHotels([]);
@@ -124,13 +125,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
     }
 
     // Check authentication before proceeding to search results
-    const token = localStorage.getItem('token');
-    if (!token) {
-      // If not logged in, redirect to login page with return URL
-      const returnUrl = encodeURIComponent(`/hotels/search?destination=${encodeURIComponent(searchParams.destination)}&checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}&rooms=${searchParams.rooms}&adults=${searchParams.adults}&children=${searchParams.children}`);
-      history.push(`/login?returnUrl=${returnUrl}`);
-      return;
-    }
+    // REMOVED: Allow guest users to search hotels without login
 
     // Navigate to search results page
     const queryParams = new URLSearchParams({
@@ -220,7 +215,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-gray-900 text-xs leading-tight break-words">{hotel.name}</div>
-                              <div className="text-xs text-gray-500 mt-1 break-words">{hotel.city}, {hotel.country}</div>
+                              {/* Location hidden - not available in suggest API */}
                             </div>
                           </motion.div>
                         ))}
@@ -388,10 +383,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-gray-900 text-base truncate group-hover:text-orange-600 transition-colors duration-200">{hotel.name}</div>
-                          <div className="text-sm text-gray-500 truncate flex items-center mt-1">
-                            <MapPinIcon className="h-4 w-4 mr-1 text-gray-400" />
-                            {hotel.city}, {hotel.country}
-                          </div>
+                          {/* Location hidden - not available in suggest API */}
                           {hotel.rating && (
                             <div className="flex items-center mt-1">
                               <div className="flex text-yellow-400">

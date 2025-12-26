@@ -4,7 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { XMarkIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../types/hotel';
 import { UploadedFile } from './FileUpload';
-import { reservationsAPI } from '../services/api';
+import { reservationsAPI, bookingsAPI } from '../services/api';
 import { useDirection } from '../hooks/useDirection';
 import toast from 'react-hot-toast';
 
@@ -65,6 +65,11 @@ interface HotelBookingModalProps {
     guests_list: Array<{ fullName: string; phoneNumber: string; phoneCountryCode: string }>;
     notes: string;
     attachments?: UploadedFile[];
+    // Selected rate data
+    matchHash?: string;
+    roomName?: string;
+    meal?: string;
+    currency?: string;
   };
   onClose: () => void;
 }
@@ -156,53 +161,46 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         phoneNumber: guest.phoneCountryCode && guest.phoneNumber
           ? `+${getCallingCodeFromCountry(guest.phoneCountryCode)}${guest.phoneNumber.replace(/^0+/, '')}`
           : guest.phoneNumber
-      }));      // Create hotel object with only defined values
-      const hotelData: any = {
-        name: hotel.name,
-        address: hotel.address,
-        city: hotel.city,
-        country: hotel.country,
-        hotelId: hotel.id
-      };
+      }));
 
-      // Only add optional fields if they have values
-      if (hotel.coordinates) hotelData.coordinates = hotel.coordinates;
-      if (hotel.rating) hotelData.rating = hotel.rating;
-      if (hotel.image) hotelData.image = hotel.image;
-      if (searchParams.hotelUrl) hotelData.url = searchParams.hotelUrl;
-      if (searchParams.hotelPrice) hotelData.price = parseFloat(searchParams.hotelPrice);
-
-      const reservationData = {
-        touristName: searchParams.touristName,
-        phone: searchParams.phone,
-        nationality: searchParams.nationality,
-        email: searchParams.email,
-        expectedCheckInTime: searchParams.expectedCheckInTime,
-        roomType: searchParams.roomType,
-        stayType: searchParams.stayType,
-        paymentMethod: searchParams.paymentMethod,
-        guests: formattedGuests,
-        hotel: hotelData,
+      // Prepare booking data for the new API
+      const bookingData = {
+        hotelId: hotel.id,
+        hotelName: hotel.name,
+        hotelAddress: hotel.address,
+        hotelCity: hotel.city,
         checkInDate: searchParams.checkIn,
         checkOutDate: searchParams.checkOut,
         numberOfGuests: searchParams.guests,
-        notes: searchParams.notes,
-        attachments: searchParams.attachments || []
+        roomType: searchParams.roomType,
+        stayType: searchParams.stayType,
+        paymentMethod: searchParams.paymentMethod,
+        expectedCheckInTime: searchParams.expectedCheckInTime,
+        specialRequests: searchParams.notes,
+        // Selected rate data
+        matchHash: searchParams.matchHash,
+        roomName: searchParams.roomName,
+        meal: searchParams.meal,
+        price: searchParams.hotelPrice,
+        currency: searchParams.currency || 'SAR',
+        additionalGuests: formattedGuests
       };
 
-      console.log('=== FRONTEND RESERVATION DATA ===');
-      console.log('Sending reservation data:', JSON.stringify(reservationData, null, 2));
+      console.log('=== FRONTEND BOOKING DATA ===');
+      console.log('Sending booking data:', JSON.stringify(bookingData, null, 2));
       console.log('=================================');
 
-      console.log('🔄 Starting reservation API call...');
+      console.log('🔄 Starting booking API call...');
 
-      // Create the reservation (this will show the default toast from API)
-      const result = await reservationsAPI.create(reservationData);
+      // Create the booking using the new API
+      const result = await bookingsAPI.create(bookingData);
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-      console.log(`✅ Reservation API call completed in ${duration}ms`);
-      console.log('📥 API Result:', result);      // Show our custom stylish toast
+      console.log(`✅ Booking API call completed in ${duration}ms`);
+      console.log('📥 API Result:', result);
+
+      // Show our custom stylish toast
       showBookingSuccessToast();
 
       // Close the modal and redirect to home page after a short delay
@@ -214,7 +212,7 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
     } catch (error) {
       const endTime = Date.now();
       const duration = endTime - startTime;
-      console.error('❌ HotelBookingModal: Error creating reservation');
+      console.error('❌ HotelBookingModal: Error creating booking');
       console.error('⏱️ Error occurred after:', duration, 'ms');
       console.error('🔍 Full error object:', error);
       console.error('📝 Error message:', error instanceof Error ? error.message : 'Unknown error');

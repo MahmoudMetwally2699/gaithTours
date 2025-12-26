@@ -18,13 +18,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
   const location = useLocation();
 
   const handleBookClick = () => {
-    if (isAuthenticated) {
-      // Call the original onBook callback for authenticated users
-      onBook();
-    } else {
-      // For unauthenticated users, redirect to login with current location
-      history.push('/login', { from: location });
-    }
+    // Allow all users (guest and authenticated) to proceed with booking
+    onBook();
   };
 
   return (
