@@ -24,9 +24,10 @@ export const PopularCities: React.FC = () => {
         const cityNames = ['Jeddah', 'Riyadh', 'Al Khobar', 'Makkah'];
 
         // Fetch hotel data for each city in parallel
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
         const cityPromises = cityNames.map(async (cityName, index) => {
           try {
-            const response = await fetch(`http://localhost:5001/api/hotels/suggested?location=${cityName}`);
+            const response = await fetch(`${API_URL}/api/hotels/suggested?location=${cityName}`);
             const data = await response.json();
 
             if (data.success && data.data.hotels && data.data.hotels.length > 0) {

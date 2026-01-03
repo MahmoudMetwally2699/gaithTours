@@ -154,7 +154,8 @@ export const MainSection: React.FC = () => {
     if (user && destination) {
       try {
         const token = localStorage.getItem('token');
-        await fetch('http://localhost:5001/api/users/history', {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+        await fetch(`${API_URL}/api/users/history`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
