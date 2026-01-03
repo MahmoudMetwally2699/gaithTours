@@ -3,10 +3,157 @@ const { protect } = require('../middleware/auth');
 const { successResponse, errorResponse } = require('../utils/helpers');
 const rateHawkService = require('../utils/RateHawkService');
 
+const jwt = require('jsonwebtoken'); // Added for optional auth
+const User = require('../models/User'); // Added for user history
 const router = express.Router();
 
-// In-memory cache for hotel search results
+// In-memory cache for hotel search results with longer TTL
 let hotelSearchCache = new Map();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+// Helper to get/set cache
+function getCachedResults(key) {
+  const cached = hotelSearchCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedResults(key, data) {
+  hotelSearchCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * Get personalized hotel suggestions
+ * GET /api/hotels/suggested
+ * Optional Query: location (for guest geolocation)
+ * Optional Header: Authorization (for user history)
+ */
+router.get('/suggested', async (req, res) => {
+  try {
+    let destination = null;
+    let source = 'fallback'; // history, location, fallback
+
+    // 1. Try to get user from token
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (user && user.lastSearchDestination) {
+          destination = user.lastSearchDestination;
+          source = 'history';
+        }
+      } catch (err) {
+        console.log('Optional auth failed:', err.message);
+      }
+    }
+
+    // 2. If no history, check query param (geolocation from frontend)
+    if (!destination && req.query.location) {
+      destination = req.query.location;
+      source = 'location';
+    }
+
+    // 3. Fallback
+    if (!destination) {
+      destination = 'Makkah'; // Default popular destination
+      source = 'fallback';
+    }
+
+    console.log(`💡 Getting suggestions for: ${destination} (Source: ${source})`);
+
+    // Check cache first
+    const cacheKey = `suggestions:${destination}`;
+    const cachedData = getCachedResults(cacheKey);
+
+    if (cachedData) {
+      console.log(`♻️  Serving cached results for ${destination}`);
+      return successResponse(res, cachedData, 'Suggestions retrieved from cache');
+    }
+
+    // Use existing search logic (simplified)
+    // First suggest to get region/hotel ID
+    let suggestions;
+    let searchResults = { hotels: [] };
+
+    try {
+      suggestions = await rateHawkService.suggest(destination);
+
+      if (suggestions.regions.length > 0 || suggestions.hotels.length > 0) {
+        // Pick first region or hotel
+        const target = suggestions.regions[0] || suggestions.hotels[0];
+        const regionId = target.region_id || target.id;
+
+        // Get dates (next weekend)
+        const dates = rateHawkService.constructor.getDefaultDates(7, 3);
+
+        // Search - smart enrichment leverages cache to serve more hotels
+        // With cache, we can request more hotels without extra API calls
+        searchResults = await rateHawkService.searchByRegion(regionId, {
+          ...dates,
+          adults: 2,
+          enrichmentLimit: 20 // Increased base limit (cache multiplies this further)
+        });
+      }
+    } catch (error) {
+      // Handle rate limiting - try to serve stale cache if available
+      if (error.response && error.response.status === 429) {
+        console.log(`⏰ Rate limit hit for ${destination}, checking for stale cache...`);
+
+        // Check for stale cache (up to 1 hour old)
+        const staleCached = hotelSearchCache.get(cacheKey);
+        if (staleCached && Date.now() - staleCached.timestamp < 60 * 60 * 1000) {
+          console.log(`✅ Serving stale cache for ${destination} (${Math.round((Date.now() - staleCached.timestamp) / 60000)} min old)`);
+          return successResponse(res, staleCached.data, 'Suggestions retrieved from cache (rate limited)');
+        }
+
+        // No cache available, return error
+        console.error('❌ No cached data available and rate limited');
+        return errorResponse(res, 'Service temporarily unavailable. Please try again in a moment.', 429);
+      }
+      throw error; // Re-throw non-rate-limit errors
+    }
+
+    // Filter to only include hotels with complete enrichment data (price, name, and real images)
+    const enrichedHotels = searchResults.hotels.filter(hotel => {
+      const hasValidPrice = hotel.price && hotel.price > 0;
+      const hasRealImage = hotel.image && !hotel.image.includes('placeholder') && !hotel.image.includes('via.placeholder');
+      const hasName = hotel.name && hotel.name.length > 0;
+      const wasEnriched = hotel.isEnriched !== false; // Check enrichment flag
+      return hasValidPrice && hasRealImage && hasName && wasEnriched;
+    });
+
+    const filteredCount = searchResults.hotels.length - enrichedHotels.length;
+    console.log(`✅ Returning ${Math.min(enrichedHotels.length, 9)} fully enriched hotels (filtered out ${filteredCount} incomplete)`);
+
+    // Returns top 9 fully enriched hotels (frontend will show best 6 with prices)
+    const suggestedHotels = enrichedHotels.slice(0, 9);
+
+    const responseData = {
+      hotels: suggestedHotels,
+      source,
+      destination
+    };
+
+    // Cache the successful result
+    setCachedResults(cacheKey, responseData);
+
+    successResponse(res, responseData, 'Suggestions retrieved successfully');
+
+  } catch (error) {
+    console.error('Suggestions error:', error);
+    errorResponse(res, 'Failed to get suggestions', 500);
+  }
+});
 
 /**
  * Suggest hotels and regions worldwide (autocomplete)

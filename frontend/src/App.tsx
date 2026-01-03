@@ -28,9 +28,11 @@ const AppContent = () => {
   const location = useLocation();
   const isAdminDashboard = location.pathname.startsWith('/admin/dashboard');
 
+  const isHome = location.pathname === '/';
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!isAdminDashboard && <Navbar />}
+      {!isAdminDashboard && !isHome && <Navbar />}
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />

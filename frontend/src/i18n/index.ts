@@ -6,37 +6,37 @@ import { ar } from './ar';
 
 // Translation resources
 const resources = {
-  en: {
-    translation: en
-  },
-  ar: {
-    translation: ar
-  }
+    en: {
+        translation: en
+    },
+    ar: {
+        translation: ar
+    }
 };
 
 i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources,
-    lng: 'ar', // Set Arabic as default language
-    fallbackLng: 'ar', // Set Arabic as fallback language
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+        resources,
+        lng: 'en', // Set Arabic as default language
+        fallbackLng: 'en', // Set Arabic as fallback language
 
-    debug: process.env.NODE_ENV === 'development',
+        debug: process.env.NODE_ENV === 'development',
 
-    interpolation: {
-      escapeValue: false,
-    },
+        interpolation: {
+            escapeValue: false,
+        },
 
-    detection: {
-      order: ['localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage', 'sessionStorage'],
-    },
+        detection: {
+            order: ['localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
+            caches: ['localStorage', 'sessionStorage'],
+        },
 
-    react: {
-      useSuspense: false,
-    },
-  });
+        react: {
+            useSuspense: false,
+        },
+    });
 
 // Set initial document direction based on default language
 document.dir = 'rtl';

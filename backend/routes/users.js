@@ -124,6 +124,36 @@ router.put('/profile', protect, [
   }
 });
 
+// Update user search history
+router.put('/history', protect, [
+  body('destination').notEmpty().withMessage('Destination is required').trim()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { destination } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { lastSearchDestination: destination },
+      { new: true }
+    );
+
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    successResponse(res, null, 'Search history updated successfully');
+
+  } catch (error) {
+    console.error('Update history error:', error);
+    errorResponse(res, 'Failed to update search history', 500);
+  }
+});
+
 // Delete user account
 router.delete('/account', protect, async (req, res) => {
   try {

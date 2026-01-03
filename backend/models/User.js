@@ -42,7 +42,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Nationality is required'],
     minlength: [2, 'Nationality must be at least 2 characters long']
-  },  preferredLanguage: {
+  },
+  lastSearchDestination: {
+    type: String,
+    trim: true
+  },
+  preferredLanguage: {
     type: String,
     enum: ['en', 'ar'],
     default: 'en'

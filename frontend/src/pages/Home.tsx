@@ -1,20 +1,20 @@
 import React from 'react';
 import { MainSection } from '../components/MainSection';
-import { InfographicSection } from '../components/InfographicSection';
-import { SpecialPricingCard } from '../components/SpecialPricingCard';
-import { SaudiDestinations } from '../components/SaudiDestinations';
-import { ExploreDestinations } from '../components/ExploreDestinations';
-import { BookingProcess } from '../components/BookingProcess';
+import { SuggestedHotels } from '../components/SuggestedHotels';
+import { OffersBanner } from '../components/OffersBanner';
+import { PopularProperties } from '../components/PopularProperties';
+import { PopularCities } from '../components/PopularCities';
+import { PopularCitiesWorldwide } from '../components/PopularCitiesWorldwide';
 
 export const Home: React.FC = () => {
   return (
-    <div className="min-h-screen">
+    <div className="flex flex-col min-h-screen">
       <MainSection />
-      <InfographicSection />
-      <SpecialPricingCard />
-      <SaudiDestinations />
-      <ExploreDestinations />
-      <BookingProcess />
+      <SuggestedHotels />
+      <OffersBanner />
+      <PopularProperties />
+      <PopularCities />
+      <PopularCitiesWorldwide />
     </div>
   );
 };

@@ -10,6 +10,10 @@ class RateHawkService {
     this.apiKey = process.env.RATEHAWK_API_KEY;
     this.baseUrl = 'https://api.worldota.net/api/b2b/v3';
 
+    // Cache for enriched hotel content (24 hour TTL)
+    this.contentCache = new Map();
+    this.cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
+
     if (!this.keyId || !this.apiKey) {
       console.warn('⚠️ RateHawk credentials not configured. Set RATEHAWK_KEY_ID and RATEHAWK_API_KEY in .env');
     }
@@ -85,7 +89,8 @@ class RateHawkService {
       children = [],
       residency = 'gb',
       language = 'en',
-      currency = 'SAR'
+      currency = 'SAR',
+      enrichmentLimit = 0 // Default 0 means no limit (enrich all)
     } = params;
 
     const response = await this.makeRequest('/search/serp/region/', 'POST', {
@@ -128,65 +133,118 @@ class RateHawkService {
     });
 
     // Fetch images for ALL hotels using Content API (max 100 per request)
-    const hotelHids = hotels.map(h => h.hid).filter(hid => hid);
+    let hotelHids = hotels.map(h => h.hid).filter(hid => hid);
+
+    // Smart enrichment: Check cache first to determine actual API call needs
+    let effectiveEnrichmentLimit = hotelHids.length;
+    if (enrichmentLimit > 0) {
+      const now = Date.now();
+      const cachedCount = hotelHids.filter(hid => {
+        const cached = this.contentCache.get(hid);
+        return cached && (now - cached.timestamp) < this.cacheTTL;
+      }).length;
+
+      const uncachedCount = hotelHids.length - cachedCount;
+
+      // Smart limit: cached hotels are "free", only limit uncached ones
+      // If we want max 15 API calls, but have 10 cached, we can serve 10 + 15 = 25 total
+      effectiveEnrichmentLimit = Math.min(hotelHids.length, cachedCount + enrichmentLimit);
+
+      if (uncachedCount > enrichmentLimit) {
+        console.log(`💡 Smart Enrichment: Serving ${effectiveEnrichmentLimit} hotels (${cachedCount} cached + ${enrichmentLimit} new API calls)`);
+        hotelHids = hotelHids.slice(0, effectiveEnrichmentLimit);
+      } else if (cachedCount > 0) {
+        console.log(`✨ Cache advantage: All ${hotelHids.length} hotels available (${cachedCount} cached, ${uncachedCount} new)`);
+      } else {
+        console.log(`📊 Enriching top ${enrichmentLimit} of ${hotelHids.length} hotels (0 cached)`);
+        hotelHids = hotelHids.slice(0, enrichmentLimit);
+      }
+    }
 
     console.log(`📍 Fetching location data for ${hotelHids.length} hotels using Content API`);
 
     if (hotelHids.length > 0) {
       try {
         const contentMap = new Map();
+        const now = Date.now();
 
-        // Split into batches of 100 (API limit)
-        const batchSize = 100;
-        const batches = [];
-        for (let i = 0; i < hotelHids.length; i += batchSize) {
-          batches.push(hotelHids.slice(i, i + batchSize));
+        // Separate cached and uncached hotels
+        const uncachedHids = [];
+        hotelHids.forEach(hid => {
+          const cached = this.contentCache.get(hid);
+          if (cached && (now - cached.timestamp) < this.cacheTTL) {
+            contentMap.set(hid, cached.data);
+          } else {
+            uncachedHids.push(hid);
+          }
+        });
+
+        if (contentMap.size > 0) {
+          console.log(`   ♻️  Using cached data for ${contentMap.size} hotels`);
         }
 
-        console.log(`   Processing ${batches.length} batch(es) of hotels`);
-
-        // Fetch all batches in parallel
-        const batchPromises = batches.map(async (batch, index) => {
-          try {
-            console.log(`   Fetching batch ${index + 1}/${batches.length} (${batch.length} hotels)`);
-            const response = await this.makeRequest('/content/v1/hotel_content_by_ids/', 'POST', {
-              hids: batch,
-              language
-            }, 'https://api.worldota.net/api');
-            return response.data || [];
-          } catch (error) {
-            console.error(`   ⚠️ Batch ${index + 1} failed:`, error.message);
-            return [];
-          }
-        });
-
-        const batchResults = await Promise.all(batchPromises);
-
-        // Combine all batch results
-        const allHotels = batchResults.flat();
-
-        allHotels.forEach(hotel => {
-          // Extract image URL - prefer images_ext, fallback to images
-          let imageUrl = null;
-          if (hotel.images_ext && hotel.images_ext.length > 0) {
-            imageUrl = hotel.images_ext[0].url?.replace('{size}', '640x400');
-          } else if (hotel.images && hotel.images.length > 0) {
-            imageUrl = hotel.images[0]?.url?.replace('{size}', '640x400');
+        // Only fetch uncached hotels
+        if (uncachedHids.length > 0) {
+          // Split into batches of 100 (API limit)
+          const batchSize = 100;
+          const batches = [];
+          for (let i = 0; i < uncachedHids.length; i += batchSize) {
+            batches.push(uncachedHids.slice(i, i + batchSize));
           }
 
-          contentMap.set(hotel.hid, {
-            image: imageUrl,
-            name: hotel.name,
-            address: hotel.address || '',
-            city: hotel.region?.name || '',
-            country: hotel.region?.country_code || 'SA',
-            star_rating: hotel.star_rating
+          console.log(`   Processing ${batches.length} batch(es) of hotels`);
+
+          // Fetch all batches in parallel
+          const batchPromises = batches.map(async (batch, index) => {
+            try {
+              console.log(`   Fetching batch ${index + 1}/${batches.length} (${batch.length} hotels)`);
+              const response = await this.makeRequest('/content/v1/hotel_content_by_ids/', 'POST', {
+                hids: batch,
+                language
+              }, 'https://api.worldota.net/api');
+              return response.data || [];
+            } catch (error) {
+              console.error(`   ⚠️ Batch ${index + 1} failed:`, error.message);
+              return [];
+            }
           });
-        });
+
+          const batchResults = await Promise.all(batchPromises);
+
+          // Combine all batch results
+          const allHotels = batchResults.flat();
+
+          allHotels.forEach(hotel => {
+            // Extract image URL - prefer images_ext, fallback to images
+            let imageUrl = null;
+            if (hotel.images_ext && hotel.images_ext.length > 0) {
+              imageUrl = hotel.images_ext[0].url?.replace('{size}', '640x400');
+            } else if (hotel.images && hotel.images.length > 0) {
+              imageUrl = hotel.images[0]?.url?.replace('{size}', '640x400');
+            }
+
+            const hotelData = {
+              image: imageUrl,
+              name: hotel.name,
+              address: hotel.address || '',
+              city: hotel.region?.name || '',
+              country: hotel.region?.country_code || 'SA',
+              star_rating: hotel.star_rating
+            };
+
+            contentMap.set(hotel.hid, hotelData);
+
+            // Cache the enriched data for future use
+            this.contentCache.set(hotel.hid, {
+              data: hotelData,
+              timestamp: Date.now()
+            });
+          });
+        }
 
         console.log(`✅ Content API returned ${contentMap.size} hotels with images`);
 
-        // Update hotels with Content API data
+        // Update hotels with Content API data and mark enrichment status
         hotels.forEach(hotel => {
           const content = contentMap.get(hotel.hid);
           if (content) {
@@ -196,6 +254,9 @@ class RateHawkService {
             if (content.city) hotel.city = content.city;
             if (content.country) hotel.country = content.country;
             if (content.star_rating) hotel.rating = content.star_rating;
+            hotel.isEnriched = true; // Mark as successfully enriched
+          } else {
+            hotel.isEnriched = false; // Not enriched
           }
         });
 

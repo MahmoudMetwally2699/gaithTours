@@ -659,3 +659,62 @@ body {
   background: linear-gradient(to bottom, rgba(139, 92, 246, 0.5), rgba(139, 92, 246, 0.8));
   background-clip: content-box;
 }
+
+/* Custom Date Picker Styling with Orange Theme */
+input[type="date"] {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8C00] focus:border-[#FF8C00] transition-all duration-200;
+  color-scheme: light;
+}
+
+/* Chrome, Safari, Edge date picker styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(53%) sepia(85%) saturate(1500%) hue-rotate(360deg) brightness(100%) contrast(101%);
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  color: #6b7280;
+  padding: 0 0.25rem;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #111827;
+  padding: 0 0.25rem;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus {
+  background-color: #FF8C00;
+  color: white;
+  border-radius: 0.25rem;
+  outline: none;
+}
+
+/* Firefox date picker */
+input[type="date"]::-moz-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(53%) sepia(85%) saturate(1500%) hue-rotate(360deg) brightness(100%) contrast(101%);
+}
+
+/* Date picker calendar popup styling (WebKit browsers) */
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(43%) sepia(95%) saturate(2000%) hue-rotate(360deg) brightness(95%) contrast(105%);
+}
+
+/* Additional styling for better UX */
+input[type="date"]:focus {
+  outline: none;
+  border-color: #FF8C00;
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+}
+
+input[type="date"]:hover {
+  border-color: #FF8C00;
+}
