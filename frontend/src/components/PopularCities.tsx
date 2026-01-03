@@ -19,25 +19,25 @@ export const PopularCities: React.FC = () => {
     {
       id: 1,
       name: 'Jeddah',
-      count: 0,
+      count: 245,
       image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif'
     },
     {
       id: 2,
       name: 'Riyadh',
-      count: 0,
+      count: 312,
       image: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 3,
       name: 'Al Khobar',
-      count: 0,
+      count: 128,
       image: 'https://images.unsplash.com/photo-1580837119756-563d608dd119?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 4,
       name: 'Makkah',
-      count: 0,
+      count: 487,
       image: 'https://images.unsplash.com/photo-1591604021695-0c69b7c05981?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     }
   ]);

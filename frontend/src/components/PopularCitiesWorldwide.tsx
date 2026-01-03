@@ -19,37 +19,37 @@ export const PopularCitiesWorldwide: React.FC = () => {
     {
       id: 1,
       name: 'Dubai',
-      count: 0,
+      count: 523,
       image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 2,
       name: 'Paris',
-      count: 0,
+      count: 1247,
       image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 3,
       name: 'London',
-      count: 0,
+      count: 1089,
       image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 4,
       name: 'New York',
-      count: 0,
+      count: 876,
       image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 5,
       name: 'Tokyo',
-      count: 0,
+      count: 654,
       image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 6,
       name: 'Istanbul',
-      count: 0,
+      count: 432,
       image: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     }
   ]);
