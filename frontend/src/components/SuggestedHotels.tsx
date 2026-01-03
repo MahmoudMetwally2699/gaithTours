@@ -41,8 +41,8 @@ export const SuggestedHotels: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      let url = `${API_URL}/api/hotels/suggested`;
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+      let url = `${API_URL}/hotels/suggested`;
       if (locationQuery) {
         url += `?location=${encodeURIComponent(locationQuery)}`;
       }

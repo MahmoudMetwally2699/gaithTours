@@ -27,19 +27,28 @@ const allowedOrigins = [
   'https://gaithtours.com',
   'https://www.gaithtours.com',
   'https://api.gaithtours.com',
-  'https://www.gaithtours.com',
   process.env.FRONTEND_URL,
   process.env.BACKEND_URL
 ].filter(Boolean);
+
+// Allow all Vercel preview URLs (*.vercel.app)
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow all *.vercel.app domains
+  if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
+  return false;
+};
 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
+      console.error('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },

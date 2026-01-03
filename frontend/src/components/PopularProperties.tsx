@@ -25,8 +25,8 @@ export const PopularProperties: React.FC = () => {
       try {
         setLoading(true);
         // Fetch popular hotels in Saudi Arabia (using Riyadh, Jeddah, or Makkah)
-        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-        const response = await fetch(`${API_URL}/api/hotels/suggested?location=Riyadh`);
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_URL}/hotels/suggested?location=Riyadh`);
         const data = await response.json();
 
         if (data.success && data.data.hotels) {
