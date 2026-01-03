@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useHistory } from 'react-router-dom';
@@ -14,64 +14,46 @@ export const PopularCitiesWorldwide: React.FC = () => {
   const { t } = useTranslation();
   const history = useHistory();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [cities, setCities] = useState<City[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCityData = async () => {
-      try {
-        setLoading(true);
-        // Popular international destinations
-        const cityNames = ['Dubai', 'Paris', 'London', 'New York', 'Tokyo', 'Istanbul'];
-
-        // Fetch hotel data for each city in parallel
-        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-        const cityPromises = cityNames.map(async (cityName, index) => {
-          try {
-            const response = await fetch(`${API_URL}/hotels/suggested?location=${cityName}`);
-            const data = await response.json();
-
-            if (data.success && data.data.hotels && data.data.hotels.length > 0) {
-              // Get the first hotel's image as the city image
-              const firstHotelWithImage = data.data.hotels.find((h: any) => h.image && !h.image.includes('placeholder'));
-
-              return {
-                id: index + 1,
-                name: cityName,
-                count: data.data.hotels.length,
-                image: firstHotelWithImage?.image || 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-              };
-            }
-
-            // Fallback if no data
-            return {
-              id: index + 1,
-              name: cityName,
-              count: 0,
-              image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-            };
-          } catch (error) {
-            console.error(`Error fetching data for ${cityName}:`, error);
-            return {
-              id: index + 1,
-              name: cityName,
-              count: 0,
-              image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-            };
-          }
-        });
-
-        const citiesData = await Promise.all(cityPromises);
-        setCities(citiesData);
-      } catch (error) {
-        console.error('Error fetching city data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCityData();
-  }, []);
+  // Static city data with curated images
+  const [cities] = useState<City[]>([
+    {
+      id: 1,
+      name: 'Dubai',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 2,
+      name: 'Paris',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 3,
+      name: 'London',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 4,
+      name: 'New York',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 5,
+      name: 'Tokyo',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 6,
+      name: 'Istanbul',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    }
+  ]);
+  const [loading] = useState(false);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {

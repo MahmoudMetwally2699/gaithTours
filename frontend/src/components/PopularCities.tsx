@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useHistory } from 'react-router-dom';
@@ -14,63 +14,34 @@ export const PopularCities: React.FC = () => {
   const { t } = useTranslation();
   const history = useHistory();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [cities, setCities] = useState<City[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCityData = async () => {
-      try {
-        setLoading(true);
-        const cityNames = ['Jeddah', 'Riyadh', 'Al Khobar', 'Makkah'];
-
-        // Fetch hotel data for each city in parallel
-        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-        const cityPromises = cityNames.map(async (cityName, index) => {
-          try {
-            const response = await fetch(`${API_URL}/hotels/suggested?location=${cityName}`);
-            const data = await response.json();
-
-            if (data.success && data.data.hotels && data.data.hotels.length > 0) {
-              // Get the first hotel's image as the city image
-              const firstHotelWithImage = data.data.hotels.find((h: any) => h.image && !h.image.includes('placeholder'));
-
-              return {
-                id: index + 1,
-                name: cityName,
-                count: data.data.hotels.length,
-                image: firstHotelWithImage?.image || 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-              };
-            }
-
-            // Fallback if no data
-            return {
-              id: index + 1,
-              name: cityName,
-              count: 0,
-              image: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-            };
-          } catch (error) {
-            console.error(`Error fetching data for ${cityName}:`, error);
-            return {
-              id: index + 1,
-              name: cityName,
-              count: 0,
-              image: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-            };
-          }
-        });
-
-        const citiesData = await Promise.all(cityPromises);
-        setCities(citiesData);
-      } catch (error) {
-        console.error('Error fetching city data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCityData();
-  }, []);
+  // Static city data with curated images
+  const [cities] = useState<City[]>([
+    {
+      id: 1,
+      name: 'Jeddah',
+      count: 0,
+      image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif'
+    },
+    {
+      id: 2,
+      name: 'Riyadh',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 3,
+      name: 'Al Khobar',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1580837119756-563d608dd119?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 4,
+      name: 'Makkah',
+      count: 0,
+      image: 'https://images.unsplash.com/photo-1591604021695-0c69b7c05981?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    }
+  ]);
+  const [loading] = useState(false);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
