@@ -1,4 +1,5 @@
 const axios = require('axios');
+require('dotenv').config();
 
 /**
  * RateHawk API Service
@@ -13,6 +14,30 @@ class RateHawkService {
     // Cache for enriched hotel content (24 hour TTL)
     this.contentCache = new Map();
     this.cacheTTL = 24 * 60 * 60 * 1000; // 24 hours
+    this.staleCacheTTL = 7 * 24 * 60 * 60 * 1000; // 7 days for stale cache fallback
+
+    // Cache for search results (shorter TTL for price freshness)
+    this.searchCache = new Map();
+    this.searchCacheTTL = 15 * 60 * 1000; // 15 minutes
+    this.searchStaleCacheTTL = 6 * 60 * 60 * 1000; // 6 hours for stale search results
+
+    // Rate limiting and circuit breaker
+    this.requestQueue = [];
+    this.isProcessingQueue = false;
+    this.requestDelay = 200; // Minimum ms between requests (increased from 100ms)
+    this.lastRequestTime = 0;
+
+    // Circuit breaker pattern
+    this.circuitBreaker = {
+      failures: 0,
+      threshold: 5, // Open circuit after 5 consecutive failures
+      resetTimeout: 60000, // Try again after 60 seconds
+      state: 'closed', // closed, open, half-open
+      lastFailureTime: 0
+    };
+
+    // Request batching to reduce API calls
+    this.pendingSearches = new Map();
 
     if (!this.keyId || !this.apiKey) {
       console.warn('⚠️ RateHawk credentials not configured. Set RATEHAWK_KEY_ID and RATEHAWK_API_KEY in .env');
@@ -20,13 +45,82 @@ class RateHawkService {
   }
 
   /**
-   * Make authenticated request to RateHawk API
+   * Sleep utility for delays
+   * @param {number} ms - Milliseconds to sleep
+   */
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Generate cache key for search results
+   */
+  generateSearchCacheKey(regionId, params) {
+    const { checkin, checkout, adults, children = [], currency = 'SAR' } = params;
+    return `search_${regionId}_${checkin}_${checkout}_${adults}_${children.join(',')}_${currency}`;
+  }
+
+  /**
+   * Check circuit breaker state
+   */
+  checkCircuitBreaker() {
+    const now = Date.now();
+
+    if (this.circuitBreaker.state === 'open') {
+      if (now - this.circuitBreaker.lastFailureTime > this.circuitBreaker.resetTimeout) {
+        console.log('🔄 Circuit breaker: Attempting half-open state');
+        this.circuitBreaker.state = 'half-open';
+        this.circuitBreaker.failures = 0;
+        return true;
+      }
+      console.log('⚡ Circuit breaker: OPEN - Using cache only');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Record circuit breaker failure
+   */
+  recordFailure() {
+    this.circuitBreaker.failures++;
+    this.circuitBreaker.lastFailureTime = Date.now();
+
+    if (this.circuitBreaker.failures >= this.circuitBreaker.threshold) {
+      this.circuitBreaker.state = 'open';
+      console.log(`🔴 Circuit breaker: OPENED after ${this.circuitBreaker.failures} failures - Pausing API calls for ${this.circuitBreaker.resetTimeout/1000}s`);
+    }
+  }
+
+  /**
+   * Record circuit breaker success
+   */
+  recordSuccess() {
+    if (this.circuitBreaker.state === 'half-open') {
+      console.log('✅ Circuit breaker: CLOSED - Resuming normal operation');
+      this.circuitBreaker.state = 'closed';
+    }
+    this.circuitBreaker.failures = 0;
+  }
+
+  /**
+   * Make authenticated request to RateHawk API with retry logic and rate limiting
    * @param {string} endpoint - API endpoint
    * @param {string} method - HTTP method
    * @param {object} data - Request payload
    * @param {string} customBaseUrl - Optional custom base URL (for Content API)
+   * @param {number} retries - Number of retries left
    */
-  async makeRequest(endpoint, method = 'POST', data = null, customBaseUrl = null) {
+  async makeRequest(endpoint, method = 'POST', data = null, customBaseUrl = null, retries = 3) {
+    // Rate limiting: Ensure minimum delay between requests
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.requestDelay) {
+      await this.sleep(this.requestDelay - timeSinceLastRequest);
+    }
+    this.lastRequestTime = Date.now();
+
     try {
       const baseUrl = customBaseUrl || this.baseUrl;
       const config = {
@@ -46,8 +140,21 @@ class RateHawkService {
       }
 
       const response = await axios(config);
+      this.recordSuccess();
       return response.data;
     } catch (error) {
+      // Handle rate limiting (429) with exponential backoff
+      if (error.response?.status === 429) {
+        this.recordFailure();
+
+        if (retries > 0) {
+          const backoffDelay = (4 - retries) * 3000; // 3s, 6s, 9s
+          console.log(`⏰ Rate limit hit, retrying in ${backoffDelay/1000}s (${retries} retries left)...`);
+          await this.sleep(backoffDelay);
+          return this.makeRequest(endpoint, method, data, customBaseUrl, retries - 1);
+        }
+      }
+
       console.error('RateHawk API Error:', {
         endpoint,
         status: error.response?.status,
@@ -76,7 +183,7 @@ class RateHawkService {
   }
 
   /**
-   * Search hotels by region
+   * Search hotels by region with intelligent caching
    * @param {number} regionId - Region ID from suggest()
    * @param {Object} params - Search parameters
    * @returns {Promise<Object>} - Hotel search results with rates
@@ -93,11 +200,38 @@ class RateHawkService {
       enrichmentLimit = 0 // Default 0 means no limit (enrich all)
     } = params;
 
-    const response = await this.makeRequest('/search/serp/region/', 'POST', {
-      region_id: regionId,
-      checkin,
-      checkout,
-      residency,
+    // Generate cache key for this search
+    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency });
+    const now = Date.now();
+
+    // Check fresh cache first
+    const cachedSearch = this.searchCache.get(cacheKey);
+    if (cachedSearch && (now - cachedSearch.timestamp) < this.searchCacheTTL) {
+      const age = Math.round((now - cachedSearch.timestamp) / 1000 / 60);
+      console.log(`✨ Using cached search results (${age} min old)`);
+      return cachedSearch.data;
+    }
+
+    // Check circuit breaker before making API call
+    const canMakeRequest = this.checkCircuitBreaker();
+
+    if (!canMakeRequest) {
+      // Circuit breaker is open, try stale cache
+      if (cachedSearch && (now - cachedSearch.timestamp) < this.searchStaleCacheTTL) {
+        const age = Math.round((now - cachedSearch.timestamp) / 1000 / 60);
+        console.log(`⚡ Circuit breaker open - Using stale cache (${age} min old)`);
+        return cachedSearch.data;
+      }
+      throw new Error('Service temporarily unavailable - please try again in a moment');
+    }
+
+    // Try to make the API request
+    try {
+      const response = await this.makeRequest('/search/serp/region/', 'POST', {
+        region_id: regionId,
+        checkin,
+        checkout,
+        residency,
       language,
       guests: [
         {
@@ -194,52 +328,60 @@ class RateHawkService {
 
           console.log(`   Processing ${batches.length} batch(es) of hotels`);
 
-          // Fetch all batches in parallel
-          const batchPromises = batches.map(async (batch, index) => {
+          // Fetch batches sequentially to avoid rate limiting
+          for (let i = 0; i < batches.length; i++) {
+            const batch = batches[i];
             try {
-              console.log(`   Fetching batch ${index + 1}/${batches.length} (${batch.length} hotels)`);
+              console.log(`   Fetching batch ${i + 1}/${batches.length} (${batch.length} hotels)`);
               const response = await this.makeRequest('/content/v1/hotel_content_by_ids/', 'POST', {
                 hids: batch,
                 language
               }, 'https://api.worldota.net/api');
-              return response.data || [];
+
+              const batchHotels = response.data || [];
+
+              batchHotels.forEach(hotel => {
+                // Extract image URL - prefer images_ext, fallback to images
+                let imageUrl = null;
+                if (hotel.images_ext && hotel.images_ext.length > 0) {
+                  imageUrl = hotel.images_ext[0].url?.replace('{size}', '640x400');
+                } else if (hotel.images && hotel.images.length > 0) {
+                  imageUrl = hotel.images[0]?.url?.replace('{size}', '640x400');
+                }
+
+                const hotelData = {
+                  image: imageUrl,
+                  name: hotel.name,
+                  address: hotel.address || '',
+                  city: hotel.region?.name || '',
+                  country: hotel.region?.country_code || 'SA',
+                  star_rating: hotel.star_rating
+                };
+
+                contentMap.set(hotel.hid, hotelData);
+
+                // Cache the enriched data for future use
+                this.contentCache.set(hotel.hid, {
+                  data: hotelData,
+                  timestamp: Date.now()
+                });
+              });
             } catch (error) {
-              console.error(`   ⚠️ Batch ${index + 1} failed:`, error.message);
-              return [];
+              console.error(`   ⚠️ Batch ${i + 1} failed:`, error.message);
+
+              // On rate limit (429), try to use stale cache as fallback
+              if (error.response?.status === 429) {
+                console.log(`⏰ Rate limit hit, checking for stale cache...`);
+                batch.forEach(hid => {
+                  const cached = this.contentCache.get(hid);
+                  if (cached && (now - cached.timestamp) < this.staleCacheTTL) {
+                    console.log(`   ✅ Using stale cache for HID ${hid} (${Math.round((now - cached.timestamp) / (1000 * 60 * 60))}h old)`);
+                    contentMap.set(hid, cached.data);
+                  }
+                });
+              }
             }
-          });
-
-          const batchResults = await Promise.all(batchPromises);
-
-          // Combine all batch results
-          const allHotels = batchResults.flat();
-
-          allHotels.forEach(hotel => {
-            // Extract image URL - prefer images_ext, fallback to images
-            let imageUrl = null;
-            if (hotel.images_ext && hotel.images_ext.length > 0) {
-              imageUrl = hotel.images_ext[0].url?.replace('{size}', '640x400');
-            } else if (hotel.images && hotel.images.length > 0) {
-              imageUrl = hotel.images[0]?.url?.replace('{size}', '640x400');
-            }
-
-            const hotelData = {
-              image: imageUrl,
-              name: hotel.name,
-              address: hotel.address || '',
-              city: hotel.region?.name || '',
-              country: hotel.region?.country_code || 'SA',
-              star_rating: hotel.star_rating
-            };
-
-            contentMap.set(hotel.hid, hotelData);
-
-            // Cache the enriched data for future use
-            this.contentCache.set(hotel.hid, {
-              data: hotelData,
-              timestamp: Date.now()
-            });
-          });
+          }
         }
 
         console.log(`✅ Content API returned ${contentMap.size} hotels with images`);
@@ -268,11 +410,35 @@ class RateHawkService {
       }
     }
 
-    return {
+    const result = {
       hotels,
       total: hotels.length,
       debug: response.debug
     };
+
+    // Cache the search result for future use
+    this.searchCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+
+    return result;
+    } catch (error) {
+      // On 429 error, try to serve stale cache
+      if (error.response?.status === 429) {
+        console.log(`⏰ Rate limit hit for region ${regionId}, checking for stale cache...`);
+
+        if (cachedSearch && (now - cachedSearch.timestamp) < this.searchStaleCacheTTL) {
+          const age = Math.round((now - cachedSearch.timestamp) / 1000 / 60);
+          console.log(`✅ Serving stale cache for region ${regionId} (${age} min old)`);
+          return cachedSearch.data;
+        }
+
+        console.log(`❌ No cached data available and rate limited`);
+      }
+
+      throw error;
+    }
   }
 
   /**

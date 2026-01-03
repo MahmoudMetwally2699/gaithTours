@@ -106,6 +106,13 @@
 /* Month container */
 .react-datepicker__month-container {
   padding: 0.5rem;
+  display: inline-block;
+  float: left;
+}
+
+/* Ensure multiple months display horizontally */
+.react-datepicker {
+  display: flex !important;
 }
 
 /* Remove keyboard selected styling */

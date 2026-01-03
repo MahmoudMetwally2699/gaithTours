@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
 const { initializeSocket } = require('./socket');
+const cacheWarmer = require('./utils/cacheWarmer');
 require('dotenv').config();
 
 const app = express();
@@ -225,6 +226,38 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Manual cache warming endpoint (protected)
+app.post('/api/admin/warm-cache', async (req, res) => {
+  try {
+    const { adminKey } = req.body;
+
+    // Simple admin key check
+    if (adminKey !== process.env.ADMIN_SECRET_KEY) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    console.log('🔥 Manual cache warming triggered');
+
+    // Run cache warming in background
+    cacheWarmer.warmAllDestinations().catch(err => {
+      console.error('Cache warming error:', err);
+    });
+
+    res.json({
+      success: true,
+      message: 'Cache warming started in background'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -248,5 +281,11 @@ module.exports = server;
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+
+    // Start cache warmer for popular destinations (only in non-serverless env)
+    if (process.env.ENABLE_CACHE_WARMER === 'true') {
+      console.log('🌡️  Starting cache warmer...');
+      cacheWarmer.startPeriodicWarmup();
+    }
   });
 }

@@ -30,9 +30,76 @@ export const MainSection: React.FC = () => {
   const [guests, setGuests] = useState({ rooms: 1, adults: 2, children: 0 });
   const [isWorkTravel, setIsWorkTravel] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [userLocation, setUserLocation] = useState<string>('');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   // Refs
   const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Request user's location on mount
+  useEffect(() => {
+    const requestLocation = () => {
+      if ('geolocation' in navigator) {
+        setIsDetectingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+
+            // Reverse geocode to get city name
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`
+              );
+              const data = await response.json();
+
+              const city = data.address?.city ||
+                          data.address?.town ||
+                          data.address?.village ||
+                          data.address?.state ||
+                          '';
+
+              if (city) {
+                setUserLocation(city);
+                setDestination(city);
+              }
+            } catch (error) {
+              console.error('Error getting location name:', error);
+            } finally {
+              setIsDetectingLocation(false);
+            }
+          },
+          (error) => {
+            console.log('Location access denied or unavailable:', error);
+            setIsDetectingLocation(false);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 5000,
+            maximumAge: 300000 // Cache location for 5 minutes
+          }
+        );
+      }
+    };
+
+    requestLocation();
+  }, [i18n.language]);
+
+  // Close date picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDatePicker]);
 
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setCheckInDate(startDate);
@@ -209,14 +276,23 @@ export const MainSection: React.FC = () => {
                  {/* Destination */}
                  <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
                     <MapPinIcon className="w-6 h-6 text-gray-400" />
-                    <input
-                      type="text"
-                      value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
-                      placeholder="where to ?"
-                      className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg"
-                      required
-                    />
+                    <div className="flex-1 flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={destination}
+                        onChange={(e) => setDestination(e.target.value)}
+                        placeholder={isDetectingLocation ? "Detecting location..." : "where to ?"}
+                        className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg"
+                        required
+                        disabled={isDetectingLocation}
+                      />
+                      {isDetectingLocation && (
+                        <svg className="animate-spin h-5 w-5 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
+                    </div>
                  </div>
 
                  {/* Dates */}
