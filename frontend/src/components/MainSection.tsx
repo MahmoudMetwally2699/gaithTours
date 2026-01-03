@@ -30,11 +30,13 @@ export const MainSection: React.FC = () => {
   const [guests, setGuests] = useState({ rooms: 1, adults: 2, children: 0 });
   const [isWorkTravel, setIsWorkTravel] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showGuestPicker, setShowGuestPicker] = useState(false);
   const [userLocation, setUserLocation] = useState<string>('');
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   // Refs
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const guestPickerRef = useRef<HTMLDivElement>(null);
 
   // Request user's location on mount
   useEffect(() => {
@@ -100,6 +102,23 @@ export const MainSection: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showDatePicker]);
+
+  // Close guest picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (guestPickerRef.current && !guestPickerRef.current.contains(event.target as Node)) {
+        setShowGuestPicker(false);
+      }
+    };
+
+    if (showGuestPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showGuestPicker]);
 
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setCheckInDate(startDate);
@@ -328,14 +347,109 @@ export const MainSection: React.FC = () => {
                  </div>
 
                  {/* Guests */}
-                 <div className="flex-1 w-full p-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                       {/* <UserIcon className="w-6 h-6 text-gray-400" /> */}
+                 <div className="flex-1 w-full p-4 flex items-center justify-between relative" ref={guestPickerRef}>
+                    <div
+                      className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer w-full"
+                      onClick={() => setShowGuestPicker(!showGuestPicker)}
+                    >
+                       <UserIcon className="w-6 h-6 text-gray-700" />
                        <span className="text-gray-700 text-lg">
                           {guests.rooms} room, {guests.adults} adults, {guests.children} children
                        </span>
                     </div>
-                    {/* Placeholder for droplet/dropdown arrow */}
+
+                    {/* Guest Picker Popup */}
+                    {showGuestPicker && (
+                      <div className="absolute top-full right-0 mt-2 z-50 bg-white rounded-2xl shadow-2xl p-6 w-80">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Rooms and Guests</h3>
+
+                        {/* Rooms */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                          <div>
+                            <p className="font-medium text-gray-800">Rooms</p>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => setGuests(prev => ({ ...prev, rooms: Math.max(1, prev.rooms - 1) }))}
+                              disabled={guests.rooms <= 1}
+                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center font-medium text-gray-800">{guests.rooms}</span>
+                            <button
+                              type="button"
+                              onClick={() => setGuests(prev => ({ ...prev, rooms: prev.rooms + 1 }))}
+                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Adults */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                          <div>
+                            <p className="font-medium text-gray-800">Adults</p>
+                            <p className="text-xs text-gray-500">18+yrs</p>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => setGuests(prev => ({ ...prev, adults: Math.max(1, prev.adults - 1) }))}
+                              disabled={guests.adults <= 1}
+                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center font-medium text-gray-800">{guests.adults}</span>
+                            <button
+                              type="button"
+                              onClick={() => setGuests(prev => ({ ...prev, adults: prev.adults + 1 }))}
+                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Children */}
+                        <div className="flex items-center justify-between py-3">
+                          <div>
+                            <p className="font-medium text-gray-800">Children</p>
+                            <p className="text-xs text-gray-500">0-17yrs</p>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => setGuests(prev => ({ ...prev, children: Math.max(0, prev.children - 1) }))}
+                              disabled={guests.children <= 0}
+                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center font-medium text-gray-800">{guests.children}</span>
+                            <button
+                              type="button"
+                              onClick={() => setGuests(prev => ({ ...prev, children: prev.children + 1 }))}
+                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Done Button */}
+                        <button
+                          type="button"
+                          onClick={() => setShowGuestPicker(false)}
+                          className="w-full mt-4 bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    )}
                  </div>
 
                  {/* Search Button */}
