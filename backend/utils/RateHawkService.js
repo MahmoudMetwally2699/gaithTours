@@ -242,10 +242,18 @@ class RateHawkService {
       currency
     });
 
-    // Normalize response to match frontend expectations
+      // Normalize response to match frontend expectations
     const hotels = (response.data?.hotels || []).map(hotel => {
       const firstRate = hotel.rates?.[0];
       const paymentType = firstRate?.payment_options?.payment_types?.[0];
+
+      // Check for free cancellation and prepayment
+      const paymentOptions = firstRate?.payment_options;
+      const cancellationPenalties = firstRate?.cancellation_penalties;
+
+      const isFreeCancellation = this.checkFreeCancellation(cancellationPenalties);
+      const isNoPrepayment = paymentOptions?.payment_types?.some(pt => pt.is_need_credit_card_data === false) ||
+                             paymentOptions?.pay_at_hotel === true;
 
       // Generate placeholder image (will be replaced with real images if available)
       const placeholderImage = `https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=${encodeURIComponent(hotel.id.substring(0, 20))}`;
@@ -262,7 +270,11 @@ class RateHawkService {
         image: placeholderImage,
         match_hash: firstRate?.match_hash,
         meal: firstRate?.meal,
-        room_name: firstRate?.room_name
+        room_name: firstRate?.room_name,
+        // Rate policies for filters
+        free_cancellation: isFreeCancellation,
+        no_prepayment: isNoPrepayment,
+        payment_options: paymentOptions
       };
     });
 
@@ -349,13 +361,29 @@ class RateHawkService {
                   imageUrl = hotel.images[0]?.url?.replace('{size}', '640x400');
                 }
 
+                // Extract amenities
+                const amenities = [];
+                if (hotel.amenity_groups) {
+                  hotel.amenity_groups.forEach(group => {
+                    if (group.amenities) {
+                      group.amenities.forEach(amenity => {
+                         // Amenities can be strings or objects with name property
+                         const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
+                         if (amenityName) amenities.push(amenityName.toLowerCase());
+                      });
+                    }
+                  });
+                }
+
                 const hotelData = {
                   image: imageUrl,
                   name: hotel.name,
                   address: hotel.address || '',
                   city: hotel.region?.name || '',
                   country: hotel.region?.country_code || 'SA',
-                  star_rating: hotel.star_rating
+                  star_rating: hotel.star_rating,
+                  amenities: amenities,
+                  facilities: amenities // Alias for compatibility
                 };
 
                 contentMap.set(hotel.hid, hotelData);
@@ -395,7 +423,14 @@ class RateHawkService {
             if (content.address) hotel.address = content.address;
             if (content.city) hotel.city = content.city;
             if (content.country) hotel.country = content.country;
-            if (content.star_rating) hotel.rating = content.star_rating;
+            // star_rating = hotel stars (1-5) from Content API
+            // rating = review score (1-10) from Search API - keep it unchanged!
+            if (content.star_rating) hotel.star_rating = content.star_rating;
+
+            // Add amenities to the hotel object
+            if (content.amenities) hotel.amenities = content.amenities;
+            if (content.facilities) hotel.facilities = content.facilities;
+
             hotel.isEnriched = true; // Mark as successfully enriched
           } else {
             hotel.isEnriched = false; // Not enriched

@@ -11,6 +11,7 @@ interface ExtendedHotel extends Hotel {
   currency?: string;
   reviewCount?: number;
   reviewScoreWord?: string;
+  star_rating?: number; // Actual hotel star rating (1-5)
 }
 
 export const PopularProperties: React.FC = () => {
@@ -24,33 +25,61 @@ export const PopularProperties: React.FC = () => {
     const fetchPopularHotels = async () => {
       try {
         setLoading(true);
-        // Fetch popular hotels in Saudi Arabia (using Riyadh, Jeddah, or Makkah)
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-        const response = await fetch(`${API_URL}/hotels/suggested?location=Riyadh`);
-        const data = await response.json();
 
-        if (data.success && data.data.hotels) {
-          // Filter hotels with prices and sort by rating (highest first)
-          const popularHotels = data.data.hotels
-            .filter((h: ExtendedHotel) => {
-              const hasPrice = h.price && h.price > 0;
-              const hasRating = h.rating && h.rating > 0;
-              return hasPrice && hasRating;
-            })
-            .sort((a: ExtendedHotel, b: ExtendedHotel) => {
-              // Primary sort: rating (highest first)
-              const ratingDiff = (b.rating || 0) - (a.rating || 0);
-              if (ratingDiff !== 0) return ratingDiff;
+        // Fetch from multiple major Saudi cities to get more 5-star hotels
+        const cities = ['Riyadh', 'Jeddah', 'Makkah'];
+        const allHotels: ExtendedHotel[] = [];
 
-              // Secondary sort: price (lower first for same rating)
-              return (a.price || 0) - (b.price || 0);
-            })
-            .slice(0, 15); // Limit to top 15 properties
+        for (const city of cities) {
+          try {
+            const response = await fetch(`${API_URL}/hotels/suggested?location=${city}`);
+            const data = await response.json();
 
-          setHotels(popularHotels);
+            if (data.success && data.data.hotels) {
+              allHotels.push(...data.data.hotels);
+            }
+          } catch (error) {
+            console.error(`Error fetching hotels from ${city}:`, error);
+          }
         }
+
+        // Debug: Log all hotels before filtering
+        console.log(`📊 Total hotels fetched: ${allHotels.length}`);
+        console.log('Hotel data:', allHotels.map(h => ({
+          name: h.name,
+          star_rating: h.star_rating,
+          rating: h.rating,
+          price: h.price
+        })));
+
+        // Filter for 5-star hotels using star_rating field (1-5 scale)
+        const popularHotels = allHotels
+          .filter((h: ExtendedHotel) => {
+            const hasPrice = h.price && h.price > 0;
+            const isFiveStar = h.star_rating && h.star_rating >= 5; // Only 5-star hotels
+            return hasPrice && isFiveStar;
+          })
+          .sort((a: ExtendedHotel, b: ExtendedHotel) => {
+            // Primary sort: star_rating (highest first)
+            const ratingDiff = (b.star_rating || 0) - (a.star_rating || 0);
+            if (ratingDiff !== 0) return ratingDiff;
+
+            // Secondary sort: price (lower first for same rating)
+            return (a.price || 0) - (b.price || 0);
+          })
+          .slice(0, 15); // Limit to top 15 properties
+
+        console.log(`✅ Filtered to ${popularHotels.length} 5-star hotels`);
+        console.log('Filtered hotels:', popularHotels.map(h => ({
+          name: h.name,
+          star_rating: h.star_rating,
+          price: h.price
+        })));
+
+        setHotels(popularHotels);
       } catch (error) {
-        console.error('Error fetching popular properties:', error);
+        console.error('Error fetching popular 5-star properties:', error);
       } finally {
         setLoading(false);
       }
@@ -72,7 +101,7 @@ export const PopularProperties: React.FC = () => {
   if (loading) {
     return (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8">Popular properties in Saudi Arabia</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-8">Popular 5-star hotels in Saudi Arabia</h2>
         <div className="flex gap-6 overflow-x-auto pb-8">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="min-w-[300px] md:min-w-[340px] bg-white rounded-[2rem] overflow-hidden shadow-sm h-[450px] animate-pulse border border-gray-100 flex flex-col">
@@ -108,7 +137,7 @@ export const PopularProperties: React.FC = () => {
     // Show a message instead of hiding completely
     return (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8">Popular properties in Saudi Arabia</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-8">Popular 5-star hotels in Saudi Arabia</h2>
         <p className="text-gray-500 text-center py-8">Loading popular properties...</p>
       </section>
     );
@@ -121,7 +150,7 @@ export const PopularProperties: React.FC = () => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">Popular properties in Saudi Arabia</h2>
+        <h2 className="text-2xl font-bold text-gray-800">Popular 5-star hotels in Saudi Arabia</h2>
         <div className="flex gap-2">
            <button
             onClick={() => scroll('left')}

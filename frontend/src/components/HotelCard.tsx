@@ -58,10 +58,12 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
           }}
         />
 
-        {/* Rating Badge (Overlapping) */}
-        {hotel.rating && (
+        {/* Rating Badge (Overlapping) - Only show if valid review score exists */}
+        {typeof hotel.rating === 'number' && hotel.rating > 0 && (
           <div className="absolute -bottom-6 right-6 bg-[#FF8C00] text-white rounded-xl w-14 h-14 flex flex-col items-center justify-center shadow-md z-10">
-            <span className="text-xl font-bold leading-none">{hotel.rating}</span>
+            <span className="text-xl font-bold leading-none">
+              {Math.min(hotel.rating, 10).toFixed(1)}
+            </span>
           </div>
         )}
       </div>
@@ -83,12 +85,12 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
               {hotel.name}
             </h3>
 
-            {/* Stars */}
+            {/* Stars - use star_rating field directly (1-5 scale) */}
             <div className="flex items-center mt-1">
               {[...Array(5)].map((_, i) => (
                 <StarIcon
                   key={i}
-                  className={`h-5 w-5 ${i < (hotel.rating ? Math.round(hotel.rating / 2) : 0) ? 'text-[#eec85a]' : 'text-gray-200'}`}
+                  className={`h-5 w-5 ${i < ((hotel as any).star_rating || Math.round((hotel.rating || 0) / 2)) ? 'text-[#eec85a]' : 'text-gray-200'}`}
                 />
               ))}
             </div>
