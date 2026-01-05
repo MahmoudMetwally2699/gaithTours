@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -12,7 +12,7 @@ import {
   UserIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { searchHotels } from '../services/hotelService';
@@ -33,6 +33,19 @@ interface SearchFilters {
   propertyTypes: string[];
   facilities: string[];
   sortBy: string;
+}
+
+// Autocomplete types
+interface AutocompleteSuggestion {
+  id: string | number;
+  name: string;
+  type: string;
+  hid?: number;
+}
+
+interface AutocompleteResults {
+  hotels: AutocompleteSuggestion[];
+  regions: AutocompleteSuggestion[];
 }
 
 // Helper function to get review score text
@@ -152,6 +165,7 @@ export const HotelSearchResults: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [fullscreenMap, setFullscreenMap] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+  const [editableDestination, setEditableDestination] = useState(searchQuery.destination);
 
   const [filters, setFilters] = useState<SearchFilters>({
     priceRange: [0, 5000],
@@ -160,6 +174,13 @@ export const HotelSearchResults: React.FC = () => {
     facilities: [],
     sortBy: 'top_picks'
   });
+
+  // Autocomplete state
+  const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({ hotels: [], regions: [] });
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [isLoadingAutocomplete, setIsLoadingAutocomplete] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+  const hasUserTyped = useRef(false); // Prevent dropdown on page load
 
   const hotelsPerPage = 20;
 
@@ -174,6 +195,74 @@ export const HotelSearchResults: React.FC = () => {
     { id: 'spa', label: 'Spa' },
     { id: 'gym', label: 'Fitness center' }
   ];
+
+  // Autocomplete: debounced API call
+  useEffect(() => {
+    // Only fetch if user has actually typed
+    if (!hasUserTyped.current) {
+      return;
+    }
+
+    if (editableDestination.length < 2) {
+      setAutocompleteResults({ hotels: [], regions: [] });
+      setShowAutocomplete(false);
+      return;
+    }
+
+    const fetchSuggestions = async () => {
+      setIsLoadingAutocomplete(true);
+      try {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_URL}/hotels/suggest?query=${encodeURIComponent(editableDestination)}`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          const hotels = Array.isArray(data.data.hotels) ? data.data.hotels : [];
+          setAutocompleteResults({ hotels, regions: [] });
+          if (hotels.length > 0) {
+            setShowAutocomplete(true);
+          }
+        }
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+        setAutocompleteResults({ hotels: [], regions: [] });
+      } finally {
+        setIsLoadingAutocomplete(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [editableDestination]);
+
+  // Close autocomplete when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+        setShowAutocomplete(false);
+      }
+    };
+
+    if (showAutocomplete) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAutocomplete]);
+
+  // Handle autocomplete selection
+  const handleSelectSuggestion = (suggestion: AutocompleteSuggestion) => {
+    hasUserTyped.current = false; // Reset so dropdown doesn't show on next page load
+    setEditableDestination(suggestion.name);
+    setShowAutocomplete(false);
+    setAutocompleteResults({ hotels: [], regions: [] });
+    // Navigate to search with the selected hotel
+    const params = new URLSearchParams(location.search);
+    params.set('destination', suggestion.name);
+    history.push(`/hotels/search?${params.toString()}`);
+  };
 
   // Search hotels
   useEffect(() => {
@@ -271,8 +360,16 @@ export const HotelSearchResults: React.FC = () => {
       return hotel.price >= filters.priceRange[0] && hotel.price <= filters.priceRange[1];
     });
 
-    // Sort hotels
+    // Sort hotels - always keep searched hotel first
     filtered.sort((a, b) => {
+      // Keep the searched hotel at the top - check isSearchedHotel flag OR match by name
+      const destinationLower = searchQuery.destination.toLowerCase();
+      const aIsSearched = (a as any).isSearchedHotel || a.name.toLowerCase().includes(destinationLower) || destinationLower.includes(a.name.toLowerCase());
+      const bIsSearched = (b as any).isSearchedHotel || b.name.toLowerCase().includes(destinationLower) || destinationLower.includes(b.name.toLowerCase());
+
+      if (aIsSearched && !bIsSearched) return -1;
+      if (!aIsSearched && bIsSearched) return 1;
+
       switch (filters.sortBy) {
         case 'price_low':
           if (!a.price || a.price === 0) return 1;
@@ -403,15 +500,67 @@ export const HotelSearchResults: React.FC = () => {
             <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
 
               {/* Destination */}
-              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
-                <MapPinIcon className="w-6 h-6 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery.destination}
-                  placeholder="where to ?"
-                  className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg"
-                  readOnly
-                />
+              <div className="flex-[1.5] w-full p-4 flex items-center space-x-3 rtl:space-x-reverse min-w-0 relative" ref={autocompleteRef}>
+                <MapPinIcon className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 flex flex-col relative min-w-0">
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <input
+                      type="text"
+                      value={editableDestination}
+                      onChange={(e) => {
+                        hasUserTyped.current = true;
+                        setEditableDestination(e.target.value);
+                      }}
+                      onFocus={() => {
+                        if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
+                          setShowAutocomplete(true);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          setShowAutocomplete(false);
+                          const params = new URLSearchParams(location.search);
+                          params.set('destination', editableDestination);
+                          history.push(`/hotels/search?${params.toString()}`);
+                        }
+                      }}
+                      title={editableDestination}
+                      placeholder="where to ?"
+                      className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg truncate"
+                      autoComplete="off"
+                    />
+                    {isLoadingAutocomplete && (
+                      <svg className="animate-spin h-5 w-5 text-orange-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Autocomplete Dropdown */}
+                  {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto">
+                      <div className="p-2">
+                        <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Hotels</p>
+                        {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                          <button
+                            key={hotel.id}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(hotel)}
+                            className="w-full flex items-center space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
+                          >
+                            <BuildingOffice2Icon className="w-5 h-5 text-gray-500" />
+                            <div>
+                              <p className="text-gray-800 font-medium">{hotel.name}</p>
+                              <p className="text-xs text-gray-400">Hotel</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Dates */}
@@ -798,9 +947,9 @@ export const HotelSearchResults: React.FC = () => {
                                   <div className="text-sm font-medium text-gray-900">
                                     {getScoreText(hotel.rating)}
                                   </div>
-                                  {hotel.reviewCount && hotel.reviewCount > 0 && (
+                                  {(hotel.reviewCount ?? 0) > 0 && (
                                     <div className="text-xs text-gray-500">
-                                      {hotel.reviewCount.toLocaleString()} reviews
+                                      {hotel.reviewCount?.toLocaleString()} reviews
                                     </div>
                                   )}
                                 </div>
@@ -814,7 +963,11 @@ export const HotelSearchResults: React.FC = () => {
                           {/* Price and Action */}
                           <div className="flex items-end justify-end mt-4 pt-3 border-t border-gray-100 gap-4">
                             <div className="text-right">
-                              {hotel.price && hotel.price > 0 ? (
+                              {(hotel as any).noRatesAvailable ? (
+                                <div className="text-sm font-medium text-red-500">
+                                  No rooms available
+                                </div>
+                              ) : hotel.price && hotel.price > 0 ? (
                                 <>
                                   <div className="text-xs text-gray-500">1 night, {searchQuery.adults} adults</div>
                                   <div className="text-xl font-bold text-gray-900">

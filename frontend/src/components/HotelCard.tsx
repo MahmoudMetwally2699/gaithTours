@@ -46,7 +46,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
       onClick={onBook}
     >
       {/* Image Container */}
-      <div className="relative h-64 w-full bg-gray-100">
+      <div className="relative h-56 w-full bg-gray-100">
         <img
           src={hotel.image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={hotel.name}

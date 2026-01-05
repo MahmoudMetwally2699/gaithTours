@@ -211,7 +211,7 @@ export const SuggestedHotels: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {hotels
             .filter(h => h.price && h.price > 0)
             .slice(0, 6)

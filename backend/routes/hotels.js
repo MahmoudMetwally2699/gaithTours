@@ -431,6 +431,7 @@ router.get('/search', async (req, res) => {
               propertyClass: hotelContent.star_rating || 0,
               reviewScoreWord: null,
               isPreferred: false,
+              isSearchedHotel: true, // Mark as searched hotel for frontend prioritization
               checkIn: hotelContent.check_in_time || null,
               checkOut: hotelContent.check_out_time || null,
               coordinates: {
@@ -560,6 +561,26 @@ router.get('/details/:hid', async (req, res) => {
           return errorResponse(res, 'Hotel not found', 404);
         }
 
+        // Process images - use images_ext from Content API (per API docs)
+        let hotelImages = [];
+        console.log(`📷 Processing images for hotel ${hotelContent.name}...`);
+        console.log(`   - images_ext exists: ${!!hotelContent.images_ext}, length: ${hotelContent.images_ext?.length || 0}`);
+
+        if (hotelContent.images_ext && hotelContent.images_ext.length > 0) {
+          hotelImages = hotelContent.images_ext.map(img => {
+            // images_ext contains objects with url property
+            if (img.url) {
+              return img.url.replace('{size}', '1024x768');
+            }
+            return null;
+          }).filter(Boolean);
+          console.log(`   - Processed ${hotelImages.length} images from images_ext`);
+        }
+
+        if (hotelImages.length === 0) {
+          console.log(`   ⚠️ No images found for hotel`);
+        }
+
         // Format hotel data from Content API
         hotelDetails = {
           id: hotelContent.id,
@@ -569,10 +590,8 @@ router.get('/details/:hid', async (req, res) => {
           city: hotelContent.region?.name || '',
           country: hotelContent.region?.country_name || '',
           star_rating: hotelContent.star_rating || 0,
-          images: (hotelContent.images || []).map(img =>
-            img.url ? img.url.replace('{size}', '1024x768') : null
-          ).filter(Boolean),
-          mainImage: hotelContent.images?.[0]?.url?.replace('{size}', '1024x768') || null,
+          images: hotelImages,
+          mainImage: hotelImages[0] || null,
           amenities: [],
           description: hotelContent.description_struct?.map(d => d.paragraphs?.join(' ')).join('\n\n') || '',
           coordinates: hotelContent.location || { latitude: 0, longitude: 0 },

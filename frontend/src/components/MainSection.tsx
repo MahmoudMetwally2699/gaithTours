@@ -13,9 +13,23 @@ import {
   ChevronDownIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
-import { HomeIcon } from '@heroicons/react/24/solid';
+import { HomeIcon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import { DateRangePicker } from './DateRangePicker';
 import dayjs from 'dayjs';
+
+// Types for autocomplete
+interface AutocompleteSuggestion {
+  id: string | number;
+  name: string;
+  type: string;
+  hid?: number;
+  country_code?: string;
+}
+
+interface AutocompleteResults {
+  hotels: AutocompleteSuggestion[];
+  regions: AutocompleteSuggestion[];
+}
 
 export const MainSection: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -37,6 +51,13 @@ export const MainSection: React.FC = () => {
   // Refs
   const datePickerRef = useRef<HTMLDivElement>(null);
   const guestPickerRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  // Autocomplete State
+  const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({ hotels: [], regions: [] });
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [isLoadingAutocomplete, setIsLoadingAutocomplete] = useState(false);
+  const hasUserTyped = useRef(false); // Track if user has manually typed
 
   // Request user's location on mount
   useEffect(() => {
@@ -120,9 +141,83 @@ export const MainSection: React.FC = () => {
     };
   }, [showGuestPicker]);
 
+  // Autocomplete: debounced API call
+  useEffect(() => {
+    // Only fetch suggestions if user has manually typed
+    if (!hasUserTyped.current) {
+      return;
+    }
+
+    const fetchSuggestions = async () => {
+      if (!destination || destination.length < 2) {
+        setAutocompleteResults({ hotels: [], regions: [] });
+        setShowAutocomplete(false);
+        return;
+      }
+
+      setIsLoadingAutocomplete(true);
+      try {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+        const response = await fetch(`${API_URL}/hotels/suggest?query=${encodeURIComponent(destination)}`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          const hotels = Array.isArray(data.data.hotels) ? data.data.hotels : [];
+          const regions = Array.isArray(data.data.regions) ? data.data.regions : [];
+          setAutocompleteResults({ hotels, regions });
+          if (hotels.length > 0 || regions.length > 0) {
+            setShowAutocomplete(true);
+          }
+        }
+      } catch (error) {
+        console.error('Autocomplete error:', error);
+        setAutocompleteResults({ hotels: [], regions: [] });
+      } finally {
+        setIsLoadingAutocomplete(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [destination]);
+
+  // Close autocomplete when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
+        setShowAutocomplete(false);
+      }
+    };
+
+    if (showAutocomplete) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAutocomplete]);
+
+  // Handle autocomplete selection
+  const handleSelectSuggestion = (suggestion: AutocompleteSuggestion) => {
+    hasUserTyped.current = false; // Reset so dropdown doesn't show on focus
+    setDestination(suggestion.name);
+    setShowAutocomplete(false);
+    setAutocompleteResults({ hotels: [], regions: [] }); // Clear results
+    // Auto-open date picker after hotel selection
+    setTimeout(() => setShowDatePicker(true), 100);
+  };
+
   const handleDateChange = (startDate: Date, endDate: Date) => {
     setCheckInDate(startDate);
     setCheckOutDate(endDate);
+    // If both dates are selected, close date picker and open guest modal
+    if (startDate && endDate) {
+      setTimeout(() => {
+        setShowDatePicker(false);
+        setShowGuestPicker(true);
+      }, 300);
+    }
   };
 
   const formatDateDisplay = () => {
@@ -180,9 +275,9 @@ export const MainSection: React.FC = () => {
   };
 
   return (
-    <div className="relative h-[600px] w-full overflow-visible font-sans">
+    <div className="relative h-[420px] w-full overflow-visible font-sans">
       {/* Background Image */}
-      <div className="absolute inset-0 z-0 h-[600px] overflow-hidden rounded-b-[3rem]">
+      <div className="absolute inset-0 z-0 h-[420px] overflow-hidden rounded-b-[3rem]">
         <img
           src="/new-design/header-photo-background.svg"
           alt="Background"
@@ -196,7 +291,7 @@ export const MainSection: React.FC = () => {
       <div className="relative z-10 flex flex-col h-full px-4 sm:px-8 lg:px-16 py-6">
 
         {/* Custom Header */}
-        <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-12 sm:mb-20 space-y-4 sm:space-y-0">
+        <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-4 sm:mb-8 space-y-4 sm:space-y-0">
 
           {/* Left: Auth Buttons */}
           <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
@@ -261,16 +356,16 @@ export const MainSection: React.FC = () => {
            <motion.div
              initial={{ opacity: 0, y: 30 }}
              animate={{ opacity: 1, y: 0 }}
-             className="mb-12 text-center sm:text-left rtl:text-right"
-           >
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light text-white leading-tight drop-shadow-md">
+              className="mb-6 text-center sm:text-left rtl:text-right"
+            >
+               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-tight drop-shadow-md">
                 Wherever you are...<br />
                 <span className="font-medium">enjoy the best prices</span>
               </h1>
            </motion.div>
 
-           {/* Tabs */}
-           <div className="flex space-x-4 rtl:space-x-reverse mb-6 justify-center sm:justify-start rtl:justify-start">
+            {/* Tabs */}
+            <div className="flex space-x-4 rtl:space-x-reverse mb-4 justify-center sm:justify-start rtl:justify-start">
              <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
                 <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -294,23 +389,65 @@ export const MainSection: React.FC = () => {
               <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
 
                  {/* Destination */}
-                 <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
-                    <MapPinIcon className="w-6 h-6 text-gray-400" />
-                    <div className="flex-1 flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={destination}
-                        onChange={(e) => setDestination(e.target.value)}
-                        placeholder={isDetectingLocation ? "Detecting location..." : "where to ?"}
-                        className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg"
-                        required
-                        disabled={isDetectingLocation}
-                      />
-                      {isDetectingLocation && (
-                        <svg className="animate-spin h-5 w-5 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                 <div className="flex-[1.5] w-full p-4 flex items-center space-x-3 rtl:space-x-reverse relative min-w-0" ref={autocompleteRef}>
+                    <MapPinIcon className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 flex flex-col relative min-w-0">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <input
+                          type="text"
+                          value={destination}
+                          title={destination} // Show full name on hover
+                          onChange={(e) => {
+                            hasUserTyped.current = true;
+                            setDestination(e.target.value);
+                          }}
+                          onFocus={() => {
+                            if (hasUserTyped.current && destination.length >= 2 && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0)) {
+                              setShowAutocomplete(true);
+                            }
+                          }}
+                          placeholder={isDetectingLocation ? "Detecting location..." : "where to ?"}
+                          className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg truncate"
+                          required
+                          disabled={isDetectingLocation}
+                          autoComplete="off"
+                        />
+                        {isDetectingLocation && (
+                          <svg className="animate-spin h-5 w-5 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        )}
+                        {isLoadingAutocomplete && !isDetectingLocation && (
+                          <svg className="animate-spin h-5 w-5 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Autocomplete Dropdown */}
+                      {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto">
+                          {/* Hotels */}
+                          <div className="p-2">
+                            <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Hotels</p>
+                            {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                              <button
+                                key={hotel.id}
+                                type="button"
+                                onClick={() => handleSelectSuggestion(hotel)}
+                                className="w-full flex items-center space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
+                              >
+                                <BuildingOffice2Icon className="w-5 h-5 text-gray-500" />
+                                <div>
+                                  <p className="text-gray-800 font-medium">{hotel.name}</p>
+                                  <p className="text-xs text-gray-400">Hotel</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                  </div>
@@ -453,6 +590,17 @@ export const MainSection: React.FC = () => {
                     )}
                  </div>
 
+                 {/* Work Travel */}
+                 <div className="p-4 flex items-center justify-center md:justify-start space-x-2 rtl:space-x-reverse cursor-pointer" onClick={() => setIsWorkTravel(!isWorkTravel)}>
+                    <input
+                      type="checkbox"
+                      checked={isWorkTravel}
+                      onChange={(e) => setIsWorkTravel(e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                    />
+                    <span className="text-gray-700 text-sm font-bold whitespace-nowrap">Work</span>
+                 </div>
+
                  {/* Search Button */}
                  <div className="p-2 w-full md:w-auto">
                     <button
@@ -466,19 +614,7 @@ export const MainSection: React.FC = () => {
               </form>
            </motion.div>
 
-           {/* Work Travel Checkbox */}
-           <div className="mt-4 flex items-center space-x-2 rtl:space-x-reverse ml-4 sm:ml-8">
-              <input
-                type="checkbox"
-                id="workTravel"
-                checked={isWorkTravel}
-                onChange={(e) => setIsWorkTravel(e.target.checked)}
-                className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-              />
-              <label htmlFor="workTravel" className="text-white text-sm opacity-90 cursor-pointer">
-                I'm travelling for work
-              </label>
-           </div>
+
 
         </main>
       </div>
