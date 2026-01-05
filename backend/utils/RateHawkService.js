@@ -613,26 +613,29 @@ class RateHawkService {
 
     console.log(`📊 Extracted: ${images.length} images, ${amenities.length} amenities`);
 
-    // Extract room images from room_groups
+    // Extract room images and amenities from room_groups
     const roomImagesMap = new Map();
-    if (staticContent?.room_groups && staticContent.room_groups.length > 0) {
-      console.log(`   🛏️  Processing ${staticContent.room_groups.length} room groups for images`);
+    const roomAmenitiesMap = new Map();
 
-      // Helper function to normalize room names for matching
-      const normalizeRoomName = (name) => {
-        if (!name) return '';
-        return name
-          .toLowerCase()
-          .replace(/[()]/g, '')     // Remove parentheses but keep content
-          .replace(/\s+/g, ' ')     // Normalize whitespace
-          .trim();
-      };
+    // Helper function to normalize room names for matching
+    const normalizeRoomName = (name) => {
+      if (!name) return '';
+      return name
+        .toLowerCase()
+        .replace(/[()]/g, '')     // Remove parentheses but keep content
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .trim();
+    };
+
+    if (staticContent?.room_groups && staticContent.room_groups.length > 0) {
+      console.log(`   🛏️  Processing ${staticContent.room_groups.length} room groups for images and amenities`);
 
       staticContent.room_groups.forEach(roomGroup => {
         const roomName = roomGroup.name || roomGroup.rg_ext?.name;
         if (!roomName) return;
 
         const roomImages = [];
+        const roomAmenities = [];
 
         // Extract images from images_ext (preferred)
         if (roomGroup.images_ext && roomGroup.images_ext.length > 0) {
@@ -645,14 +648,42 @@ class RateHawkService {
           });
         }
 
+        // Extract room amenities from room_amenities array
+        if (roomGroup.room_amenities && roomGroup.room_amenities.length > 0) {
+          roomGroup.room_amenities.forEach(amenity => {
+            // Amenities can be strings or objects with name property
+            const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
+            if (amenityName) {
+              roomAmenities.push(amenityName);
+            }
+          });
+        }
+
+        // Also check for amenities in rg_ext
+        if (roomGroup.rg_ext?.room_amenities && roomGroup.rg_ext.room_amenities.length > 0) {
+          roomGroup.rg_ext.room_amenities.forEach(amenity => {
+            const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
+            if (amenityName && !roomAmenities.includes(amenityName)) {
+              roomAmenities.push(amenityName);
+            }
+          });
+        }
+
+        const normalizedName = normalizeRoomName(roomName);
+
         if (roomImages.length > 0) {
-          const normalizedName = normalizeRoomName(roomName);
           roomImagesMap.set(normalizedName, roomImages);
           console.log(`      ✅ ${roomName} → "${normalizedName}": ${roomImages.length} images`);
+        }
+
+        if (roomAmenities.length > 0) {
+          roomAmenitiesMap.set(normalizedName, roomAmenities);
+          console.log(`      🧹 ${roomName} → "${normalizedName}": ${roomAmenities.length} amenities`);
         }
       });
 
       console.log(`   📸 Extracted images for ${roomImagesMap.size} room types`);
+      console.log(`   🧹 Extracted amenities for ${roomAmenitiesMap.size} room types`);
     } else {
       console.log(`   ⚠️  No room_groups in static content`);
     }
@@ -675,27 +706,38 @@ class RateHawkService {
         bed_groups: rate.room_data?.bed_groups || [],
         room_size: rate.room_data?.room_size || null,
         max_occupancy: rate.room_data?.max_occupancy || null,
-        room_amenities: rate.room_data?.room_amenities || [],
+
+        // Room amenities from Content API room_groups (with fuzzy matching)
+        room_amenities: (() => {
+          const roomKey = normalizeRoomName(rate.room_name);
+          let matchedAmenities = roomAmenitiesMap.get(roomKey);
+
+          // Fuzzy matching fallback: try to find a room group that this rate starts with
+          if (!matchedAmenities) {
+            for (const [groupName, amenities] of roomAmenitiesMap.entries()) {
+              if (roomKey.startsWith(groupName)) {
+                matchedAmenities = amenities;
+                console.log(`      🔍 Fuzzy matched amenities: "${rate.room_name}" → "${groupName}" (${amenities.length} amenities)`);
+                break;
+              }
+            }
+          }
+
+          // Fallback to rate.room_data.room_amenities if still no match
+          return matchedAmenities || rate.room_data?.room_amenities || [];
+        })(),
 
         // Room images from Content API room_groups
         room_images: (() => {
-          const normalizeRoomName = (name) => {
-            if (!name) return '';
-            return name
-              .toLowerCase()
-              .replace(/[()]/g, '')     // Remove parentheses but keep content
-              .replace(/\s+/g, ' ')     // Normalize whitespace
-              .trim();
-          };
           const roomKey = normalizeRoomName(rate.room_name);
           let matchedImages = roomImagesMap.get(roomKey);
 
           // Fuzzy matching fallback: try to find a room group that this rate starts with
           if (!matchedImages) {
-            for (const [groupName, images] of roomImagesMap.entries()) {
+            for (const [groupName, imgs] of roomImagesMap.entries()) {
               if (roomKey.startsWith(groupName)) {
-                matchedImages = images;
-                console.log(`      🔍 Fuzzy matched: "${rate.room_name}" → "${groupName}" (${images.length} images)`);
+                matchedImages = imgs;
+                console.log(`      🔍 Fuzzy matched: "${rate.room_name}" → "${groupName}" (${imgs.length} images)`);
                 break;
               }
             }
@@ -712,22 +754,14 @@ class RateHawkService {
           return matchedImages || (images.length > 0 ? [images[0].replace('1024x768', '170x154')] : []);
         })(),
         room_image_count: (() => {
-          const normalizeRoomName = (name) => {
-            if (!name) return '';
-            return name
-              .toLowerCase()
-              .replace(/[()]/g, '')     // Remove parentheses but keep content
-              .replace(/\s+/g, ' ')
-              .trim();
-          };
           const roomKey = normalizeRoomName(rate.room_name);
           let matchedImages = roomImagesMap.get(roomKey);
 
           // Fuzzy matching fallback
           if (!matchedImages) {
-            for (const [groupName, images] of roomImagesMap.entries()) {
+            for (const [groupName, imgs] of roomImagesMap.entries()) {
               if (roomKey.startsWith(groupName)) {
-                matchedImages = images;
+                matchedImages = imgs;
                 break;
               }
             }
@@ -736,8 +770,16 @@ class RateHawkService {
           return matchedImages ? matchedImages.length : 0;
         })(),
 
-        // Meal data
-        meal_data: rate.meal_data || null,
+        // Meal data - construct from API's meal field
+        // RateHawk meal values: 'nomeal', 'breakfast', 'halfboard', 'fullboard', 'allinclusive', etc.
+        meal_data: (() => {
+          const mealType = rate.meal || 'nomeal';
+          const breakfastMeals = ['breakfast', 'halfboard', 'fullboard', 'allinclusive', 'halfboard-breakfast'];
+          return {
+            breakfast_included: breakfastMeals.some(m => mealType.toLowerCase().includes(m)),
+            meal_type: mealType
+          };
+        })(),
 
         // Pricing with tax breakdown
         daily_prices: rate.daily_prices,
