@@ -28,21 +28,22 @@ export const PopularProperties: React.FC = () => {
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
         // Fetch from multiple major Saudi cities to get more 5-star hotels
+        // Using Promise.all for PARALLEL fetching (3x faster than sequential)
         const cities = ['Riyadh', 'Jeddah', 'Makkah'];
-        const allHotels: ExtendedHotel[] = [];
 
-        for (const city of cities) {
+        const cityPromises = cities.map(async (city) => {
           try {
             const response = await fetch(`${API_URL}/hotels/suggested?location=${city}`);
             const data = await response.json();
-
-            if (data.success && data.data.hotels) {
-              allHotels.push(...data.data.hotels);
-            }
+            return data.success && data.data.hotels ? data.data.hotels : [];
           } catch (error) {
             console.error(`Error fetching hotels from ${city}:`, error);
+            return [];
           }
-        }
+        });
+
+        const cityResults = await Promise.all(cityPromises);
+        const allHotels: ExtendedHotel[] = cityResults.flat();
 
         // Debug: Log all hotels before filtering
         console.log(`📊 Total hotels fetched: ${allHotels.length}`);
