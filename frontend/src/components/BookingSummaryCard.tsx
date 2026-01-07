@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StarIcon, MapPinIcon, CalendarIcon, UserGroupIcon } from '@heroicons/react/24/solid';
+import { StarIcon, MapPinIcon, CalendarIcon, UserGroupIcon, HomeModernIcon } from '@heroicons/react/24/solid';
 
 interface Hotel {
   id: string;
@@ -17,6 +17,7 @@ interface RoomRate {
   price: number;
   currency: string;
   meal?: string;
+  count?: number; // Number of this room type
   meal_data?: {
     breakfast_included?: boolean;
   };
@@ -25,36 +26,67 @@ interface RoomRate {
 interface BookingSummaryCardProps {
   hotel: Hotel;
   selectedRate: RoomRate;
+  selectedRooms?: RoomRate[]; // Multiple room selections
   checkIn: string;
   checkOut: string;
   guests: number;
+  rooms?: number; // Total room count
 }
 
 export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   hotel,
   selectedRate,
+  selectedRooms,
   checkIn,
   checkOut,
-  guests
+  guests,
+  rooms = 1
 }) => {
   const { t } = useTranslation();
 
-  // Calculate number of nights
+  // Calculate number of nights with validation
   const calculateNights = () => {
+    if (!checkIn || !checkOut) return 1;
+
     const start = new Date(checkIn);
     const end = new Date(checkOut);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return 1;
+    }
+
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return diffDays > 0 ? diffDays : 1;
   };
 
   const nights = calculateNights();
-  const totalPrice = Number(selectedRate.price) * nights;
-  const taxes = totalPrice * 0.14;
 
-  // Format date
+  // Calculate total price including all rooms
+  const calculateTotalPrice = () => {
+    if (selectedRooms && selectedRooms.length > 0) {
+      // Sum up price * count for each room type
+      return selectedRooms.reduce((total, room) => {
+        const roomPrice = Number(room.price) || 0;
+        const roomCount = room.count || 1;
+        return total + (roomPrice * roomCount * nights);
+      }, 0);
+    }
+    // Fallback to single room calculation
+    const price = Number(selectedRate.price) || 0;
+    return price * nights * Math.max(rooms, 1);
+  };
+
+  const totalPrice = calculateTotalPrice();
+  const taxes = totalPrice * 0.14;
+  const totalRooms = selectedRooms?.reduce((sum, r) => sum + (r.count || 1), 0) || rooms;
+
+  // Format date with validation
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Select Date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Select Date';
+
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -132,28 +164,72 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
             </div>
           </div>
 
-          {/* Guests */}
-          <div className="flex items-center text-sm text-gray-600 mb-4">
-            <UserGroupIcon className="h-4 w-4 mr-2" />
-            <span>
-              {guests} {guests === 1 ? t('booking.guest', 'guest') : t('hero.guests', 'guests')}
-            </span>
+          {/* Guests & Rooms */}
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+            <div className="flex items-center">
+              <UserGroupIcon className="h-4 w-4 mr-2" />
+              <span>{guests} {guests === 1 ? t('booking.guest', 'guest') : t('hero.guests', 'guests')}</span>
+            </div>
+            <div className="flex items-center">
+              <HomeModernIcon className="h-4 w-4 mr-2 text-orange-500" />
+              <span className="font-medium text-orange-600">
+                {totalRooms} {totalRooms === 1 ? t('booking.room', 'room') : t('booking.rooms', 'rooms')}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Room Type */}
+        {/* Room Types */}
         <div className="border-t border-gray-200 pt-4 mb-4">
           <h4 className="font-semibold text-gray-900 mb-2">
             {t('booking.yourBooking', 'Your booking')}
           </h4>
-          <div className="bg-blue-50 rounded p-3 mb-2">
-            <div className="font-medium text-gray-900">{selectedRate.room_name}</div>
-            {selectedRate.meal_data?.breakfast_included && (
-              <div className="text-sm text-green-700 mt-1">
-                🍳 {t('hotels.breakfastIncluded', 'Breakfast included')}
+
+          {/* Show all selected rooms if multiroom */}
+          {selectedRooms && selectedRooms.length > 0 ? (
+            <div className="space-y-2">
+              {selectedRooms.map((room, index) => (
+                <div key={room.match_hash || index} className="bg-blue-50 rounded p-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{room.room_name}</div>
+                      {room.meal_data?.breakfast_included && (
+                        <div className="text-sm text-green-700 mt-1">
+                          🍳 {t('hotels.breakfastIncluded', 'Breakfast included')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm font-medium">
+                        x{room.count || 1}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Single room display
+            <div className="bg-blue-50 rounded p-3 mb-2">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{selectedRate.room_name}</div>
+                  {selectedRate.meal_data?.breakfast_included && (
+                    <div className="text-sm text-green-700 mt-1">
+                      🍳 {t('hotels.breakfastIncluded', 'Breakfast included')}
+                    </div>
+                  )}
+                </div>
+                {totalRooms > 1 && (
+                  <div className="text-right">
+                    <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm font-medium">
+                      x{totalRooms}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Price Breakdown */}
@@ -163,14 +239,29 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
           </h4>
 
           <div className="space-y-2 mb-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                {selectedRate.currency} {Number(selectedRate.price).toFixed(2)} x {nights} {nights === 1 ? 'night' : 'nights'}
-              </span>
-              <span className="font-medium">
-                {selectedRate.currency} {totalPrice.toFixed(2)}
-              </span>
-            </div>
+            {selectedRooms && selectedRooms.length > 0 ? (
+              // Multiroom price breakdown
+              selectedRooms.map((room, index) => (
+                <div key={room.match_hash || index} className="flex justify-between text-sm">
+                  <span className="text-gray-600">
+                    {room.room_name} x{room.count || 1} x {nights}n
+                  </span>
+                  <span className="font-medium">
+                    {room.currency} {(Number(room.price) * (room.count || 1) * nights).toFixed(2)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              // Single room price breakdown
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">
+                  {selectedRate.currency} {Number(selectedRate.price).toFixed(2)} x {totalRooms} x {nights}n
+                </span>
+                <span className="font-medium">
+                  {selectedRate.currency} {totalPrice.toFixed(2)}
+                </span>
+              </div>
+            )}
 
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">

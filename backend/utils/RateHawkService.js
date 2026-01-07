@@ -297,7 +297,7 @@ class RateHawkService {
       effectiveEnrichmentLimit = Math.min(hotelHids.length, cachedCount + enrichmentLimit);
 
       if (uncachedCount > enrichmentLimit) {
-        console.log(`💡 Smart Enrichment: Serving ${effectiveEnrichmentLimit} hotels (${cachedCount} cached + ${enrichmentLimit} new API calls)`);
+        console.log(`💡 Smart Enrichment: Serving ${effectiveEnrichmentLimit} hotels (${cachedCount} cached + ${enrichmentLimit} from Local DB)`);
         hotelHids = hotelHids.slice(0, effectiveEnrichmentLimit);
       } else if (cachedCount > 0) {
         console.log(`✨ Cache advantage: All ${hotelHids.length} hotels available (${cachedCount} cached, ${uncachedCount} new)`);
@@ -307,7 +307,7 @@ class RateHawkService {
       }
     }
 
-    console.log(`📍 Fetching location data for ${hotelHids.length} hotels using Content API`);
+    console.log(`📍 Fetching location data for ${hotelHids.length} hotels using Local DB`);
 
     if (hotelHids.length > 0) {
       try {
@@ -331,67 +331,47 @@ class RateHawkService {
 
         // Only fetch uncached hotels
         if (uncachedHids.length > 0) {
-          // Split into batches of 100 (API limit)
-          const batchSize = 100;
+          console.log(`   📍 Fetching data for ${uncachedHids.length} hotels from Local DB`);
+          const HotelContent = require('../models/HotelContent');
+
+          // Split into batches of 100 to avoid huge DB queries (though Mongo handles thousands easily)
+          const batchSize = 500;
           const batches = [];
           for (let i = 0; i < uncachedHids.length; i += batchSize) {
             batches.push(uncachedHids.slice(i, i + batchSize));
           }
 
-          console.log(`   Processing ${batches.length} batch(es) of hotels`);
-
-          // Fetch batches sequentially to avoid rate limiting
           for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
             try {
-              console.log(`   Fetching batch ${i + 1}/${batches.length} (${batch.length} hotels)`);
-              const response = await this.makeRequest('/content/v1/hotel_content_by_ids/', 'POST', {
-                hids: batch,
-                language
-              }, 'https://api.worldota.net/api');
+              // Query Local DB
+              const localHotels = await HotelContent.find({ hid: { $in: batch } }).lean();
+              console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
 
-              const batchHotels = response.data || [];
-
-              batchHotels.forEach(hotel => {
-                // Extract image URL - prefer images_ext, fallback to images
+              localHotels.forEach(hotel => {
+                // Map local DB structure to match what the frontend expects
                 let imageUrl = null;
-                if (hotel.images_ext && hotel.images_ext.length > 0) {
-                  imageUrl = hotel.images_ext[0].url?.replace('{size}', '640x400');
-                } else if (hotel.images && hotel.images.length > 0) {
-                  imageUrl = hotel.images[0]?.url?.replace('{size}', '640x400');
+                // Prioritize images array structure from local DB
+                if (hotel.images && hotel.images.length > 0) {
+                   const img = hotel.images[0];
+                   imageUrl = (typeof img === 'string' ? img : img.url)?.replace('{size}', '640x400');
+                } else if (hotel.mainImage) {
+                   imageUrl = hotel.mainImage.replace('{size}', '640x400');
                 }
 
-                // Extract amenities
-                const amenities = [];
-                if (hotel.amenity_groups) {
-                  hotel.amenity_groups.forEach(group => {
-                    if (group.amenities) {
-                      group.amenities.forEach(amenity => {
-                         // Amenities can be strings or objects with name property
-                         const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
-                         if (amenityName) amenities.push(amenityName.toLowerCase());
-                      });
-                    }
-                  });
-                }
-
-                const hotelData = {
-                  image: imageUrl,
+                // Add to content map
+                contentMap.set(hotel.hid, {
                   name: hotel.name,
-                  address: hotel.address || '',
-                  city: hotel.region?.name || '',
-                  country: hotel.region?.country_code || 'SA',
-                  star_rating: hotel.star_rating,
-                  amenities: amenities,
-                  facilities: amenities // Alias for compatibility
-                };
+                  address: hotel.address,
+                  image: imageUrl, // Explicitly set single image for compatibility
+                  images: imageUrl ? [imageUrl] : [],
+                  star_rating: hotel.starRating,
+                  kind: 'Hotel', // Default
+                  hid: hotel.hid
+                });
 
-                contentMap.set(hotel.hid, hotelData);
-
-                // Cache the enriched data for future use
+                // Update internal cache
                 this.contentCache.set(hotel.hid, {
-                  data: hotelData,
-                  timestamp: Date.now()
                 });
               });
             } catch (error) {
@@ -412,7 +392,7 @@ class RateHawkService {
           }
         }
 
-        console.log(`✅ Content API returned ${contentMap.size} hotels with images`);
+        console.log(`✅ Local DB returned ${contentMap.size} hotels with images`);
 
         // Update hotels with Content API data and mark enrichment status
         hotels.forEach(hotel => {
@@ -482,14 +462,34 @@ class RateHawkService {
    * @returns {boolean} - True if free cancellation is available
    */
   checkFreeCancellation(cancellationPenalties) {
-    if (!cancellationPenalties || !cancellationPenalties.policies) {
-      return false;
+    if (!cancellationPenalties) return false;
+
+    // Check free_cancellation_before field first (ETG recommended approach)
+    if (cancellationPenalties.free_cancellation_before) {
+      const freeCancelDeadline = new Date(cancellationPenalties.free_cancellation_before);
+      const now = new Date();
+      if (freeCancelDeadline > now) {
+        return true;
+      }
     }
 
-    // Check if there's at least one policy with no penalty
-    return cancellationPenalties.policies.some(policy =>
-      policy.amount_charge === 0 || policy.amount_charge === null
-    );
+    // Fallback: Check policies array
+    if (cancellationPenalties.policies && cancellationPenalties.policies.length > 0) {
+      const now = new Date();
+      return cancellationPenalties.policies.some(policy => {
+        // Check if there's a policy period where cancellation is free
+        const deadline = new Date(policy.end_at || policy.start_at);
+        const isBeforeDeadline = deadline > now;
+        const isNoCharge = policy.amount_charge === 0 ||
+                           policy.amount_charge === null ||
+                           policy.amount_charge === '0' ||
+                           policy.percent_charge === 0 ||
+                           policy.percent_charge === '0';
+        return isBeforeDeadline && isNoCharge;
+      });
+    }
+
+    return false;
   }
 
   /**
@@ -538,65 +538,72 @@ class RateHawkService {
       throw new Error('Hotel not found');
     }
 
-    // Get static content (images, descriptions, amenities) using Booking API hotel info
+    // Get static content (images, descriptions, amenities) from local database
     let staticContent = null;
     try {
-      console.log(`📚 Fetching content for hotel ID: ${hotelData.id}, HID: ${hotelData.hid}`);
+      console.log(`📚 Fetching content for hotel ID: ${hotelData.id}, HID: ${hotelData.hid} from Local DB`);
 
-      // Use Booking API hotel info endpoint
-      const infoResponse = await this.makeRequest('/hotel/info/', 'POST', {
-        hid: hotelData.hid,
-        language
-      });
+      // Try local DB first (ETG Certification Requirement)
+      const HotelContent = require('../models/HotelContent');
+      staticContent = await HotelContent.findOne({ hid: hotelData.hid }).lean();
 
-      console.log(`✅ Booking API hotel info response received`);
-      staticContent = infoResponse?.data;
+      if (staticContent) {
+        console.log(`✅ Found local content for ${staticContent.name}`);
+        // Map local DB content to expected API format if necessary
+        // The import script saves it in a structure very similar to the API response
+      } else {
+        console.log(`⚠️ No local content found for HID: ${hotelData.hid}`);
+        // Optional: Fallback to API if really needed, but for certification we want to rely on dump
+        // const infoResponse = await this.makeRequest('/hotel/info/', 'POST', {
+        //   hid: hotelData.hid,
+        //   language
+        // });
+        // staticContent = infoResponse?.data;
+      }
 
       if (staticContent) {
         console.log(`   Hotel name: ${staticContent.name}`);
         console.log(`   Address: ${staticContent.address || 'NOT FOUND'}`);
-        console.log(`   Region: ${staticContent.region?.name || 'NOT FOUND'}`);
-        console.log(`   Country: ${staticContent.region?.country_code || 'NOT FOUND'}`);
         console.log(`   Images: ${staticContent.images?.length || 0}`);
-        console.log(`   Images_ext: ${staticContent.images_ext?.length || 0}`);
-        console.log(`   Description: ${staticContent.description_struct?.length || 0} paragraphs`);
-      } else {
-        console.log(`   ⚠️ Static content is null!`);
       }
     } catch (error) {
       console.error('❌ Could not fetch static content:', error.message);
-      console.error('   Status:', error.response?.status);
     }
 
-    // Extract images from Booking API hotel info response
+    // Extract images from static content
     const images = [];
 
-    // Prefer images_ext (has category info), fallback to images array
-    if (staticContent?.images_ext && staticContent.images_ext.length > 0) {
-      console.log(`   📷 Using images_ext array (${staticContent.images_ext.length} images)`);
+    // Prioritize images from local DB structure
+    if (staticContent?.images && staticContent.images.length > 0) {
+       staticContent.images.forEach(img => {
+         // Handle both string URLs (legacy/simple) and object structure
+         const url = typeof img === 'string' ? img : img.url;
+         if (url) {
+           const imageUrl = url.replace('{size}', '1024x768');
+           images.push(imageUrl);
+         }
+       });
+    }
+    // Fallback to images_ext if images array was empty/missing (legacy dump format)
+    else if (staticContent?.images_ext && staticContent.images_ext.length > 0) {
       staticContent.images_ext.forEach(img => {
         if (img.url) {
           const imageUrl = img.url.replace('{size}', '1024x768');
           images.push(imageUrl);
         }
       });
-    } else if (staticContent?.images && staticContent.images.length > 0) {
-      console.log(`   📷 Using images array (${staticContent.images.length} images)`);
-      staticContent.images.forEach(img => {
-        if (img) {
-          const imageUrl = typeof img === 'string' ? img.replace('{size}', '1024x768') : img;
-          images.push(imageUrl);
-        }
-      });
     }
+
 
     console.log(`   ✅ Extracted ${images.length} images total`);
 
-    // Extract amenities from Content API response
+    // Extract amenities from static content (support both Local DB camelCase and API snake_case)
     const amenities = [];
-    if (staticContent?.amenity_groups) {
-      console.log(`   Amenity groups found: ${staticContent.amenity_groups.length}`);
-      staticContent.amenity_groups.forEach(group => {
+    const amenityGroups = staticContent?.amenityGroups || staticContent?.amenity_groups;
+    if (amenityGroups && amenityGroups.length > 0) {
+      console.log(`   Amenity groups found: ${amenityGroups.length}`);
+      amenityGroups.forEach(group => {
+        // Handle both Local DB structure (amenities array) and API structure
         if (group.amenities) {
           group.amenities.forEach(amenity => {
             // Handle both string and object amenities
@@ -607,6 +614,10 @@ class RateHawkService {
           });
         }
       });
+    } else if (staticContent?.amenities && staticContent.amenities.length > 0) {
+      // Fallback to flat amenities array if groups not available
+      console.log(`   Using flat amenities array: ${staticContent.amenities.length}`);
+      amenities.push(...staticContent.amenities);
     } else {
       console.log(`   ⚠️ No amenity_groups in static content`);
     }
@@ -627,47 +638,55 @@ class RateHawkService {
         .trim();
     };
 
-    if (staticContent?.room_groups && staticContent.room_groups.length > 0) {
-      console.log(`   🛏️  Processing ${staticContent.room_groups.length} room groups for images and amenities`);
+    // Use roomGroups (local DB) or room_groups (API)
+    const roomGroups = staticContent?.roomGroups || staticContent?.room_groups;
 
-      staticContent.room_groups.forEach(roomGroup => {
+    if (roomGroups && roomGroups.length > 0) {
+      console.log(`   🛏️  Processing ${roomGroups.length} room groups for images and amenities`);
+
+      roomGroups.forEach(roomGroup => {
         const roomName = roomGroup.name || roomGroup.rg_ext?.name;
         if (!roomName) return;
 
         const roomImages = [];
         const roomAmenities = [];
 
-        // Extract images from images_ext (preferred)
-        if (roomGroup.images_ext && roomGroup.images_ext.length > 0) {
+        // STRATEGY: Handle both Local DB (camelCase) and API (snake_case) structures
+
+        // 1. Images
+        // Local DB structure: roomGroup.images = [{ url: '...' }]
+        if (roomGroup.images && roomGroup.images.length > 0) {
+           roomGroup.images.forEach(img => {
+             const url = typeof img === 'string' ? img : img.url;
+             if (url) roomImages.push(url.replace('{size}', '170x154'));
+           });
+        }
+        // API structure: roomGroup.images_ext = [{ url: '...' }]
+        else if (roomGroup.images_ext && roomGroup.images_ext.length > 0) {
           roomGroup.images_ext.forEach(img => {
-            if (img.url) {
-              // Use 170x154 for thumbnails (crop)
-              const imageUrl = img.url.replace('{size}', '170x154');
-              roomImages.push(imageUrl);
-            }
+            if (img.url) roomImages.push(img.url.replace('{size}', '170x154'));
           });
         }
 
-        // Extract room amenities from room_amenities array
-        if (roomGroup.room_amenities && roomGroup.room_amenities.length > 0) {
-          roomGroup.room_amenities.forEach(amenity => {
-            // Amenities can be strings or objects with name property
-            const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
-            if (amenityName) {
-              roomAmenities.push(amenityName);
+        // 2. Amenities
+        // Local DB structure: roomGroup.roomAmenities = ['...']
+        if (roomGroup.roomAmenities && roomGroup.roomAmenities.length > 0) {
+           roomGroup.roomAmenities.forEach(amenity => {
+             const name = typeof amenity === 'string' ? amenity : amenity.name;
+             if (name) roomAmenities.push(name);
+           });
+        }
+        // API structure: roomGroup.room_amenities or roomGroup.rg_ext.room_amenities
+        else {
+            const apiAmenities = roomGroup.room_amenities || roomGroup.rg_ext?.room_amenities;
+            if (apiAmenities && apiAmenities.length > 0) {
+              apiAmenities.forEach(amenity => {
+                const name = typeof amenity === 'string' ? amenity : amenity.name;
+                if (name) roomAmenities.push(name);
+              });
             }
-          });
         }
 
-        // Also check for amenities in rg_ext
-        if (roomGroup.rg_ext?.room_amenities && roomGroup.rg_ext.room_amenities.length > 0) {
-          roomGroup.rg_ext.room_amenities.forEach(amenity => {
-            const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
-            if (amenityName && !roomAmenities.includes(amenityName)) {
-              roomAmenities.push(amenityName);
-            }
-          });
-        }
 
         const normalizedName = normalizeRoomName(roomName);
 
@@ -834,13 +853,14 @@ class RateHawkService {
       },
       images: images.length > 0 ? images : [`https://via.placeholder.com/800x600/4F46E5/FFFFFF?text=${encodeURIComponent(hotelData.id.substring(0, 20))}`],
       mainImage: images[0] || `https://via.placeholder.com/800x600/4F46E5/FFFFFF?text=${encodeURIComponent(hotelData.id.substring(0, 20))}`,
-      star_rating: staticContent?.star_rating || 0,
+      star_rating: staticContent?.starRating || staticContent?.star_rating || 0,
       amenities: amenities,
       facts: staticContent?.facts || {},
       rates,
-      check_in_time: staticContent?.check_in_time || '15:00',
-      check_out_time: staticContent?.check_out_time || '12:00',
-      metapolicy_extra_info: staticContent?.metapolicy_extra_info || '',
+      check_in_time: staticContent?.checkInTime || staticContent?.check_in_time || '15:00',
+      check_out_time: staticContent?.checkOutTime || staticContent?.check_out_time || '12:00',
+      metapolicy_extra_info: staticContent?.metapolicyExtraInfo || staticContent?.metapolicy_extra_info || '',
+      metapolicy_struct: staticContent?.metapolicyStruct || staticContent?.metapolicy_struct || null,
       debug: response.debug
     };
   }
@@ -853,22 +873,39 @@ class RateHawkService {
    */
   async prebook(matchHash, language = 'en') {
     try {
+      console.log('🔄 Prebook request:', { hash: matchHash, language });
+
       const response = await this.makeRequest('/hotel/prebook', 'POST', {
         hash: matchHash,
         language
       });
 
+      console.log('📦 Prebook response:', JSON.stringify(response, null, 2));
+
       const hotelData = response.data?.hotels?.[0];
       const rateData = hotelData?.rates?.[0];
 
+      if (!rateData?.book_hash) {
+        console.error('❌ No book_hash in prebook response');
+        return {
+          success: false,
+          error: response.error || 'No book_hash returned',
+          data: response.data
+        };
+      }
+
       return {
         success: true,
-        book_hash: rateData?.book_hash,
+        book_hash: rateData.book_hash,
         data: response.data
       };
     } catch (error) {
-      console.error('Prebook error:', error.response?.data || error.message);
-      throw error;
+      console.error('❌ Prebook error:', error.response?.data || error.message);
+      console.error('   Full error:', JSON.stringify(error.response?.data, null, 2));
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message
+      };
     }
   }
 
@@ -935,21 +972,34 @@ class RateHawkService {
    */
   async startBooking(partnerOrderId, bookingDetails) {
     const {
-      user,
-      rooms,
+      user,           // { email, phone, comment? }
+      rooms,          // [{ guests: [{ first_name, last_name }] }]
       language = 'en',
-      payment_type = { type: 'now' }
+      payment_type,   // { type: 'deposit', amount, currency_code }
+      supplier_data   // { first_name_original, last_name_original, phone?, email? }
     } = bookingDetails;
+
+    // Build supplier_data - required per ETG Sandbox API
+    const supplierData = supplier_data || {
+      first_name_original: rooms?.[0]?.guests?.[0]?.first_name || 'Guest',
+      last_name_original: rooms?.[0]?.guests?.[0]?.last_name || 'User',
+      phone: user?.phone || '',
+      email: user?.email || ''
+    };
 
     try {
       const response = await this.makeRequest('/hotel/order/booking/finish/', 'POST', {
         partner: {
-          partner_order_id: partnerOrderId
+          partner_order_id: partnerOrderId,
+          comment: user?.comment || '',
+          amount_sell_b2b2c: '0'
         },
         user: {
-          email: user.email,
-          phone: user.phone || ''
+          email: user?.email || '',
+          phone: user?.phone || '',
+          comment: user?.comment || ''
         },
+        supplier_data: supplierData,
         language,
         rooms,
         payment_type
@@ -974,19 +1024,21 @@ class RateHawkService {
    */
   async checkBookingStatus(partnerOrderId) {
     try {
+      // Per ETG API docs: partner_order_id is sent directly, not nested in partner object
       const response = await this.makeRequest('/hotel/order/booking/finish/status/', 'POST', {
-        partner: {
-          partner_order_id: partnerOrderId
-        }
+        partner_order_id: partnerOrderId
       });
 
-      // makeRequest returns response.data, so response IS the body
-      // Structure: { data: { status: 'confirmed', ... }, status: 'ok', ... }
+      // Response structure: { data: { partner_order_id, percent, ... }, status: 'ok'|'processing'|'error', ... }
+      // status field indicates booking progress: ok=success, processing=in progress, error=failed
 
       return {
-        success: true,
-        status: response.data?.status, // Actual booking status (confirmed/failed/pending)
+        success: response.status === 'ok',
+        status: response.status, // ok, processing, or error
         order_id: response.data?.order_id,
+        partner_order_id: response.data?.partner_order_id,
+        percent: response.data?.percent,
+        error: response.error,
         data: response.data
       };
     } catch (error) {

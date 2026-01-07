@@ -30,6 +30,7 @@ export interface Hotel {
     check_in_time?: string;
     check_out_time?: string;
     metapolicy_extra_info?: string;
+    metapolicy_struct?: any; // Structured policy data from ETG API
     rates?: Array<{
         match_hash: string;
         room_name: string;

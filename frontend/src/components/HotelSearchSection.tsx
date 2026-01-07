@@ -31,7 +31,8 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
     checkOut: '',
     rooms: 1,
     adults: 2,
-    children: 0
+    children: 0,
+    childrenAges: [] as number[]
   });
 
   // Autocomplete state
@@ -90,6 +91,38 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
     }
   };
 
+  // Handle children count change - syncs with ages array
+  const handleChildrenChange = (count: number) => {
+    setSearchParams(prev => {
+      const currentAges = prev.childrenAges;
+      let newAges: number[];
+
+      if (count > currentAges.length) {
+        // Add new children with default age of 5
+        newAges = [...currentAges, ...Array(count - currentAges.length).fill(5)];
+      } else {
+        // Remove children from the end
+        newAges = currentAges.slice(0, count);
+      }
+
+      return {
+        ...prev,
+        children: count,
+        childrenAges: newAges
+      };
+    });
+    setShowSuggestions(false);
+  };
+
+  // Handle individual child age change
+  const handleChildAgeChange = (index: number, age: number) => {
+    setSearchParams(prev => {
+      const newAges = [...prev.childrenAges];
+      newAges[index] = age;
+      return { ...prev, childrenAges: newAges };
+    });
+  };
+
   const handleHotelSelect = (hotel: Hotel) => {
     // Only use hotel name since suggest API doesn't return city/country
     setSearchParams(prev => ({
@@ -134,7 +167,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
       checkOut: searchParams.checkOut,
       rooms: searchParams.rooms.toString(),
       adults: searchParams.adults.toString(),
-      children: searchParams.children.toString()
+      children: searchParams.childrenAges.length > 0 ? searchParams.childrenAges.join(',') : ''
     });
 
     history.push(`/hotels/search?${queryParams.toString()}`);
@@ -284,7 +317,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       </label>
                       <select
                         value={searchParams.children}
-                        onChange={(e) => handleChange('children', parseInt(e.target.value))}
+                        onChange={(e) => handleChildrenChange(parseInt(e.target.value))}
                         className="w-full p-2 bg-gray-50/70 rounded-lg border border-gray-200 focus:border-[#F7871D] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 font-medium text-xs transition-all duration-300"
                       >
                         {[0, 1, 2, 3, 4, 5, 6].map(num => (
@@ -293,6 +326,26 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       </select>
                     </div>
                   </div>
+
+                  {/* Child Age Selectors (Mobile) */}
+                  {searchParams.childrenAges.length > 0 && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {searchParams.childrenAges.map((age, index) => (
+                        <div key={index} className="flex items-center space-x-1">
+                          <span className="text-xs text-gray-600">Child {index + 1}:</span>
+                          <select
+                            value={age}
+                            onChange={(e) => handleChildAgeChange(index, parseInt(e.target.value))}
+                            className="flex-1 p-1 bg-gray-50/70 rounded border border-gray-200 focus:border-[#F7871D] text-gray-800 text-xs"
+                          >
+                            {[...Array(18)].map((_, i) => (
+                              <option key={i} value={i}>{i} yrs</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>              {/* Compact Search Button */}
               <motion.div
@@ -503,7 +556,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     <div className="relative bg-gray-50/70 rounded-2xl border-2 border-gray-200 hover:border-[#F7871D] transition-all duration-300 focus-within:border-[#F7871D] focus-within:ring-4 focus-within:ring-orange-100">
                       <UserIcon className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#F7871D]`} />                      <select
                         value={searchParams.children}
-                        onChange={(e) => handleChange('children', parseInt(e.target.value))}
+                        onChange={(e) => handleChildrenChange(parseInt(e.target.value))}
                         className={`w-full ${isRTL ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-4 bg-transparent text-gray-800 text-base font-medium focus:outline-none appearance-none cursor-pointer border-none`}
                       >
                         {[0, 1, 2, 3, 4, 5, 6].map(num => (
@@ -514,6 +567,26 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       </select>
                     </div>
                   </div>
+
+                  {/* Child Age Selectors (Desktop) */}
+                  {searchParams.childrenAges.length > 0 && (
+                    <div className="mt-2 grid grid-cols-3 gap-3">
+                      {searchParams.childrenAges.map((age, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600 whitespace-nowrap">Child {index + 1}:</span>
+                          <select
+                            value={age}
+                            onChange={(e) => handleChildAgeChange(index, parseInt(e.target.value))}
+                            className="flex-1 px-3 py-2 bg-gray-50/70 rounded-xl border border-gray-200 focus:border-[#F7871D] focus:outline-none focus:ring-2 focus:ring-orange-100 text-gray-800 text-sm"
+                          >
+                            {[...Array(18)].map((_, i) => (
+                              <option key={i} value={i}>{i} {i === 1 ? 'year' : 'years'}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
 

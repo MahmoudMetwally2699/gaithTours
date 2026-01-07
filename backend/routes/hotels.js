@@ -282,11 +282,19 @@ router.get('/search', async (req, res) => {
     }
 
     // Step 3: Search hotels in the selected region
+    // Parse children ages - can be comma-separated string like "5,8,12" or empty
+    let childrenAges = [];
+    if (children && typeof children === 'string' && children.length > 0) {
+      childrenAges = children.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age) && age >= 0 && age <= 17);
+    } else if (Array.isArray(children)) {
+      childrenAges = children.map(age => parseInt(age)).filter(age => !isNaN(age));
+    }
+
     const regionId = regionToSearch.region_id || regionToSearch.id;
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
       adults: parseInt(adults) || 2,
-      children: children ? (Array.isArray(children) ? children : []) : []
+      children: childrenAges
     });
 
 
@@ -357,113 +365,57 @@ router.get('/search', async (req, res) => {
       );
 
       if (!hotelFoundInResults) {
-        console.log(`⚠️ Searched hotel not in results, fetching from Booking API hotel info...`);
+        console.log(`⚠️ Searched hotel not in results, checking Local DB...`);
         try {
-          // Use Booking API hotel info endpoint to get complete hotel information
-          const hotelInfoResponse = await rateHawkService.makeRequest(
-            '/hotel/info/',
-            'POST',
-            {
-              hid: searchedHotelHid,
-              language: 'en'
-            }
-          );
+          // Use Local DB instead of API (ETG Requirement #3: No live content parsing)
+          const HotelContent = require('../models/HotelContent');
+          const localHotel = await HotelContent.findOne({ hid: searchedHotelHid }).lean();
 
-          const hotelContent = hotelInfoResponse?.data;
+          if (localHotel) {
+             console.log(`✅ Found searched hotel in Local DB: ${localHotel.name}`);
 
-          if (hotelContent) {
-            // Extract location information
-            const address = hotelContent.address || '';
-            const city = hotelContent.region?.name || '';
-            const country = hotelContent.region?.country_code || '';
+             // Map Local DB content to API format structure
+             const imageUrl = (localHotel.images?.[0]?.url || localHotel.mainImage)?.replace('{size}', '1024x768');
 
-            console.log(`📍 Hotel location: ${address}, ${city}, ${country}`);
+             // Extract amenities list
+             const amenities = [];
+             if (localHotel.amenityGroups) {
+                localHotel.amenityGroups.forEach(g => {
+                    if (g.amenities) amenities.push(...g.amenities);
+                });
+             }
 
-            // Process images - use images_ext if available for better quality, fallback to images array
-            let hotelImages = [];
-            console.log(`   🔍 Checking images...`);
-            console.log(`   - images_ext exists: ${!!hotelContent.images_ext}, length: ${hotelContent.images_ext?.length || 0}`);
-            console.log(`   - images exists: ${!!hotelContent.images}, length: ${hotelContent.images?.length || 0}`);
+             // Create hotel object from local data
+             const enrichedHotel = {
+               id: localHotel.hotelId || `hid_${localHotel.hid}`,
+               hid: localHotel.hid,
+               name: localHotel.name,
+               address: localHotel.address,
+               city: localHotel.city,
+               country: localHotel.country,
+               image: imageUrl,
+               images: localHotel.images?.map(img => img.url?.replace('{size}', '1024x768')).filter(Boolean) || [],
+               star_rating: localHotel.starRating,
+               amenities: amenities,
+               facilities: amenities,
+               isEnriched: true,
+               price: 'N/A', // Price will be fetched via availability check if needed later, or remain N/A for display
+               currency: 'SAR',
+               isSearchedHotel: true // Mark as searched hotel for frontend prioritization
+             };
 
-            if (hotelContent.images_ext && hotelContent.images_ext.length > 0) {
-              console.log(`   - Using images_ext array`);
-              hotelImages = hotelContent.images_ext.map(img =>
-                img.url ? img.url.replace('{size}', '1024x768') : null
-              ).filter(Boolean);
-              console.log(`   - Processed ${hotelImages.length} images from images_ext`);
-              if (hotelImages.length > 0) {
-                console.log(`   - First image: ${hotelImages[0].substring(0, 80)}...`);
-              }
-            } else if (hotelContent.images && hotelContent.images.length > 0) {
-              console.log(`   - Using images array`);
-              hotelImages = hotelContent.images.map(img =>
-                img ? img.replace('{size}', '1024x768') : null
-              ).filter(Boolean);
-              console.log(`   - Processed ${hotelImages.length} images from images`);
-              if (hotelImages.length > 0) {
-                console.log(`   - First image: ${hotelImages[0].substring(0, 80)}...`);
-              }
-            }
+             // Add to top of results
+             searchResults.hotels.unshift(enrichedHotel);
+             console.log(`✅ Added ${localHotel.name} to top of results from Local DB`);
 
-            if (hotelImages.length === 0) {
-              console.log(`   ⚠️  NO IMAGES PROCESSED! Will use empty array.`);
-            }
-
-            // Format hotel data to match expected structure
-            const formattedHotel = {
-              id: hotelContent.id,
-              hid: hotelContent.hid,
-              name: hotelContent.name,
-              address: address,
-              city: city,
-              country: country,
-              rating: hotelContent.star_rating || 0,
-              price: 0, // No rates available
-              currency: 'SAR',
-              images: hotelImages,
-              image: hotelImages[0] || null,
-              amenities: [],
-              facilities: [],
-              description: hotelContent.description_struct?.map(d => d.paragraphs?.join(' ')).join('\n\n') || '',
-              rates: [],
-              reviewScore: 0,
-              reviewCount: 0,
-              propertyClass: hotelContent.star_rating || 0,
-              reviewScoreWord: null,
-              isPreferred: false,
-              isSearchedHotel: true, // Mark as searched hotel for frontend prioritization
-              checkIn: hotelContent.check_in_time || null,
-              checkOut: hotelContent.check_out_time || null,
-              coordinates: {
-                latitude: hotelContent.latitude || 0,
-                longitude: hotelContent.longitude || 0
-              },
-              noRatesAvailable: true,
-              message: 'No rates available for selected dates. Try different dates or contact us for availability.'
-            };
-
-            // Extract amenities
-            if (hotelContent.amenity_groups) {
-              hotelContent.amenity_groups.forEach(group => {
-                if (group.amenities) {
-                  group.amenities.forEach(amenity => {
-                    const amenityName = typeof amenity === 'string' ? amenity : amenity;
-                    if (amenityName) {
-                      formattedHotel.amenities.push(amenityName);
-                      formattedHotel.facilities.push(amenityName);
-                    }
-                  });
-                }
-              });
-            }
-
-            // Add the searched hotel to the front of the results
-            searchResults.hotels.unshift(formattedHotel);
-            console.log(`✅ Hotel fetched from Booking API and added to top: ${formattedHotel.name} (total: ${searchResults.hotels.length} hotels)`);
-            console.log(`   Images: ${formattedHotel.images.length}, Amenities: ${formattedHotel.amenities.length}`);
+          } else {
+             console.log(`❌ Searched hotel (HID: ${searchedHotelHid}) not found in Local DB either.`);
+             // STRICT COMPLIANCE: Do NOT call API as fallback.
+             // "We do not allow parsing the hotel static content during the search"
+             // If it's missing from DB, it's missing from search. period.
           }
-        } catch (err) {
-          console.error('Error fetching from Booking API:', err.message);
+        } catch (error) {
+          console.error('❌ Error checking local DB for searched hotel:', error.message);
         }
       }
     }
@@ -531,13 +483,21 @@ router.get('/details/:hid', async (req, res) => {
       searchDates = rateHawkService.constructor.getDefaultDates(30, 3);
     }
 
+    // Parse children ages - can be comma-separated string like "5,8,12" or empty
+    let childrenAges = [];
+    if (children && typeof children === 'string' && children.length > 0) {
+      childrenAges = children.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age) && age >= 0 && age <= 17);
+    } else if (Array.isArray(children)) {
+      childrenAges = children.map(age => parseInt(age)).filter(age => !isNaN(age));
+    }
+
     let hotelDetails;
     try {
       // Try to get hotel details with rates
       hotelDetails = await rateHawkService.getHotelDetails(hotelId, {
         ...searchDates,
         adults: parseInt(adults) || 2,
-        children: children ? (Array.isArray(children) ? children : []) : [],
+        children: childrenAges,
         match_hash
       });
     } catch (error) {
@@ -643,7 +603,8 @@ router.get('/details/:hid', async (req, res) => {
       rates: hotelDetails.rates,
       check_in_time: hotelDetails.check_in_time,
       check_out_time: hotelDetails.check_out_time,
-      metapolicy_extra_info: hotelDetails.metapolicy_extra_info
+      metapolicy_extra_info: hotelDetails.metapolicy_extra_info,
+      metapolicy_struct: hotelDetails.metapolicy_struct
     };
 
     successResponse(res, { hotel: formattedHotel }, 'Hotel details retrieved successfully');

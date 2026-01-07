@@ -60,10 +60,24 @@ export const HotelDetails: React.FC = () => {
 
   // Parse URL parameters
   const searchParams = new URLSearchParams(location.search);
+
+  // Generate default dates if not provided
+  const getDefaultCheckIn = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  const getDefaultCheckOut = () => {
+    const dayAfter = new Date();
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    return dayAfter.toISOString().split('T')[0];
+  };
+
   const bookingParams = {
     destination: searchParams.get('destination') || '',
-    checkIn: searchParams.get('checkIn') || '',
-    checkOut: searchParams.get('checkOut') || '',
+    checkIn: searchParams.get('checkIn') || getDefaultCheckIn(),
+    checkOut: searchParams.get('checkOut') || getDefaultCheckOut(),
     rooms: parseInt(searchParams.get('rooms') || '1'),
     adults: parseInt(searchParams.get('adults') || '2'),
     children: parseInt(searchParams.get('children') || '0')
@@ -133,10 +147,12 @@ export const HotelDetails: React.FC = () => {
           propertyClass: hotelData.propertyClass || 0,
           reviewScoreWord: hotelData.reviewScoreWord || null,
           isPreferred: hotelData.isPreferred || false,
-          checkIn: hotelData.checkInTime || null,
-          checkOut: hotelData.checkOutTime || null,
+          checkIn: hotelData.check_in_time || hotelData.checkInTime || null,
+          checkOut: hotelData.check_out_time || hotelData.checkOutTime || null,
           coordinates: hotelData.coordinates || { latitude: 0, longitude: 0 },
-          rates: hotelData.rates || []
+          rates: hotelData.rates || [],
+          metapolicy_extra_info: hotelData.metapolicy_extra_info || '',
+          metapolicy_struct: hotelData.metapolicy_struct || null
         };
 
         setHotel(transformedHotel);
@@ -209,20 +225,49 @@ export const HotelDetails: React.FC = () => {
        return;
     }
 
-    // Just picking the first one for the demo flow, or pass all
-    // Ideally we should pass a list of selected rates to the booking page
-    // For now we assume single room booking or adapt the booking page to handle multiple
-    const firstHash = selectedHashes[0];
-    const rateToBook = hotel?.rates?.find((r: any) => r.match_hash === firstHash);
+    // Build array of all selected rooms with their counts
+    const selectedRoomsData = selectedHashes.map(hash => {
+      const rate = hotel?.rates?.find((r: any) => r.match_hash === hash);
+      const count = selectedRates.get(hash) || 1;
+      return { ...rate, count };
+    }).filter(Boolean);
 
-    if (!rateToBook) return;
+    // For URL params, use the first rate as primary but include total rooms
+    const primaryRate = selectedRoomsData[0];
+    const totalRooms = selectedRoomsData.reduce((sum, r) => sum + (r.count || 1), 0);
 
-    history.push(`/hotels/booking/${hotel?.id}`, {
+    // Build URL with booking params (using bookingParams object which has default dates)
+    const urlParams = new URLSearchParams({
+      hotelId: hotel?.hid?.toString() || hotel?.id || '',
+      hotelName: hotel?.name || '',
+      hotelAddress: hotel?.address || '',
+      hotelCity: hotel?.city || '',
+      hotelCountry: hotel?.country || '',
+      hotelRating: hotel?.rating?.toString() || '0',
+      hotelImage: hotel?.images?.[0] || '',
+      checkIn: bookingParams.checkIn,
+      checkOut: bookingParams.checkOut,
+      rooms: totalRooms.toString(),
+      adults: bookingParams.adults.toString(),
+      children: bookingParams.children.toString(),
+      // Primary room details
+      matchHash: primaryRate?.match_hash || '',
+      roomName: primaryRate?.room_name || '',
+      meal: primaryRate?.meal || '',
+      price: primaryRate?.price?.toString() || '0',
+      currency: primaryRate?.currency || 'SAR',
+      // Multiroom flag
+      isMultiroom: (selectedRoomsData.length > 1 || totalRooms > 1).toString()
+    });
+
+    // Navigate with state containing full room data
+    history.push(`/hotels/booking/${hotel?.id}?${urlParams.toString()}`, {
       hotel,
-      selectedRate: rateToBook,
-      checkIn: searchParams.get('checkIn') || '',
-      checkOut: searchParams.get('checkOut') || '',
-      guests: parseInt(searchParams.get('guests') || '2', 10)
+      selectedRooms: selectedRoomsData,
+      selectedRate: primaryRate,
+      checkIn: bookingParams.checkIn,
+      checkOut: bookingParams.checkOut,
+      guests: bookingParams.adults
     });
   };
 
@@ -483,6 +528,16 @@ export const HotelDetails: React.FC = () => {
                  <p className="text-gray-500">{t('hotels.noRoomsAvailable', 'No rooms available for these dates.')}</p>
               </div>
            )}
+        </div>
+
+        {/* Hotel Policies Section */}
+        <div className="mb-12">
+          <HotelPoliciesCard
+            checkInTime={hotel.checkIn || undefined}
+            checkOutTime={hotel.checkOut || undefined}
+            metapolicyInfo={(hotel as any).metapolicy_extra_info || undefined}
+            metapolicyStruct={(hotel as any).metapolicy_struct || undefined}
+          />
         </div>
 
         {/* Sticky Mobile Book Button */}

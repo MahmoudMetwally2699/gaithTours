@@ -51,12 +51,16 @@ export const HotelBookingFlow: React.FC = () => {
   };
 
   // Extract selected rate data from URL parameters
+  // Parse price as number to avoid NaN display issues
+  const rawPrice = searchParams.get('price');
+  const parsedPrice = rawPrice ? parseFloat(rawPrice) : 0;
+
   const selectedRateData = {
     matchHash: searchParams.get('matchHash') || '',
     roomName: searchParams.get('roomName') || '',
     meal: searchParams.get('meal') || '',
-    price: searchParams.get('price') || '',
-    currency: searchParams.get('currency') || ''
+    price: !isNaN(parsedPrice) ? parsedPrice : 0,
+    currency: searchParams.get('currency') || 'SAR'
   };
   const [currentStep, setCurrentStep] = useState(1);
   const [showBookingModal, setShowBookingModal] = useState(false);  const [formData, setFormData] = useState({
@@ -250,13 +254,24 @@ export const HotelBookingFlow: React.FC = () => {
                         </div>
                         <div className="flex items-baseline">
                           <span className="text-3xl font-bold text-orange-600">
-                            {selectedRateData.price} {selectedRateData.currency}
+                            {selectedRateData.price > 0
+                              ? `${(selectedRateData.price * hotelData.rooms).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${selectedRateData.currency}`
+                              : 'Price on request'}
                           </span>
-                          <span className="text-sm text-gray-600 ml-2">per night</span>
+                          {selectedRateData.price > 0 && (
+                            <span className="text-sm text-gray-600 ml-2">
+                              {hotelData.rooms > 1 ? `(${selectedRateData.price.toLocaleString()} × ${hotelData.rooms} rooms)` : 'per night'}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col gap-2 items-end">
+                      {hotelData.rooms > 1 && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-orange-100 text-orange-700">
+                          × {hotelData.rooms} {t('booking.rooms', 'rooms')}
+                        </span>
+                      )}
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
                         ✓ Selected
                       </span>
@@ -903,7 +918,7 @@ export const HotelBookingFlow: React.FC = () => {
             nationality: user?.nationality || 'SA',
             email: user?.email || '',
             hotelUrl: '',
-            hotelPrice: selectedRateData.price,
+            hotelPrice: selectedRateData.price.toString(),
             guests_list: formData.additionalGuests,
             notes: formData.specialRequests,
             attachments: formData.attachments,

@@ -10,9 +10,11 @@ import { toast } from 'react-hot-toast';
 interface LocationState {
   hotel: any;
   selectedRate: any;
+  selectedRooms?: any[]; // Multiple room selections with count
   checkIn: string;
   checkOut: string;
   guests: number;
+  rooms?: number;
 }
 
 export const BookingPage: React.FC = () => {
@@ -49,7 +51,7 @@ export const BookingPage: React.FC = () => {
     return null;
   }
 
-  const { hotel, selectedRate, checkIn, checkOut, guests } = state;
+  const { hotel, selectedRate, selectedRooms, checkIn, checkOut, guests, rooms } = state;
 
   const handleFormChange = (data: Partial<GuestFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -264,9 +266,11 @@ export const BookingPage: React.FC = () => {
             <BookingSummaryCard
               hotel={hotel}
               selectedRate={selectedRate}
+              selectedRooms={selectedRooms}
               checkIn={checkIn}
               checkOut={checkOut}
               guests={guests}
+              rooms={rooms}
             />
           </div>
         </div>

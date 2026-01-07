@@ -41,7 +41,7 @@ export const MainSection: React.FC = () => {
   const [destination, setDestination] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
-  const [guests, setGuests] = useState({ rooms: 1, adults: 2, children: 0 });
+  const [guests, setGuests] = useState({ rooms: 1, adults: 2, children: 0, childrenAges: [] as number[] });
   const [isWorkTravel, setIsWorkTravel] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGuestPicker, setShowGuestPicker] = useState(false);
@@ -269,13 +269,13 @@ export const MainSection: React.FC = () => {
       checkOut: checkOutDate ? dayjs(checkOutDate).format('YYYY-MM-DD') : '',
       rooms: guests.rooms.toString(),
       adults: guests.adults.toString(),
-      children: guests.children.toString()
+      children: guests.childrenAges.length > 0 ? guests.childrenAges.join(',') : ''
     });
     history.push(`/hotels/search?${queryParams.toString()}`);
   };
 
   return (
-    <div className="relative h-[420px] w-full overflow-visible font-sans">
+    <div className="relative z-50 h-[420px] w-full overflow-visible font-sans">
       {/* Background Image */}
       <div className="absolute inset-0 z-0 h-[420px] overflow-hidden rounded-b-[3rem]">
         <img
@@ -384,7 +384,7 @@ export const MainSection: React.FC = () => {
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             className="w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm"
+             className="relative z-[100] w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm"
            >
               <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
 
@@ -498,8 +498,11 @@ export const MainSection: React.FC = () => {
 
                     {/* Guest Picker Popup */}
                     {showGuestPicker && (
-                      <div className="absolute top-full right-0 mt-2 z-50 bg-white rounded-2xl shadow-2xl p-6 w-80">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Rooms and Guests</h3>
+                      <div className="absolute top-full right-0 mt-2 z-[9999] bg-white rounded-2xl shadow-2xl w-80 max-h-[400px] flex flex-col">
+                        <h3 className="text-lg font-bold text-gray-800 p-6 pb-2">Rooms and Guests</h3>
+
+                        {/* Scrollable content area */}
+                        <div className="flex-1 overflow-y-auto px-6 pb-2">
 
                         {/* Rooms */}
                         <div className="flex items-center justify-between py-3 border-b border-gray-200">
@@ -553,39 +556,81 @@ export const MainSection: React.FC = () => {
                         </div>
 
                         {/* Children */}
-                        <div className="flex items-center justify-between py-3">
-                          <div>
-                            <p className="font-medium text-gray-800">Children</p>
-                            <p className="text-xs text-gray-500">0-17yrs</p>
+                        <div className="py-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-gray-800">Children</p>
+                              <p className="text-xs text-gray-500">0-17yrs</p>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <button
+                                type="button"
+                                onClick={() => setGuests(prev => ({
+                                  ...prev,
+                                  children: Math.max(0, prev.children - 1),
+                                  childrenAges: prev.childrenAges.slice(0, -1)
+                                }))}
+                                disabled={guests.children <= 0}
+                                className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                              >
+                                −
+                              </button>
+                              <span className="w-8 text-center font-medium text-gray-800">{guests.children}</span>
+                              <button
+                                type="button"
+                                onClick={() => setGuests(prev => ({
+                                  ...prev,
+                                  children: prev.children + 1,
+                                  childrenAges: [...prev.childrenAges, 5] // Default age 5
+                                }))}
+                                className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-3">
-                            <button
-                              type="button"
-                              onClick={() => setGuests(prev => ({ ...prev, children: Math.max(0, prev.children - 1) }))}
-                              disabled={guests.children <= 0}
-                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
-                            >
-                              −
-                            </button>
-                            <span className="w-8 text-center font-medium text-gray-800">{guests.children}</span>
-                            <button
-                              type="button"
-                              onClick={() => setGuests(prev => ({ ...prev, children: prev.children + 1 }))}
-                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
-                            >
-                              +
-                            </button>
-                          </div>
+
+                          {/* Child Age Selectors - Improved Grid Layout */}
+                          {guests.childrenAges.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
+                              <div className={`grid ${guests.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                                {guests.childrenAges.map((age, index) => (
+                                  <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                                    <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                    <select
+                                      value={age}
+                                      onChange={(e) => {
+                                        const newAges = [...guests.childrenAges];
+                                        newAges[index] = parseInt(e.target.value);
+                                        setGuests(prev => ({ ...prev, childrenAges: newAges }));
+                                      }}
+                                      className="flex-1 min-w-0 px-2 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                                    >
+                                      {[...Array(18)].map((_, i) => (
+                                        <option key={i} value={i}>
+                                          {i} {i === 1 ? 'yr' : 'yrs'}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         </div>
 
-                        {/* Done Button */}
-                        <button
-                          type="button"
-                          onClick={() => setShowGuestPicker(false)}
-                          className="w-full mt-4 bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition"
-                        >
-                          Done
-                        </button>
+                        {/* Done Button - Fixed at bottom */}
+                        <div className="p-4 pt-2 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => setShowGuestPicker(false)}
+                            className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition"
+                          >
+                            Done
+                          </button>
+                        </div>
                       </div>
                     )}
                  </div>

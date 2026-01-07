@@ -18,6 +18,13 @@ interface BedGroup {
   }>;
 }
 
+interface TaxItem {
+  name: string;
+  amount: number;
+  currency: string;
+  included: boolean;
+}
+
 interface RoomRate {
   match_hash: string;
   room_name: string;
@@ -37,7 +44,10 @@ interface RoomRate {
   requires_credit_card?: boolean;
   room_images?: string[];
   room_image_count?: number;
-  taxes?: any[];
+  taxes?: TaxItem[];
+  tax_data?: {
+    taxes?: TaxItem[];
+  };
   cancellation_details?: any;
   daily_prices?: string[];
 }
@@ -357,9 +367,22 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         <div className="text-2xl font-bold text-gray-900 leading-none">
                            {rate.currency} {Number(rate.price).toFixed(0)}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                           + {rate.currency} {((Number(rate.taxes?.[0]?.amount || 0))).toFixed(0)} {t('hotels.taxesAndFees', 'taxes & fees')}
-                        </div>
+                        {/* Tax breakdown display */}
+                        {rate.taxes && rate.taxes.length > 0 ? (
+                          <div className="text-xs mt-1 space-y-0.5">
+                            {rate.taxes.map((tax, taxIdx) => (
+                              <div key={taxIdx} className={tax.included ? 'text-gray-500' : 'text-orange-600 font-medium'}>
+                                {tax.included ? '' : '⚠ '}
+                                + {rate.currency} {Number(tax.amount || 0).toFixed(0)} {tax.name || t('hotels.taxes', 'taxes')}
+                                {!tax.included && <span className="text-[10px]"> ({t('hotels.payAtHotel', 'pay at hotel')})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {t('hotels.taxesIncluded', 'Taxes included')}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 mt-4 w-full justify-end">

@@ -103,7 +103,7 @@ router.post('/create', async (req, res) => {
           id: hotelId,
           name: hotelName,
           address: hotelAddress || '',
-          city: hotelCity || '',
+          city: hotelCity || hotelAddress || 'Unknown',
           country: hotelCountry || hotelCity || 'Unknown', // Use country, city, or fallback
           rating: parseFloat(hotelRating) || 0,
           image: hotelImage || '',
@@ -126,7 +126,8 @@ router.post('/create', async (req, res) => {
         ratehawkStatus: 'hash_expired'
       });
 
-      await reservation.save();
+      // TEMP: Commented out due to MongoDB quota limit
+      // await reservation.save();
 
       return successResponse(res, {
         reservation: {
@@ -171,7 +172,7 @@ router.post('/create', async (req, res) => {
             id: hotelId,
             name: hotelName,
             address: hotelAddress || '',
-            city: hotelCity || '',
+            city: hotelCity || hotelAddress || 'Unknown',
             country: hotelCountry || hotelCity || 'Unknown', // Use country, city, or fallback
             rating: parseFloat(hotelRating) || 0,
             image: hotelImage || '',
@@ -195,7 +196,8 @@ router.post('/create', async (req, res) => {
           ratehawkStatus: 'sandbox'
         });
 
-        await reservation.save();
+        // TEMP: Commented out due to MongoDB quota limit
+        // await reservation.save();
 
         return successResponse(res, {
           reservation: {
@@ -236,8 +238,15 @@ router.post('/create', async (req, res) => {
 
     const startBookingResult = await rateHawkService.startBooking(partnerOrderId, {
       user: {
-        email: guestEmail || req.user.email,
-        phone: cleanPhone
+        email: guestEmail || req.user?.email,
+        phone: cleanPhone,
+        comment: specialRequests || ''
+      },
+      supplier_data: {
+        first_name_original: firstName,
+        last_name_original: lastName,
+        phone: cleanPhone,
+        email: guestEmail || req.user?.email
       },
       rooms: [
         {
@@ -251,7 +260,7 @@ router.post('/create', async (req, res) => {
       ],
       language: 'en',
       payment_type: {
-        type: 'deposit', // Changed to deposit to match test script
+        type: 'deposit',
         amount: totalPrice.toFixed(2),
         currency_code: currency || 'USD'
       }
@@ -279,7 +288,14 @@ router.post('/create', async (req, res) => {
     }
 
     if (bookingStatus.status !== 'ok') {
-      return errorResponse(res, `Booking failed: ${bookingStatus.status}`, 500);
+      // Log detailed error for investigation (Issue #1)
+      console.error('❌ Booking failed with status:', bookingStatus.status);
+      console.error('   Partner Order ID:', partnerOrderId);
+      console.error('   Full response:', JSON.stringify(bookingStatus, null, 2));
+
+      // Provide more specific error message
+      const errorDetails = bookingStatus.error || bookingStatus.message || bookingStatus.status;
+      return errorResponse(res, `Booking failed: ${errorDetails}. Order ID: ${partnerOrderId}`, 500);
     }
 
     console.log('✅ Booking confirmed!');
@@ -302,7 +318,7 @@ router.post('/create', async (req, res) => {
         id: hotelId,
         name: hotelName,
         address: hotelAddress || '',
-        city: hotelCity || '',
+        city: hotelCity || hotelAddress || 'Unknown',
         country: hotelCountry || hotelCity || 'Unknown', // Use country, city, or fallback
         rating: parseFloat(hotelRating) || 0,
         image: hotelImage || '',
@@ -326,7 +342,8 @@ router.post('/create', async (req, res) => {
       ratehawkStatus: bookingStatus.status
     });
 
-    await reservation.save();
+    // TEMP: Commented out due to MongoDB quota limit
+    // await reservation.save();
 
     // Generate invoice
     const invoiceNumber = `INV-${Date.now()}-${reservation._id.toString().slice(-6).toUpperCase()}`;
@@ -356,11 +373,13 @@ router.post('/create', async (req, res) => {
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     });
 
-    await invoice.save();
+    // TEMP: Commented out due to MongoDB quota limit
+    // await invoice.save();
 
     // Update reservation with invoice reference
-    reservation.invoice = invoice._id;
-    await reservation.save();
+    // TEMP: Commented out due to MongoDB quota limit
+    // reservation.invoice = invoice._id;
+    // await reservation.save();
 
     successResponse(res, {
       reservation: {
