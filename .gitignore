@@ -25,3 +25,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Data Dumps
+backend/data/dumps/hotel_dump_2026-01-06.jsonl.zst
