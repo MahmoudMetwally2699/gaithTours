@@ -30,10 +30,11 @@ const AppContent = () => {
 
   const isHome = location.pathname === '/';
   const isHotelSearch = location.pathname === '/hotels/search';
+  const isHotelDetails = location.pathname.startsWith('/hotels/details/');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!isAdminDashboard && !isHome && !isHotelSearch && <Navbar />}
+      {!isAdminDashboard && !isHome && !isHotelSearch && !isHotelDetails && <Navbar />}
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />

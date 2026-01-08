@@ -14,7 +14,9 @@ import {
   ClockIcon,
   XMarkIcon,
   ArrowLeftIcon,
-  CheckIcon
+  CheckIcon,
+  ChevronDownIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { Hotel } from '../types/hotel';
@@ -316,8 +318,139 @@ export const HotelDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-20 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white pb-20 font-sans">
+      {/* Header Section - Same as Search Results */}
+      <div className="relative w-full overflow-visible font-sans">
+        {/* Solid Background Color */}
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-b-[3rem] bg-[#E67915]">
+        </div>
+
+        {/* Main Content Container */}
+        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-6">
+
+          {/* Custom Header */}
+          <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-8 space-y-4 sm:space-y-0">
+
+            {/* Left: Auth Buttons */}
+            <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
+              <a href="/login" className="text-white font-medium hover:text-orange-200 transition text-lg shadow-sm">
+                Sign in
+              </a>
+              <a
+                href="/register"
+                className="bg-[#F7871D] hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition shadow-md"
+              >
+                Register
+              </a>
+            </div>
+
+            {/* Center/Right: Info & Logo */}
+            <div className="flex items-center space-x-6 lg:space-x-8 rtl:space-x-reverse order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
+
+              {/* Contact & Settings */}
+              <div className="hidden md:flex items-center space-x-6 rtl:space-x-reverse text-white text-sm font-medium">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:text-orange-200">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span>+966549412412</span>
+                </div>
+
+                <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-200">
+                  <span>US</span>
+                  <ChevronDownIcon className="w-3 h-3" />
+                </div>
+
+                <button className="flex items-center space-x-1 hover:text-orange-200 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg>
+                  <span className="uppercase">EN</span>
+                  <ChevronDownIcon className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Logo */}
+              <a href="/" className="flex-shrink-0">
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-16 sm:h-20 w-auto drop-shadow-lg" />
+              </a>
+            </div>
+          </header>
+
+          {/* Tabs */}
+          <div className="flex space-x-4 rtl:space-x-reverse mb-6 justify-center sm:justify-start rtl:justify-start">
+            <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
+              <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+              <span className="text-lg font-medium">Flights</span>
+            </button>
+
+            <button className="flex items-center space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-4 py-2">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              </svg>
+              <span className="text-lg font-medium">Stays</span>
+            </button>
+          </div>
+
+          {/* Search Bar - Pill Shape */}
+          <div className="w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm mb-6">
+            <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
+
+              {/* Destination */}
+              <div className="flex-[1.5] w-full p-4 flex items-center space-x-3 rtl:space-x-reverse min-w-0">
+                <MapPinIcon className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 flex flex-col min-w-0">
+                  <span className="text-sm font-bold text-gray-800 truncate">{bookingParams.destination || hotel?.city || 'Destination'}</span>
+                  <span className="text-xs text-gray-400">Where are you going?</span>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div className="flex flex-col w-full">
+                  <span className="text-sm font-bold text-gray-800">
+                    {bookingParams.checkIn} - {bookingParams.checkOut}
+                  </span>
+                  <span className="text-xs text-gray-400">Check-in - Check-out</span>
+                </div>
+              </div>
+
+              {/* Guests */}
+              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
+                <UserIcon className="w-6 h-6 text-gray-700" />
+                <span className="text-gray-700 text-lg">
+                  {bookingParams.rooms} room, {bookingParams.adults} adults, {bookingParams.children} children
+                </span>
+              </div>
+
+              {/* Search Button */}
+              <div className="p-2">
+                <button
+                  onClick={() => history.push('/')}
+                  className="bg-[#F7871D] hover:bg-orange-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Travelling for work checkbox */}
+          <div className="flex items-center space-x-2 mb-4">
+            <input type="checkbox" id="business" className="w-4 h-4 rounded border-gray-300" />
+            <label htmlFor="business" className="text-white text-sm">I'm travelling for work</label>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start mb-6">
