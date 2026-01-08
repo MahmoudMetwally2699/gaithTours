@@ -20,25 +20,103 @@ export const PopularCities: React.FC = () => {
       id: 1,
       name: 'Jeddah',
       count: 245,
-      image: '/hero/jeddah-corniche-red-sea-saudi-arabia-p63d.avif'
+      image: '/مدن السعودية/جدة.jpg'
     },
     {
       id: 2,
       name: 'Riyadh',
       count: 312,
-      image: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+      image: '/مدن السعودية/الرياض.jpg'
     },
     {
       id: 3,
       name: 'Al Khobar',
       count: 128,
-      image: 'https://images.unsplash.com/photo-1580837119756-563d608dd119?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+      image: '/مدن السعودية/الخبر.jpg'
     },
     {
       id: 4,
       name: 'Makkah',
       count: 487,
-      image: 'https://images.unsplash.com/photo-1591604021695-0c69b7c05981?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+      image: '/مدن السعودية/مكة المكرمة.jpg'
+    },
+    {
+      id: 5,
+      name: 'Madinah',
+      count: 356,
+      image: '/مدن السعودية/المدينة المنورة.png'
+    },
+    {
+      id: 6,
+      name: 'Dammam',
+      count: 189,
+      image: '/مدن السعودية/مدينة الدمام.jpg'
+    },
+    {
+      id: 7,
+      name: 'Taif',
+      count: 142,
+      image: '/مدن السعودية/الطائف.jpg'
+    },
+    {
+      id: 8,
+      name: 'AlUla',
+      count: 67,
+      image: '/مدن السعودية/مدينة العلا.jpg'
+    },
+    {
+      id: 9,
+      name: 'Abha',
+      count: 98,
+      image: '/مدن السعودية/أبها.jpg'
+    },
+    {
+      id: 10,
+      name: 'Tabuk',
+      count: 76,
+      image: '/مدن السعودية/مدينة تبوك.jpeg'
+    },
+    {
+      id: 11,
+      name: 'Hail',
+      count: 54,
+      image: '/مدن السعودية/حائل.jpg'
+    },
+    {
+      id: 12,
+      name: 'Jazan',
+      count: 63,
+      image: '/مدن السعودية/جازان.jpg'
+    },
+    {
+      id: 13,
+      name: 'Jubail',
+      count: 82,
+      image: '/مدن السعودية/مدينة الجبيل.jpg'
+    },
+    {
+      id: 14,
+      name: 'Buraydah',
+      count: 71,
+      image: '/مدن السعودية/مدينة بريدة.jpeg'
+    },
+    {
+      id: 15,
+      name: 'Khamis Mushait',
+      count: 59,
+      image: '/مدن السعودية/مدينة خميس مشيط.jpg'
+    },
+    {
+      id: 16,
+      name: 'Najran',
+      count: 45,
+      image: '/مدن السعودية/نجران.jpg'
+    },
+    {
+      id: 17,
+      name: 'Yanbu',
+      count: 88,
+      image: '/مدن السعودية/ينبع.jpg'
     }
   ]);
   const [loading] = useState(false);
