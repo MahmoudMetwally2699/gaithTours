@@ -417,13 +417,8 @@ export const HotelSearchResults: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Header - Same style as Homepage MainSection */}
       <div className="relative w-full overflow-visible font-sans">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0 overflow-hidden rounded-b-[3rem]">
-          <img
-            src="/new-design/header-photo-background.svg"
-            alt="Background"
-            className="w-full h-full object-cover object-center"
-          />
+        {/* Solid Background Color */}
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-b-[3rem] bg-[#E67915]">
         </div>
 
         {/* Main Content Container */}
@@ -473,7 +468,7 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Logo */}
               <a href="/" className="flex-shrink-0">
-                <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-16 sm:h-20 w-auto drop-shadow-lg" />
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-16 sm:h-20 w-auto drop-shadow-lg" />
               </a>
             </div>
           </header>
