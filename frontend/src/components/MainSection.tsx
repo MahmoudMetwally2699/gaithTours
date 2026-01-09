@@ -275,9 +275,9 @@ export const MainSection: React.FC = () => {
   };
 
   return (
-    <div className="relative z-50 h-[420px] w-full overflow-visible font-sans">
+    <div className="relative z-50 h-[300px] w-full overflow-visible font-sans">
       {/* Background Image */}
-      <div className="absolute inset-0 z-0 h-[420px] overflow-hidden rounded-b-[3rem]">
+      <div className="absolute inset-0 z-0 h-[300px] overflow-hidden rounded-b-[3rem]">
         <img
           src="/new-design/header-photo-background.svg"
           alt="Background"
@@ -288,10 +288,10 @@ export const MainSection: React.FC = () => {
       </div>
 
       {/* Main Content Container */}
-      <div className="relative z-10 flex flex-col h-full px-4 sm:px-8 lg:px-16 py-6">
+      <div className="relative z-10 flex flex-col h-full px-4 sm:px-8 lg:px-16 py-3">
 
         {/* Custom Header */}
-        <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-4 sm:mb-8 space-y-4 sm:space-y-0">
+        <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-2 sm:mb-4 space-y-2 sm:space-y-0">
 
           {/* Left: Auth Buttons */}
           <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
@@ -344,7 +344,7 @@ export const MainSection: React.FC = () => {
 
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
-               <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-16 sm:h-20 w-auto drop-shadow-lg" />
+               <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-12 sm:h-14 w-auto drop-shadow-lg" />
             </Link>
           </div>
         </header>
@@ -356,16 +356,16 @@ export const MainSection: React.FC = () => {
            <motion.div
              initial={{ opacity: 0, y: 30 }}
              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 text-center sm:text-left rtl:text-right"
+              className="mb-3 text-center sm:text-left rtl:text-right"
             >
-               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-tight drop-shadow-md">
+               <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-white leading-tight drop-shadow-md">
                 Wherever you are...<br />
                 <span className="font-medium">enjoy the best prices</span>
               </h1>
            </motion.div>
 
             {/* Tabs */}
-            <div className="flex space-x-4 rtl:space-x-reverse mb-4 justify-center sm:justify-start rtl:justify-start">
+            <div className="flex space-x-4 rtl:space-x-reverse mb-2 justify-center sm:justify-start rtl:justify-start">
              <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
                 <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

@@ -130,17 +130,17 @@ export const SuggestedHotels: React.FC = () => {
     return (
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">{t('hotels.suggestedForYou', 'Suggested for You')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-[2rem] overflow-hidden shadow-sm h-[480px] animate-pulse border border-gray-100 flex flex-col">
+            <div key={i} className="bg-white rounded-[1.5rem] overflow-hidden shadow-sm h-[320px] animate-pulse border border-gray-100 flex flex-col">
               {/* Image placeholder with lighter tone */}
-              <div className="bg-gray-100 h-64 w-full relative">
+              <div className="bg-gray-100 h-40 w-full relative">
                  {/* Badge placeholder with border */}
-                 <div className="absolute -bottom-6 right-6 h-14 w-14 bg-gray-200 rounded-xl border-4 border-white"></div>
+                 <div className="absolute -bottom-5 right-4 h-11 w-11 bg-gray-200 rounded-xl border-4 border-white"></div>
               </div>
 
               {/* Content placeholder */}
-              <div className="pt-10 pb-6 px-6 flex flex-col flex-grow space-y-4">
+              <div className="pt-6 pb-4 px-4 flex flex-col flex-grow space-y-3">
                 {/* Title and Reviews */}
                 <div className="space-y-3">
                    <div className="flex justify-between items-start">
@@ -161,9 +161,9 @@ export const SuggestedHotels: React.FC = () => {
                 </div>
 
                 {/* Price section at bottom */}
-                <div className="mt-auto pt-4 flex justify-end items-baseline border-t border-gray-50">
-                   <div className="h-3 bg-gray-100 rounded w-8 mr-2"></div>
-                   <div className="h-8 bg-gray-200 rounded-lg w-24"></div>
+                <div className="mt-auto pt-3 flex justify-end items-baseline border-t border-gray-50">
+                   <div className="h-3 bg-gray-100 rounded w-8 mr-1"></div>
+                   <div className="h-6 bg-gray-200 rounded-lg w-20"></div>
                 </div>
               </div>
             </div>
@@ -211,10 +211,10 @@ export const SuggestedHotels: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {hotels
             .filter(h => h.price && h.price > 0)
-            .slice(0, 6)
+            .slice(0, 8)
             .map((hotel) => (
               <HotelCard
                 key={hotel.id}

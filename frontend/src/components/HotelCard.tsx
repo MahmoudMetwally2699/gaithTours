@@ -46,7 +46,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
       onClick={onBook}
     >
       {/* Image Container */}
-      <div className="relative h-56 w-full bg-gray-100">
+      <div className="relative h-40 w-full bg-gray-100">
         <img
           src={hotel.image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={hotel.name}
@@ -60,8 +60,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
 
         {/* Rating Badge (Overlapping) - Only show if valid review score exists */}
         {typeof hotel.rating === 'number' && hotel.rating > 0 && (
-          <div className="absolute -bottom-6 right-6 bg-[#FF8C00] text-white rounded-xl w-14 h-14 flex flex-col items-center justify-center shadow-md z-10">
-            <span className="text-xl font-bold leading-none">
+          <div className="absolute -bottom-5 right-4 bg-[#FF8C00] text-white rounded-xl w-11 h-11 flex flex-col items-center justify-center shadow-md z-10">
+            <span className="text-base font-bold leading-none">
               {Math.min(hotel.rating, 10).toFixed(1)}
             </span>
           </div>
@@ -69,7 +69,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
       </div>
 
       {/* Content */}
-      <div className="pt-8 pb-6 px-6 flex flex-col flex-grow">
+      <div className="pt-6 pb-4 px-4 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-2">
           {/* Title and Reviews (Desktop Layout fix) */}
           <div className="flex-1 min-w-0">
@@ -81,7 +81,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
                  </div>
              </div>
 
-            <h3 className="text-xl font-bold text-[#FF8C00] truncate pr-2">
+            <h3 className="text-base font-bold text-[#FF8C00] truncate pr-2">
               {hotel.name}
             </h3>
 
@@ -90,7 +90,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
               {[...Array(5)].map((_, i) => (
                 <StarIcon
                   key={i}
-                  className={`h-5 w-5 ${i < ((hotel as any).star_rating || Math.round((hotel.rating || 0) / 2)) ? 'text-[#eec85a]' : 'text-gray-200'}`}
+                  className={`h-4 w-4 ${i < ((hotel as any).star_rating || Math.round((hotel.rating || 0) / 2)) ? 'text-[#eec85a]' : 'text-gray-200'}`}
                 />
               ))}
             </div>
@@ -98,16 +98,16 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
         </div>
 
         {/* Address */}
-        <p className="text-gray-400 text-sm mt-2 line-clamp-2 mb-4">
+        <p className="text-gray-400 text-xs mt-1 line-clamp-2 mb-2">
           {hotel.address || hotel.city}
         </p>
 
         {/* Price Section */}
-        <div className="mt-auto flex justify-end items-baseline pt-4 border-t border-gray-50">
+        <div className="mt-auto flex justify-end items-baseline pt-3 border-t border-gray-50">
            {hotel.price && hotel.price > 0 && formatPrice(hotel.price, hotel.currency) ? (
              <>
-               <span className="text-gray-400 text-sm mr-2">{t('hotels.from', 'From')}</span>
-               <span className="text-2xl font-bold text-gray-800">
+               <span className="text-gray-400 text-xs mr-1">{t('hotels.from', 'From')}</span>
+               <span className="text-lg font-bold text-gray-800">
                  {formatPrice(hotel.price, hotel.currency)}
                </span>
              </>

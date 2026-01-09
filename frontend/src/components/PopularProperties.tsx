@@ -101,15 +101,15 @@ export const PopularProperties: React.FC = () => {
 
   if (loading) {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8">Popular 5-star hotels in Saudi Arabia</h2>
-        <div className="flex gap-6 overflow-x-auto pb-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Popular 5-star hotels in Saudi Arabia</h2>
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="min-w-[300px] md:min-w-[340px] bg-white rounded-[2rem] overflow-hidden shadow-sm h-[450px] animate-pulse border border-gray-100 flex flex-col">
-              <div className="bg-gray-100 h-64 w-full relative">
-                <div className="absolute -bottom-6 right-6 h-14 w-14 bg-gray-200 rounded-xl border-4 border-white"></div>
+            <div key={i} className="min-w-[240px] md:min-w-[280px] bg-white rounded-[1.5rem] overflow-hidden shadow-sm h-[320px] animate-pulse border border-gray-100 flex flex-col">
+              <div className="bg-gray-100 h-40 w-full relative">
+                <div className="absolute -bottom-5 right-4 h-11 w-11 bg-gray-200 rounded-xl border-4 border-white"></div>
               </div>
-              <div className="pt-10 pb-6 px-6 flex flex-col flex-grow space-y-4">
+              <div className="pt-6 pb-4 px-4 flex flex-col flex-grow space-y-3">
                 <div className="space-y-3">
                   <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
                   <div className="flex gap-1">
@@ -122,9 +122,9 @@ export const PopularProperties: React.FC = () => {
                   <div className="h-3 bg-gray-100 rounded w-full"></div>
                   <div className="h-3 bg-gray-100 rounded w-2/3"></div>
                 </div>
-                <div className="mt-auto pt-4 flex justify-end items-baseline border-t border-gray-50">
-                  <div className="h-3 bg-gray-100 rounded w-8 mr-2"></div>
-                  <div className="h-8 bg-gray-200 rounded-lg w-24"></div>
+                <div className="mt-auto pt-3 flex justify-end items-baseline border-t border-gray-50">
+                  <div className="h-3 bg-gray-100 rounded w-8 mr-1"></div>
+                  <div className="h-6 bg-gray-200 rounded-lg w-20"></div>
                 </div>
               </div>
             </div>
@@ -149,8 +149,8 @@ export const PopularProperties: React.FC = () => {
   }
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex items-center justify-between mb-8">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Popular 5-star hotels in Saudi Arabia</h2>
         <div className="flex gap-2">
            <button
@@ -170,11 +170,11 @@ export const PopularProperties: React.FC = () => {
 
       <div
         ref={scrollRef}
-        className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory"
+        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {hotels.map((hotel) => (
-          <div key={hotel.id} className="min-w-[300px] md:min-w-[340px] snap-start h-[450px]">
+          <div key={hotel.id} className="min-w-[240px] md:min-w-[280px] snap-start">
             <HotelCard
               hotel={hotel}
               onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}`)}
