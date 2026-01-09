@@ -422,10 +422,10 @@ export const HotelSearchResults: React.FC = () => {
         </div>
 
         {/* Main Content Container */}
-        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-6">
+        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-3">
 
           {/* Custom Header */}
-          <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-8 space-y-4 sm:space-y-0">
+          <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-2 sm:mb-4 space-y-2 sm:space-y-0">
 
             {/* Left: Auth Buttons */}
             <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
@@ -468,13 +468,13 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Logo */}
               <a href="/" className="flex-shrink-0">
-                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-16 sm:h-20 w-auto drop-shadow-lg" />
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-12 sm:h-14 w-auto drop-shadow-lg" />
               </a>
             </div>
           </header>
 
           {/* Tabs */}
-          <div className="flex space-x-4 rtl:space-x-reverse mb-6 justify-center sm:justify-start rtl:justify-start">
+          <div className="flex space-x-4 rtl:space-x-reverse mb-3 justify-center sm:justify-start rtl:justify-start">
             <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
               <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -491,7 +491,7 @@ export const HotelSearchResults: React.FC = () => {
           </div>
 
           {/* Search Bar - Pill Shape */}
-          <div className="w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm mb-6">
+          <div className="w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm mb-3">
             <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
 
               {/* Destination */}
@@ -599,7 +599,7 @@ export const HotelSearchResults: React.FC = () => {
           </div>
 
           {/* Travelling for work checkbox */}
-          <div className="flex items-center space-x-2 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
             <input type="checkbox" id="business" className="w-4 h-4 rounded border-gray-300" />
             <label htmlFor="business" className="text-white text-sm">I'm travelling for work</label>
           </div>
