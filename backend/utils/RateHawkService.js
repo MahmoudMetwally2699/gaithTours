@@ -515,7 +515,7 @@ class RateHawkService {
       checkout,
       adults = 2,
       children = [],
-      residency = 'gb',
+      residency = 'sa',
       language = 'en',
       currency = 'SAR',
       match_hash = null

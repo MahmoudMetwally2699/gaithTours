@@ -389,10 +389,15 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         {rate.taxes && rate.taxes.length > 0 ? (
                           <div className="text-xs mt-1 space-y-0.5">
                             {rate.taxes.map((tax, taxIdx) => (
-                              <div key={taxIdx} className={tax.included ? 'text-gray-500' : 'text-orange-600 font-medium'}>
-                                {tax.included ? '' : '⚠ '}
-                                + {rate.currency} {Number(tax.amount || 0).toFixed(0)} {tax.name || t('hotels.taxes', 'taxes')}
-                                {!tax.included && <span className="text-[10px]"> ({t('hotels.payAtHotel', 'pay at hotel')})</span>}
+                              <div key={taxIdx} className={tax.included ? 'text-gray-500 italic' : 'text-orange-600 font-medium'}>
+                                {tax.included ? (
+                                  <span>{t('hotels.includes', 'Includes')} {rate.currency} {Number(tax.amount || 0).toFixed(0)} {tax.name}</span>
+                                ) : (
+                                  <>
+                                    ⚠ + {rate.currency} {Number(tax.amount || 0).toFixed(0)} {tax.name || t('hotels.taxes', 'taxes')}
+                                    <span className="text-[10px]"> ({t('hotels.payAtHotel', 'pay at hotel')})</span>
+                                  </>
+                                )}
                               </div>
                             ))}
                           </div>
