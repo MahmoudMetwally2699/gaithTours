@@ -93,8 +93,8 @@ router.get('/suggested', async (req, res) => {
         const target = suggestions.regions[0] || suggestions.hotels[0];
         const regionId = target.region_id || target.id;
 
-        // Get dates (tomorrow, 1 night) for current per-night pricing
-        const dates = rateHawkService.constructor.getDefaultDates(1, 1);
+        // Get dates (today, 1 night) for current per-night pricing
+        const dates = rateHawkService.constructor.getDefaultDates(0, 1);
 
         // Search - smart enrichment leverages cache to serve more hotels
         // With cache, we can request more hotels without extra API calls
@@ -244,12 +244,12 @@ router.get('/search', async (req, res) => {
       }, 'Hotels retrieved from cache');
     }
 
-    // Use default dates if not provided (tomorrow, 1 night - same as homepage)
+    // Use default dates if not provided (today, 1 night - same as homepage)
     let searchDates;
     if (checkin && checkout) {
       searchDates = { checkin, checkout };
     } else {
-      searchDates = rateHawkService.constructor.getDefaultDates(1, 1);
+      searchDates = rateHawkService.constructor.getDefaultDates(0, 1);
     }
 
     // Step 1: Get region and hotel suggestions
@@ -475,12 +475,12 @@ router.get('/details/:hid', async (req, res) => {
       return errorResponse(res, 'Invalid hotel ID. Must be a numeric value.', 400);
     }
 
-    // Use default dates if not provided (tomorrow, 1 night - same as homepage)
+    // Use default dates if not provided (today, 1 night - same as homepage)
     let searchDates;
     if (checkin && checkout) {
       searchDates = { checkin, checkout };
     } else {
-      searchDates = rateHawkService.constructor.getDefaultDates(1, 1);
+      searchDates = rateHawkService.constructor.getDefaultDates(0, 1);
     }
 
     // Parse children ages - can be comma-separated string like "5,8,12" or empty
