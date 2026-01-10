@@ -32,6 +32,7 @@ interface RoomRate {
   room_size?: number;
   max_occupancy?: number;
   room_amenities?: string[];
+  meal?: string; // 'breakfast', 'nomeal', 'half-board', 'full-board', 'all-inclusive'
   meal_data?: {
     breakfast_included?: boolean;
     meal_type?: string;
@@ -76,11 +77,29 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const getRateFeaturesKey = (rate: RoomRate) => {
     return JSON.stringify({
       name: rate.room_name, // Include name so different bed types are distinct choices
-      breakfast: rate.meal_data?.breakfast_included,
+      meal: rate.meal, // Use meal field for grouping
       cancellation: rate.is_free_cancellation,
       prepayment: rate.requires_prepayment,
-      // You might want to add other distinguishing features here if necessary
     });
+  };
+
+  // Helper to get meal label and icon
+  const getMealInfo = (meal?: string) => {
+    if (!meal || meal === 'nomeal') {
+      return { label: t('hotels.roomOnly', 'Room only'), icon: '⊘', color: 'text-gray-500' };
+    }
+    switch (meal.toLowerCase()) {
+      case 'breakfast':
+        return { label: t('hotels.breakfastIncluded', 'Breakfast included'), icon: '🍳', color: 'text-green-700' };
+      case 'half-board':
+        return { label: t('hotels.halfBoard', 'Half Board'), icon: '🍽️', color: 'text-green-700' };
+      case 'full-board':
+        return { label: t('hotels.fullBoard', 'Full Board'), icon: '🍽️', color: 'text-green-700' };
+      case 'all-inclusive':
+        return { label: t('hotels.allInclusive', 'All Inclusive'), icon: '🌟', color: 'text-green-700' };
+      default:
+        return { label: meal, icon: '🍽️', color: 'text-green-700' };
+    }
   };
 
   // Filter rates to show only the lowest price for each unique set of features
@@ -299,17 +318,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         </div>
                       )}
 
-                      {rate.meal_data?.breakfast_included ? (
-                        <div className="flex items-center text-green-700 font-medium text-sm">
-                          <span className="mr-2">🍳</span>
-                          {t('hotels.breakfastIncluded', 'Breakfast included')}
-                        </div>
-                      ) : (
-                         <div className="flex items-center text-gray-500 text-sm">
-                          <NoSymbolIcon className="w-4 h-4 mr-2" />
-                          {t('hotels.roomOnly', 'Room only')}
-                        </div>
-                      )}
+                      {/* Meal info - now using actual meal field */}
+                      {(() => {
+                        const mealInfo = getMealInfo(rate.meal);
+                        return (
+                          <div className={`flex items-center font-medium text-sm ${mealInfo.color}`}>
+                            <span className="mr-2">{mealInfo.icon}</span>
+                            {mealInfo.label}
+                          </div>
+                        );
+                      })()}
 
                       {rate.is_free_cancellation ? (
                         <div className="flex items-center text-green-700 font-medium text-sm">

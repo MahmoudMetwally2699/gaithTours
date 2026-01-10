@@ -4,18 +4,31 @@ import { HotelSearchResponse } from '../types/hotel';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 /**
- * Search hotels by destination name with pagination support
+ * Search hotels by destination name with pagination and date support
  * @param destination - The destination name (e.g., "Tokyo", "Paris", "New York")
  * @param page - Page number (default: 1)
  * @param limit - Number of hotels per page (default: 10, max: 50)
+ * @param options - Optional search parameters (dates, guests)
  * @returns Promise that resolves to hotel search results
  */
-const searchHotels = async (destination: string, page: number = 1, limit: number = 10): Promise<HotelSearchResponse> => {
+interface SearchOptions {
+    checkin?: string;
+    checkout?: string;
+    adults?: number;
+    children?: number | string;
+}
+
+const searchHotels = async (
+    destination: string,
+    page: number = 1,
+    limit: number = 10,
+    options?: SearchOptions
+): Promise<HotelSearchResponse> => {
     try {
         // Get auth token from localStorage (optional for search)
         const token = localStorage.getItem('token');
 
-        const options: RequestInit = {
+        const requestOptions: RequestInit = {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -23,18 +36,28 @@ const searchHotels = async (destination: string, page: number = 1, limit: number
             }
         };
 
-        // URL with destination, page, and limit parameters
-        const url = `${API_BASE_URL}/hotels/search?destination=${encodeURIComponent(destination)}&page=${page}&limit=${limit}`;
+        // Build URL with all parameters
+        const params = new URLSearchParams({
+            destination: destination,
+            page: page.toString(),
+            limit: limit.toString()
+        });
 
-        const response = await fetch(url, options);
+        // Add optional date/guest parameters
+        if (options?.checkin) params.append('checkin', options.checkin);
+        if (options?.checkout) params.append('checkout', options.checkout);
+        if (options?.adults) params.append('adults', options.adults.toString());
+        if (options?.children) params.append('children', options.children.toString());
+
+        const url = `${API_BASE_URL}/hotels/search?${params.toString()}`;
+
+        const response = await fetch(url, requestOptions);
 
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        } const data = await response.json();
-
-        // Debug logging
-
+        }
+        const data = await response.json();
 
         // Check if the response is successful
         if (!data.success) {
@@ -52,14 +75,22 @@ const searchHotels = async (destination: string, page: number = 1, limit: number
 /**
  * Get hotel details by ID
  * @param {string} hotelId - The hotel ID
+ * @param {object} options - Optional parameters for dates and guests
  * @returns {Promise<Object>} - Promise that resolves to hotel details
  */
-const getHotelDetails = async (hotelId: string) => {
+interface HotelDetailsOptions {
+    checkin?: string;
+    checkout?: string;
+    adults?: number;
+    children?: string;
+}
+
+const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) => {
     try {
         // Get auth token from localStorage (optional for hotel details)
         const token = localStorage.getItem('token');
 
-        const options: RequestInit = {
+        const requestOptions: RequestInit = {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -67,9 +98,20 @@ const getHotelDetails = async (hotelId: string) => {
             }
         };
 
-        const url = `${API_BASE_URL}/hotels/details/${hotelId}`;
+        // Build URL with optional query parameters
+        let url = `${API_BASE_URL}/hotels/details/${hotelId}`;
+        const params = new URLSearchParams();
 
-        const response = await fetch(url, options);
+        if (options?.checkin) params.append('checkin', options.checkin);
+        if (options?.checkout) params.append('checkout', options.checkout);
+        if (options?.adults) params.append('adults', options.adults.toString());
+        if (options?.children) params.append('children', options.children);
+
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+
+        const response = await fetch(url, requestOptions);
 
         if (!response.ok) {
             const errorData = await response.json();

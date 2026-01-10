@@ -277,7 +277,18 @@ export const HotelSearchResults: React.FC = () => {
       setError('');
 
       try {
-        const response = await searchHotels(searchQuery.destination, currentPage, hotelsPerPage);
+        // Pass dates and guest count from URL parameters
+        const response = await searchHotels(
+          searchQuery.destination,
+          currentPage,
+          hotelsPerPage,
+          {
+            checkin: searchQuery.checkIn || undefined,
+            checkout: searchQuery.checkOut || undefined,
+            adults: searchQuery.adults,
+            children: searchQuery.children > 0 ? searchQuery.children : undefined
+          }
+        );
 
         if (response?.hotels) {
           setHotels(response.hotels);
@@ -298,7 +309,7 @@ export const HotelSearchResults: React.FC = () => {
     };
 
     performSearch();
-  }, [searchQuery.destination, currentPage]);
+  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currentPage]);
 
   // Calculate max price for budget filter
   const maxPrice = useMemo(() => {

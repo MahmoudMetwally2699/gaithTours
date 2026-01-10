@@ -126,8 +126,13 @@ export const HotelDetails: React.FC = () => {
       setLoading(true);
       setError('');
         try {
-        // Use the service function
-        const hotelData = await getHotelDetails(hotelId);
+        // Use the service function with date parameters
+        const hotelData = await getHotelDetails(hotelId, {
+          checkin: bookingParams.checkIn,
+          checkout: bookingParams.checkOut,
+          adults: bookingParams.adults,
+          children: bookingParams.children > 0 ? bookingParams.children.toString() : undefined
+        });
 
         // Transform the API response to match our Hotel interface
         const transformedHotel: Hotel = {
@@ -167,7 +172,7 @@ export const HotelDetails: React.FC = () => {
     };
 
     fetchHotelDetails();
-  }, [hotelId, bookingParams.destination]);
+  }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination]);
 
   // Helper to clean room name for grouping
   const normalizeRoomName = (name: string) => {
