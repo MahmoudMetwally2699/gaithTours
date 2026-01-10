@@ -8,6 +8,8 @@ import { Hotel } from '../services/api';
 interface HotelCardProps {
   hotel: Hotel & {
     price?: number;
+    pricePerNight?: number;
+    nights?: number;
     currency?: string;
     reviewCount?: number;
     reviewScoreWord?: string;
@@ -102,9 +104,16 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
           {hotel.address || hotel.city}
         </p>
 
-        {/* Price Section */}
+        {/* Price Section - Per Night */}
         <div className="mt-auto flex justify-end items-baseline pt-3 border-t border-gray-50">
-           {hotel.price && hotel.price > 0 && formatPrice(hotel.price, hotel.currency) ? (
+           {(hotel.pricePerNight && hotel.pricePerNight > 0) ? (
+             <>
+               <span className="text-lg font-bold text-gray-800">
+                 {formatPrice(hotel.pricePerNight, hotel.currency)}
+               </span>
+               <span className="text-gray-400 text-xs ml-1">{t('hotels.perNight', '/night')}</span>
+             </>
+           ) : (hotel.price && hotel.price > 0 && formatPrice(hotel.price, hotel.currency)) ? (
              <>
                <span className="text-gray-400 text-xs mr-1">{t('hotels.from', 'From')}</span>
                <span className="text-lg font-bold text-gray-800">

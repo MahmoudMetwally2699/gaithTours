@@ -242,6 +242,11 @@ class RateHawkService {
       currency
     });
 
+      // Calculate number of nights for per-night pricing
+      const checkinDate = new Date(checkin);
+      const checkoutDate = new Date(checkout);
+      const nights = Math.max(1, Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24)));
+
       // Normalize response to match frontend expectations
     const hotels = (response.data?.hotels || []).map(hotel => {
       const firstRate = hotel.rates?.[0];
@@ -258,6 +263,10 @@ class RateHawkService {
       // Generate placeholder image (will be replaced with real images if available)
       const placeholderImage = `https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=${encodeURIComponent(hotel.id.substring(0, 20))}`;
 
+      // Calculate total price and price per night
+      const totalPrice = paymentType?.show_amount || paymentType?.amount || 0;
+      const pricePerNight = totalPrice > 0 ? Math.round(totalPrice / nights) : 0;
+
       return {
         id: hotel.hid?.toString() || hotel.id, // Use hid as id for frontend compatibility
         hid: hotel.hid,
@@ -265,7 +274,9 @@ class RateHawkService {
         name: hotel.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format ID as name fallback
         rating: firstRate?.rg_ext?.quality || 0,
         reviewScore: firstRate?.rg_ext?.quality || 0,
-        price: paymentType?.show_amount || paymentType?.amount || 0,
+        price: totalPrice,
+        pricePerNight: pricePerNight, // New field for per-night display
+        nights: nights, // Include nights for reference
         currency: paymentType?.show_currency_code || currency,
         image: placeholderImage,
         match_hash: firstRate?.match_hash,

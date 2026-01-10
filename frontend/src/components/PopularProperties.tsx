@@ -8,6 +8,8 @@ import { Hotel } from '../services/api';
 interface ExtendedHotel extends Hotel {
   hid?: string;
   price?: number;
+  pricePerNight?: number;
+  nights?: number;
   currency?: string;
   reviewCount?: number;
   reviewScoreWord?: string;
