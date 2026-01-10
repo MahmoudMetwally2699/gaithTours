@@ -150,6 +150,13 @@ export const PopularProperties: React.FC = () => {
     return null;
   }
 
+  // Generate dates matching what the backend uses (today, 1 night)
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const checkIn = today.toISOString().split('T')[0];
+  const checkOut = tomorrow.toISOString().split('T')[0];
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -179,7 +186,7 @@ export const PopularProperties: React.FC = () => {
           <div key={hotel.id} className="min-w-[240px] md:min-w-[280px] snap-start">
             <HotelCard
               hotel={hotel}
-              onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}`)}
+              onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&adults=2`)}
             />
           </div>
         ))}

@@ -217,13 +217,22 @@ export const SuggestedHotels: React.FC = () => {
           {hotels
             .filter(h => h.price && h.price > 0)
             .slice(0, 8)
-            .map((hotel) => (
-              <HotelCard
-                key={hotel.id}
-                hotel={hotel}
-                onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}`)}
-              />
-            ))}
+            .map((hotel) => {
+              // Generate dates matching what the backend uses (today, 1 night)
+              const today = new Date();
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const checkIn = today.toISOString().split('T')[0];
+              const checkOut = tomorrow.toISOString().split('T')[0];
+
+              return (
+                <HotelCard
+                  key={hotel.id}
+                  hotel={hotel}
+                  onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&adults=2`)}
+                />
+              );
+            })}
         </div>
       </div>
     </section>
