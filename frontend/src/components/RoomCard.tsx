@@ -40,6 +40,8 @@ interface RoomRate {
   price: number;
   original_price?: number;
   currency: string;
+  total_taxes?: number; // Total taxes to display separately (Booking.com style)
+  taxes_currency?: string; // Currency for taxes
   is_free_cancellation?: boolean;
   requires_prepayment?: boolean;
   requires_credit_card?: boolean;
@@ -385,21 +387,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         <div className="text-2xl font-bold text-gray-900 leading-none">
                            {rate.currency} {Number(rate.price).toFixed(0)}
                         </div>
-                        {/* Tax breakdown display */}
-                        {rate.taxes && rate.taxes.length > 0 ? (
-                          <div className="text-xs mt-1 space-y-0.5">
-                            {rate.taxes.map((tax, taxIdx) => (
-                              <div key={taxIdx} className={tax.included ? 'text-gray-500 italic' : 'text-orange-600 font-medium'}>
-                                {tax.included ? (
-                                  <span>{t('hotels.includes', 'Includes')} {rate.currency} {Number(tax.amount || 0).toFixed(0)} {tax.name}</span>
-                                ) : (
-                                  <>
-                                    ⚠ + {rate.currency} {Number(tax.amount || 0).toFixed(0)} {tax.name || t('hotels.taxes', 'taxes')}
-                                    <span className="text-[10px]"> ({t('hotels.payAtHotel', 'pay at hotel')})</span>
-                                  </>
-                                )}
-                              </div>
-                            ))}
+                        {/* Tax display - Booking.com style: single line */}
+                        {rate.total_taxes && rate.total_taxes > 0 ? (
+                          <div className="text-xs text-gray-500 mt-1">
+                            +{rate.taxes_currency || rate.currency} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-500 mt-1">

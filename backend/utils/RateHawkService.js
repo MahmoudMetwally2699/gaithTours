@@ -42,6 +42,10 @@ class RateHawkService {
     if (!this.keyId || !this.apiKey) {
       console.warn('⚠️ RateHawk credentials not configured. Set RATEHAWK_KEY_ID and RATEHAWK_API_KEY in .env');
     }
+
+    // Price markup configuration (from .env, future: dashboard configurable)
+    this.markupPercentage = parseFloat(process.env.HOTEL_MARKUP_PERCENTAGE || '10') / 100;
+    console.log(`💰 Hotel price markup configured: ${this.markupPercentage * 100}%`);
   }
 
   /**
@@ -102,6 +106,16 @@ class RateHawkService {
       this.circuitBreaker.state = 'closed';
     }
     this.circuitBreaker.failures = 0;
+  }
+
+  /**
+   * Apply markup to net price
+   * @param {number} netPrice - The net price from RateHawk (show_amount)
+   * @returns {number} - Price with markup applied
+   */
+  applyMarkup(netPrice) {
+    if (!netPrice || netPrice <= 0) return netPrice;
+    return Math.round(netPrice * (1 + this.markupPercentage));
   }
 
   /**
@@ -263,8 +277,20 @@ class RateHawkService {
       // Generate placeholder image (will be replaced with real images if available)
       const placeholderImage = `https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=${encodeURIComponent(hotel.id.substring(0, 20))}`;
 
-      // Calculate total price and price per night
-      const totalPrice = paymentType?.show_amount || paymentType?.amount || 0;
+      // Calculate total price and price per night (with markup applied)
+      // Calculate total price (Exclusive of taxes, consistent with Details page)
+      // Attempt to extract tax data if available in SERP
+      const showAmount = paymentType?.show_amount || paymentType?.amount || 0;
+      let basePrice = showAmount;
+
+      if (paymentType?.tax_data?.taxes) {
+        const includedTaxes = paymentType.tax_data.taxes
+          .filter(t => t.included_by_supplier)
+          .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        basePrice = showAmount - includedTaxes;
+      }
+
+      const totalPrice = this.applyMarkup(basePrice);
       const pricePerNight = totalPrice > 0 ? Math.round(totalPrice / nights) : 0;
 
       return {
@@ -795,21 +821,50 @@ class RateHawkService {
           };
         })(),
 
-        // Pricing with tax breakdown
-        daily_prices: rate.daily_prices,
-        price: paymentType?.show_amount || paymentType?.amount,
-        original_price: paymentType?.amount, // For showing discounts
-        currency: paymentType?.show_currency_code || currency,
+        // Pricing with tax breakdown (Booking.com style: room price + taxes separately)
+        ...(() => {
+          // 1. Get all taxes
+          const allTaxes = (paymentType?.tax_data?.taxes || []).map(tax => ({
+            name: tax.name,
+            amount: parseFloat(tax.amount) || 0,
+            currency: tax.currency_code,
+            included: tax.included_by_supplier || false
+          }));
 
-        // Tax breakdown
-        tax_data: paymentType?.tax_data || null,
-        taxes: (paymentType?.tax_data?.taxes || []).map(tax => ({
-          name: tax.name,
-          amount: parseFloat(tax.amount),
-          currency: tax.currency_code,
-          included: tax.included_by_supplier || false
-        })),
-        vat_data: paymentType?.vat_data || null,
+          // 2. Calculate base room price (EXCLUSIVE of included taxes)
+          // show_amount includes taxes where included=true. We want to show price WITHOUT them.
+          const showAmount = paymentType?.show_amount || paymentType?.amount || 0;
+          const includedTaxesTotal = allTaxes
+            .filter(tax => tax.included)
+            .reduce((sum, tax) => sum + tax.amount, 0);
+
+          const baseRoomPrice = showAmount - includedTaxesTotal;
+
+          // 3. Apply markup to the EXCLUSIVE base price
+          const priceWithMarkup = this.applyMarkup(baseRoomPrice);
+          const originalPriceWithMarkup = this.applyMarkup(baseRoomPrice); // Use base price for consistency
+
+          // 4. Calculate Total Taxes to display separately (Booking.com style)
+          // Since we stripped included taxes from the price, we must show ALL taxes relative to that base price.
+          // So total_taxes = (included taxes) + (pay at hotel taxes)
+          const totalTaxAmount = allTaxes.reduce((sum, tax) => sum + tax.amount, 0);
+
+          return {
+            daily_prices: rate.daily_prices,
+            price: priceWithMarkup, // Base Room Price + Markup (NO taxes)
+            original_price: originalPriceWithMarkup,
+            currency: paymentType?.show_currency_code || currency,
+
+            // Show ALL taxes below price (since we stripped them from main price)
+            total_taxes: Math.round(totalTaxAmount),
+            taxes_currency: allTaxes[0]?.currency || paymentType?.show_currency_code || currency,
+
+            // Tax breakdown
+            tax_data: paymentType?.tax_data || null,
+            taxes: allTaxes,
+            vat_data: paymentType?.vat_data || null
+          };
+        })(),
 
         // Detailed cancellation policies
         cancellation_policies: paymentType?.cancellation_penalties,
