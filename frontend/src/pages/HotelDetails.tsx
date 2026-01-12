@@ -59,6 +59,16 @@ interface RoomRate {
   daily_prices?: string[];
 }
 
+const getResizedImageUrl = (url: string, size: string = '1024x768') => {
+  if (!url) return '';
+  // Check if URL has the size pattern we expect (from backend it might come as '..._1024x768.jpg')
+  // We want to replace '1024x768' with the requested size
+  if (url.includes('1024x768')) {
+    return url.replace('1024x768', size);
+  }
+  return url;
+};
+
 export const HotelDetails: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { hotelId } = useParams<HotelDetailsParams>();
@@ -659,9 +669,10 @@ export const HotelDetails: React.FC = () => {
                    onClick={() => { setSelectedImageIndex(idx + 1); setShowAllPhotos(true); }}
                  >
                    <img
-                     src={img}
+                     src={getResizedImageUrl(img, '640x400')}
                      alt={`View ${idx + 2}`}
                      className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+                     loading="lazy"
                    />
 
                    {/* Overlay for the last visible grid item if there are more photos */}
@@ -896,10 +907,11 @@ export const HotelDetails: React.FC = () => {
                   {hotelImages.map((img: string, idx: number) => (
                      <img
                         key={idx}
-                        src={img}
+                        src={getResizedImageUrl(img, 'x220')}
                         onClick={() => setSelectedImageIndex(idx)}
                         className={`h-full w-auto object-cover cursor-pointer rounded border-2 ${selectedImageIndex === idx ? 'border-orange-500' : 'border-transparent opacity-60'}`}
                         alt=""
+                        loading="lazy"
                      />
                   ))}
                </div>
