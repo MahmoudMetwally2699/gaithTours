@@ -10,9 +10,15 @@ import {
   XMarkIcon,
   MapIcon,
   UserIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  ClockIcon,
+  MagnifyingGlassIcon,
+  MinusIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { searchHotels } from '../services/hotelService';
@@ -181,6 +187,50 @@ export const HotelSearchResults: React.FC = () => {
   const [isLoadingAutocomplete, setIsLoadingAutocomplete] = useState(false);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const hasUserTyped = useRef(false); // Prevent dropdown on page load
+
+  // New Search State
+  const [checkInDate, setCheckInDate] = useState<Date | null>(
+    searchQuery.checkIn ? new Date(searchQuery.checkIn) : null
+  );
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(
+    searchQuery.checkOut ? new Date(searchQuery.checkOut) : null
+  );
+  const [guestCounts, setGuestCounts] = useState({
+    rooms: searchQuery.rooms,
+    adults: searchQuery.adults,
+    children: searchQuery.children
+  });
+  const [showGuestPopover, setShowGuestPopover] = useState(false);
+
+  // Sync state with URL if it changes externally
+  useEffect(() => {
+    setCheckInDate(searchQuery.checkIn ? new Date(searchQuery.checkIn) : null);
+    setCheckOutDate(searchQuery.checkOut ? new Date(searchQuery.checkOut) : null);
+    setGuestCounts({
+        rooms: searchQuery.rooms,
+        adults: searchQuery.adults,
+        children: searchQuery.children
+    });
+    setEditableDestination(searchQuery.destination);
+  }, [searchQuery.checkIn, searchQuery.checkOut, searchQuery.rooms, searchQuery.adults, searchQuery.children, searchQuery.destination]);
+
+  const handleUpdateSearch = () => {
+    const params = new URLSearchParams(location.search);
+    params.set('destination', editableDestination);
+    if (checkInDate) params.set('checkIn', checkInDate.toISOString().split('T')[0]);
+    if (checkOutDate) params.set('checkOut', checkOutDate.toISOString().split('T')[0]);
+    params.set('rooms', guestCounts.rooms.toString());
+    params.set('adults', guestCounts.adults.toString());
+    params.set('children', guestCounts.children.toString());
+
+    // Reset page to 1 on new search
+    params.set('page', '1');
+
+    history.push({
+       pathname: location.pathname,
+       search: params.toString()
+    });
+  };
 
   const hotelsPerPage = 20;
 
@@ -426,188 +476,251 @@ export const HotelSearchResults: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header - Same style as Homepage MainSection */}
+      {/* Header - Compact & Modern */}
       <div className="relative w-full overflow-visible font-sans">
         {/* Solid Background Color */}
-        <div className="absolute inset-0 z-0 overflow-hidden rounded-b-[3rem] bg-[#E67915]">
-        </div>
+        <div className="absolute inset-0 z-0 overflow-hidden bg-[#E67915] h-full shadow-md"></div>
 
         {/* Main Content Container */}
-        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-3">
+        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-3 pb-6">
 
-          {/* Custom Header */}
-          <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-2 sm:mb-4 space-y-2 sm:space-y-0">
+          {/* Top Bar: Logo & Auth */}
+          <header className="flex flex-row justify-between items-center w-full mb-4">
+             {/* Logo */}
+             <a href="/" className="flex-shrink-0">
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-10 sm:h-12 w-auto drop-shadow-md hover:scale-105 transition-transform" />
+             </a>
 
-            {/* Left: Auth Buttons */}
-            <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
-              <a href="/login" className="text-white font-medium hover:text-orange-200 transition text-lg shadow-sm">
-                Sign in
-              </a>
-              <a
-                href="/register"
-                className="bg-[#F7871D] hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition shadow-md"
-              >
-                Register
-              </a>
-            </div>
-
-            {/* Center/Right: Info & Logo */}
-            <div className="flex items-center space-x-6 lg:space-x-8 rtl:space-x-reverse order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
-
-              {/* Contact & Settings */}
-              <div className="hidden md:flex items-center space-x-6 rtl:space-x-reverse text-white text-sm font-medium">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:text-orange-200">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <span>+966549412412</span>
+             {/* Right Side: Auth & Settings */}
+             <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
+                <div className="hidden md:flex items-center space-x-4 bg-white/10 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/20">
+                   <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-100 transition-colors">
+                      <span className="text-sm font-medium">USD</span>
+                      <ChevronDownIcon className="w-3 h-3" />
+                   </div>
+                   <div className="w-px h-4 bg-white/30"></div>
+                   <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-100 transition-colors">
+                      <span className="text-sm font-medium">EN</span>
+                      <ChevronDownIcon className="w-3 h-3" />
+                   </div>
                 </div>
 
-                <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-200">
-                  <span>US</span>
-                  <ChevronDownIcon className="w-3 h-3" />
-                </div>
-
-                <button className="flex items-center space-x-1 hover:text-orange-200 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                  </svg>
-                  <span className="uppercase">EN</span>
-                  <ChevronDownIcon className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* Logo */}
-              <a href="/" className="flex-shrink-0">
-                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-12 sm:h-14 w-auto drop-shadow-lg" />
-              </a>
-            </div>
+                <a href="/login" className="text-sm font-medium hover:text-orange-100 transition-colors hidden sm:block">Sign in</a>
+                <a href="/register" className="bg-white text-[#E67915] text-sm font-bold px-4 py-2 rounded-full hover:bg-orange-50 transition shadow-sm">Register</a>
+             </div>
           </header>
 
-          {/* Tabs */}
-          <div className="flex space-x-4 rtl:space-x-reverse mb-3 justify-center sm:justify-start rtl:justify-start">
-            <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
-              <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-              <span className="text-lg font-medium">Flights</span>
-            </button>
+          {/* Compact Search Bar */}
+          <div className="w-full max-w-5xl mx-auto">
+             <div className="bg-white/10 backdrop-blur-md rounded-full p-1.5 border border-white/20 flex flex-col md:flex-row items-center relative gap-1 shadow-lg">
 
-            <button className="flex items-center space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-4 py-2">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-              </svg>
-              <span className="text-lg font-medium">Stays</span>
-            </button>
-          </div>
+                {/* Destination */}
+                <div className="w-full md:flex-[1.5] px-4 py-2 md:py-0 border-b md:border-b-0 md:border-r border-white/20 flex items-center gap-3 relative" ref={autocompleteRef}>
+                   <MapPinIcon className="h-5 w-5 text-white/90 shrink-0" />
+                   <div className="flex flex-col w-full min-w-0">
+                      <span className="text-white/70 text-[10px] uppercase tracking-wider font-bold">{t('common.destination', 'Destination')}</span>
+                      <input
+                         type="text"
+                         value={editableDestination}
+                         onChange={(e) => {
+                           hasUserTyped.current = true;
+                           setEditableDestination(e.target.value);
+                         }}
+                         onFocus={() => {
+                           if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
+                             setShowAutocomplete(true);
+                           }
+                         }}
+                         onKeyDown={(e) => {
+                             if (e.key === 'Enter') {
+                               e.preventDefault();
+                               setShowAutocomplete(false);
+                               handleUpdateSearch();
+                             }
+                         }}
+                         className="bg-transparent border-none p-0 text-white text-sm font-bold placeholder-white/50 focus:ring-0 w-full truncate"
+                         placeholder="Where to?"
+                      />
+                   </div>
 
-          {/* Search Bar - Pill Shape */}
-          <div className="w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm mb-3">
-            <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
+                   {/* Autocomplete Dropdown */}
+                   {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                     <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-64 overflow-y-auto animate-fadeIn">
+                       <div className="p-2">
+                         <p className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">Hotels</p>
+                         {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                           <button
+                             key={hotel.id}
+                             type="button"
+                             onClick={() => handleSelectSuggestion(hotel)}
+                             className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                           >
+                             <BuildingOffice2Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                             <div>
+                               <p className="text-gray-800 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
+                               <p className="text-[10px] text-gray-400 uppercase tracking-wide">Hotel</p>
+                             </div>
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+                </div>
 
-              {/* Destination */}
-              <div className="flex-[1.5] w-full p-4 flex items-center space-x-3 rtl:space-x-reverse min-w-0 relative" ref={autocompleteRef}>
-                <MapPinIcon className="w-6 h-6 text-gray-400 flex-shrink-0" />
-                <div className="flex-1 flex flex-col relative min-w-0">
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <input
-                      type="text"
-                      value={editableDestination}
-                      onChange={(e) => {
-                        hasUserTyped.current = true;
-                        setEditableDestination(e.target.value);
-                      }}
-                      onFocus={() => {
-                        if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
-                          setShowAutocomplete(true);
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          setShowAutocomplete(false);
-                          const params = new URLSearchParams(location.search);
-                          params.set('destination', editableDestination);
-                          history.push(`/hotels/search?${params.toString()}`);
-                        }
-                      }}
-                      title={editableDestination}
-                      placeholder="where to ?"
-                      className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg truncate"
-                      autoComplete="off"
-                    />
-                    {isLoadingAutocomplete && (
-                      <svg className="animate-spin h-5 w-5 text-orange-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    )}
-                  </div>
-
-                  {/* Autocomplete Dropdown */}
-                  {showAutocomplete && autocompleteResults.hotels.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto">
-                      <div className="p-2">
-                        <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Hotels</p>
-                        {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
-                          <button
-                            key={hotel.id}
-                            type="button"
-                            onClick={() => handleSelectSuggestion(hotel)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
-                          >
-                            <BuildingOffice2Icon className="w-5 h-5 text-gray-500" />
-                            <div>
-                              <p className="text-gray-800 font-medium">{hotel.name}</p>
-                              <p className="text-xs text-gray-400">Hotel</p>
-                            </div>
-                          </button>
-                        ))}
+                {/* Dates - Unified Range */}
+                <div className="w-full md:flex-[2] px-4 py-2 md:py-0 border-b md:border-b-0 md:border-r border-white/20 flex items-center gap-3">
+                   <ClockIcon className="h-5 w-5 text-white/90 shrink-0" />
+                   <div className="flex flex-col w-full">
+                      <span className="text-white/70 text-[10px] uppercase tracking-wider font-bold">Check-in - Check-out</span>
+                      <div className="w-full">
+                         <DatePicker
+                            selected={checkInDate}
+                            onChange={(dates: [Date | null, Date | null]) => {
+                               const [start, end] = dates;
+                               setCheckInDate(start);
+                               setCheckOutDate(end);
+                            }}
+                            startDate={checkInDate}
+                            endDate={checkOutDate}
+                            selectsRange
+                            minDate={new Date()}
+                            className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50"
+                            dateFormat="dd MMM"
+                            placeholderText="Select dates"
+                            customInput={
+                               <input
+                                  value={
+                                     checkInDate && checkOutDate
+                                     ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                     : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : '')
+                                  }
+                                  readOnly
+                                  placeholder="Add dates"
+                                  className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50"
+                               />
+                            }
+                         />
                       </div>
-                    </div>
-                  )}
+                   </div>
                 </div>
-              </div>
 
-              {/* Dates */}
-              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <div className="flex flex-col w-full">
-                  <span className="text-sm font-bold text-gray-800">
-                    {searchQuery.checkIn || 'Select date'} - {searchQuery.checkOut || 'Select date'}
-                  </span>
-                  <span className="text-xs text-gray-400">Check-in - Check-out</span>
+                {/* Guests */}
+                <div className="w-full md:flex-[1.5] relative">
+                   <button
+                      className="w-full px-4 py-2 md:py-0 flex items-center gap-3 text-left"
+                      onClick={() => setShowGuestPopover(!showGuestPopover)}
+                   >
+                      <UserIcon className="h-5 w-5 text-white/90 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                         <span className="text-white/70 text-[10px] uppercase tracking-wider font-bold">{t('common.guests', 'Guests')}</span>
+                         <span className="text-white text-sm font-bold truncate">
+                            {guestCounts.adults + guestCounts.children} Guests, {guestCounts.rooms} Rm
+                         </span>
+                      </div>
+                   </button>
+
+                   {/* Guest Popover */}
+                   {showGuestPopover && (
+                      <>
+                         <div className="fixed inset-0 z-40" onClick={() => setShowGuestPopover(false)}></div>
+                         <div className="absolute top-full right-0 mt-3 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-5 z-50 text-gray-800 animate-fadeIn cursor-default">
+                            {/* Rooms */}
+                            <div className="flex justify-between items-center mb-4">
+                               <div className="flex flex-col">
+                                  <span className="font-bold text-sm text-gray-800">Rooms</span>
+                                  <span className="text-xs text-gray-500">Number of rooms</span>
+                               </div>
+                               <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                                  <button
+                                     onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.max(1, prev.rooms - 1)}))}
+                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                                     disabled={guestCounts.rooms <= 1}
+                                  >
+                                     <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                                  </button>
+                                  <span className="w-4 text-center font-bold text-sm">{guestCounts.rooms}</span>
+                                  <button
+                                     onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.min(10, prev.rooms + 1)}))}
+                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                                  >
+                                     <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                                  </button>
+                               </div>
+                            </div>
+                            {/* Adults */}
+                            <div className="flex justify-between items-center mb-4">
+                               <div className="flex flex-col">
+                                  <span className="font-bold text-sm text-gray-800">Adults</span>
+                                  <span className="text-xs text-gray-500">Ages 18 or above</span>
+                               </div>
+                               <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                                  <button
+                                     onClick={() => setGuestCounts(prev => ({...prev, adults: Math.max(1, prev.adults - 1)}))}
+                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                                     disabled={guestCounts.adults <= 1}
+                                  >
+                                     <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                                  </button>
+                                  <span className="w-4 text-center font-bold text-sm">{guestCounts.adults}</span>
+                                  <button
+                                     onClick={() => setGuestCounts(prev => ({...prev, adults: Math.min(30, prev.adults + 1)}))}
+                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                                  >
+                                     <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                                  </button>
+                               </div>
+                            </div>
+                            {/* Children */}
+                            <div className="flex justify-between items-center mb-6">
+                               <div className="flex flex-col">
+                                  <span className="font-bold text-sm text-gray-800">Children</span>
+                                  <span className="text-xs text-gray-500">Ages 0-17</span>
+                               </div>
+                               <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                                  <button
+                                     onClick={() => setGuestCounts(prev => ({...prev, children: Math.max(0, prev.children - 1)}))}
+                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                                     disabled={guestCounts.children <= 0}
+                                  >
+                                     <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                                  </button>
+                                  <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
+                                  <button
+                                     onClick={() => setGuestCounts(prev => ({...prev, children: Math.min(10, prev.children + 1)}))}
+                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                                  >
+                                     <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                                  </button>
+                               </div>
+                            </div>
+
+                            <button
+                               className="w-full bg-[#E67915] text-white text-sm font-bold py-2.5 rounded-lg hover:bg-orange-600 transition-colors shadow-md"
+                               onClick={() => setShowGuestPopover(false)}
+                            >
+                               Done
+                            </button>
+                         </div>
+                      </>
+                   )}
                 </div>
-                {searchQuery.checkIn && searchQuery.checkOut && (
-                  <div className="hidden lg:block bg-orange-100 text-orange-600 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap">
-                    {Math.ceil((new Date(searchQuery.checkOut).getTime() - new Date(searchQuery.checkIn).getTime()) / (1000 * 60 * 60 * 24))} nights
-                  </div>
-                )}
-              </div>
 
-              {/* Guests */}
-              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
-                <UserIcon className="w-6 h-6 text-gray-700" />
-                <span className="text-gray-700 text-lg">
-                  {searchQuery.rooms} room, {searchQuery.adults} adults, {searchQuery.children} children
-                </span>
-              </div>
+                {/* Search Button */}
+                <div className="p-1">
+                   <button
+                     onClick={handleUpdateSearch}
+                     className="bg-white text-[#E67915] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center hover:bg-orange-50 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+                     title="Update Search"
+                   >
+                      <MagnifyingGlassIcon className="w-5 h-5 md:w-6 md:h-6 stroke-[2.5]" />
+                   </button>
+                </div>
 
-              {/* Search Button */}
-              <div className="p-2">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="bg-[#F7871D] hover:bg-orange-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+             </div>
           </div>
+
+
+
 
           {/* Travelling for work checkbox */}
           <div className="flex items-center space-x-2 mb-2">

@@ -16,9 +16,17 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   ChevronDownIcon,
-  UserIcon
+  SparklesIcon,
+  CakeIcon,
+  LifebuoyIcon,
+  UserIcon,
+  MagnifyingGlassIcon,
+  MinusIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import { Hotel } from '../types/hotel';
 import { getHotelDetails } from '../services/hotelService';
 import { RoomCard } from '../components/RoomCard';
@@ -76,6 +84,22 @@ export const HotelDetails: React.FC = () => {
     return dayAfter.toISOString().split('T')[0];
   };
 
+  // State for editable search params
+  const [checkInDate, setCheckInDate] = useState<Date | null>(
+    searchParams.get('checkIn') ? new Date(searchParams.get('checkIn')!) : new Date(getDefaultCheckIn())
+  );
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(
+    searchParams.get('checkOut') ? new Date(searchParams.get('checkOut')!) : new Date(getDefaultCheckOut())
+  );
+
+  const [guestCounts, setGuestCounts] = useState({
+    rooms: parseInt(searchParams.get('rooms') || '1'),
+    adults: parseInt(searchParams.get('adults') || '2'),
+    children: parseInt(searchParams.get('children') || '0')
+  });
+
+  const [showGuestPopover, setShowGuestPopover] = useState(false);
+
   const bookingParams = {
     destination: searchParams.get('destination') || '',
     checkIn: searchParams.get('checkIn') || getDefaultCheckIn(),
@@ -84,6 +108,18 @@ export const HotelDetails: React.FC = () => {
     adults: parseInt(searchParams.get('adults') || '2'),
     children: parseInt(searchParams.get('children') || '0')
   };
+
+  // Sync state with URL params when they change (e.g. back button)
+  useEffect(() => {
+     if(searchParams.get('checkIn')) setCheckInDate(new Date(searchParams.get('checkIn')!));
+     if(searchParams.get('checkOut')) setCheckOutDate(new Date(searchParams.get('checkOut')!));
+     setGuestCounts({
+        rooms: parseInt(searchParams.get('rooms') || '1'),
+        adults: parseInt(searchParams.get('adults') || '2'),
+        children: parseInt(searchParams.get('children') || '0')
+     });
+  }, [location.search]);
+
 
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,17 +136,35 @@ export const HotelDetails: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  const handleUpdateSearch = () => {
+    if (!checkInDate || !checkOutDate) return;
+
+    const params = new URLSearchParams(location.search);
+    params.set('checkIn', checkInDate.toISOString().split('T')[0]);
+    params.set('checkOut', checkOutDate.toISOString().split('T')[0]);
+    params.set('rooms', guestCounts.rooms.toString());
+    params.set('adults', guestCounts.adults.toString());
+    params.set('children', guestCounts.children.toString());
+
+    history.push({
+       pathname: location.pathname,
+       search: params.toString()
+    });
+
+    // The main useEffect for fetching hotel details will trigger automatically due to location.search dependency
+  };
+
   // Function to get amenity icon
   const getAmenityIcon = (amenity: string) => {
     const lower = amenity.toLowerCase();
     const className = "h-5 w-5 text-gray-700";
     if (lower.includes('wifi') || lower.includes('internet')) return <WifiIcon className={className} />;
-    if (lower.includes('pool')) return <span className="text-xl">🏊</span>;
+    if (lower.includes('pool')) return <LifebuoyIcon className={className} />;
     if (lower.includes('gym') || lower.includes('fitness')) return <UserGroupIcon className={className} />;
-    if (lower.includes('restaurant')) return <HomeIcon className={className} />;
-    if (lower.includes('spa')) return <CogIcon className={className} />;
+    if (lower.includes('restaurant')) return <CakeIcon className={className} />;
+    if (lower.includes('spa')) return <SparklesIcon className={className} />;
     if (lower.includes('room service')) return <ClockIcon className={className} />;
-    if (lower.includes('bar') || lower.includes('lounge')) return <div className="h-5 w-5 text-gray-700 flex items-center justify-center">🍷</div>;
+    if (lower.includes('bar') || lower.includes('lounge')) return <div className="h-5 w-5 text-gray-700 flex items-center justify-center"><CakeIcon className={className} /></div>;
     return <CheckIcon className={className} />;
   };
 
@@ -325,132 +379,193 @@ export const HotelDetails: React.FC = () => {
   return (
     <div className="min-h-screen bg-white pb-20 font-sans">
       {/* Header Section - Same as Search Results */}
-      <div className="relative w-full overflow-visible font-sans">
-        {/* Solid Background Color */}
-        <div className="absolute inset-0 z-0 overflow-hidden rounded-b-[3rem] bg-[#E67915]">
-        </div>
+      {/* Compact Header Section */}
+      <div className="relative w-full bg-[#E67915] shadow-md z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between py-3 gap-4">
 
-        {/* Main Content Container */}
-        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-3">
-
-          {/* Custom Header */}
-          <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-2 sm:mb-4 space-y-2 sm:space-y-0">
-
-            {/* Left: Auth Buttons */}
-            <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
-              <a href="/login" className="text-white font-medium hover:text-orange-200 transition text-lg shadow-sm">
-                Sign in
-              </a>
-              <a
-                href="/register"
-                className="bg-[#F7871D] hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition shadow-md"
-              >
-                Register
-              </a>
+            {/* Logo & Brand */}
+            <div className="flex items-center gap-6 shrink-0">
+               <a href="/" className="flex-shrink-0">
+                 <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-10 w-auto brightness-0 invert" />
+               </a>
             </div>
 
-            {/* Center/Right: Info & Logo */}
-            <div className="flex items-center space-x-6 lg:space-x-8 rtl:space-x-reverse order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
+            {/* Compact Search Bar - Editable */}
+            <div className="flex-1 max-w-3xl w-full">
+               <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20 flex items-center relative gap-1">
 
-              {/* Contact & Settings */}
-              <div className="hidden md:flex items-center space-x-6 rtl:space-x-reverse text-white text-sm font-medium">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:text-orange-200">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <span>+966549412412</span>
-                </div>
+                  {/* Destination */}
+                  <div className="flex-[1.2] px-4 border-r border-white/20 flex items-center gap-2 min-w-0">
+                     <MapPinIcon className="h-4 w-4 text-white/80 shrink-0" />
+                     <div className="flex flex-col min-w-0 overflow-hidden w-full">
+                        <span className="text-white text-xs font-medium opacity-70 truncate">{t('common.destination', 'Destination')}</span>
+                        <input
+                           type="text"
+                           // Use hotel city if destination param is missing, with fallback
+                           value={bookingParams.destination || (hotel && hotel.city) || ''}
+                           placeholder={loading ? "Loading..." : "Destination"}
+                           readOnly
+                           className="bg-transparent border-none p-0 text-white text-sm font-semibold placeholder-white/50 focus:ring-0 w-full truncate cursor-default"
+                        />
+                     </div>
+                  </div>
 
-                <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-200">
-                  <span>US</span>
+                  {/* Dates - Unified Range Picker */}
+                  <div className="flex-[2] px-4 border-r border-white/20 flex items-center gap-2">
+                     <ClockIcon className="h-4 w-4 text-white/80 shrink-0" />
+                     <div className="flex flex-col w-full">
+                        <span className="text-white text-xs font-medium opacity-70">Check-in - Check-out</span>
+                        <div className="w-full">
+                           <DatePicker
+                              selected={checkInDate}
+                              onChange={(dates: [Date | null, Date | null]) => {
+                                 const [start, end] = dates;
+                                 setCheckInDate(start);
+                                 setCheckOutDate(end);
+                              }}
+                              startDate={checkInDate}
+                              endDate={checkOutDate}
+                              selectsRange
+                              minDate={new Date()}
+                              className="bg-transparent border-none p-0 text-white text-sm font-semibold w-full focus:ring-0 cursor-pointer"
+                              dateFormat="dd MMM"
+                              placeholderText="Select dates"
+                              customInput={
+                                 <input
+                                    value={
+                                       checkInDate && checkOutDate
+                                       ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                       : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : 'Select dates')
+                                    }
+                                    readOnly
+                                    className="bg-transparent border-none p-0 text-white text-sm font-semibold w-full focus:ring-0 cursor-pointer"
+                                 />
+                              }
+                           />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Guests - Editable Popover Trigger */}
+                  <div className="relative flex-[1.2]">
+                     <button
+                        className="px-4 flex items-center gap-2 w-full text-left"
+                        onClick={() => setShowGuestPopover(!showGuestPopover)}
+                     >
+                        <UserIcon className="h-4 w-4 text-white/80 shrink-0" />
+                        <div className="flex flex-col">
+                           <span className="text-white text-xs font-medium opacity-70">{t('common.guests', 'Guests')}</span>
+                           <span className="text-white text-sm font-semibold truncate">
+                              {guestCounts.adults + guestCounts.children} Guests, {guestCounts.rooms} Rm
+                           </span>
+                        </div>
+                     </button>
+
+                     {/* Guest Selection Popover */}
+                     {showGuestPopover && (
+                        <>
+                           <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setShowGuestPopover(false)}
+                           ></div>
+                           <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 text-gray-800 animate-fadeIn">
+                              {/* Rooms */}
+                              <div className="flex justify-between items-center mb-4">
+                                 <span className="font-medium text-sm">Rooms</span>
+                                 <div className="flex items-center gap-3">
+                                    <button
+                                       onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.max(1, prev.rooms - 1)}))}
+                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                    >
+                                       <MinusIcon className="w-4 h-4" />
+                                    </button>
+                                    <span className="w-4 text-center font-bold text-sm">{guestCounts.rooms}</span>
+                                    <button
+                                       onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.min(10, prev.rooms + 1)}))}
+                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                    >
+                                       <PlusIcon className="w-4 h-4" />
+                                    </button>
+                                 </div>
+                              </div>
+                              {/* Adults */}
+                              <div className="flex justify-between items-center mb-4">
+                                 <span className="font-medium text-sm">Adults</span>
+                                 <div className="flex items-center gap-3">
+                                    <button
+                                       onClick={() => setGuestCounts(prev => ({...prev, adults: Math.max(1, prev.adults - 1)}))}
+                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                    >
+                                       <MinusIcon className="w-4 h-4" />
+                                    </button>
+                                    <span className="w-4 text-center font-bold text-sm">{guestCounts.adults}</span>
+                                    <button
+                                       onClick={() => setGuestCounts(prev => ({...prev, adults: Math.min(30, prev.adults + 1)}))}
+                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                    >
+                                       <PlusIcon className="w-4 h-4" />
+                                    </button>
+                                 </div>
+                              </div>
+                              {/* Children */}
+                              <div className="flex justify-between items-center">
+                                 <span className="font-medium text-sm">Children</span>
+                                 <div className="flex items-center gap-3">
+                                    <button
+                                       onClick={() => setGuestCounts(prev => ({...prev, children: Math.max(0, prev.children - 1)}))}
+                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                    >
+                                       <MinusIcon className="w-4 h-4" />
+                                    </button>
+                                    <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
+                                    <button
+                                       onClick={() => setGuestCounts(prev => ({...prev, children: Math.min(10, prev.children + 1)}))}
+                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                    >
+                                       <PlusIcon className="w-4 h-4" />
+                                    </button>
+                                 </div>
+                              </div>
+
+                              <button
+                                 className="w-full mt-4 bg-orange-500 text-white text-xs font-bold py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                                 onClick={() => setShowGuestPopover(false)}
+                              >
+                                 Done
+                              </button>
+                           </div>
+                        </>
+                     )}
+                  </div>
+
+                  {/* Search Button */}
+                  <button
+                    onClick={handleUpdateSearch}
+                    className="bg-white text-orange-600 p-2 rounded-full hover:bg-orange-50 transition-colors ml-2 shadow-sm shrink-0"
+                    title={t('common.search', 'Update Search')}
+                  >
+                     <MagnifyingGlassIcon className="w-5 h-5 stroke-[2.5]" />
+                  </button>
+               </div>
+            </div>
+
+            {/* Auth & Settings */}
+            <div className="flex items-center gap-4 shrink-0 text-white">
+               <button className="text-sm font-medium hover:text-orange-100 flex items-center gap-1">
+                  <span>SAR</span>
                   <ChevronDownIcon className="w-3 h-3" />
-                </div>
-
-                <button className="flex items-center space-x-1 hover:text-orange-200 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                  </svg>
-                  <span className="uppercase">EN</span>
-                  <ChevronDownIcon className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* Logo */}
-              <a href="/" className="flex-shrink-0">
-                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-12 sm:h-14 w-auto drop-shadow-lg" />
-              </a>
+               </button>
+               <button className="text-sm font-medium hover:text-orange-100 flex items-center gap-1">
+                  <img src="/saudi-flag.png" alt="AR" className="w-5 h-3 object-cover rounded shadow-sm" onError={(e) => e.currentTarget.style.display='none'} />
+                  <span>AR</span>
+               </button>
+               <div className="h-4 w-px bg-white/30"></div>
+               <a href="/login" className="text-sm font-medium hover:text-orange-100">Sign In</a>
+               <a href="/register" className="bg-white text-orange-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm hover:bg-orange-50 transition-colors">
+                  Register
+               </a>
             </div>
-          </header>
-
-          {/* Tabs */}
-          <div className="flex space-x-4 rtl:space-x-reverse mb-3 justify-center sm:justify-start rtl:justify-start">
-            <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
-              <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-              <span className="text-lg font-medium">Flights</span>
-            </button>
-
-            <button className="flex items-center space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-4 py-2">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-              </svg>
-              <span className="text-lg font-medium">Stays</span>
-            </button>
-          </div>
-
-          {/* Search Bar - Pill Shape */}
-          <div className="w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm mb-3">
-            <div className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
-
-              {/* Destination */}
-              <div className="flex-[1.5] w-full p-4 flex items-center space-x-3 rtl:space-x-reverse min-w-0">
-                <MapPinIcon className="w-6 h-6 text-gray-400 flex-shrink-0" />
-                <div className="flex-1 flex flex-col min-w-0">
-                  <span className="text-sm font-bold text-gray-800 truncate">{bookingParams.destination || hotel?.city || 'Destination'}</span>
-                  <span className="text-xs text-gray-400">Where are you going?</span>
-                </div>
-              </div>
-
-              {/* Dates */}
-              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <div className="flex flex-col w-full">
-                  <span className="text-sm font-bold text-gray-800">
-                    {bookingParams.checkIn} - {bookingParams.checkOut}
-                  </span>
-                  <span className="text-xs text-gray-400">Check-in - Check-out</span>
-                </div>
-              </div>
-
-              {/* Guests */}
-              <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse">
-                <UserIcon className="w-6 h-6 text-gray-700" />
-                <span className="text-gray-700 text-lg">
-                  {bookingParams.rooms} room, {bookingParams.adults} adults, {bookingParams.children} children
-                </span>
-              </div>
-
-              {/* Search Button */}
-              <div className="p-2">
-                <button
-                  onClick={() => history.push('/')}
-                  className="bg-[#F7871D] hover:bg-orange-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Travelling for work checkbox */}
-          <div className="flex items-center space-x-2 mb-2">
-            <input type="checkbox" id="business" className="w-4 h-4 rounded border-gray-300" />
-            <label htmlFor="business" className="text-white text-sm">I'm travelling for work</label>
           </div>
         </div>
       </div>
@@ -518,44 +633,66 @@ export const HotelDetails: React.FC = () => {
            )}
         </div>
 
-        {/* Gallery Section */}
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-2 h-[400px] mb-8 overflow-hidden rounded-xl">
-           {/* Main Image */}
-           <div className="md:col-span-2 relative h-full group cursor-pointer" onClick={() => setShowAllPhotos(true)}>
-              <img
-                 src={hotelImages[0]}
-                 alt={hotel.name}
-                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-           </div>
+        {/* Gallery Section - New Design */}
+        {/* Gallery Section - New Design */}
+        {/* Gallery Section - Modern Bento CSS Grid */}
+        <div className="w-full mb-8">
+            <div className={`grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-2 h-[300px] md:h-[500px] rounded-xl overflow-hidden`}>
 
-           {/* Grid of Thumbnails */}
-           <div className="hidden md:grid grid-cols-2 gap-2 h-full">
-              {hotelImages.slice(1, 4).map((img: string, idx: number) => (
-                 <div key={idx} className="relative h-full overflow-hidden cursor-pointer" onClick={() => setShowAllPhotos(true)}>
-                    <img src={img} alt={`View ${idx}`} className="w-full h-full object-cover hover:opacity-90 transition-opacity" />
+              {/* Main Image - Takes full height on left half (2 cols, 2 rows) */}
+              <div
+                className={`relative cursor-pointer overflow-hidden bg-gray-200 group md:col-span-2 md:row-span-2 ${hotelImages.length === 1 ? 'col-span-full row-span-full' : ''}`}
+                onClick={() => { setSelectedImageIndex(0); setShowAllPhotos(true); }}
+              >
+                <img
+                  src={hotelImages[0]}
+                  alt={hotel.name}
+                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+
+              {/* Secondary Images - Hidden on mobile, shown on grid for md+ */}
+              {hotelImages.slice(1, 5).map((img : string, idx: number) => (
+                 <div
+                   key={idx}
+                   className="hidden md:block relative cursor-pointer overflow-hidden bg-gray-200 group"
+                   onClick={() => { setSelectedImageIndex(idx + 1); setShowAllPhotos(true); }}
+                 >
+                   <img
+                     src={img}
+                     alt={`View ${idx + 2}`}
+                     className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+                   />
+
+                   {/* Overlay for the last visible grid item if there are more photos */}
+                   {idx === 3 && hotelImages.length > 5 && (
+                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex flex-col items-center justify-center text-white backdrop-blur-[1px]">
+                        <span className="text-2xl font-bold">+{hotelImages.length - 5}</span>
+                        <span className="text-sm font-medium">{t('hotels.photos', 'Photos')}</span>
+                     </div>
+                   )}
                  </div>
               ))}
 
-              {/* Map Thumbnail / 4th Image */}
-              <div className="relative h-full overflow-hidden cursor-pointer bg-gray-100 flex items-center justify-center">
-                 <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: 'url(/map-placeholder.jpg)' }}></div>
-                 <button className="relative z-10 bg-orange-500 text-white px-4 py-2 rounded shadow-md text-sm font-bold">
-                    {t('hotels.showOnMap', 'Show on map')}
+              {/* Mobile View All Button (if hidden images exist) */}
+              <div className="md:hidden absolute bottom-4 right-4 z-10">
+                 <button
+                   onClick={() => setShowAllPhotos(true)}
+                   className="bg-white/90 backdrop-blur text-gray-800 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2"
+                 >
+                   <PhotoIcon className="w-4 h-4" />
+                   {t('hotels.viewAll', 'View All')}
                  </button>
               </div>
 
-               {/* View All Photos Button Overlay */}
-               <div className="absolute bottom-4 right-4 z-10">
-                  <button
-                     onClick={() => setShowAllPhotos(true)}
-                     className="bg-white/90 backdrop-blur-sm text-gray-800 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm hover:bg-white flex items-center"
-                  >
-                     <PhotoIcon className="w-4 h-4 mr-2" />
-                     {t('hotels.viewAllPhotos', 'View all photos')}
-                  </button>
-               </div>
-           </div>
+            </div>
+
+            {/* Fallback for very few images (desktop fix) - if we have 2, 3, or 4 images total, we need to ensure the empty grid cells don't look broken */}
+            {/* The CSS Grid above automatically handles 1 image. For 2-4 images, we might want to conditionally render a simpler layout, but the current grid will just leave empty spots or we can use dynamic classes.
+                Let's make it robust by actually rendering simple placeholders or just changing the class if needed.
+                Actually, slicing safe handles missing images, they just won't render.
+                But to prevent white space, we should ideally change the col-span if images are missing.
+            */}
         </div>
 
         {/* Exclusive Banner */}

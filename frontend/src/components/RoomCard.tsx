@@ -159,12 +159,15 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       <div className="flex flex-col lg:flex-row">
         {/* Left Side: Room Image & Details */}
         <div className="lg:w-1/3 p-4 border-r border-gray-100">
-          <div className="relative h-48 rounded-lg overflow-hidden mb-4 bg-gray-100">
+          <div
+            className="relative h-48 rounded-lg overflow-hidden mb-4 bg-gray-100 cursor-pointer group"
+            onClick={() => setShowDetailsModal(true)}
+          >
             {baseRate.room_images && baseRate.room_images[0] ? (
               <img
                 src={baseRate.room_images[0].replace('170x154', '640x400')}
                 alt={roomType}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => {
                    e.currentTarget.src = '/placeholder-room.jpg';
                 }}
@@ -174,7 +177,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 <span className="text-4xl">🛏️</span>
               </div>
             )}
-            <button className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+            <button className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded hover:bg-black/80 transition-colors">
               {baseRate.room_images?.length || 0} {t('common.photos', 'photos')}
             </button>
           </div>
