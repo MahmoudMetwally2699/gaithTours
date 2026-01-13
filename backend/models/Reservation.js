@@ -222,6 +222,21 @@ const reservationSchema = new mongoose.Schema({
     type: String,
     required: false // RateHawk booking status (ok, error, sandbox, etc.)
   },
+  // Multi-room booking session tracking
+  bookingSessionId: {
+    type: String,
+    required: false, // UUID linking multiple bookings together
+    index: true // For efficient querying of related bookings
+  },
+  isPartOfMultiBooking: {
+    type: Boolean,
+    default: false // Indicates this booking is part of a multi-room-type order
+  },
+  roomCount: {
+    type: Number,
+    default: 1, // Number of rooms booked in this specific reservation
+    min: 1
+  },
   createdAt: {
     type: Date,
     default: Date.now

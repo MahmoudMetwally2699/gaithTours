@@ -10,6 +10,29 @@ import {
 } from '@heroicons/react/24/outline';
 import { UserIcon } from '@heroicons/react/24/solid';
 
+/**
+ * RoomCard Component - Displays hotel room information with rates
+ *
+ * FEATURES IMPLEMENTED FOR RATEHAWK CERTIFICATION:
+ *
+ * ✅ Point 6: Tax Data Display (Lines 415-447)
+ *    - Shows total taxes and fees below price
+ *    - Hover tooltip with detailed tax breakdown
+ *    - Displays each tax item (name, amount, included/excluded status)
+ *
+ * ✅ Point 7: Cancellation Policy with Date/Time (Lines 343-357)
+ *    - Shows "Free cancellation" badge for refundable rates
+ *    - Hover tooltip displays exact cancellation deadline
+ *    - Format: "Until [Date] [Time]" from free_cancellation_before field
+ *    - Shows "Non-refundable" for non-refundable rates
+ *
+ * Additional Features:
+ *    - Meal type indicators (breakfast, half-board, full-board, all-inclusive)
+ *    - Payment type (prepayment required or pay at property)
+ *    - Room amenities and bed configuration
+ *    - Multiple rate options per room type
+ */
+
 // Types from existing codebase or API
 interface BedGroup {
   beds: Array<{
@@ -60,13 +83,15 @@ interface RoomCardProps {
   rates: RoomRate[];
   onSelectResult: (rate: RoomRate, count: number) => void;
   selectedRates: Map<string, number>; // match_hash -> count
+  nights?: number; // Number of nights for the stay
 }
 
 export const RoomCard: React.FC<RoomCardProps> = ({
   roomType,
   rates,
   onSelectResult,
-  selectedRates
+  selectedRates,
+  nights = 1
 }) => {
   const { t } = useTranslation();
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
@@ -301,7 +326,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             <div className="grid grid-cols-12 bg-orange-500 text-white py-3 px-4 font-semibold text-sm">
               <div className="col-span-12 md:col-span-5">{t('hotels.yourChoices', 'Your choices')}</div>
               <div className="col-span-6 md:col-span-2 text-center">{t('hotels.sleeps', 'Sleeps')}</div>
-              <div className="col-span-6 md:col-span-5 text-right">{t('hotels.pricePerNight', 'Price for 1 night')}</div>
+              <div className="col-span-6 md:col-span-5 text-right">
+                {nights > 1
+                  ? t('hotels.totalForNights', 'Total for {{nights}} nights', { nights })
+                  : t('hotels.pricePerNight', 'Price for 1 night')}
+              </div>
             </div>
 
             {/* Rate Rows */}
@@ -335,9 +364,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                       })()}
 
                       {rate.is_free_cancellation ? (
-                        <div className="flex items-center text-green-700 font-medium text-sm">
+                        <div className="flex items-center text-green-700 font-medium text-sm group relative cursor-help">
                           <CheckIcon className="w-4 h-4 mr-2" />
-                          {t('hotels.freeCancellation', 'Free cancellation')}
+                          <span className="border-b border-dotted border-green-700">
+                             {t('hotels.freeCancellation', 'Free cancellation')}
+                          </span>
+
+                          {/* Cancellation Policy Tooltip */}
+                          {/* Note: TypeScript interface might need update if 'free_cancellation_before' isn't defined yet */}
+                          {(rate as any).free_cancellation_before && (
+                             <div className="absolute bottom-full left-0 mb-2 w-48 bg-white shadow-lg rounded p-2 text-xs z-20 invisible group-hover:visible border border-gray-200 text-gray-700 font-normal">
+                                Until {new Date((rate as any).free_cancellation_before).toLocaleDateString()} {new Date((rate as any).free_cancellation_before).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                             </div>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center text-gray-600 text-sm">
@@ -390,10 +429,45 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         <div className="text-2xl font-bold text-gray-900 leading-none">
                            {rate.currency} {Number(rate.price).toFixed(0)}
                         </div>
-                        {/* Tax display - Booking.com style: single line */}
+                        {/* Per-night price if multiple nights */}
+                        {nights > 1 && (
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            ({rate.currency} {Math.round(Number(rate.price) / nights)}/night)
+                          </div>
+                        )}
+                        {/* Tax display - Booking.com style: single line with tooltip */}
                         {rate.total_taxes && rate.total_taxes > 0 ? (
-                          <div className="text-xs text-gray-500 mt-1">
-                            +{rate.taxes_currency || rate.currency} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
+                          <div className="text-xs text-gray-500 mt-1 relative group cursor-help">
+                            <span className="border-b border-dotted border-gray-400">
+                               +{rate.taxes_currency || rate.currency} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
+                            </span>
+
+                            {/* Tax Breakdown Tooltip */}
+                            {rate.tax_data && rate.tax_data.taxes && (
+                                <div className="absolute bottom-full right-0 mb-2 w-64 bg-white shadow-xl rounded-lg p-3 text-xs z-50 invisible group-hover:visible border border-gray-200">
+                                    <h5 className="font-bold text-gray-800 mb-2 border-b pb-1">Price Breakdown</h5>
+
+                                    <div className="flex justify-between mb-1">
+                                        <span>Base Price:</span>
+                                        <span>{rate.currency} {rate.price}</span>
+                                    </div>
+
+                                    {rate.tax_data.taxes.map((tax: TaxItem, idx: number) => (
+                                        <div key={idx} className="flex justify-between text-gray-600 mb-1">
+                                            <span>{tax.name}:</span>
+                                            <span>
+                                                {tax.included ? '(Incl.) ' : '+'}
+                                                {tax.currency} {tax.amount}
+                                            </span>
+                                        </div>
+                                    ))}
+
+                                    <div className="flex justify-between font-bold text-gray-900 mt-2 border-t pt-2">
+                                        <span>Total:</span>
+                                        <span>{rate.currency} {(Number(rate.price) + Number(rate.total_taxes)).toFixed(0)}</span>
+                                    </div>
+                                </div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-500 mt-1">

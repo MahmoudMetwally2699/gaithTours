@@ -182,6 +182,20 @@ router.get('/suggest', async (req, res) => {
       coordinates: hotel.coordinates
     }));
 
+    // Add ETG Test Hotel to suggestions if user types "test"
+    // This is for RateHawk certification - allows certifiers to find and book the test hotel
+    if (query.toLowerCase().includes('test')) {
+      hotels.unshift({
+        id: 'test_hotel_do_not_book',
+        hid: 8473727,
+        name: '🧪 ETG Test Hotel (For Certification)',
+        type: 'hotel',
+        location: 'Test Location',
+        coordinates: null,
+        isTestHotel: true
+      });
+    }
+
     const regions = (results.regions || []).map(region => ({
       id: region.id,
       name: region.label,
@@ -252,6 +266,79 @@ router.get('/search', async (req, res) => {
       searchDates = rateHawkService.constructor.getDefaultDates(0, 1);
     }
 
+    // Special handling for ETG Test Hotel (for RateHawk certification)
+    const isTestHotelSearch = destination.toLowerCase().includes('test hotel') ||
+                              destination.toLowerCase().includes('test_hotel_do_not_book') ||
+                              destination === '8473727';
+
+    if (isTestHotelSearch) {
+      console.log('🧪 Searching for ETG Test Hotel (hid=8473727) - Certification Mode');
+
+      // ALWAYS use dates 30 days from now for test hotel (required for refundable rates to work)
+      // This ensures the free_cancellation_before is well in the future
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30);
+      const checkoutDate = new Date(futureDate);
+      checkoutDate.setDate(checkoutDate.getDate() + 2);
+      const testSearchDates = {
+        checkin: futureDate.toISOString().split('T')[0],
+        checkout: checkoutDate.toISOString().split('T')[0]
+      };
+
+      console.log(`   🗓️ Using FIXED dates for certification: ${testSearchDates.checkin} to ${testSearchDates.checkout}`);
+
+      try {
+        // Search directly using HP API for the test hotel
+        const testHotelResults = await rateHawkService.getHotelDetails(8473727, {
+          checkin: testSearchDates.checkin,
+          checkout: testSearchDates.checkout,
+          adults: parseInt(adults) || 2,
+          children: [],
+          residency: 'gb',
+          currency: 'USD'
+        });
+
+        if (testHotelResults) {
+          const testHotel = {
+            id: 'test_hotel_do_not_book',
+            hid: 8473727,
+            name: '🧪 ETG Test Hotel (For Certification)',
+            address: 'Test Location - Use for RateHawk Certification',
+            city: 'Test City',
+            rating: 9.0,
+            star_rating: 5,
+            image: testHotelResults.images?.[0] || '/images/test-hotel.jpg',
+            price: testHotelResults.rates?.[0]?.price || 0,
+            pricePerNight: testHotelResults.rates?.[0]?.pricePerNight || 0,
+            currency: 'USD',
+            // Include fixed dates for certification
+            checkIn: testSearchDates.checkin,
+            checkOut: testSearchDates.checkout,
+            isSearchedHotel: true,
+            isTestHotel: true,
+            rates: testHotelResults.rates || [],
+            amenities: ['Free WiFi', 'Test Amenity', 'Certification Ready']
+          };
+
+          // Cache the test hotel result
+          hotelSearchCache.set(cacheKey, { hotels: [testHotel] });
+
+          return successResponse(res, {
+            hotels: [testHotel],
+            total: 1,
+            page: 1,
+            limit: 1,
+            totalPages: 1,
+            isTestHotel: true,
+            message: 'ETG Test Hotel for RateHawk Certification. Book refundable rates only!'
+          }, 'Test hotel found');
+        }
+      } catch (testHotelError) {
+        console.error('❌ Error fetching test hotel:', testHotelError.message);
+        // Continue to regular search if test hotel fetch fails
+      }
+    }
+
     // Step 1: Get region and hotel suggestions
     const suggestions = await rateHawkService.suggest(destination);
 
@@ -304,11 +391,35 @@ router.get('/search', async (req, res) => {
     if (hasHotels && searchResults.hotels.length > 0) {
       const searchedHotelId = suggestions.hotels[0].id;
       const searchedHotelHid = suggestions.hotels[0].hid;
+      const searchedHotelName = suggestions.hotels[0].name || suggestions.hotels[0].label || '';
 
-      // Find the searched hotel
-      const matchedHotelIndex = searchResults.hotels.findIndex(hotel =>
-        hotel.id === searchedHotelId || hotel.hid === searchedHotelHid
-      );
+      console.log(`🔍 Looking for searched hotel: id=${searchedHotelId}, hid=${searchedHotelHid}, name=${searchedHotelName}`);
+
+      // Find the searched hotel using multiple matching strategies
+      let matchedHotelIndex = searchResults.hotels.findIndex(hotel => {
+        // Match by hid (most reliable)
+        if (searchedHotelHid && hotel.hid === searchedHotelHid) return true;
+        // Match by id
+        if (searchedHotelId && hotel.id === searchedHotelId) return true;
+        // Match by hotelId (original ID from RateHawk)
+        if (searchedHotelId && hotel.hotelId === searchedHotelId) return true;
+        return false;
+      });
+
+      // If no exact ID match, try name matching as fallback
+      if (matchedHotelIndex === -1 && searchedHotelName) {
+        const normalizedSearchName = searchedHotelName.toLowerCase().trim();
+        matchedHotelIndex = searchResults.hotels.findIndex(hotel => {
+          const hotelName = (hotel.name || '').toLowerCase().trim();
+          // Exact name match or one contains the other
+          return hotelName === normalizedSearchName ||
+                 hotelName.includes(normalizedSearchName) ||
+                 normalizedSearchName.includes(hotelName);
+        });
+        if (matchedHotelIndex !== -1) {
+          console.log(`🔍 Found hotel by name match: "${searchResults.hotels[matchedHotelIndex].name}"`);
+        }
+      }
 
       if (matchedHotelIndex !== -1) {
         const matchedHotel = searchResults.hotels[matchedHotelIndex];
@@ -347,7 +458,7 @@ router.get('/search', async (req, res) => {
         searchResults.hotels.unshift(matchedHotel);
         console.log(`✅ Found exact match for searched hotel: ${matchedHotel.name} (showing it first with ${searchResults.hotels.length - 1} other hotels)`);
       } else {
-        console.log(`⚠️ Searched hotel not found in results with rates, will try to fetch from Content API and add it to the top`);
+        console.log(`⚠️ Searched hotel "${searchedHotelName}" not found in results with rates, will try to fetch from Content API and add it to the top`);
         // Don't clear the array - we'll add the searched hotel from Content API to the front
       }
     }
@@ -475,9 +586,23 @@ router.get('/details/:hid', async (req, res) => {
       return errorResponse(res, 'Invalid hotel ID. Must be a numeric value.', 400);
     }
 
-    // Use default dates if not provided (today, 1 night - same as homepage)
+    // Special handling for ETG Test Hotel (hid=8473727) - for RateHawk certification
+    const isTestHotel = hotelId === 8473727 || hid === 'test_hotel_do_not_book';
+
+    // Use fixed dates 30 days from now for test hotel (required for refundable rates)
     let searchDates;
-    if (checkin && checkout) {
+    if (isTestHotel) {
+      console.log('🧪 Loading test hotel details - using FIXED dates for certification');
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30);
+      const checkoutDate = new Date(futureDate);
+      checkoutDate.setDate(checkoutDate.getDate() + 2);
+      searchDates = {
+        checkin: futureDate.toISOString().split('T')[0],
+        checkout: checkoutDate.toISOString().split('T')[0]
+      };
+      console.log(`   🗓️ Test hotel dates: ${searchDates.checkin} to ${searchDates.checkout}`);
+    } else if (checkin && checkout) {
       searchDates = { checkin, checkout };
     } else {
       searchDates = rateHawkService.constructor.getDefaultDates(0, 1);

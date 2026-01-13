@@ -303,6 +303,18 @@ export const HotelDetails: React.FC = () => {
       return { ...rate, count };
     }).filter(Boolean);
 
+    // IMPORTANT: RateHawk API limitation - Can only book same room type in one request
+    // For different room types, separate booking requests will be made automatically
+    // Group rooms by room type
+    const roomsByType = new Map();
+    selectedRoomsData.forEach(room => {
+      const key = room.room_name;
+      if (!roomsByType.has(key)) {
+        roomsByType.set(key, []);
+      }
+      roomsByType.get(key).push(room);
+    });
+
     // For URL params, use the first rate as primary but include total rooms
     const primaryRate = selectedRoomsData[0];
     const totalRooms = selectedRoomsData.reduce((sum, r) => sum + (r.count || 1), 0);
@@ -377,6 +389,16 @@ export const HotelDetails: React.FC = () => {
      if (!hotel || !hotel.rates || hotel.rates.length === 0) return 0;
      return Math.min(...hotel.rates.map((r: any) => Number(r.price)));
   }, [hotel]);
+
+  // Calculate number of nights for display
+  const numberOfNights = useMemo(() => {
+    if (!bookingParams.checkIn || !bookingParams.checkOut) return 1;
+    const checkIn = new Date(bookingParams.checkIn);
+    const checkOut = new Date(bookingParams.checkOut);
+    const diffTime = checkOut.getTime() - checkIn.getTime();
+    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return nights > 0 ? nights : 1;
+  }, [bookingParams.checkIn, bookingParams.checkOut]);
 
   if (loading) {
      return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div></div>;
@@ -808,6 +830,7 @@ export const HotelDetails: React.FC = () => {
                        rates={groupedRates[roomName]}
                        onSelectResult={handleRateSelect}
                        selectedRates={selectedRates}
+                       nights={numberOfNights}
                     />
                  ))}
               </div>

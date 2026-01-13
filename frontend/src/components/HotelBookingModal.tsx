@@ -71,12 +71,14 @@ interface HotelBookingModalProps {
     meal?: string;
     currency?: string;
   };
+  selectedRooms?: any[]; // Array of selected rooms for multi-room bookings
   onClose: () => void;
 }
 
 export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
   hotel,
   searchParams,
+  selectedRooms = [],
   onClose
 }) => {
   const { t } = useTranslation();
@@ -163,7 +165,59 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
           : guest.phoneNumber
       }));
 
-      // Prepare booking data for the new API
+      // Check if this is a multi-room booking with different room types
+      const isMultiRoomBooking = selectedRooms && selectedRooms.length > 0;
+
+      if (isMultiRoomBooking) {
+        // Check if different room types exist
+        const roomTypes = new Set(selectedRooms.map(r => r.room_name));
+        const hasDifferentTypes = roomTypes.size > 1;
+
+        if (hasDifferentTypes) {
+          console.log('🔄 Multi-room booking detected with different types, using create-multi endpoint...');
+
+          // Use the multi-booking API
+          const multiBookingData = {
+            hotelId: hotel.id,
+            hotelName: hotel.name,
+            hotelAddress: hotel.address,
+            hotelCity: hotel.city || 'Unknown',
+            hotelCountry: hotel.country || hotel.city || 'Unknown',
+            hotelRating: hotel.rating,
+            hotelImage: hotel.image || '',
+            checkInDate: searchParams.checkIn,
+            checkOutDate: searchParams.checkOut,
+            guestName: searchParams.touristName,
+            guestEmail: searchParams.email,
+            guestPhone: searchParams.phone,
+            specialRequests: searchParams.notes,
+            paymentMethod: searchParams.paymentMethod,
+            selectedRooms: selectedRooms
+          };
+
+          console.log('📦 Sending multi-booking data:', JSON.stringify(multiBookingData, null, 2));
+
+          const result = await bookingsAPI.createMultiBooking(multiBookingData);
+
+          const endTime = Date.now();
+          console.log(`✅ Multi-booking completed in ${endTime - startTime}ms`);
+          console.log('📥 Result:', result);
+
+          if (result.data) {
+            toast.success(`✅ Successfully created ${result.data.bookings.length} bookings!\nSession ID: ${result.data.bookingSessionId}`);
+          } else {
+            toast.success('✅ Multi-room booking submitted successfully!');
+          }
+
+          setTimeout(() => {
+            onClose();
+            history.push('/');
+          }, 2000);
+          return;
+        }
+      }
+
+      // Standard single booking flow
       const bookingData = {
         hotelId: hotel.id,
         hotelName: hotel.name,
@@ -186,49 +240,26 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
         additionalGuests: formattedGuests
       };
 
-      console.log('=== FRONTEND BOOKING DATA ===');
-      console.log('Sending booking data:', JSON.stringify(bookingData, null, 2));
-      console.log('=================================');
+      console.log('🔄 Starting standard booking API call...');
+      console.log('📤 Booking data:', JSON.stringify(bookingData, null, 2));
 
-      console.log('🔄 Starting booking API call...');
-
-      // Create the booking using the new API
       const result = await bookingsAPI.create(bookingData);
 
       const endTime = Date.now();
-      const duration = endTime - startTime;
-      console.log(`✅ Booking API call completed in ${duration}ms`);
-      console.log('📥 API Result:', result);
+      console.log(`✅ Booking completed in ${endTime - startTime}ms`);
+      console.log('📥 Result:', result);
 
-      // Show our custom stylish toast
       showBookingSuccessToast();
 
-      // Close the modal and redirect to home page after a short delay
       setTimeout(() => {
         onClose();
-        // Redirect to home page
         history.push('/');
-      }, 1500); // Increased delay to 1.5 seconds to let user see the toast
+      }, 1500);
     } catch (error) {
       const endTime = Date.now();
-      const duration = endTime - startTime;
-      console.error('❌ HotelBookingModal: Error creating booking');
-      console.error('⏱️ Error occurred after:', duration, 'ms');
-      console.error('🔍 Full error object:', error);
-      console.error('📝 Error message:', error instanceof Error ? error.message : 'Unknown error');
-      console.error('🏷️ Error name:', error instanceof Error ? error.name : 'Unknown');
-      console.error('📚 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-
-      // Log additional error properties if they exist
-      if (error && typeof error === 'object') {
-        console.error('🔧 Error properties:', Object.keys(error));
-        if ('response' in error) {
-          console.error('📡 Response error data:', error.response);
-        }
-        if ('code' in error) {
-          console.error('🏷️ Error code:', error.code);
-        }
-      }
+      console.error('❌ Booking error after', endTime - startTime, 'ms');
+      console.error('🔍 Error:', error);
+      toast.error('Booking failed. Please try again.');
     } finally {
       setLoading(false);
     }

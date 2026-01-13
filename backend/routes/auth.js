@@ -78,7 +78,9 @@ router.post('/register', [
     }, 'User registered successfully', 201);
 
   } catch (error) {
+    console.error('Registration error:', error);
     if (error.name === 'ValidationError') {
+      return errorResponse(res, error.message, 400);
     }
     errorResponse(res, 'Registration failed', 500);
   }

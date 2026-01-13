@@ -1,0 +1,162 @@
+﻿
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ     RateHawk Test Hotel Booking Flow                       Γòæ
+Γòæ     Test Hotel HID: 8473727                                Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+≡ƒöæ Using credentials: Key ID = 13816
+
+============================================================
+≡ƒôì STEP 1: Searching for test hotel rates
+============================================================
+   Hotel HID: 8473727
+   Check-in: 2026-02-12
+   Check-out: 2026-02-14
+
+≡ƒôñ Request payload: {
+  "hid": 8473727,
+  "checkin": "2026-02-12",
+  "checkout": "2026-02-14",
+  "residency": "gb",
+  "language": "en",
+  "guests": [
+    {
+      "adults": 2,
+      "children": []
+    }
+  ],
+  "currency": "USD"
+}
+
+≡ƒôÑ Response status: ok
+
+Γ£à Found hotel: test_hotel_do_not_book
+   Rates available: 42
+
+   ≡ƒôï Refundable rates found: 40
+
+   Selected rate details (REFUNDABLE Γ£ô):
+   - Room: Deluxe Double room (full double bed)
+   - Meal: nomeal
+   - Free cancellation before: 2026-02-12T06:00:00
+   - Match Hash (first 50 chars): m-f1a54e0d-ff25-5966-b097-43719702bb97...
+   - Match Hash (full length): 38 chars
+   - Has book_hash directly?: true
+   - Book Hash (first 50 chars): h-afdade90-5055-5fb4-8bf1-8ae65c2048a8...
+   - Price: 435.00 USD
+
+============================================================
+Γ£à STEP 2: Using book_hash directly from HP response (no prebook needed)
+============================================================
+   Book Hash: h-afdade90-5055-5fb4-8bf1-8ae65c2048a8...
+
+============================================================
+≡ƒô¥ STEP 3: Creating booking form
+============================================================
+   Partner Order ID: test_1768340199568_6fekqltiq
+
+≡ƒôñ Creating booking form...
+
+≡ƒôÑ Response status: ok
+
+Γ£à Booking form created!
+   Order ID: 675284268
+   Item ID: 135830954
+
+============================================================
+≡ƒÜÇ STEP 4: Starting booking with guest details
+============================================================
+
+≡ƒôñ Starting booking...
+
+≡ƒôÑ Response status: ok
+   Full response: {
+  "data": null,
+  "debug": {
+    "api_endpoint": {
+      "endpoint": "api/b2b/v3/hotel/order/booking/finish",
+      "is_active": true,
+      "is_limited": true,
+      "remaining": 29,
+      "requests_number": 30,
+      "reset": "2026-01-13T21:37:00",
+      "seconds_number": 60
+    },
+    "request": {
+      "partner": {
+        "partner_order_id": "test_1768340199568_6fekqltiq",
+        "comment": "Test booking - please cancel after verification",
+        "amount_sell_b2b2c": "0"
+      },
+      "user": {
+        "email": "test@example.com",
+        "phone": "+1234567890",
+        "comment": "Test booking for certification"
+      },
+      "supplier_data": {
+        "first_name_original": "Test",
+        "last_name_original": "User",
+        "phone": "+1234567890",
+        "email": "test@example.com"
+      },
+      "language": "en",
+      "rooms": [
+        {
+          "guests": [
+            {
+              "first_name": "Test",
+              "last_name": "User"
+            }
+          ]
+        }
+      ],
+      "payment_type": {
+        "amount": "435.00",
+        "currency_code": "USD",
+        "is_need_credit_card_data": false,
+        "is_need_cvc": false,
+        "type": "deposit",
+        "recommended_price": null
+      }
+    },
+    "method": "POST",
+    "real_ip": "41.44.180.106",
+    "request_id": "893919f0990cdf02d0f985d99465b6db",
+    "key_id": 13816,
+    "api_key_id": 13816,
+    "utcnow": "2026-01-13T21:36:41.530639"
+  },
+  "status": "ok",
+  "error": null
+}
+
+============================================================
+ΓÅ│ STEP 5: Checking booking status
+============================================================
+
+   Attempt 1/10...
+   Status: processing
+   Percent: 33
+
+   Attempt 2/10...
+   Status: processing
+   Percent: 33
+
+   Attempt 3/10...
+   Status: ok
+   Percent: 100
+
+Γ£à BOOKING CONFIRMED!
+   Order ID: undefined
+
+============================================================
+≡ƒôï FINAL RESULT
+============================================================
+
+Γ£à TEST BOOKING COMPLETED SUCCESSFULLY!
+   Order ID: undefined
+   Partner Order ID: test_1768340199568_6fekqltiq
+
+ΓÜá∩╕Å  IMPORTANT: Remember to cancel this test booking!
+   Use the cancel endpoint or contact RateHawk support.

@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
 import { FileUpload, UploadedFile } from '../components/FileUpload';
-import { HotelBookingModal } from '../components/HotelBookingModal';
+import { bookingsAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
 
 interface BookingStep {
@@ -30,7 +30,7 @@ export const HotelBookingFlow: React.FC = () => {
   const { direction } = useDirection();
   const isRTL = direction === 'rtl';
   const history = useHistory();
-  const location = useLocation();
+  const location = useLocation<any>();
   const { user } = useAuth();
 
   // Parse URL parameters
@@ -49,6 +49,10 @@ export const HotelBookingFlow: React.FC = () => {
     adults: parseInt(searchParams.get('adults') || '2'),
     children: parseInt(searchParams.get('children') || '0')
   };
+
+  // Get selected rooms from navigation state (for multi-room bookings)
+  const selectedRooms = location.state?.selectedRooms || [];
+  const isMultiroom = searchParams.get('isMultiroom') === 'true' && selectedRooms.length > 0;
 
   // Extract selected rate data from URL parameters
   // Parse price as number to avoid NaN display issues
@@ -172,8 +176,101 @@ export const HotelBookingFlow: React.FC = () => {
     }));
   };
   const handleSubmit = async () => {
-    // Show the booking confirmation modal instead of submitting directly
-    setShowBookingModal(true);
+    if (!validateCurrentStep()) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      t('booking.confirmSubmission', 'Ready to submit your booking?')
+    );
+
+    if (!confirmed) return;
+
+    setShowBookingModal(true); // Use this as loading state
+
+    try {
+      // Check if this is a multi-room booking with different room types
+      const isMultiRoomBooking = selectedRooms && selectedRooms.length > 0;
+
+      if (isMultiRoomBooking) {
+        const roomTypes = new Set(selectedRooms.map((r: any) => r.room_name));
+        const hasDifferentTypes = roomTypes.size > 1;
+
+        if (hasDifferentTypes) {
+          console.log('🔄 Multi-room booking with different types...');
+
+          const multiBookingData = {
+            hotelId: hotelData.id,
+            hotelName: hotelData.name,
+            hotelAddress: hotelData.address,
+            hotelCity: hotelData.city || 'Unknown',
+            hotelCountry: hotelData.country || 'Unknown',
+            hotelRating: hotelData.rating,
+            hotelImage: hotelData.image,
+            checkInDate: hotelData.checkIn,
+            checkOutDate: hotelData.checkOut,
+            guestName: user?.name || '',
+            guestEmail: user?.email || '',
+            guestPhone: user?.phone || '',
+            specialRequests: formData.specialRequests,
+            paymentMethod: formData.paymentMethod,
+            selectedRooms: selectedRooms
+          };
+
+          const result = await bookingsAPI.createMultiBooking(multiBookingData);
+
+          if (result.data) {
+            toast.success(
+              `✅ Successfully created ${result.data.bookings.length} bookings!\n` +
+              `Session ID: ${result.data.bookingSessionId.substring(0, 16)}...`
+            );
+          } else {
+            toast.success('✅ Multi-room booking submitted successfully!');
+          }
+
+          setTimeout(() => {
+            history.push('/');
+          }, 2000);
+          return;
+        }
+      }
+
+      // Standard single booking
+      const bookingData = {
+        hotelId: hotelData.id,
+        hotelName: hotelData.name,
+        hotelAddress: hotelData.address,
+        hotelCity: hotelData.city,
+        checkInDate: hotelData.checkIn,
+        checkOutDate: hotelData.checkOut,
+        numberOfGuests: hotelData.adults + hotelData.children,
+        roomType: formData.roomType,
+        stayType: formData.stayType,
+        paymentMethod: formData.paymentMethod,
+        expectedCheckInTime: formData.expectedCheckInTime,
+        specialRequests: formData.specialRequests,
+        matchHash: selectedRateData.matchHash,
+        roomName: selectedRateData.roomName,
+        meal: selectedRateData.meal,
+        price: selectedRateData.price.toString(),
+        currency: selectedRateData.currency || 'SAR',
+        additionalGuests: formData.additionalGuests
+      };
+
+      console.log('🔄 Creating booking...');
+      const result = await bookingsAPI.create(bookingData);
+
+      toast.success('✅ Booking submitted successfully!');
+
+      setTimeout(() => {
+        history.push('/');
+      }, 1500);
+
+    } catch (error) {
+      console.error('❌ Booking error:', error);
+      toast.error('Booking failed. Please try again.');
+      setShowBookingModal(false);
+    }
   };
 
   const renderStepContent = () => {
@@ -877,59 +974,21 @@ export const HotelBookingFlow: React.FC = () => {
         </div>
       </div>
 
-      {/* Booking Confirmation Modal */}
+      {/* Loading Overlay */}
       {showBookingModal && (
-        <HotelBookingModal
-          hotel={{
-            id: hotelData.id,
-            name: hotelData.name,
-            address: hotelData.address,
-            city: hotelData.city,
-            country: hotelData.country,
-            rating: hotelData.rating,
-            image: hotelData.image,
-            price: 0, // Add price logic if needed
-            currency: 'SAR',
-            reviewScore: hotelData.rating,
-            reviewCount: 0,
-            facilities: [],
-            propertyClass: 0,
-            reviewScoreWord: null,
-            isPreferred: false,
-            checkIn: null,
-            checkOut: null,
-            coordinates: {
-              latitude: 0,
-              longitude: 0
-            },
-            description: ''
-          }}
-          searchParams={{
-            destination: `${hotelData.city}, ${hotelData.country}`,
-            checkIn: hotelData.checkIn,
-            checkOut: hotelData.checkOut,
-            guests: hotelData.adults + hotelData.children,
-            rooms: hotelData.rooms,            expectedCheckInTime: formData.expectedCheckInTime,
-            roomType: formData.roomType,
-            stayType: formData.stayType,
-            paymentMethod: formData.paymentMethod,
-            touristName: user?.name || '',
-            phone: user?.phone || '',
-            nationality: user?.nationality || 'SA',
-            email: user?.email || '',
-            hotelUrl: '',
-            hotelPrice: selectedRateData.price.toString(),
-            guests_list: formData.additionalGuests,
-            notes: formData.specialRequests,
-            attachments: formData.attachments,
-            // Add selected rate data
-            matchHash: selectedRateData.matchHash,
-            roomName: selectedRateData.roomName,
-            meal: selectedRateData.meal,
-            currency: selectedRateData.currency
-          }}
-          onClose={() => setShowBookingModal(false)}
-        />
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 max-w-md shadow-2xl">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500"></div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {t('booking.processing', 'Processing Booking...')}
+              </h3>
+              <p className="text-gray-600 text-center">
+                {t('booking.pleaseWait', 'Please wait while we confirm your booking')}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

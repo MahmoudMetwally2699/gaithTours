@@ -571,6 +571,37 @@ export const bookingsAPI = {
             toast.error(message);
             throw error;
         }
+    },
+
+    /**
+     * Create multiple bookings for different room types
+     * Handles RateHawk API limitation where different room types need separate requests
+     */
+    createMultiBooking: async (bookingData: {
+        hotelId: string;
+        hotelName: string;
+        hotelAddress: string;
+        hotelCity: string;
+        hotelCountry: string;
+        hotelRating: number;
+        hotelImage: string;
+        checkInDate: string;
+        checkOutDate: string;
+        guestName: string;
+        guestEmail: string;
+        guestPhone: string;
+        specialRequests?: string;
+        paymentMethod: string;
+        selectedRooms: any[]; // Array of room objects with details
+    }): Promise<ApiResponse<{ bookingSessionId: string; bookings: any[] }>> => {
+        try {
+            const response = await api.post('/bookings/create-multi', bookingData);
+            return response.data;
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Failed to create multi-room booking';
+            toast.error(message);
+            throw error;
+        }
     }
 };
 

@@ -11,6 +11,35 @@ import {
   NoSymbolIcon
 } from '@heroicons/react/24/outline';
 
+/**
+ * HotelPoliciesCard Component - Displays hotel policies and rules
+ *
+ * FEATURES IMPLEMENTED FOR RATEHAWK CERTIFICATION:
+ *
+ * ✅ Point 4: metapolicy_struct and metapolicy_extra_info Display (Lines 152-445)
+ *
+ * Parses and displays metapolicy_extra_info:
+ *    - Strips HTML tags from policy text
+ *    - Displays as readable list with appropriate icons
+ *
+ * Parses and displays metapolicy_struct with sections for:
+ *    - Deposit & Payment (accepted methods, deposit requirements)
+ *    - Internet/WiFi (type, location, free/paid)
+ *    - Parking (availability, type, cost, location)
+ *    - Pets (allowed/not allowed, charges)
+ *    - Children policy (age restrictions, policies)
+ *    - Extra bed & Cot/Crib (availability, pricing, age ranges)
+ *    - Shuttle service (availability, type, pricing)
+ *    - No-show penalties
+ *    - Additional fees breakdown
+ *    - Check-in/Check-out times (from struct or simple fields)
+ *
+ * Each policy section displays with:
+ *    - Appropriate icon (WiFi, Parking, Pets, etc.)
+ *    - Color coding (green for included, orange for paid, red for restrictions)
+ *    - Clear formatting in responsive grid layout
+ */
+
 interface MetapolicyStruct {
   deposit?: {
     deposit?: string;

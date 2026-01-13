@@ -732,14 +732,49 @@ class RateHawkService {
     const rates = (hotelData.rates || []).map(rate => {
       const paymentType = rate.payment_options?.payment_types?.[0];
 
-      // Check if free cancellation is available
+        // Check if free cancellation is available
       const isFreeCancellation = this.checkFreeCancellation(paymentType?.cancellation_penalties);
+
+      // Extract free cancellation deadline
+      let freeCancellationBefore = null;
+      if (paymentType?.cancellation_penalties?.free_cancellation_before) {
+        freeCancellationBefore = paymentType.cancellation_penalties.free_cancellation_before;
+      }
+
+      // Calculate total taxes for display (separate from base price)
+      let totalTaxes = 0;
+      let taxData = null;
+
+      if (paymentType?.tax_data) {
+        taxData = paymentType.tax_data;
+        if (taxData.taxes && taxData.taxes.length > 0) {
+           // Sum up all taxes
+           totalTaxes = taxData.taxes.reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0);
+        }
+      }
 
       return {
         book_hash: rate.book_hash,
         match_hash: rate.match_hash,
         room_name: rate.room_name,
         meal: rate.meal,
+
+        // Price and Taxes
+        price: this.applyMarkup(paymentType?.amount || 0),
+        currency: paymentType?.currency_code || currency,
+        original_price: paymentType?.amount || 0, // Store original for comparison
+
+        // Tax Data
+        total_taxes: totalTaxes > 0 ? this.applyMarkup(totalTaxes) : 0,
+        taxes_currency: paymentType?.currency_code || currency,
+        tax_data: taxData, // Pass full structure for breakdown display
+
+        // Policies
+        is_free_cancellation: isFreeCancellation,
+        free_cancellation_before: freeCancellationBefore,
+        cancellation_penalties: paymentType?.cancellation_penalties, // Pass full struct for debugging
+        requires_prepayment: paymentType?.is_need_credit_card_data || paymentType?.is_prepayment,
+        payment_options: rate.payment_options,
 
         // Detailed room data
         room_data: rate.room_data || null,
