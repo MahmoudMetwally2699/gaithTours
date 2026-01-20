@@ -37,7 +37,8 @@
     "socket.io": "^4.8.1",
     "stripe": "^18.2.0",
     "svg2png-wasm": "^1.4.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "zstd-codec": "^0.1.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

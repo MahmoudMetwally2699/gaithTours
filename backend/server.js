@@ -190,6 +190,14 @@ try {
   console.error('Error loading analytics routes:', error);
 }
 
+// Reviews routes
+try {
+  app.use('/api/reviews', require('./routes/reviews'));
+  console.log('✅ Reviews routes loaded');
+} catch (error) {
+  console.error('Error loading reviews routes:', error);
+}
+
 
 // Debug routes (development only)
 if (process.env.NODE_ENV !== 'production') {

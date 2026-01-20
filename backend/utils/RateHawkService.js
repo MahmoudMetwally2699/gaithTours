@@ -1670,6 +1670,184 @@ class RateHawkService {
       checkout: formatDate(checkout)
     };
   }
+
+  /**
+   * ========================================
+   * HOTEL REVIEWS API METHODS
+   * ========================================
+   */
+
+  /**
+   * Get hotel reviews dump URL and metadata
+   * Retrieves a dump with all hotel reviews for a specific language
+   * The dump should be updated weekly
+   *
+   * @param {string} language - ISO 639-1 language code (e.g., 'en', 'ar')
+   * @returns {Promise<Object>} - { url: string, last_update: Date }
+   */
+  async getReviewsDump(language = 'en') {
+    try {
+      console.log(`📦 Requesting reviews dump for language: ${language}`);
+
+      const response = await this.makeRequest('/hotel/reviews/dump/', 'POST', {
+        language
+      });
+
+      if (response.error) {
+        if (response.error === 'dump_not_ready') {
+          console.warn('⚠️ Reviews dump is still processing. Try again later.');
+          return {
+            success: false,
+            error: 'dump_not_ready',
+            message: 'The dump is in processing. Try to send the request later.'
+          };
+        }
+        throw new Error(response.error);
+      }
+
+      console.log(`✅ Reviews dump URL retrieved: ${response.data.url}`);
+      console.log(`📅 Last updated: ${response.data.last_update}`);
+
+      return {
+        success: true,
+        url: response.data.url,
+        last_update: new Date(response.data.last_update),
+        language
+      };
+    } catch (error) {
+      console.error('❌ Error getting reviews dump:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get incremental hotel reviews dump
+   * Contains only reviews added since the previous update
+   * Should be updated weekly
+   *
+   * @param {string} language - ISO 639-1 language code (e.g., 'en', 'ar')
+   * @returns {Promise<Object>} - { url: string, last_update: Date }
+   */
+  async getIncrementalReviewsDump(language = 'en') {
+    try {
+      console.log(`📦 Requesting incremental reviews dump for language: ${language}`);
+
+      const response = await this.makeRequest('/hotel/incremental_reviews/dump/', 'POST', {
+        language
+      });
+
+      if (response.error) {
+        if (response.error === 'dump_not_ready') {
+          console.warn('⚠️ Incremental reviews dump is still processing. Try again later.');
+          return {
+            success: false,
+            error: 'dump_not_ready',
+            message: 'The dump is in processing. Try to send the request later.'
+          };
+        }
+        throw new Error(response.error);
+      }
+
+      console.log(`✅ Incremental reviews dump URL retrieved: ${response.data.url}`);
+      console.log(`📅 Last updated: ${response.data.last_update}`);
+
+      return {
+        success: true,
+        url: response.data.url,
+        last_update: new Date(response.data.last_update),
+        language,
+        incremental: true
+      };
+    } catch (error) {
+      console.error('❌ Error getting incremental reviews dump:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get hotel reviews by IDs (Content API)
+   * Recommended approach for fetching reviews for specific hotels
+   * Can use either HIDs (numeric) or IDs (string)
+   *
+   * @param {Array<number|string>} hotelIds - Array of hotel IDs (HIDs or IDs)
+   * @param {string} language - ISO 639-1 language code (e.g., 'en', 'ar')
+   * @param {string} idType - 'hids' or 'ids' (auto-detected if not specified)
+   * @returns {Promise<Array>} - Array of hotel review objects
+   */
+  async getReviewsByIds(hotelIds, language = 'en', idType = null) {
+    try {
+      if (!Array.isArray(hotelIds) || hotelIds.length === 0) {
+        throw new Error('hotelIds must be a non-empty array');
+      }
+
+      // Auto-detect ID type if not specified
+      if (!idType) {
+        idType = typeof hotelIds[0] === 'number' || !isNaN(hotelIds[0]) ? 'hids' : 'ids';
+      }
+
+      console.log(`📖 Fetching reviews for ${hotelIds.length} hotels (${idType}), language: ${language}`);
+
+      // Convert to appropriate format
+      const payload = {
+        language
+      };
+
+      if (idType === 'hids') {
+        payload.hids = hotelIds.map(id => typeof id === 'number' ? id : parseInt(id));
+      } else {
+        payload.ids = hotelIds.map(id => String(id));
+      }
+
+      // Use Content API endpoint
+      const contentApiUrl = 'https://api.worldota.net/api/content/v1';
+      const response = await axios.post(
+        `${contentApiUrl}/hotel_reviews_by_ids/`,
+        payload,
+        {
+          auth: {
+            username: this.keyId,
+            password: this.apiKey
+          },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      const reviews = response.data.data || [];
+      console.log(`✅ Fetched reviews for ${reviews.length} hotels`);
+
+      // Transform data to include useful summary
+      return reviews.map(hotel => ({
+        hotel_id: hotel.id,
+        hid: hotel.hid,
+        language,
+        reviews: hotel.reviews || [],
+        review_count: hotel.reviews?.length || 0,
+        average_rating: this.calculateAverageRating(hotel.reviews || []),
+        source: 'content_api'
+      }));
+    } catch (error) {
+      console.error('❌ Error fetching reviews by IDs:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate average rating from reviews array
+   * @param {Array} reviews - Array of review objects
+   * @returns {number} - Average rating (0-10 scale)
+   */
+  calculateAverageRating(reviews) {
+    if (!reviews || reviews.length === 0) return 0;
+
+    const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+    return parseFloat((totalRating / reviews.length).toFixed(2));
+  }
 }
 
 module.exports = new RateHawkService();
