@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Switch, useLocation } from 'react-route
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
@@ -10,16 +11,19 @@ import { Hotels } from './pages/Hotels';
 import { HotelSearchResults } from './pages/HotelSearchResults';
 import { HotelDetails } from './pages/HotelDetails';
 import { BookingPage } from './pages/BookingPage';
+import { PaymentCallbackPage } from './pages/PaymentCallbackPage';
 import { HotelBookingFlow } from './pages/HotelBookingFlow';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
+import { EmailVerification } from './pages/EmailVerification';
 import { Profile } from './pages/Profile';
 import { PaymentSuccess } from './pages/PaymentSuccess';
 import { PaymentFailure } from './pages/PaymentFailure';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { AcceptInvitation } from './pages/AcceptInvitation';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import './i18n';
@@ -31,10 +35,11 @@ const AppContent = () => {
   const isHome = location.pathname === '/';
   const isHotelSearch = location.pathname === '/hotels/search';
   const isHotelDetails = location.pathname.startsWith('/hotels/details/');
+  const isBookingPage = location.pathname.startsWith('/hotels/booking/');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!isAdminDashboard && !isHome && !isHotelSearch && !isHotelDetails && <Navbar />}
+      {!isAdminDashboard && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && <Navbar />}
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />
@@ -46,9 +51,12 @@ const AppContent = () => {
           <Route path="/register" component={Register} />
           <Route path="/forgot-password" component={ForgotPassword} />
           <Route path="/reset-password" component={ResetPassword} />
+          <Route path="/verify-email/:token" component={EmailVerification} />
           <Route path="/payment/success" component={PaymentSuccess} />
           <Route path="/payment/failure" component={PaymentFailure} />
+          <Route path="/booking/payment-callback" component={PaymentCallbackPage} />
           <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/accept-invitation/:token" component={AcceptInvitation} />
           <Route
             path="/profile"
             render={() => (
@@ -85,11 +93,13 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <SocketProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </SocketProvider>
+      <CurrencyProvider>
+        <SocketProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </SocketProvider>
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

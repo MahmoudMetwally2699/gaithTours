@@ -21,6 +21,8 @@ interface RoomRate {
   meal_data?: {
     breakfast_included?: boolean;
   };
+  total_taxes?: number; // Actual taxes from RateHawk API
+  taxes_currency?: string;
 }
 
 interface BookingSummaryCardProps {
@@ -29,7 +31,8 @@ interface BookingSummaryCardProps {
   selectedRooms?: RoomRate[]; // Multiple room selections
   checkIn: string;
   checkOut: string;
-  guests: number;
+  guests: number;       // Adults count
+  children?: number;    // Children count
   rooms?: number; // Total room count
 }
 
@@ -40,9 +43,11 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   checkIn,
   checkOut,
   guests,
+  children = 0,
   rooms = 1
 }) => {
   const { t } = useTranslation();
+  const totalGuests = guests + children;
 
   // Calculate number of nights with validation
   const calculateNights = () => {
@@ -63,22 +68,44 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   const nights = calculateNights();
 
   // Calculate total price including all rooms
+  // IMPORTANT: rate.price is already the TOTAL for the stay, not per-night!
   const calculateTotalPrice = () => {
     if (selectedRooms && selectedRooms.length > 0) {
-      // Sum up price * count for each room type
+      // Sum up total price for each room type (already includes nights)
       return selectedRooms.reduce((total, room) => {
-        const roomPrice = Number(room.price) || 0;
+        const roomTotalPrice = Number(room.price) || 0; // Already total for stay
         const roomCount = room.count || 1;
-        return total + (roomPrice * roomCount * nights);
+        return total + (roomTotalPrice * roomCount); // Only multiply by room count, not nights
       }, 0);
     }
     // Fallback to single room calculation
-    const price = Number(selectedRate.price) || 0;
-    return price * nights * Math.max(rooms, 1);
+    const totalStayPrice = Number(selectedRate.price) || 0; // Already total for stay
+    return totalStayPrice * Math.max(rooms, 1); // Only multiply by room count, not nights
   };
 
   const totalPrice = calculateTotalPrice();
-  const taxes = totalPrice * 0.14;
+
+  // Use actual taxes from RateHawk API if available, otherwise fall back to 14%
+  // IMPORTANT: Taxes are also for the TOTAL stay, not per-night!
+  const calculateTaxes = () => {
+    if (selectedRooms && selectedRooms.length > 0) {
+      // Sum taxes for all selected rooms (already includes nights)
+      const roomTaxes = selectedRooms.reduce((sum, room) => {
+        const roomTax = room.total_taxes ? Number(room.total_taxes) * (room.count || 1) : 0;
+        return sum + roomTax;
+      }, 0);
+      if (roomTaxes > 0) return roomTaxes;
+    }
+    // Single room or fallback
+    if (selectedRate.total_taxes && selectedRate.total_taxes > 0) {
+      return Number(selectedRate.total_taxes) * Math.max(rooms, 1); // Only multiply by room count, not nights
+    }
+    // Fallback to 14% if no tax data available
+    return totalPrice * 0.14;
+  };
+
+  const taxes = calculateTaxes();
+  const taxPercentage = selectedRate.total_taxes ? null : '14%'; // Only show percentage if using fallback
   const totalRooms = selectedRooms?.reduce((sum, r) => sum + (r.count || 1), 0) || rooms;
 
   // Format date with validation
@@ -168,7 +195,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
           <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
             <div className="flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-2" />
-              <span>{guests} {guests === 1 ? t('booking.guest', 'guest') : t('hero.guests', 'guests')}</span>
+              <span>{totalGuests} {totalGuests === 1 ? t('booking.guest', 'Guest') : t('hero.guests', 'Guests')}</span>
             </div>
             <div className="flex items-center">
               <HomeModernIcon className="h-4 w-4 mr-2 text-orange-500" />
@@ -244,10 +271,10 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
               selectedRooms.map((room, index) => (
                 <div key={room.match_hash || index} className="flex justify-between text-sm">
                   <span className="text-gray-600">
-                    {room.room_name} x{room.count || 1} x {nights}n
+                    {room.room_name} x{room.count || 1} ({nights}n)
                   </span>
                   <span className="font-medium">
-                    {room.currency} {(Number(room.price) * (room.count || 1) * nights).toFixed(2)}
+                    {room.currency} {(Number(room.price) * (room.count || 1)).toFixed(2)}
                   </span>
                 </div>
               ))
@@ -255,7 +282,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
               // Single room price breakdown
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">
-                  {selectedRate.currency} {Number(selectedRate.price).toFixed(2)} x {totalRooms} x {nights}n
+                  {selectedRate.room_name || 'Room'} x{totalRooms} ({nights}n)
                 </span>
                 <span className="font-medium">
                   {selectedRate.currency} {totalPrice.toFixed(2)}
@@ -265,7 +292,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
 
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">
-                {t('booking.taxesAndFees', 'Taxes and fees')} (14%)
+                {t('booking.taxesAndFees', 'Taxes and fees')}{taxPercentage ? ` (${taxPercentage})` : ''}
               </span>
               <span className="font-medium">
                 {selectedRate.currency} {taxes.toFixed(2)}

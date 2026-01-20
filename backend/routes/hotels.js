@@ -37,6 +37,7 @@ router.get('/suggested', async (req, res) => {
   try {
     let destination = null;
     let source = 'fallback'; // history, location, fallback
+    const currency = req.query.currency || 'USD';
 
     // 1. Try to get user from token
     let token;
@@ -71,8 +72,8 @@ router.get('/suggested', async (req, res) => {
 
     console.log(`💡 Getting suggestions for: ${destination} (Source: ${source})`);
 
-    // Check cache first
-    const cacheKey = `suggestions:${destination}`;
+    // Check cache first (include currency in cache key)
+    const cacheKey = `suggestions:${destination}:${currency}`;
     const cachedData = getCachedResults(cacheKey);
 
     if (cachedData) {
@@ -101,6 +102,7 @@ router.get('/suggested', async (req, res) => {
         searchResults = await rateHawkService.searchByRegion(regionId, {
           ...dates,
           adults: 2,
+          currency: currency,
           enrichmentLimit: 20 // Increased base limit (cache multiplies this further)
         });
       }
@@ -229,15 +231,16 @@ router.get('/search', async (req, res) => {
       adults = 2,
       children = 0,
       page = 1,
-      limit = 20
+      limit = 20,
+      currency = 'USD'
     } = req.query;
 
     if (!destination) {
       return errorResponse(res, 'Destination is required', 400);
     }
 
-    // Generate cache key (v3 = includes isSearchedHotel flag)
-    const cacheKey = `v3_${destination}_${checkin}_${checkout}_${adults}_${children}`;
+    // Generate cache key (v4 = includes currency)
+    const cacheKey = `v4_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
 
     // Check cache first
     if (hotelSearchCache.has(cacheKey)) {
@@ -381,7 +384,8 @@ router.get('/search', async (req, res) => {
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
       adults: parseInt(adults) || 2,
-      children: childrenAges
+      children: childrenAges,
+      currency
     });
 
 
@@ -577,7 +581,8 @@ router.get('/details/:hid', async (req, res) => {
       checkout,
       adults = 2,
       children = 0,
-      match_hash
+      match_hash,
+      currency = 'USD'
     } = req.query;
 
     // Validate hid
@@ -623,7 +628,8 @@ router.get('/details/:hid', async (req, res) => {
         ...searchDates,
         adults: parseInt(adults) || 2,
         children: childrenAges,
-        match_hash
+        match_hash,
+        currency
       });
     } catch (error) {
       // If hotel not found (no rates), fetch from Content API

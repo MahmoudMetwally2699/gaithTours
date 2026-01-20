@@ -1,7 +1,8 @@
 export { ClientsTab } from './ClientsTab';
 export { BookingsTab } from './BookingsTab';
-export { InvoicesTab } from './InvoicesTab';
 export { PaymentsTab } from './PaymentsTab';
 export { WhatsAppTab } from './WhatsAppTab';
 export { AddClientModal } from './AddClientModal';
 export { AdminBookingModal } from './AdminBookingModal';
+export { AnalyticsTab } from './AnalyticsTab';
+export { PromoCodesTab } from './PromoCodesTab';

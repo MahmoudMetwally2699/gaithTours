@@ -256,8 +256,7 @@ router.post('/create', async (req, res) => {
         ratehawkStatus: 'hash_expired'
       });
 
-      // TEMP: Commented out due to MongoDB quota limit
-      // await reservation.save();
+      await reservation.save();
 
       return successResponse(res, {
         reservation: {
@@ -326,8 +325,7 @@ router.post('/create', async (req, res) => {
           ratehawkStatus: 'sandbox'
         });
 
-        // TEMP: Commented out due to MongoDB quota limit
-        // await reservation.save();
+        await reservation.save();
 
         return successResponse(res, {
           reservation: {
@@ -414,10 +412,10 @@ router.post('/create', async (req, res) => {
     console.log('⏳ Step 3: Checking booking status...');
     let bookingStatus;
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 6; // Reduced from 10 to 6
 
     while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between checks
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Increased from 2s to 3s
 
       bookingStatus = await rateHawkService.checkBookingStatus(partnerOrderId);
       console.log(`Status check ${attempts + 1}/${maxAttempts}:`, bookingStatus.status);
@@ -434,6 +432,59 @@ router.post('/create', async (req, res) => {
       console.error('❌ Booking failed with status:', bookingStatus.status);
       console.error('   Partner Order ID:', partnerOrderId);
       console.error('   Full response:', JSON.stringify(bookingStatus, null, 2));
+
+      // Save the failed booking for tracking in the dashboard
+      const checkIn = new Date(checkInDate);
+      const checkOut = new Date(checkOutDate);
+      const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+
+      let cleanFailedPhone = guestPhone || req.user?.phone || '';
+      if (cleanFailedPhone) {
+        cleanFailedPhone = cleanFailedPhone.replace(/(\+\d+)\+\d+/, '$1');
+        cleanFailedPhone = cleanFailedPhone.replace(/[^\d+]/g, '');
+      }
+
+      const failedReservation = new Reservation({
+        user: req.user?._id || null,
+        touristName: guestName || req.user?.name || 'Guest',
+        email: guestEmail || req.user?.email,
+        phone: cleanFailedPhone || '+1234567890',
+        nationality: req.user?.nationality || 'US',
+        hotel: {
+          id: hotelId,
+          name: hotelName,
+          address: hotelAddress || '',
+          city: hotelCity || hotelAddress || 'Unknown',
+          country: hotelCountry || hotelCity || 'Unknown',
+          rating: parseFloat(hotelRating) || 0,
+          image: hotelImage || '',
+          rateHawkMatchHash: selectedRate.matchHash
+        },
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        numberOfNights: nights,
+        numberOfRooms: 1,
+        numberOfAdults: numberOfGuests || 2,
+        numberOfChildren: 0,
+        roomType: selectedRate.roomName || roomType || 'Standard Room',
+        stayType: stayType || 'Leisure',
+        meal: selectedRate.meal || 'nomeal',
+        paymentMethod: paymentMethod || 'pending',
+        specialRequests: specialRequests || '',
+        status: 'failed',
+        totalPrice: totalPrice,
+        currency: currency || 'USD',
+        ratehawkOrderId: partnerOrderId,
+        ratehawkStatus: bookingStatus.status,
+        notes: `RateHawk booking failed: ${bookingStatus.error || bookingStatus.message || bookingStatus.status}`
+      });
+
+      try {
+        await failedReservation.save();
+        console.log('📝 Failed reservation saved for tracking:', failedReservation._id);
+      } catch (saveError) {
+        console.error('Could not save failed reservation:', saveError.message);
+      }
 
       // Provide more specific error message
       const errorDetails = bookingStatus.error || bookingStatus.message || bookingStatus.status;
@@ -480,12 +531,15 @@ router.post('/create', async (req, res) => {
       status: 'confirmed',
       totalPrice: totalPrice,
       currency: currency || 'USD',
-      ratehawkOrderId: bookingStatus.order_id,
+      // Store cancellation policy information from rate
+      isRefundable: selectedRate.isRefundable !== false, // Default true unless explicitly false
+      freeCancellationBefore: selectedRate.freeCancellationBefore || selectedRate.free_cancellation_before,
+      ratehawkOrderId: partnerOrderId, // Our partner order ID (GH-...)
+      ratehawkSystemOrderId: bookingStatus.order_id, // RateHawk's system order ID
       ratehawkStatus: bookingStatus.status
     });
 
-    // TEMP: Commented out due to MongoDB quota limit
-    // await reservation.save();
+    await reservation.save();
 
     // Generate invoice
     const invoiceNumber = `INV-${Date.now()}-${reservation._id.toString().slice(-6).toUpperCase()}`;
@@ -515,13 +569,11 @@ router.post('/create', async (req, res) => {
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     });
 
-    // TEMP: Commented out due to MongoDB quota limit
-    // await invoice.save();
+    await invoice.save();
 
     // Update reservation with invoice reference
-    // TEMP: Commented out due to MongoDB quota limit
-    // reservation.invoice = invoice._id;
-    // await reservation.save();
+    reservation.invoice = invoice._id;
+    await reservation.save();
 
     successResponse(res, {
       reservation: {
@@ -589,6 +641,57 @@ router.get('/:id', protect, async (req, res) => {
   } catch (error) {
     console.error('Get booking error:', error);
     errorResponse(res, 'Failed to retrieve booking', 500);
+  }
+});
+
+/**
+ * @route   POST /api/bookings/prebook-rate
+ * @desc    Pre-book a rate to get book_hash and valid payment amount
+ * @access  Public (for booking flow)
+ */
+router.post('/prebook-rate', async (req, res) => {
+  try {
+    const { matchHash, hotelId, checkIn, checkOut } = req.body;
+
+    if (!matchHash) {
+      return errorResponse(res, 'Match hash is required', 400);
+    }
+
+    console.log('🔄 Pre-booking rate...');
+    console.log('   Match Hash:', matchHash.substring(0, 30) + '...');
+
+    const rateHawkService = require('../utils/RateHawkService');
+    const prebookResult = await rateHawkService.prebook(matchHash, 'en');
+
+    if (!prebookResult.success || !prebookResult.book_hash) {
+      console.error('❌ Prebook failed:', prebookResult.error || 'No book_hash returned');
+      return errorResponse(res, prebookResult.error || 'Failed to pre-book rate - hash may be expired', 400);
+    }
+
+    console.log('✅ Prebook successful!');
+    console.log('   Book Hash:', prebookResult.book_hash.substring(0, 30) + '...');
+
+    // Extract payment details from prebook result
+    const prebookRate = prebookResult.data?.hotels?.[0]?.rates?.[0];
+    const paymentType = prebookRate?.payment_options?.payment_types?.[0];
+
+    const paymentAmount = paymentType?.amount || '0';
+    const paymentCurrency = paymentType?.currency_code || 'USD';
+
+    console.log(`   Payment: ${paymentAmount} ${paymentCurrency}`);
+
+    successResponse(res, {
+      bookHash: prebookResult.book_hash,
+      payment: {
+        amount: paymentAmount,
+        currency: paymentCurrency
+      },
+      prebookData: prebookResult.data
+    }, 'Rate pre-booked successfully');
+
+  } catch (error) {
+    console.error('Prebook rate error:', error);
+    errorResponse(res, error.message || 'Failed to pre-book rate', 500);
   }
 });
 
@@ -747,10 +850,10 @@ router.post('/create-multi', async (req, res) => {
         // Step 3: Poll for booking status
         let bookingStatus;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 6; // Reduced from 10 to 6
 
         while (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Increased from 2s to 3s
           bookingStatus = await rateHawkService.checkBookingStatus(partnerOrderId);
           console.log(`   Status check ${attempts + 1}/${maxAttempts}:`, bookingStatus.status);
 
@@ -799,7 +902,8 @@ router.post('/create-multi', async (req, res) => {
           status: 'confirmed',
           totalPrice: totalPrice,
           currency: currency,
-          ratehawkOrderId: bookingStatus.order_id,
+          ratehawkOrderId: partnerOrderId, // Our partner order ID
+          ratehawkSystemOrderId: bookingStatus.order_id, // RateHawk's system order ID
           ratehawkStatus: bookingStatus.status,
           bookingSessionId: bookingSessionId,
           isPartOfMultiBooking: true,
@@ -955,6 +1059,229 @@ router.post('/session/:sessionId/cancel', protect, async (req, res) => {
   } catch (error) {
     console.error('Cancel session error:', error);
     errorResponse(res, 'Failed to cancel session bookings', 500);
+  }
+});
+
+/**
+ * @route   GET /api/bookings/:id/cancellation-info
+ * @desc    Get cancellation info and penalties for a booking
+ * @access  Private
+ */
+router.get('/:id/cancellation-info', protect, async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id);
+
+    if (!reservation) {
+      return errorResponse(res, 'Booking not found', 404);
+    }
+
+    // Check ownership (user must own the booking or be admin)
+    if (reservation.user &&
+        reservation.user.toString() !== req.user._id.toString() &&
+        req.user.role !== 'admin') {
+      return errorResponse(res, 'Not authorized to view this booking', 403);
+    }
+
+    // Check if booking is already cancelled
+    if (reservation.status === 'cancelled') {
+      return errorResponse(res, 'This booking is already cancelled', 400);
+    }
+
+    // Check if booking has RateHawk order ID
+    if (!reservation.ratehawkOrderId) {
+      return successResponse(res, {
+        cancellable: true,
+        isFreeCancellation: true,
+        isRefundable: reservation.isRefundable !== false && !!reservation.kashierOrderId, // Check both rate policy and payment method
+        refundAmount: reservation.isRefundable !== false ? reservation.totalPrice : 0,
+        currentPenalty: null,
+        policies: [],
+        message: 'This booking can be cancelled without penalty (no RateHawk booking)'
+      }, 'Cancellation info retrieved');
+    }
+
+    // Get cancellation info from RateHawk
+    const rateHawkService = require('../utils/RateHawkService');
+
+    try {
+      const cancellationInfo = await rateHawkService.getCancellationInfo(reservation.ratehawkOrderId);
+
+      successResponse(res, {
+        reservationId: reservation._id,
+        hotelName: reservation.hotel?.name,
+        checkInDate: reservation.checkInDate,
+        checkOutDate: reservation.checkOutDate,
+        totalPrice: reservation.totalPrice,
+        currency: reservation.currency,
+        isRefundable: reservation.isRefundable !== false && !!reservation.kashierOrderId, // Check both rate policy and payment
+        refundAmount: reservation.isRefundable !== false ? reservation.totalPrice : 0,
+        ...cancellationInfo
+      }, 'Cancellation info retrieved successfully');
+    } catch (infoError) {
+      // If cancellation info endpoint fails, return a fallback response
+      console.warn('⚠️ Cancellation info not available:', infoError.message);
+      successResponse(res, {
+        reservationId: reservation._id,
+        hotelName: reservation.hotel?.name,
+        checkInDate: reservation.checkInDate,
+        checkOutDate: reservation.checkOutDate,
+        totalPrice: reservation.totalPrice,
+        currency: reservation.currency,
+        success: true,
+        cancellable: true,
+        isRefundable: reservation.isRefundable !== false && !!reservation.kashierOrderId, // Check both rate policy and payment
+        refundAmount: reservation.isRefundable !== false ? reservation.totalPrice : 0,
+        endpoint_not_available: true,
+        isFreeCancellation: false,
+        currentPenalty: null,
+        policies: [],
+        message: 'Cancellation info not available from provider - cancellation still possible'
+      }, 'Cancellation info retrieved (limited data)');
+    }
+
+  } catch (error) {
+    console.error('Get cancellation info error:', error);
+    errorResponse(res, 'Failed to retrieve cancellation info', 500);
+  }
+});
+
+/**
+ * @route   POST /api/bookings/:id/cancel
+ * @desc    Cancel a user's booking
+ * @access  Private
+ */
+router.post('/:id/cancel', protect, async (req, res) => {
+  try {
+    const { reason } = req.body;
+
+    const reservation = await Reservation.findById(req.params.id);
+
+    if (!reservation) {
+      return errorResponse(res, 'Booking not found', 404);
+    }
+
+    // Check ownership
+    if (reservation.user &&
+        reservation.user.toString() !== req.user._id.toString() &&
+        req.user.role !== 'admin') {
+      return errorResponse(res, 'Not authorized to cancel this booking', 403);
+    }
+
+    // Check if already cancelled
+    if (reservation.status === 'cancelled') {
+      return errorResponse(res, 'This booking is already cancelled', 400);
+    }
+
+    // Check if booking can be cancelled (must be in certain statuses)
+    const cancellableStatuses = ['pending', 'confirmed', 'pending_payment', 'payment_confirmed'];
+    if (!cancellableStatuses.includes(reservation.status)) {
+      return errorResponse(res, `Booking cannot be cancelled in ${reservation.status} status`, 400);
+    }
+
+    console.log(`🚫 User ${req.user._id} cancelling booking ${reservation._id}`);
+
+    let cancellationResult = { success: true, penalty: null, refundAmount: null };
+
+    // Cancel with RateHawk if there's an order ID
+    if (reservation.ratehawkOrderId || reservation.ratehawkSystemOrderId) {
+      const rateHawkService = require('../utils/RateHawkService');
+
+      // Use system order ID if available, otherwise try partner order ID
+      const orderIdToCancel = reservation.ratehawkSystemOrderId || reservation.ratehawkOrderId;
+      console.log(`   Using order ID for cancellation: ${orderIdToCancel}`);
+
+      cancellationResult = await rateHawkService.cancelBooking(orderIdToCancel);
+
+      // Handle order_not_found - booking may not be in RateHawk system yet
+      if (cancellationResult.error === 'order_not_found') {
+        console.warn('⚠️ Order not found in RateHawk, proceeding with local cancellation');
+        // Continue with local cancellation even if RateHawk doesn't have the order
+        cancellationResult = {
+          success: true,
+          penalty: null,
+          refundAmount: null,
+          provider_not_found: true
+        };
+      } else if (!cancellationResult.success && !cancellationResult.sandbox_mode) {
+        return errorResponse(res, cancellationResult.message || 'Failed to cancel with RateHawk', 500);
+      }
+    }
+
+    // Update reservation status
+    reservation.status = 'cancelled';
+    reservation.ratehawkStatus = 'cancelled';
+    reservation.notes = (reservation.notes || '') +
+      `\n[${new Date().toISOString()}] Cancelled by user. Reason: ${reason || 'Not provided'}`;
+
+    if (cancellationResult.penalty) {
+      reservation.cancellationPenalty = cancellationResult.penalty;
+    }
+
+    // Process Kashier refund if payment was made via Kashier
+    let refundResult = null;
+    if (reservation.kashierOrderId && reservation.totalPrice > 0) {
+      console.log('💸 Processing Kashier refund...');
+      const kashierService = require('../utils/kashierService');
+
+      try {
+        refundResult = await kashierService.processRefund(
+          reservation.kashierOrderId,
+          reservation.totalPrice,
+          `Booking cancellation - ${reason || 'User request'}`
+        );
+
+        if (refundResult.success) {
+          console.log('✅ Refund processed successfully');
+          reservation.refundStatus = refundResult.status;
+          reservation.refundAmount = reservation.totalPrice;
+          reservation.refundedAt = new Date();
+          reservation.notes = (reservation.notes || '') +
+            `\n[${new Date().toISOString()}] Refund ${refundResult.status}: ${reservation.totalPrice} ${reservation.currency}`;
+        } else {
+          console.warn('⚠️ Refund failed:', refundResult.message);
+          reservation.notes = (reservation.notes || '') +
+            `\n[${new Date().toISOString()}] Refund FAILED: ${refundResult.message}`;
+        }
+      } catch (refundError) {
+        console.error('❌ Refund error:', refundError);
+        reservation.notes = (reservation.notes || '') +
+          `\n[${new Date().toISOString()}] Refund ERROR: ${refundError.message}`;
+      }
+    }
+
+    await reservation.save();
+
+    // Send cancellation email
+    try {
+      const { sendCancellationEmail } = require('../utils/emailService');
+      await sendCancellationEmail({
+        email: reservation.email,
+        reservationId: reservation._id,
+        hotelName: reservation.hotel?.name,
+        customerName: reservation.touristName,
+        checkInDate: reservation.checkInDate,
+        checkOutDate: reservation.checkOutDate,
+        penalty: cancellationResult.penalty,
+        refundAmount: cancellationResult.refundAmount
+      });
+    } catch (emailError) {
+      console.error('Failed to send cancellation email:', emailError);
+      // Don't fail the cancellation if email fails
+    }
+
+    successResponse(res, {
+      reservationId: reservation._id,
+      status: 'cancelled',
+      penalty: cancellationResult.penalty,
+      refundAmount: refundResult?.success ? reservation.totalPrice : cancellationResult.refundAmount,
+      refundStatus: refundResult?.status,
+      refundProcessed: refundResult?.success || false,
+      sandbox_mode: cancellationResult.sandbox_mode || false
+    }, refundResult?.success ? 'Booking cancelled and refund processed' : 'Booking cancelled successfully');
+
+  } catch (error) {
+    console.error('Cancel booking error:', error);
+    errorResponse(res, 'Failed to cancel booking', 500);
   }
 });
 

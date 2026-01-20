@@ -46,7 +46,7 @@ const invoiceSchema = new mongoose.Schema({
     min: 0
   },  currency: {
     type: String,
-    default: 'SAR'
+    default: 'USD'
   },
   status: {
     type: String,
@@ -105,7 +105,7 @@ invoiceSchema.set('toJSON', { virtuals: true });
 invoiceSchema.set('toObject', { virtuals: true });
 
 // Generate unique invoice ID
-invoiceSchema.pre('save', async function(next) {
+invoiceSchema.pre('validate', async function(next) {
   try {
     if (!this.invoiceId) {
       const date = new Date();

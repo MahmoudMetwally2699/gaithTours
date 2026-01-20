@@ -158,6 +158,39 @@ try {
   console.error('Error loading WhatsApp admin routes:', error);
 }
 
+// Margin rules routes (Profit Margin Management)
+try {
+  app.use('/api/admin/margins', require('./routes/margins'));
+  console.log('✅ Margin routes loaded');
+} catch (error) {
+  console.error('Error loading margin routes:', error);
+}
+
+// Sub-admin management routes
+try {
+  app.use('/api/admin', require('./routes/sub-admin'));
+  console.log('✅ Sub-admin routes loaded');
+} catch (error) {
+  console.error('Error loading sub-admin routes:', error);
+}
+
+// Promo codes routes
+try {
+  app.use('/api/promo-codes', require('./routes/promo-codes'));
+  console.log('✅ Promo codes routes loaded');
+} catch (error) {
+  console.error('Error loading promo codes routes:', error);
+}
+
+// Analytics routes
+try {
+  app.use('/api/admin/analytics', require('./routes/analytics'));
+  console.log('✅ Analytics routes loaded');
+} catch (error) {
+  console.error('Error loading analytics routes:', error);
+}
+
+
 // Debug routes (development only)
 if (process.env.NODE_ENV !== 'production') {
   try {

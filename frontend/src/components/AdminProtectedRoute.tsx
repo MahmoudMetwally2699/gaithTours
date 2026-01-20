@@ -7,9 +7,14 @@ interface AdminProtectedRouteProps {
   children: React.ReactNode;
 }
 
+// List of valid admin roles
+const ADMIN_ROLES = ['admin', 'super_admin', 'sub_admin'];
+
 export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user, isLoading } = useAuth();
   const history = useHistory();
+
+  const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
   React.useEffect(() => {
     if (!isLoading) {
@@ -19,13 +24,13 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
         return;
       }
 
-      if (user.role !== 'admin') {
+      if (!isAdmin) {
         toast.error('Access denied. Admin privileges required.');
         history.push('/');
         return;
       }
     }
-  }, [user, isLoading, history]);
+  }, [user, isLoading, history, isAdmin]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -37,7 +42,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   }
 
   // Don't render anything while redirecting
-  if (!user || user.role !== 'admin') {
+  if (!user || !isAdmin) {
     return null;
   }
 

@@ -5,7 +5,6 @@ export interface GuestFormData {
   firstName: string;
   lastName: string;
   email: string;
-  confirmEmail: string;
   country: string;
   phoneCode: string;
   phone: string;
@@ -17,7 +16,6 @@ interface ValidationErrors {
   firstName?: string;
   lastName?: string;
   email?: string;
-  confirmEmail?: string;
   phone?: string;
 }
 
@@ -62,9 +60,9 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           {t('booking.guestInformation', 'Guest Information')}
         </h2>
 
-        <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-6">
-          <p className="text-sm text-blue-800">
-            ℹ️ {t('booking.almostDone', 'Almost done! Just fill in the required info')}
+        <div className="bg-orange-50 border border-orange-200 rounded p-4 mb-6">
+          <p className="text-sm text-orange-800 font-medium">
+            {t('booking.almostDone', 'Almost done! Just fill in the required info')}
           </p>
         </div>
 
@@ -78,7 +76,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
               type="text"
               value={formData.firstName}
               onChange={(e) => onChange({ firstName: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                 errors.firstName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder={t('booking.firstNamePlaceholder', 'Enter first name')}
@@ -97,7 +95,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
               type="text"
               value={formData.lastName}
               onChange={(e) => onChange({ lastName: e.target.value })}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                 errors.lastName ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder={t('booking.lastNamePlaceholder', 'Enter last name')}
@@ -117,7 +115,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
             type="email"
             value={formData.email}
             onChange={(e) => onChange({ email: e.target.value })}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
               errors.email ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="example@email.com"
@@ -130,25 +128,6 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           </p>
         </div>
 
-        {/* Confirm Email */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('booking.confirmEmail', 'Confirm Email Address')} <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            value={formData.confirmEmail}
-            onChange={(e) => onChange({ confirmEmail: e.target.value })}
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.confirmEmail ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="example@email.com"
-          />
-          {errors.confirmEmail && (
-            <p className="text-red-500 text-xs mt-1">{errors.confirmEmail}</p>
-          )}
-        </div>
-
         {/* Country/Region */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -157,7 +136,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           <select
             value={formData.country}
             onChange={(e) => handleCountryChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             {countries.map((country) => (
               <option key={country.code} value={country.code}>
@@ -176,7 +155,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
             <select
               value={formData.phoneCode}
               onChange={(e) => onChange({ phoneCode: e.target.value })}
-              className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               {countries.map((country) => (
                 <option key={country.code} value={country.phoneCode}>
@@ -188,7 +167,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
               type="tel"
               value={formData.phone}
               onChange={(e) => onChange({ phone: e.target.value })}
-              className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                 errors.phone ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="1234567890"
@@ -257,7 +236,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           value={formData.specialRequests}
           onChange={(e) => onChange({ specialRequests: e.target.value })}
           rows={4}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
           placeholder={t('booking.specialRequestsPlaceholder', 'Please write your requests in English or Arabic (optional)')}
         />
       </div>

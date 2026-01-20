@@ -22,7 +22,7 @@ interface Payment {
   currency: string;
   status: string;
   processedAt?: string;
-  user: User;
+  user?: User; // Make user optional
   invoice: PaymentInvoice;
 }
 
@@ -153,11 +153,13 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                      <span className="text-sm font-medium text-gray-700">{payment.user.name}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {payment.user?.name || 'Guest'}
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 lg:px-8 py-4 lg:py-6 text-sm text-gray-600">
-                    {payment.user.email}
+                    {payment.user?.email || 'N/A'}
                   </td>
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
                     <div className="flex items-center space-x-2">
@@ -217,11 +219,11 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600 font-medium">Client</span>
-                  <span className="text-sm text-gray-900 font-medium">{payment.user.name}</span>
+                  <span className="text-sm text-gray-900 font-medium">{payment.user?.name || 'Guest'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600 font-medium">Email</span>
-                  <span className="text-sm text-gray-600 truncate max-w-[200px]">{payment.user.email}</span>
+                  <span className="text-sm text-gray-600 truncate max-w-[200px]">{payment.user?.email || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-gray-600 font-medium">Amount</span>

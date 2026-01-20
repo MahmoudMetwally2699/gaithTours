@@ -18,6 +18,7 @@ import { reservationsAPI, Reservation as APIReservation } from '../services/api'
 import paymentsAPI, { Invoice } from '../services/paymentsAPI';
 import { toast } from 'react-hot-toast';
 import InvoiceDetailModal from '../components/InvoiceDetailModal';
+import { CancellationModal } from '../components/CancellationModal';
 import { useDirection } from '../hooks/useDirection';
 
 interface Reservation {
@@ -49,6 +50,8 @@ export const Profile: React.FC = () => {
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedReservationForCancel, setSelectedReservationForCancel] = useState<Reservation | null>(null);
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -191,16 +194,19 @@ export const Profile: React.FC = () => {
     }
   };
 
-  const handleCancelReservation = async (reservationId: string) => {
-    if (window.confirm(t('profile.confirmCancel'))) {
-      try {
-        await reservationsAPI.cancel(reservationId);
-        setReservations(reservations.map(r =>
-          r._id === reservationId ? { ...r, status: 'cancelled' as const } : r
-        ));
-      } catch (error) {
-        console.error('Error cancelling reservation:', error);
-      }
+  const handleCancelReservation = (reservationId: string) => {
+    const reservation = reservations.find(r => r._id === reservationId);
+    if (reservation) {
+      setSelectedReservationForCancel(reservation);
+      setIsCancellationModalOpen(true);
+    }
+  };
+
+  const handleCancellationSuccess = () => {
+    if (selectedReservationForCancel) {
+      setReservations(prev => prev.map(r =>
+        r._id === selectedReservationForCancel._id ? { ...r, status: 'cancelled' as const } : r
+      ));
     }
   };
 
@@ -891,6 +897,18 @@ export const Profile: React.FC = () => {
         invoice={selectedInvoice}
         onDownloadReceipt={handleDownloadReceipt}
       />
+
+      {selectedReservationForCancel && (
+        <CancellationModal
+          isOpen={isCancellationModalOpen}
+          onClose={() => setIsCancellationModalOpen(false)}
+          reservationId={selectedReservationForCancel._id}
+          hotelName={selectedReservationForCancel.hotelName}
+          checkInDate={selectedReservationForCancel.checkIn}
+          checkOutDate={selectedReservationForCancel.checkOut}
+          onCancelled={handleCancellationSuccess}
+        />
+      )}
     </div>
   );
 };

@@ -22,6 +22,7 @@ router.get('/stats', protect, admin, async (req, res) => {
     const totalClients = await User.countDocuments({ role: 'user' });
     const totalBookings = await Reservation.countDocuments();
     const pendingBookings = await Reservation.countDocuments({ status: 'pending' });
+    const failedBookings = await Reservation.countDocuments({ status: 'failed' });
     const totalInvoices = await Invoice.countDocuments();
     const paidInvoices = await Invoice.countDocuments({ status: 'paid' });
     const totalRevenue = await Invoice.aggregate([
@@ -37,6 +38,7 @@ router.get('/stats', protect, admin, async (req, res) => {
       totalClients,
       totalBookings,
       pendingBookings,
+      failedBookings,
       totalInvoices,
       paidInvoices,
       totalRevenue: totalRevenue[0]?.total || 0,
@@ -479,9 +481,9 @@ router.post('/bookings/create', protect, admin, [
   body('stayType').trim().isLength({ min: 2 }).withMessage('Stay type is required'),
   body('paymentMethod').trim().isLength({ min: 2 }).withMessage('Payment method is required'),
   body('hotel.name').trim().isLength({ min: 2 }).withMessage('Hotel name is required'),
-  body('hotel.address').trim().isLength({ min: 5 }).withMessage('Hotel address is required'),
-  body('hotel.city').trim().isLength({ min: 2 }).withMessage('Hotel city is required'),
-  body('hotel.country').trim().isLength({ min: 2 }).withMessage('Hotel country is required'),
+  body('hotel.address').optional().trim(),
+  body('hotel.city').optional().trim(),
+  body('hotel.country').optional().trim(),
   body('hotel.url').optional().isURL().withMessage('Please enter a valid URL'),
   body('hotel.price').optional().isNumeric().withMessage('Price must be a valid number')
 ], async (req, res) => {
@@ -552,9 +554,9 @@ router.post('/bookings/create', protect, admin, [
       guests: sanitizedData.guests,
       hotel: {
         name: sanitizeInput(hotel.name),
-        address: sanitizeInput(hotel.address),
-        city: sanitizeInput(hotel.city),
-        country: sanitizeInput(hotel.country),
+        address: hotel.address ? sanitizeInput(hotel.address) : 'Address not available',
+        city: hotel.city ? sanitizeInput(hotel.city) : 'Unknown City',
+        country: hotel.country ? sanitizeInput(hotel.country) : 'Unknown Country',
         coordinates: hotel.coordinates,
         rating: hotel.rating,
         image: hotel.image,

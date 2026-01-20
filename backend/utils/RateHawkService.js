@@ -1,5 +1,6 @@
 const axios = require('axios');
 require('dotenv').config();
+const MarginService = require('./marginService');
 
 /**
  * RateHawk API Service
@@ -10,6 +11,17 @@ class RateHawkService {
     this.keyId = process.env.RATEHAWK_KEY_ID;
     this.apiKey = process.env.RATEHAWK_API_KEY;
     this.baseUrl = 'https://api.worldota.net/api/b2b/v3';
+
+    // Country code to full name mapping (used for margin rule matching)
+    this.countryCodeMap = {
+      'SA': 'Saudi Arabia', 'AE': 'United Arab Emirates', 'EG': 'Egypt',
+      'JO': 'Jordan', 'BH': 'Bahrain', 'KW': 'Kuwait', 'OM': 'Oman', 'QA': 'Qatar',
+      'TR': 'Turkey', 'GB': 'United Kingdom', 'US': 'United States',
+      'FR': 'France', 'DE': 'Germany', 'IT': 'Italy', 'ES': 'Spain',
+      'TH': 'Thailand', 'MY': 'Malaysia', 'ID': 'Indonesia', 'SG': 'Singapore',
+      'IN': 'India', 'PK': 'Pakistan', 'BD': 'Bangladesh', 'LK': 'Sri Lanka',
+      'MA': 'Morocco', 'TN': 'Tunisia', 'LB': 'Lebanon'
+    };
 
     // Cache for enriched hotel content (24 hour TTL)
     this.contentCache = new Map();
@@ -43,9 +55,18 @@ class RateHawkService {
       console.warn('⚠️ RateHawk credentials not configured. Set RATEHAWK_KEY_ID and RATEHAWK_API_KEY in .env');
     }
 
-    // Price markup configuration (from .env, future: dashboard configurable)
-    this.markupPercentage = parseFloat(process.env.HOTEL_MARKUP_PERCENTAGE || '10') / 100;
-    console.log(`💰 Hotel price markup configured: ${this.markupPercentage * 100}%`);
+    // Price markup configuration (fallback for when margin rules don't match)
+    this.markupPercentage = parseFloat(process.env.HOTEL_MARKUP_PERCENTAGE || '15') / 100;
+    console.log(`💰 Default hotel price markup: ${this.markupPercentage * 100}% (can be overridden by margin rules)`);
+  }
+
+  /**
+   * Clear search cache (useful when margin rules are updated)
+   */
+  clearSearchCache() {
+    console.log('🗑️  Clearing search cache...');
+    this.searchCache.clear();
+    console.log('✅ Search cache cleared');
   }
 
   /**
@@ -54,6 +75,68 @@ class RateHawkService {
    */
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Build guests array for API requests per RateHawk specifications
+   * Distributes adults and children across rooms properly
+   *
+   * API Rules:
+   * - Each array item = one room
+   * - adults: 1-6 per room (required)
+   * - children: array of ages (0-17), max 4 per room
+   * - Max 6 total guests per room
+   * - Max 9 rooms per request
+   *
+   * @param {number} adults - Total number of adults
+   * @param {number[]} childrenAges - Array of children ages
+   * @param {number} rooms - Number of rooms requested
+   * @returns {Array} - guests array for API payload
+   */
+  buildGuestsArray(adults, childrenAges = [], rooms = 1) {
+    // Ensure at least 1 room
+    rooms = Math.max(1, Math.min(9, rooms));
+
+    // Calculate adults per room (distribute evenly)
+    const adultsPerRoom = Math.ceil(adults / rooms);
+
+    // Build rooms array
+    const guestsArray = [];
+    let remainingAdults = adults;
+    let remainingChildren = [...childrenAges];
+
+    for (let i = 0; i < rooms; i++) {
+      // Assign adults to this room (at least 1, max 6)
+      const roomAdults = Math.min(6, Math.max(1, adultsPerRoom, remainingAdults));
+      remainingAdults -= roomAdults;
+
+      // Assign children to rooms with capacity (max 4 children, max 6 total guests)
+      const maxChildrenForRoom = Math.min(4, 6 - roomAdults, remainingChildren.length);
+      const roomChildren = remainingChildren.splice(0, maxChildrenForRoom);
+
+      guestsArray.push({
+        adults: roomAdults,
+        children: roomChildren
+      });
+    }
+
+    // If there are leftover children, distribute them to rooms with capacity
+    while (remainingChildren.length > 0) {
+      const roomWithCapacity = guestsArray.find(
+        room => (room.adults + room.children.length) < 6 && room.children.length < 4
+      );
+
+      if (roomWithCapacity) {
+        roomWithCapacity.children.push(remainingChildren.shift());
+      } else {
+        // No more capacity - log warning but don't lose data
+        console.warn(`⚠️ Cannot fit all children: ${remainingChildren.length} children have no room capacity`);
+        break;
+      }
+    }
+
+    console.log(`👥 Built guests array: ${rooms} rooms, ${adults} adults, ${childrenAges.length} children`);
+    return guestsArray;
   }
 
   /**
@@ -109,13 +192,61 @@ class RateHawkService {
   }
 
   /**
-   * Apply markup to net price
+   * Apply markup to net price (simple, synchronous fallback)
    * @param {number} netPrice - The net price from RateHawk (show_amount)
    * @returns {number} - Price with markup applied
    */
   applyMarkup(netPrice) {
     if (!netPrice || netPrice <= 0) return netPrice;
     return Math.round(netPrice * (1 + this.markupPercentage));
+  }
+
+  /**
+   * Apply dynamic margin based on margin rules from database
+   * @param {number} netPrice - The net price from RateHawk
+   * @param {Object} context - Booking context for rule matching (country, city, starRating, etc.)
+   * @returns {Promise<{price: number, marginInfo: Object}>} - Price with margin and margin details
+   */
+  async applyDynamicMargin(netPrice, context = {}) {
+    if (!netPrice || netPrice <= 0) return { price: netPrice, marginInfo: null };
+
+    try {
+      const marginInfo = await MarginService.getApplicableMargin(context);
+      const result = MarginService.applyMargin(netPrice, marginInfo);
+
+      // Update rule stats if a rule was applied
+      if (marginInfo.rule && marginInfo.rule._id) {
+        // Fire and forget - don't await to avoid slowing down response
+        const MarginRule = require('../models/MarginRule');
+        MarginRule.updateOne(
+          { _id: marginInfo.rule._id },
+          {
+            $inc: {
+              appliedCount: 1,
+              totalRevenueGenerated: result.marginAmount
+            }
+          }
+        ).catch(err => console.error('Error updating margin stats:', err));
+      }
+
+      return {
+        price: result.finalPrice,
+        marginInfo: {
+          ruleName: marginInfo.rule?.name || 'Default',
+          ruleId: marginInfo.rule?._id,
+          marginType: marginInfo.marginType,
+          marginValue: marginInfo.marginValue,
+          marginAmount: result.marginAmount,
+          isDefault: marginInfo.isDefault
+        }
+      };
+    } catch (error) {
+      console.error('Error applying dynamic margin, using fallback:', error.message);
+      return {
+        price: this.applyMarkup(netPrice),
+        marginInfo: { ruleName: 'Fallback', isDefault: true, marginValue: this.markupPercentage * 100 }
+      };
+    }
   }
 
   /**
@@ -208,6 +339,7 @@ class RateHawkService {
       checkout,
       adults = 2,
       children = [],
+      rooms = 1,
       residency = 'gb',
       language = 'en',
       currency = 'SAR',
@@ -246,15 +378,10 @@ class RateHawkService {
         checkin,
         checkout,
         residency,
-      language,
-      guests: [
-        {
-          adults,
-          children
-        }
-      ],
-      currency
-    });
+        language,
+        guests: this.buildGuestsArray(adults, children, rooms),
+        currency
+      });
 
       // Calculate number of nights for per-night pricing
       const checkinDate = new Date(checkin);
@@ -282,15 +409,21 @@ class RateHawkService {
       // Attempt to extract tax data if available in SERP
       const showAmount = paymentType?.show_amount || paymentType?.amount || 0;
       let basePrice = showAmount;
+      let totalTaxes = 0;
 
       if (paymentType?.tax_data?.taxes) {
+        // Calculate ALL taxes (both included and pay at hotel)
+        totalTaxes = paymentType.tax_data.taxes
+          .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+        // Calculate included taxes to get base price
         const includedTaxes = paymentType.tax_data.taxes
           .filter(t => t.included_by_supplier)
           .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
         basePrice = showAmount - includedTaxes;
       }
 
-      const totalPrice = this.applyMarkup(basePrice);
+      const totalPrice = basePrice; // No markup yet - will be applied dynamically after enrichment
       const pricePerNight = totalPrice > 0 ? Math.round(totalPrice / nights) : 0;
 
       return {
@@ -300,10 +433,12 @@ class RateHawkService {
         name: hotel.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format ID as name fallback
         rating: firstRate?.rg_ext?.quality || 0,
         reviewScore: firstRate?.rg_ext?.quality || 0,
-        price: totalPrice,
+        price: totalPrice, // Base price without taxes (margin will be applied later)
         pricePerNight: pricePerNight, // New field for per-night display
         nights: nights, // Include nights for reference
         currency: paymentType?.show_currency_code || currency,
+        total_taxes: Math.round(totalTaxes), // Total taxes amount (to be displayed separately)
+        taxes_currency: paymentType?.show_currency_code || currency,
         image: placeholderImage,
         match_hash: firstRate?.match_hash,
         meal: firstRate?.meal,
@@ -396,10 +531,20 @@ class RateHawkService {
                    imageUrl = hotel.mainImage.replace('{size}', '640x400');
                 }
 
+                // Map country code to name (must be consistent with hotel details)
+                const countryName = hotel.country || this.countryCodeMap[hotel.countryCode] || hotel.countryCode;
+
+                // Debug: Log if country/city is missing
+                if (!hotel.country && !hotel.countryCode) {
+                  console.log(`   ⚠️  Hotel ${hotel.name} (HID: ${hotel.hid}) missing country data`);
+                }
+
                 // Add to content map
                 contentMap.set(hotel.hid, {
                   name: hotel.name,
                   address: hotel.address,
+                  city: hotel.city,
+                  country: countryName,
                   image: imageUrl, // Explicitly set single image for compatibility
                   images: imageUrl ? [imageUrl] : [],
                   star_rating: hotel.starRating,
@@ -460,6 +605,78 @@ class RateHawkService {
         console.error('   Response status:', error.response?.status);
         console.error('   Response data:', JSON.stringify(error.response?.data).substring(0, 200));
       }
+    }
+
+    // Apply dynamic margins based on margin rules
+    // Now that hotels have country/city/star_rating from enrichment, we can match rules
+    console.log(`💰 Applying dynamic margins to ${hotels.length} hotels...`);
+    const HotelContent = require('../models/HotelContent');
+    const MarginRule = require('../models/MarginRule');
+
+    // OPTIMIZATION: Use cached rules from MarginService (avoids DB query if cached)
+    const allRules = await MarginService.getCachedRules();
+
+    // OPTIMIZATION: Collect stats for batched update instead of per-hotel updates
+    const ruleStats = new Map();
+
+    for (const hotel of hotels) {
+      // Get country info from hotel object (already enriched from HotelContent above)
+      const countryName = hotel.country;
+      const cityName = hotel.city;
+
+      const context = {
+        country: countryName,
+        city: cityName,
+        starRating: hotel.star_rating,
+        bookingValue: hotel.price,
+      };
+
+      // Skip rule matching if location data is missing (use default margin)
+      let matchingRule = null;
+      if (countryName && countryName !== 'undefined') {
+        matchingRule = MarginService.findMatchingRule(context, allRules);
+      }
+
+      const marginInfo = matchingRule ? {
+        rule: matchingRule,
+        marginType: matchingRule.type,
+        marginValue: matchingRule.type === 'fixed' ? matchingRule.fixedAmount : matchingRule.value,
+        isDefault: false
+      } : {
+        rule: null,
+        marginType: 'percentage',
+        marginValue: 15, // Default usage matching existing logic
+        isDefault: true
+      };
+
+      const priceResult = MarginService.applyMargin(hotel.price || 0, marginInfo);
+
+      hotel.price = priceResult.finalPrice; // Base price with margin (no taxes)
+      hotel.pricePerNight = hotel.nights > 0 ? Math.round(priceResult.finalPrice / hotel.nights) : priceResult.finalPrice;
+      // Keep hotel.total_taxes unchanged - it's already calculated from the original data
+      hotel.marginApplied = {
+          ruleName: matchingRule?.name || 'Default',
+          marginPercentage: priceResult.marginPercentage,
+          marginAmount: priceResult.marginAmount
+      };
+
+      // Collect stats for batched update
+      if (matchingRule && matchingRule._id) {
+        const ruleId = matchingRule._id.toString();
+        ruleStats.set(ruleId, (ruleStats.get(ruleId) || 0) + 1);
+      }
+    }
+
+    // OPTIMIZATION: Single bulkWrite for all stats updates instead of N individual updates
+    if (ruleStats.size > 0) {
+      const mongoose = require('mongoose');
+      const bulkOps = [...ruleStats.entries()].map(([id, count]) => ({
+        updateOne: {
+          filter: { _id: new mongoose.Types.ObjectId(id) },
+          update: { $inc: { appliedCount: count } }
+        }
+      }));
+      MarginRule.bulkWrite(bulkOps).catch(() => {}); // Fire and forget
     }
 
     const result = {
@@ -541,6 +758,7 @@ class RateHawkService {
       checkout,
       adults = 2,
       children = [],
+      rooms = 1,
       residency = 'sa',
       language = 'en',
       currency = 'SAR',
@@ -553,12 +771,7 @@ class RateHawkService {
       checkout,
       residency,
       language,
-      guests: [
-        {
-          adults,
-          children
-        }
-      ],
+      guests: this.buildGuestsArray(adults, children, rooms),
       currency
     };
 
@@ -728,6 +941,25 @@ class RateHawkService {
       console.log(`   ⚠️  No room_groups in static content`);
     }
 
+    // Prepare context for margin rules
+    // Map country code to name if needed (must match search results logic)
+    const countryName = staticContent?.country || this.countryCodeMap[staticContent?.countryCode] || staticContent?.countryCode;
+
+    const context = {
+      country: countryName,
+      city: staticContent?.city,
+      starRating: staticContent?.starRating || hotelData.star_rating,
+      checkInDate: checkin, // Add check-in date from params
+      bookingValue: 0, // Placeholder
+      customerType: params.customerType || 'b2c'
+    };
+
+    console.log(`💡 Hotel details margin context: country="${countryName}", city="${staticContent?.city}", stars=${context.starRating}`);
+
+    // OPTIMIZATION: Use cached rules from MarginService (avoids DB query if cached)
+    const MarginRule = require('../models/MarginRule');
+    const allRules = await MarginService.getCachedRules();
+
     // Extract rates with book_hash and detailed room data
     const rates = (hotelData.rates || []).map(rate => {
       const paymentType = rate.payment_options?.payment_types?.[0];
@@ -744,14 +976,69 @@ class RateHawkService {
       // Calculate total taxes for display (separate from base price)
       let totalTaxes = 0;
       let taxData = null;
+      let includedTaxesTotal = 0;
 
       if (paymentType?.tax_data) {
         taxData = paymentType.tax_data;
         if (taxData.taxes && taxData.taxes.length > 0) {
            // Sum up all taxes
            totalTaxes = taxData.taxes.reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0);
+           // Sum up included taxes
+           includedTaxesTotal = taxData.taxes
+             .filter(tax => tax.included_by_supplier)
+             .reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0);
         }
       }
+
+      // IMPORTANT: show_amount is the TOTAL for the ENTIRE stay, not per-night!
+      // It equals the sum of daily_prices array
+      const showAmount = parseFloat(paymentType?.show_amount || paymentType?.amount || 0);
+      const totalStayPrice = showAmount - includedTaxesTotal;
+
+      // Calculate per-night average for display purposes
+      const numberOfNights = (rate.daily_prices || []).length || 1;
+      const perNightPrice = totalStayPrice / numberOfNights;
+
+      // Update context with rate specific values
+      const rateContext = {
+        ...context,
+        bookingValue: totalStayPrice, // Use total for margin rules
+        mealType: rate.meal // Add meal type for specific rules (e.g. breakfast included)
+      };
+
+      const matchingRule = MarginService.findMatchingRule(rateContext, allRules);
+
+      const marginInfo = matchingRule ? {
+        rule: matchingRule,
+        marginType: matchingRule.type,
+        marginValue: matchingRule.type === 'fixed' ? matchingRule.fixedAmount : matchingRule.value,
+        isDefault: false
+      } : {
+        rule: null,
+        marginType: 'percentage',
+        marginValue: 15, // Default
+        isDefault: true
+      };
+
+      // Apply margin to the TOTAL stay price
+      const priceResult = MarginService.applyMargin(totalStayPrice, marginInfo);
+
+      // Debug log for first rate
+      if (hotelData.rates.indexOf(rate) === 0) {
+        console.log(`   💰 Rate margin: totalStay=${totalStayPrice} (${numberOfNights} nights), marginType=${marginInfo.marginType}, marginValue=${marginInfo.marginValue}`);
+        console.log(`      Result: final=${priceResult.finalPrice}, marginAmount=${priceResult.marginAmount}, rule="${matchingRule?.name || 'Default'}"`);
+      }
+
+
+
+      // Fire and forget stats (optional, could be noisy)
+      if (matchingRule) {
+         MarginRule.updateOne({ _id: matchingRule._id }, { $inc: { appliedCount: 1 } }).catch(() => {});
+      }
+      // For now, let's use the simple applyMarkup for taxes to avoid complex rule triggering on small amounts
+      // OR, better, use the same percentage applied to the base price.
+      // Let's stick to simple markup for taxes for now to be safe, or 0 if users pay taxes at hotel.
+      const displayTaxes = totalTaxes > 0 ? this.applyMarkup(totalTaxes) : 0;
 
       return {
         book_hash: rate.book_hash,
@@ -759,15 +1046,33 @@ class RateHawkService {
         room_name: rate.room_name,
         meal: rate.meal,
 
-        // Price and Taxes
-        price: this.applyMarkup(paymentType?.amount || 0),
+        // IMPORTANT: Price is now the TOTAL for the ENTIRE STAY, not per-night!
+        // Frontend should NOT multiply by nights - this is already the full amount
+        price: priceResult.finalPrice, // Total stay price with margin
+        price_per_night: priceResult.finalPrice / numberOfNights, // Average per night (for display)
         currency: paymentType?.currency_code || currency,
-        original_price: paymentType?.amount || 0, // Store original for comparison
+        original_price: totalStayPrice, // Store original total for comparison
+        original_price_per_night: perNightPrice, // Original per-night average
+        margin_applied: {
+          ruleName: matchingRule?.name || 'Default',
+          marginType: marginInfo.marginType,
+          marginValue: marginInfo.marginValue,
+          marginAmount: priceResult.marginAmount,
+          marginPercentage: priceResult.marginPercentage,
+          isDefault: marginInfo.isDefault
+        },
 
-        // Tax Data
-        total_taxes: totalTaxes > 0 ? this.applyMarkup(totalTaxes) : 0,
+        // Tax Data - ensure each tax has the correct currency
+        total_taxes: displayTaxes,
         taxes_currency: paymentType?.currency_code || currency,
-        tax_data: taxData, // Pass full structure for breakdown display
+        // Map taxes to use the correct currency for display
+        tax_data: taxData ? {
+          ...taxData,
+          taxes: taxData.taxes?.map(tax => ({
+            ...tax,
+            currency: paymentType?.currency_code || currency // Override currency to match rate
+          })) || []
+        } : null,
 
         // Policies
         is_free_cancellation: isFreeCancellation,
@@ -866,29 +1171,13 @@ class RateHawkService {
             included: tax.included_by_supplier || false
           }));
 
-          // 2. Calculate base room price (EXCLUSIVE of included taxes)
-          // show_amount includes taxes where included=true. We want to show price WITHOUT them.
-          const showAmount = paymentType?.show_amount || paymentType?.amount || 0;
-          const includedTaxesTotal = allTaxes
-            .filter(tax => tax.included)
-            .reduce((sum, tax) => sum + tax.amount, 0);
-
-          const baseRoomPrice = showAmount - includedTaxesTotal;
-
-          // 3. Apply markup to the EXCLUSIVE base price
-          const priceWithMarkup = this.applyMarkup(baseRoomPrice);
-          const originalPriceWithMarkup = this.applyMarkup(baseRoomPrice); // Use base price for consistency
-
-          // 4. Calculate Total Taxes to display separately (Booking.com style)
-          // Since we stripped included taxes from the price, we must show ALL taxes relative to that base price.
-          // So total_taxes = (included taxes) + (pay at hotel taxes)
+          // 2. Calculate Total Taxes to display separately
           const totalTaxAmount = allTaxes.reduce((sum, tax) => sum + tax.amount, 0);
 
           return {
             daily_prices: rate.daily_prices,
-            price: priceWithMarkup, // Base Room Price + Markup (NO taxes)
-            original_price: originalPriceWithMarkup,
-            currency: paymentType?.show_currency_code || currency,
+            // NOTE: price is already set above with margin applied (priceResult.finalPrice)
+            // DO NOT override it here!
 
             // Show ALL taxes below price (since we stripped them from main price)
             total_taxes: Math.round(totalTaxAmount),
@@ -957,40 +1246,56 @@ class RateHawkService {
    * @returns {Promise<Object>} - Prebook response with book_hash
    */
   async prebook(matchHash, language = 'en') {
-    try {
-      console.log('🔄 Prebook request:', { hash: matchHash, language });
+    let attempts = 0;
+    const maxAttempts = 2; // Try initially, then retry once if needed
 
-      const response = await this.makeRequest('/hotel/prebook', 'POST', {
-        hash: matchHash,
-        language
-      });
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        console.log(`🔄 Prebook request (Attempt ${attempts}/${maxAttempts}):`, { hash: matchHash, language });
 
-      console.log('📦 Prebook response:', JSON.stringify(response, null, 2));
+        const response = await this.makeRequest('/hotel/prebook', 'POST', {
+          hash: matchHash,
+          language
+        });
 
-      const hotelData = response.data?.hotels?.[0];
-      const rateData = hotelData?.rates?.[0];
+        console.log('📦 Prebook response:', JSON.stringify(response, null, 2));
 
-      if (!rateData?.book_hash) {
-        console.error('❌ No book_hash in prebook response');
+        // CRITICAL STABILITY FIX: Retry on 'no_available_rates'
+        // This error is often transient due to supplier timeout
+        if (response.error === 'no_available_rates') {
+          if (attempts < maxAttempts) {
+            console.warn(`⚠️ Prebook failed with 'no_available_rates', retrying in 800ms...`);
+            await this.sleep(800); // Wait slightly longer to allow supplier to recover
+            continue;
+          }
+        }
+
+        const hotelData = response.data?.hotels?.[0];
+        const rateData = hotelData?.rates?.[0];
+
+        if (!rateData?.book_hash) {
+          console.error('❌ No book_hash in prebook response');
+          return {
+            success: false,
+            error: response.error || 'No book_hash returned',
+            data: response.data
+          };
+        }
+
         return {
-          success: false,
-          error: response.error || 'No book_hash returned',
+          success: true,
+          book_hash: rateData.book_hash,
           data: response.data
         };
+      } catch (error) {
+        console.error('❌ Prebook error:', error.response?.data || error.message);
+        console.error('   Full error:', JSON.stringify(error.response?.data, null, 2));
+        return {
+          success: false,
+          error: error.response?.data?.error || error.message
+        };
       }
-
-      return {
-        success: true,
-        book_hash: rateData.book_hash,
-        data: response.data
-      };
-    } catch (error) {
-      console.error('❌ Prebook error:', error.response?.data || error.message);
-      console.error('   Full error:', JSON.stringify(error.response?.data, null, 2));
-      return {
-        success: false,
-        error: error.response?.data?.error || error.message
-      };
     }
   }
 
@@ -1129,6 +1434,219 @@ class RateHawkService {
     } catch (error) {
       console.error('Check booking status error:', error.response?.data || error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Get cancellation info for a booking
+   * @param {string} partnerOrderId - Partner order ID
+   * @returns {Promise<Object>} - Cancellation info including penalties
+   */
+  async getCancellationInfo(partnerOrderId) {
+    try {
+      console.log(`🔍 Getting cancellation info for order: ${partnerOrderId}`);
+
+      const response = await this.makeRequest('/hotel/order/cancel/info/', 'POST', {
+        partner_order_id: partnerOrderId
+      });
+
+      console.log('📋 Cancellation info response:', JSON.stringify(response, null, 2));
+
+      if (response.error) {
+        return {
+          success: false,
+          error: response.error,
+          message: response.error_message || 'Failed to get cancellation info'
+        };
+      }
+
+      // Parse cancellation penalties
+      const penalties = response.data?.cancellation_penalties || {};
+      const policies = penalties.policies || [];
+
+      // Determine current applicable penalty
+      const now = new Date();
+      let currentPenalty = null;
+      let isFreeCancellation = false;
+      let freeCancellationBefore = penalties.free_cancellation_before;
+
+      // Check if free cancellation is still available
+      if (freeCancellationBefore) {
+        const deadline = new Date(freeCancellationBefore);
+        isFreeCancellation = deadline > now;
+      }
+
+      // Find the current applicable policy
+      for (const policy of policies) {
+        const startDate = new Date(policy.start_at);
+        const endDate = policy.end_at ? new Date(policy.end_at) : null;
+
+        if (startDate <= now && (!endDate || now < endDate)) {
+          currentPenalty = {
+            amount: parseFloat(policy.amount_charge || 0),
+            showAmount: parseFloat(policy.amount_show || 0),
+            currency: policy.currency_code || 'USD',
+            percentage: parseFloat(policy.percent_charge || 0),
+            startDate: policy.start_at,
+            endDate: policy.end_at
+          };
+          break;
+        }
+      }
+
+      return {
+        success: true,
+        partnerOrderId,
+        orderId: response.data?.order_id,
+        isFreeCancellation,
+        freeCancellationBefore,
+        currentPenalty,
+        policies: policies.map(p => ({
+          startAt: p.start_at,
+          endAt: p.end_at,
+          amountCharge: parseFloat(p.amount_charge || 0),
+          amountShow: parseFloat(p.amount_show || 0),
+          percentCharge: parseFloat(p.percent_charge || 0),
+          currency: p.currency_code
+        })),
+        cancellable: response.data?.cancellable !== false,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Get cancellation info error:', error.response?.data || error.message);
+
+      // Handle sandbox mode
+      if (error.response?.data?.error === 'sandbox_restriction') {
+        return {
+          success: true,
+          sandbox_mode: true,
+          isFreeCancellation: true,
+          currentPenalty: null,
+          policies: [],
+          cancellable: true,
+          message: 'Sandbox mode: Free cancellation simulated'
+        };
+      }
+
+      // Handle 404 - endpoint may not be available for this order
+      if (error.response?.status === 404) {
+        console.warn('⚠️ Cancellation info endpoint not found - assuming booking is cancellable');
+        return {
+          success: true,
+          endpoint_not_available: true,
+          isFreeCancellation: false, // Unknown, assume not free
+          currentPenalty: null, // Unknown penalty
+          policies: [],
+          cancellable: true, // Assume cancellable
+          message: 'Cancellation info not available - proceeding with cancellation'
+        };
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel a booking
+   * @param {string} partnerOrderId - Partner order ID
+   * @returns {Promise<Object>} - Cancellation result
+   */
+  async cancelBooking(partnerOrderId) {
+    try {
+      console.log(`🚫 Cancelling booking: ${partnerOrderId}`);
+
+      // First, try to get cancellation info to check penalties (optional)
+      let cancellationInfo;
+      try {
+        cancellationInfo = await this.getCancellationInfo(partnerOrderId);
+
+        // Only block cancellation if explicitly marked as not cancellable
+        if (cancellationInfo.cancellable === false) {
+          return {
+            success: false,
+            error: 'not_cancellable',
+            message: 'This booking cannot be cancelled'
+          };
+        }
+      } catch (error) {
+        // If cancellation info fails, proceed with cancellation anyway
+        console.warn('⚠️ Could not get cancellation info, proceeding with cancellation attempt');
+        cancellationInfo = {
+          success: true,
+          endpoint_not_available: true,
+          currentPenalty: null
+        };
+      }
+
+      // Proceed with cancellation
+      const response = await this.makeRequest('/hotel/order/cancel/', 'POST', {
+        partner_order_id: partnerOrderId
+      });
+
+      console.log('❌ Cancel booking response:', JSON.stringify(response, null, 2));
+
+      // Check for order_not_found error
+      if (response.error === 'order_not_found') {
+        console.error('❌ Order not found in RateHawk system');
+        return {
+          success: false,
+          error: 'order_not_found',
+          message: 'Booking not found in provider system. It may have already been cancelled or was not fully confirmed.',
+          partnerOrderId
+        };
+      }
+
+      // Check for sandbox restriction
+      if (response.error === 'sandbox_restriction') {
+        console.warn('⚠️ Sandbox restriction: Cancellation simulated');
+        return {
+          success: true,
+          sandbox_mode: true,
+          message: 'Cancellation simulated (sandbox mode)',
+          partnerOrderId,
+          penalty: cancellationInfo.currentPenalty
+        };
+      }
+
+      if (response.error) {
+        return {
+          success: false,
+          error: response.error,
+          message: response.error_message || 'Cancellation failed'
+        };
+      }
+
+      return {
+        success: true,
+        partnerOrderId,
+        orderId: response.data?.order_id,
+        status: response.data?.status || 'cancelled',
+        penalty: cancellationInfo.currentPenalty,
+        refundAmount: response.data?.refund_amount,
+        refundCurrency: response.data?.refund_currency,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Cancel booking error:', error.response?.data || error.message);
+
+      // Handle sandbox mode error
+      if (error.response?.data?.error === 'sandbox_restriction') {
+        console.warn('⚠️ Sandbox restriction: Cancellation simulated');
+        return {
+          success: true,
+          sandbox_mode: true,
+          message: 'Cancellation simulated (sandbox mode)',
+          partnerOrderId
+        };
+      }
+
+      // Return error details instead of throwing
+      return {
+        success: false,
+        error: error.response?.data?.error || 'cancellation_error',
+        message: error.response?.data?.error_message || error.message,
+        partnerOrderId
+      };
     }
   }
 

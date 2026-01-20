@@ -6,18 +6,18 @@ import {
   UserIcon,
   BuildingOfficeIcon,
   CalendarIcon,
-  CreditCardIcon,
-  UsersIcon,
-  DocumentTextIcon,
-  PaperClipIcon,
+  ClipboardDocumentListIcon,
+  DocumentCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CheckIcon
+  CheckIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 import { FileUpload, UploadedFile } from '../FileUpload';
 import { HotelSelectionModal } from '../HotelSelectionModal';
 import { adminAPI } from '../../services/adminAPI';
 import { Hotel } from '../../types/hotel';
+import { getHotelDetails } from '../../services/hotelService';
 
 interface Client {
   _id: string;
@@ -25,6 +25,16 @@ interface Client {
   email: string;
   phone: string;
   nationality: string;
+}
+
+interface SelectedRate {
+  rateId: string;
+  roomName: string;
+  mealPlan: string;
+  price: number;
+  currency: string;
+  cancellationPolicy: string;
+  paymentType: string;
 }
 
 interface BookingFormData {
@@ -44,9 +54,11 @@ interface BookingFormData {
   notes: string;
   attachments: UploadedFile[];
   hotel: Hotel | null;
-  checkInDate?: string;
-  checkOutDate?: string;
+  checkInDate: string;
+  checkOutDate: string;
   numberOfGuests: number;
+  destination: string;
+  selectedRate: SelectedRate | null;
 }
 
 interface BookingStep {
@@ -84,8 +96,8 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     nationality: '',
     email: '',
     expectedCheckInTime: '',
-    roomType: 'Standard Room',
-    stayType: 'room_only',
+    roomType: '',
+    stayType: '',
     paymentMethod: 'bank_transfer',
     additionalGuests: [],
     notes: '',
@@ -93,7 +105,9 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     hotel: null,
     checkInDate: '',
     checkOutDate: '',
-    numberOfGuests: 1
+    numberOfGuests: 1,
+    destination: '',
+    selectedRate: null
   });
 
   const [newGuest, setNewGuest] = useState({
@@ -102,14 +116,15 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Partial<BookingFormData>>({});
+  const [availableRates, setAvailableRates] = useState<any[]>([]);
+  const [loadingRates, setLoadingRates] = useState(false);
+
   const steps: BookingStep[] = [
-    { id: 1, title: 'Client Selection', icon: UserIcon, completed: false },
-    { id: 2, title: 'Hotel Selection', icon: BuildingOfficeIcon, completed: false },
-    { id: 3, title: 'Dates & Room', icon: CalendarIcon, completed: false },
-    { id: 4, title: 'Payment Method', icon: CreditCardIcon, completed: false },
-    { id: 5, title: 'Additional Guests', icon: UsersIcon, completed: false },
-    { id: 6, title: 'Special Requests', icon: DocumentTextIcon, completed: false },
-    { id: 7, title: 'Documents', icon: PaperClipIcon, completed: false }
+    { id: 1, title: 'Client & Dates', icon: UserIcon, completed: false },
+    { id: 2, title: 'Hotel Search', icon: BuildingOfficeIcon, completed: false },
+    { id: 3, title: 'Room Selection', icon: CalendarIcon, completed: false },
+    { id: 4, title: 'Details', icon: ClipboardDocumentListIcon, completed: false },
+    { id: 5, title: 'Review', icon: DocumentCheckIcon, completed: false }
   ];
 
   // Filter clients based on search
@@ -188,27 +203,27 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     const newErrors: Partial<BookingFormData> = {};
 
     switch (currentStep) {
-      case 1: // Client Selection
+      case 1: // Client & Dates
         if (!formData.clientId) newErrors.clientId = 'Please select a client';
         if (!formData.touristName.trim()) newErrors.touristName = 'Tourist name is required';
         if (!formData.email.trim()) newErrors.email = 'Email is required';
         if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
         if (!formData.nationality.trim()) newErrors.nationality = 'Nationality is required';
-        break;      case 2: // Hotel Selection
+        if (!formData.checkInDate) (newErrors as any).checkInDate = 'Check-in date is required';
+        if (!formData.checkOutDate) (newErrors as any).checkOutDate = 'Check-out date is required';
+        if (formData.numberOfGuests < 1) (newErrors as any).numberOfGuests = 'At least 1 guest required';
+        break;
+      case 2: // Hotel Search
         if (!formData.hotel) {
           newErrors.hotel = 'Please select a hotel' as any;
         }
-        break;case 3: // Dates & Room
-        if (!formData.roomType.trim()) newErrors.roomType = 'Room type is required';
-        if (!formData.stayType.trim()) newErrors.stayType = 'Stay type is required';
-        if (formData.numberOfGuests < 1) (newErrors as any).numberOfGuests = 'Number of guests must be at least 1';
         break;
-
-      case 4: // Payment Method
-        if (!formData.paymentMethod.trim()) newErrors.paymentMethod = 'Payment method is required';
+      case 3: // Room Selection
+        if (!formData.selectedRate) {
+          (newErrors as any).selectedRate = 'Please select a room rate';
+        }
         break;
-
-      // Steps 5, 6, 7 are optional
+      // Steps 4-5 are optional
     }
 
     setErrors(newErrors);
@@ -230,6 +245,13 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      // Normalize hotel data for backend - rating must be 0-10
+      const normalizedHotel = formData.hotel ? {
+        ...formData.hotel,
+        rating: Math.min(formData.hotel.rating || 0, 10), // Cap rating at 10
+        reviewScore: Math.min(formData.hotel.reviewScore || 0, 10), // Also cap reviewScore
+      } : null;
+
       const bookingData = {
         clientId: formData.clientId,
         touristName: formData.touristName,
@@ -237,17 +259,19 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
         nationality: formData.nationality,
         email: formData.email,
         expectedCheckInTime: formData.expectedCheckInTime,
-        roomType: formData.roomType,
-        stayType: formData.stayType,
+        roomType: formData.selectedRate?.roomName || formData.roomType || 'Standard Room',
+        stayType: formData.selectedRate?.mealPlan || formData.stayType || 'room_only',
         paymentMethod: formData.paymentMethod,
         guests: formData.additionalGuests,
         notes: formData.notes,
         attachments: formData.attachments,
-        hotel: formData.hotel,
+        hotel: normalizedHotel,
         checkInDate: formData.checkInDate,
         checkOutDate: formData.checkOutDate,
         numberOfGuests: formData.numberOfGuests
       };
+
+      console.log('Submitting booking data:', JSON.stringify(bookingData, null, 2));
 
       await adminAPI.createBooking(bookingData);
       toast.success('Booking created successfully!');
@@ -255,7 +279,15 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
       handleClose();
     } catch (error: any) {
       console.error('Error creating booking:', error);
-      toast.error(error.response?.data?.message || 'Failed to create booking');
+      console.error('Error response data:', error.response?.data);
+      // Show detailed validation errors
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const errorMessages = errors.map((e: any) => `${e.path}: ${e.msg}`).join(', ');
+        toast.error(`Validation failed: ${errorMessages}`);
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to create booking');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -268,8 +300,8 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
       nationality: '',
       email: '',
       expectedCheckInTime: '',
-      roomType: 'Standard Room',
-      stayType: 'room_only',
+      roomType: '',
+      stayType: '',
       paymentMethod: 'bank_transfer',
       additionalGuests: [],
       notes: '',
@@ -277,12 +309,15 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
       hotel: null,
       checkInDate: '',
       checkOutDate: '',
-      numberOfGuests: 1
+      numberOfGuests: 1,
+      destination: '',
+      selectedRate: null
     });
     setCurrentStep(1);
     setErrors({});
     setClientSearch('');
     setNewGuest({ fullName: '', phoneNumber: '' });
+    setAvailableRates([]);
   };
 
   const handleClose = () => {
@@ -290,19 +325,71 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     onClose();
   };
 
+  // Fetch hotel rates when hotel is selected
+  const fetchHotelRates = async () => {
+    if (!formData.hotel || !formData.checkInDate || !formData.checkOutDate) return;
+
+    setLoadingRates(true);
+    try {
+      const hotelDetails = await getHotelDetails(formData.hotel.id, {
+        checkin: formData.checkInDate,
+        checkout: formData.checkOutDate,
+        adults: formData.numberOfGuests
+      });
+
+      if (hotelDetails?.rates) {
+        setAvailableRates(hotelDetails.rates);
+      } else {
+        setAvailableRates([]);
+      }
+    } catch (error) {
+      console.error('Error fetching hotel rates:', error);
+      toast.error('Failed to fetch available rates');
+      setAvailableRates([]);
+    } finally {
+      setLoadingRates(false);
+    }
+  };
+
+  // Effect to fetch rates when entering step 3
+  useEffect(() => {
+    if (currentStep === 3 && formData.hotel) {
+      fetchHotelRates();
+    }
+  }, [currentStep, formData.hotel?.id]);
+
+  const handleRateSelect = (rate: any) => {
+    const rateId = rate.match_hash || rate.rateId || rate.id || `rate-${Date.now()}`;
+    setFormData(prev => ({
+      ...prev,
+      selectedRate: {
+        rateId: rateId,
+        roomName: rate.room_name || rate.roomName || 'Standard Room',
+        mealPlan: rate.meal || rate.mealPlan || rate.meal_plan || 'Room Only',
+        price: rate.price || rate.amount,
+        currency: rate.currency || 'SAR',
+        cancellationPolicy: rate.cancellation_policies ? 'Refundable' : 'Non-refundable',
+        paymentType: rate.payment_type || rate.paymentType || 'prepaid'
+      },
+      roomType: rate.room_name || rate.roomName || 'Standard Room',
+      stayType: rate.meal || rate.mealPlan || rate.meal_plan || 'room_only'
+    }));
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1: // Client Selection
+      case 1: // Client & Dates
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Select Client & Basic Info</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Client & Search Criteria</h3>
 
             {/* Client Selection */}
             <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Client *
               </label>
-              <div className="relative">                <input
+              <div className="relative">
+                <input
                   type="text"
                   value={clientSearch}
                   onChange={(e) => {
@@ -310,49 +397,25 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                     setShowClientDropdown(true);
                   }}
                   onFocus={() => setShowClientDropdown(true)}
-                  onBlur={(e) => {
-                    // Delay hiding dropdown to allow clicks on dropdown items
-                    setTimeout(() => setShowClientDropdown(false), 200);
-                  }}
+                  onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
                   placeholder="Search clients by name, email, or phone..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 {showClientDropdown && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {clientSearch.length === 0 ? (
-                      // Show all clients when no search term
-                      clients.length > 0 ? (
-                        clients.map((client) => (
-                          <div
-                            key={client._id}
-                            onMouseDown={() => handleClientSelect(client)}
-                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-900">{client.name}</div>
-                            <div className="text-sm text-gray-500">{client.email} • {client.phone}</div>
-                            <div className="text-xs text-gray-400">{client.nationality}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-gray-500 text-center">No clients available</div>
-                      )
+                    {(clientSearch.length === 0 ? clients : filteredClients).length > 0 ? (
+                      (clientSearch.length === 0 ? clients : filteredClients).map((client) => (
+                        <div
+                          key={client._id}
+                          onMouseDown={() => handleClientSelect(client)}
+                          className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900">{client.name}</div>
+                          <div className="text-sm text-gray-500">{client.email} • {client.phone}</div>
+                        </div>
+                      ))
                     ) : (
-                      // Show filtered clients when searching
-                      filteredClients.length > 0 ? (
-                        filteredClients.map((client) => (
-                          <div
-                            key={client._id}
-                            onMouseDown={() => handleClientSelect(client)}
-                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="font-medium text-gray-900">{client.name}</div>
-                            <div className="text-sm text-gray-500">{client.email} • {client.phone}</div>
-                            <div className="text-xs text-gray-400">{client.nationality}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-3 text-gray-500 text-center">No clients found matching "{clientSearch}"</div>
-                      )
+                      <div className="px-4 py-3 text-gray-500 text-center">No clients found</div>
                     )}
                   </div>
                 )}
@@ -360,69 +423,70 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
               {errors.clientId && <p className="mt-1 text-sm text-red-600">{errors.clientId}</p>}
             </div>
 
-            {/* Tourist Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tourist Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.touristName}
-                  onChange={(e) => handleInputChange('touristName', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {errors.touristName && <p className="mt-1 text-sm text-red-600">{errors.touristName}</p>}
+            {/* Client Details (auto-filled) */}
+            {formData.clientId && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                <div><span className="text-gray-600">Name:</span> <span className="font-medium">{formData.touristName}</span></div>
+                <div><span className="text-gray-600">Email:</span> <span className="font-medium">{formData.email}</span></div>
+                <div><span className="text-gray-600">Phone:</span> <span className="font-medium">{formData.phone}</span></div>
+                <div><span className="text-gray-600">Nationality:</span> <span className="font-medium">{formData.nationality}</span></div>
               </div>
+            )}
 
+            {/* Dates & Guests */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Check-in Date *</label>
                 <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  type="date"
+                  value={formData.checkInDate}
+                  onChange={(e) => handleInputChange('checkInDate', e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                {(errors as any).checkInDate && <p className="mt-1 text-sm text-red-600">{(errors as any).checkInDate}</p>}
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Check-out Date *</label>
                 <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  type="date"
+                  value={formData.checkOutDate}
+                  onChange={(e) => handleInputChange('checkOutDate', e.target.value)}
+                  min={formData.checkInDate || new Date().toISOString().split('T')[0]}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                {(errors as any).checkOutDate && <p className="mt-1 text-sm text-red-600">{(errors as any).checkOutDate}</p>}
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nationality *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Number of Guests *</label>
                 <input
-                  type="text"
-                  value={formData.nationality}
-                  onChange={(e) => handleInputChange('nationality', e.target.value)}
+                  type="number"
+                  min="1"
+                  value={formData.numberOfGuests}
+                  onChange={(e) => handleInputChange('numberOfGuests', parseInt(e.target.value) || 1)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                {errors.nationality && <p className="mt-1 text-sm text-red-600">{errors.nationality}</p>}
+                {(errors as any).numberOfGuests && <p className="mt-1 text-sm text-red-600">{(errors as any).numberOfGuests}</p>}
               </div>
             </div>
           </div>
-        );      case 2: // Hotel Selection
+        );
+
+      case 2: // Hotel Search
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Select Hotel</h3>
 
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <p className="text-sm text-blue-700">
+                <strong>Search Criteria:</strong> {formData.checkInDate} to {formData.checkOutDate} • {formData.numberOfGuests} guest(s)
+              </p>
+            </div>
+
             {!formData.hotel ? (
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Please select a hotel from our database</p>                <button
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">Search for hotels with real-time availability and pricing</p>
+                <button
                   type="button"
                   onClick={() => setShowHotelSelection(true)}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -447,14 +511,17 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                     <p className="text-gray-600">{formData.hotel.city}, {formData.hotel.country}</p>
                     {formData.hotel.rating > 0 && (
                       <div className="flex items-center mt-2">
-                        <span className="text-yellow-500">★</span>
+                        <StarIcon className="h-5 w-5 text-yellow-500 fill-current" />
                         <span className="text-sm text-gray-600 ml-1">{formData.hotel.rating}/10</span>
                       </div>
                     )}
                   </div>
                   <button
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, hotel: null }))}
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, hotel: null, selectedRate: null }));
+                      setAvailableRates([]);
+                    }}
                     className="text-red-600 hover:text-red-800"
                   >
                     <XMarkIcon className="h-6 w-6" />
@@ -472,114 +539,92 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
           </div>
         );
 
-      case 3: // Dates & Room
+      case 3: // Room Selection
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Dates & Room Details</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Select Room & Rate</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-in Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.checkInDate}
-                  onChange={(e) => handleInputChange('checkInDate', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+            {/* Selected Hotel Summary */}
+            {formData.hotel && (
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                {formData.hotel.image && <img src={formData.hotel.image} alt="" className="w-12 h-12 rounded object-cover" />}
+                <div>
+                  <p className="font-medium text-gray-900">{formData.hotel.name}</p>
+                  <p className="text-sm text-gray-600">{formData.checkInDate} to {formData.checkOutDate}</p>
+                </div>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-out Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.checkOutDate}
-                  onChange={(e) => handleInputChange('checkOutDate', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+            {loadingRates ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-12 h-12 border-4 border-blue-200 rounded-full animate-spin border-t-blue-500"></div>
+                <p className="mt-4 text-gray-600">Loading available rates...</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Expected Check-in Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.expectedCheckInTime}
-                  onChange={(e) => handleInputChange('expectedCheckInTime', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+            ) : availableRates.length > 0 ? (
+              <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+                {availableRates.map((rate, index) => {
+                  const rateId = rate.match_hash || rate.rateId || rate.id || `rate-${index}`;
+                  const isSelected = formData.selectedRate?.rateId === rateId;
+                  return (
+                    <div
+                      key={rateId}
+                      onClick={() => handleRateSelect(rate)}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{rate.room_name || rate.roomName}</h4>
+                          <p className="text-sm text-gray-600">{rate.meal || rate.mealPlan || rate.meal_plan || 'Room Only'}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {rate.cancellation_policies ? 'Free cancellation' : 'Non-refundable'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-blue-600">
+                            {rate.currency || 'SAR'} {(rate.price || rate.amount)?.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-gray-500">Total</p>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="mt-2 flex items-center text-blue-600">
+                          <CheckIcon className="h-5 w-5 mr-1" />
+                          <span className="text-sm font-medium">Selected</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Guests *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.numberOfGuests}
-                  onChange={(e) => handleInputChange('numberOfGuests', parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                {errors.numberOfGuests && <p className="mt-1 text-sm text-red-600">{errors.numberOfGuests}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Room Type *
-                </label>
-                <select
-                  value={formData.roomType}
-                  onChange={(e) => handleInputChange('roomType', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <p className="text-gray-600">No rates available for the selected dates.</p>
+                <button
+                  type="button"
+                  onClick={fetchHotelRates}
+                  className="mt-4 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
                 >
-                  <option value="Standard Room">Standard Room</option>
-                  <option value="Deluxe Room">Deluxe Room</option>
-                  <option value="Suite">Suite</option>
-                  <option value="Family Room">Family Room</option>
-                  <option value="Single Room">Single Room</option>
-                  <option value="Double Room">Double Room</option>
-                  <option value="Twin Room">Twin Room</option>
-                  <option value="Triple Room">Triple Room</option>
-                  <option value="Quad Room">Quad Room</option>
-                </select>
-                {errors.roomType && <p className="mt-1 text-sm text-red-600">{errors.roomType}</p>}
+                  Retry
+                </button>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stay Type *
-                </label>
-                <select
-                  value={formData.stayType}
-                  onChange={(e) => handleInputChange('stayType', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="room_only">Room Only</option>
-                  <option value="bed_breakfast">Bed & Breakfast</option>
-                  <option value="half_board">Half Board</option>
-                  <option value="full_board">Full Board</option>
-                  <option value="all_inclusive">All Inclusive</option>
-                </select>
-                {errors.stayType && <p className="mt-1 text-sm text-red-600">{errors.stayType}</p>}
-              </div>
-            </div>
+            {(errors as any).selectedRate && <p className="mt-2 text-sm text-red-600">{(errors as any).selectedRate}</p>}
           </div>
         );
 
-      case 4: // Payment Method
+      case 4: // Additional Details
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Payment Method</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Additional Details</h3>
 
+            {/* Payment Method */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Method *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
               <select
                 value={formData.paymentMethod}
                 onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
@@ -588,126 +633,150 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                 <option value="bank_transfer">Bank Transfer</option>
                 <option value="credit_card">Credit Card</option>
                 <option value="cash">Cash</option>
-                <option value="check">Check</option>
                 <option value="other">Other</option>
               </select>
-              {errors.paymentMethod && <p className="mt-1 text-sm text-red-600">{errors.paymentMethod}</p>}
             </div>
-          </div>
-        );
 
-      case 5: // Additional Guests
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Additional Guests</h3>
+            {/* Expected Check-in Time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expected Check-in Time</label>
+              <input
+                type="time"
+                value={formData.expectedCheckInTime}
+                onChange={(e) => handleInputChange('expectedCheckInTime', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-            {/* Add New Guest */}
+            {/* Additional Guests */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="text-lg font-medium text-gray-900 mb-4">Add Guest</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newGuest.fullName}
-                    onChange={(e) => setNewGuest(prev => ({ ...prev, fullName: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
+              <h4 className="text-lg font-medium text-gray-900 mb-3">Additional Guests (Optional)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={newGuest.fullName}
+                  onChange={(e) => setNewGuest(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Full Name"
+                  className="px-4 py-2 border border-gray-300 rounded-lg"
+                />
+                <div className="flex space-x-2">
                   <input
                     type="tel"
                     value={newGuest.phoneNumber}
                     onChange={(e) => setNewGuest(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Phone Number"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
                   />
+                  <button
+                    type="button"
+                    onClick={handleAddGuest}
+                    disabled={!newGuest.fullName.trim() || !newGuest.phoneNumber.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300"
+                  >
+                    Add
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleAddGuest}
-                disabled={!newGuest.fullName.trim() || !newGuest.phoneNumber.trim()}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Add Guest
-              </button>
-            </div>
-
-            {/* Guests List */}
-            {formData.additionalGuests.length > 0 && (
-              <div>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Added Guests</h4>
-                <div className="space-y-3">
+              {formData.additionalGuests.length > 0 && (
+                <div className="mt-3 space-y-2">
                   {formData.additionalGuests.map((guest, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <div className="font-medium text-gray-900">{guest.fullName}</div>
-                        <div className="text-sm text-gray-500">{guest.phoneNumber}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveGuest(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <XMarkIcon className="h-5 w-5" />
+                    <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                      <span>{guest.fullName} • {guest.phoneNumber}</span>
+                      <button onClick={() => handleRemoveGuest(index)} className="text-red-600">
+                        <XMarkIcon className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        );
+              )}
+            </div>
 
-      case 6: // Special Requests
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Special Requests & Notes</h3>
-
+            {/* Special Requests */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Special Requests or Notes
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Special Requests / Notes</label>
               <textarea
-                rows={6}
+                rows={3}
                 value={formData.notes}
                 onChange={(e) => handleInputChange('notes', e.target.value)}
-                placeholder="Enter any special requests, dietary requirements, accessibility needs, or other notes..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter any special requests..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
-              <p className="mt-1 text-sm text-gray-500">
-                This information will be included in the booking confirmation and sent to the hotel.
-              </p>
             </div>
-          </div>
-        );
 
-      case 7: // Documents
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Document Attachments</h3>
-
+            {/* Document Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Documents (Optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Documents (Optional)</label>
               <FileUpload
                 files={formData.attachments}
                 onFilesChange={(files) => handleInputChange('attachments', files)}
                 maxFiles={5}
-                acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']}
+                acceptedTypes={['image/jpeg', 'image/png', 'application/pdf']}
                 maxSize={10}
               />
-              <p className="mt-2 text-sm text-gray-500">
-                You can upload passport copies, ID documents, or other relevant files. Maximum 5 files, 10MB each.
-              </p>
             </div>
+          </div>
+        );
+
+      case 5: // Review & Confirm
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Review & Confirm</h3>
+
+            {/* Guest Info */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Guest Information</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-600">Name:</span> {formData.touristName}</div>
+                <div><span className="text-gray-600">Email:</span> {formData.email}</div>
+                <div><span className="text-gray-600">Phone:</span> {formData.phone}</div>
+                <div><span className="text-gray-600">Nationality:</span> {formData.nationality}</div>
+              </div>
+            </div>
+
+            {/* Hotel & Room */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Hotel & Room</h4>
+              {formData.hotel && (
+                <div className="flex items-start space-x-3">
+                  {formData.hotel.image && <img src={formData.hotel.image} alt="" className="w-16 h-16 rounded object-cover" />}
+                  <div>
+                    <p className="font-semibold">{formData.hotel.name}</p>
+                    <p className="text-sm text-gray-600">{formData.hotel.city}, {formData.hotel.country}</p>
+                    {formData.selectedRate && (
+                      <>
+                        <p className="text-sm mt-1"><strong>Room:</strong> {formData.selectedRate.roomName}</p>
+                        <p className="text-sm"><strong>Meal Plan:</strong> {formData.selectedRate.mealPlan}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dates & Price */}
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-2">Dates & Pricing</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-600">Check-in:</span> {formData.checkInDate}</div>
+                <div><span className="text-gray-600">Check-out:</span> {formData.checkOutDate}</div>
+                <div><span className="text-gray-600">Guests:</span> {formData.numberOfGuests}</div>
+                <div><span className="text-gray-600">Payment:</span> {formData.paymentMethod.replace('_', ' ')}</div>
+              </div>
+              {formData.selectedRate && (
+                <div className="mt-3 pt-3 border-t border-green-200">
+                  <p className="text-lg font-bold text-green-700">
+                    Total: {formData.selectedRate.currency} {formData.selectedRate.price?.toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {formData.notes && (
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Special Requests</h4>
+                <p className="text-sm text-gray-700">{formData.notes}</p>
+              </div>
+            )}
           </div>
         );
 
@@ -831,6 +900,9 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
           isOpen={showHotelSelection}
           onClose={() => setShowHotelSelection(false)}
           onSelectHotel={handleHotelSelect}
+          checkInDate={formData.checkInDate}
+          checkOutDate={formData.checkOutDate}
+          adults={formData.numberOfGuests}
         />
       )}
     </div>

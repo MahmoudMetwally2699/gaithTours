@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Redirect, useHistory } from 'react-router-dom';
@@ -8,28 +8,34 @@ import toast from 'react-hot-toast';
 import {
   ClientsTab,
   BookingsTab,
-  InvoicesTab,
   PaymentsTab,
   WhatsAppTab
 } from '../components/AdminDashboard';
+import { ProfitMarginTab } from '../components/AdminDashboard/ProfitMarginTab';
+import { AdminManagementTab } from '../components/AdminDashboard/AdminManagementTab';
+import { AnalyticsTab } from '../components/AdminDashboard/AnalyticsTab';
+import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import {
   UserGroupIcon,
   ClipboardDocumentListIcon,
-  DocumentTextIcon,
   CreditCardIcon,
   ChartBarIcon,
   CheckIcon,
   XMarkIcon,
   ArrowRightOnRectangleIcon,
   ChatBubbleLeftRightIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  CurrencyDollarIcon,
+  ShieldExclamationIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
   totalClients: number;
   totalBookings: number;
   pendingBookings: number;
+  failedBookings: number;
   totalInvoices: number;
   paidInvoices: number;
   totalRevenue: number;
@@ -369,7 +375,8 @@ export const AdminDashboard: React.FC = () => {
         denied: 'bg-red-100 text-red-800',
         invoiced: 'bg-purple-100 text-purple-800',
         paid: 'bg-green-100 text-green-800',
-        confirmed: 'bg-emerald-100 text-emerald-800'
+        confirmed: 'bg-emerald-100 text-emerald-800',
+        failed: 'bg-red-100 text-red-800'
       },
       invoice: {
         invoiced: 'bg-yellow-100 text-yellow-800',
@@ -408,17 +415,45 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // Check if user has admin role
-  if (!user || user.role !== 'admin') {
+  const isAdmin = user && ['admin', 'super_admin', 'sub_admin'].includes(user.role);
+  const isSuperAdmin = user && ['admin', 'super_admin'].includes(user.role);
+
+  if (!isAdmin) {
     return <Redirect to="/" />;
-  }  const tabs = [
+  }
+
+  // All available tabs with their required permissions
+  const allTabs = [
     { id: 'dashboard', name: t('dashboard.tabs.dashboard'), icon: ChartBarIcon },
     { id: 'clients', name: t('dashboard.tabs.clients'), icon: UserGroupIcon },
     { id: 'bookings', name: t('dashboard.tabs.bookings'), icon: ClipboardDocumentListIcon },
-    { id: 'invoices', name: t('dashboard.tabs.invoices'), icon: DocumentTextIcon },
     { id: 'payments', name: t('dashboard.tabs.payments'), icon: CreditCardIcon },
-    { id: 'whatsapp', name: t('dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon }
-  ];  return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 ${isRTL ? 'rtl' : 'ltr'}`}>
+    { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
+    { id: 'margins', name: 'Profit Margins', icon: CurrencyDollarIcon },
+    { id: 'promo_codes', name: 'Promo Codes', icon: TagIcon },
+    { id: 'whatsapp', name: t('dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
+    { id: 'admin_management', name: 'Admin Management', icon: ShieldExclamationIcon, superAdminOnly: true }
+  ];
+
+  // Filter tabs based on user role and permissions
+  const tabs = allTabs.filter(tab => {
+    // Admin Management tab is only for super admins
+    if ((tab as any).superAdminOnly) {
+      return isSuperAdmin;
+    }
+    // Super admins and legacy admins see all tabs
+    if (isSuperAdmin) {
+      return true;
+    }
+    // Sub-admins only see tabs they have permission for
+    if (user?.role === 'sub_admin' && user?.adminPermissions) {
+      return user.adminPermissions.includes(tab.id);
+    }
+    return false;
+  });
+
+  return (
+    <div className={`min-h-screen bg-gradient-to-br from-white via-orange-50 to-amber-50 ${isRTL ? 'rtl' : 'ltr'}`}>
       <div className="flex">        {/* Mobile Menu Button */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -446,11 +481,11 @@ export const AdminDashboard: React.FC = () => {
           {/* Header */}
           <div className="p-6 border-b border-gray-200/50">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
                 <ChartBarIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
                   {t('dashboard.title')}
                 </h1>
                 <p className="text-xs text-gray-500">Admin Panel</p>
@@ -462,9 +497,9 @@ export const AdminDashboard: React.FC = () => {
           <div className="px-6 py-4 border-b border-gray-200/50">
             <button
               onClick={toggleLanguage}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
+              className={`w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:text-orange-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-gray-100 to-gray-200 group-hover:from-indigo-100 group-hover:to-purple-100 rounded-lg flex items-center justify-center transition-all duration-300">
+              <div className="w-8 h-8 bg-gradient-to-r from-gray-100 to-gray-200 group-hover:from-orange-100 group-hover:to-amber-100 rounded-lg flex items-center justify-center transition-all duration-300">
                 <GlobeAltIcon className="w-4 h-4" />
               </div>
               <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium`}>
@@ -479,32 +514,32 @@ export const AdminDashboard: React.FC = () => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
 
-              // Define gradient colors for each tab
+              // Define gradient colors for each tab - all using orange theme
               const gradients = [
-                'from-blue-500 to-cyan-500',
-                'from-indigo-500 to-purple-500',
-                'from-amber-500 to-orange-500',
+                'from-orange-500 to-amber-500',
+                'from-orange-500 to-amber-500',
+                'from-orange-500 to-amber-500',
+                'from-orange-500 to-amber-500',
                 'from-emerald-500 to-teal-500',
-                'from-rose-500 to-pink-500',
-                'from-violet-500 to-purple-500'
+                'from-orange-500 to-amber-500'
               ];
 
               const hoverGradients = [
-                'hover:from-blue-50 hover:to-cyan-50',
-                'hover:from-indigo-50 hover:to-purple-50',
-                'hover:from-amber-50 hover:to-orange-50',
+                'hover:from-orange-50 hover:to-amber-50',
+                'hover:from-orange-50 hover:to-amber-50',
+                'hover:from-orange-50 hover:to-amber-50',
+                'hover:from-orange-50 hover:to-amber-50',
                 'hover:from-emerald-50 hover:to-teal-50',
-                'hover:from-rose-50 hover:to-pink-50',
-                'hover:from-violet-50 hover:to-purple-50'
+                'hover:from-orange-50 hover:to-amber-50'
               ];
 
               const textColors = [
-                'text-blue-600',
-                'text-indigo-600',
-                'text-amber-600',
+                'text-orange-600',
+                'text-orange-600',
+                'text-orange-600',
+                'text-orange-600',
                 'text-emerald-600',
-                'text-rose-600',
-                'text-violet-600'
+                'text-orange-600'
               ];
 
               return (                <button
@@ -552,7 +587,7 @@ export const AdminDashboard: React.FC = () => {
             </button>
           </div>
         </div>        {/* Main Content */}
-        <div className={`flex-1 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'} p-4 lg:p-8 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen pt-20 lg:pt-8`}>          {/* Dashboard Stats */}
+        <div className={`flex-1 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'} p-4 lg:p-8 bg-gradient-to-br from-white via-orange-50 to-amber-50 min-h-screen pt-20 lg:pt-8`}>          {/* Dashboard Stats */}
           {activeTab === 'dashboard' && (            <div className="space-y-6">
               {/* Modern Header */}
               <motion.div
@@ -566,7 +601,7 @@ export const AdminDashboard: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                   className="text-5xl md:text-6xl font-black mb-4"
-                >                  <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                >                  <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 bg-clip-text text-transparent">
                     {t('dashboard.header.title').split(' ')[0]}
                   </span>
                   <span className="text-gray-800 ml-3">{t('dashboard.header.title').split(' ')[1]}</span>
@@ -585,7 +620,7 @@ export const AdminDashboard: React.FC = () => {
                   transition={{ duration: 0.8, delay: 0.6, type: "spring", stiffness: 200 }}
                   className="mt-6"
                 >
-                  <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 rounded-full border border-blue-200">
+                  <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-3 rounded-full border border-orange-200">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-gray-700 font-medium">{t('dashboard.header.systemOnline')}</span>
                   </div>
@@ -605,10 +640,10 @@ export const AdminDashboard: React.FC = () => {
                     whileHover={{ y: -8, transition: { duration: 0.3 } }}
                     className="group cursor-pointer"
                   >
-                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200">
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-blue-50 rounded-2xl group-hover:bg-blue-100 transition-colors duration-300">
-                          <UserGroupIcon className="w-6 h-6 text-blue-600" />
+                        <div className="p-3 bg-orange-50 rounded-2xl group-hover:bg-orange-100 transition-colors duration-300">
+                          <UserGroupIcon className="w-6 h-6 text-orange-600" />
                         </div>                        <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.totalClients}</div>
                           <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.clients')}</div>
@@ -624,7 +659,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </motion.div>
 
-                  {/* Pending Bookings - Warning Style */}
+                  {/* Failed Bookings - Error Style */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -632,46 +667,20 @@ export const AdminDashboard: React.FC = () => {
                     whileHover={{ y: -8, transition: { duration: 0.3 } }}
                     className="group cursor-pointer"
                   >
-                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-amber-200">
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-amber-50 rounded-2xl group-hover:bg-amber-100 transition-colors duration-300">
-                          <ClipboardDocumentListIcon className="w-6 h-6 text-amber-600" />
+                        <div className="p-3 bg-red-50 rounded-2xl group-hover:bg-red-100 transition-colors duration-300">
+                          <ClipboardDocumentListIcon className="w-6 h-6 text-red-600" />
                         </div>                        <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900">{stats.pendingBookings}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.pending')}</div>
+                          <div className="text-2xl font-bold text-gray-900">{stats.failedBookings || 0}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.failed')}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{t('dashboard.stats.needReview')}</span>
-                        <div className="flex items-center text-amber-600 text-sm">
-                          <div className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></div>
-                          {t('dashboard.stats.urgent')}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Total Invoices */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                    className="group cursor-pointer"
-                  >
-                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-purple-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-purple-50 rounded-2xl group-hover:bg-purple-100 transition-colors duration-300">
-                          <DocumentTextIcon className="w-6 h-6 text-purple-600" />
-                        </div>                        <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900">{stats.totalInvoices}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.invoices')}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{t('dashboard.stats.generated')}</span>
-                        <div className="text-sm text-purple-600 font-medium">
-                          {stats.paidInvoices}/{stats.totalInvoices} {t('dashboard.stats.paid')}
+                        <span className="text-sm text-gray-600">{t('dashboard.stats.failedBookings')}</span>
+                        <div className="flex items-center text-red-600 text-sm">
+                          <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                          {t('dashboard.stats.error')}
                         </div>
                       </div>
                     </div>
@@ -685,7 +694,7 @@ export const AdminDashboard: React.FC = () => {
                     whileHover={{ y: -8, transition: { duration: 0.3 } }}
                     className="group cursor-pointer"
                   >
-                    <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 text-white">
+                    <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 text-white">
                       <div className="flex items-center justify-between mb-4">
                         <div className="p-3 bg-white/20 rounded-2xl group-hover:bg-white/30 transition-colors duration-300">
                           <CreditCardIcon className="w-6 h-6 text-white" />
@@ -711,10 +720,10 @@ export const AdminDashboard: React.FC = () => {
                     whileHover={{ y: -8, transition: { duration: 0.3 } }}
                     className="group cursor-pointer"
                   >
-                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-green-200">
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-green-50 rounded-2xl group-hover:bg-green-100 transition-colors duration-300">
-                          <ChatBubbleLeftRightIcon className="w-6 h-6 text-green-600" />
+                        <div className="p-3 bg-orange-50 rounded-2xl group-hover:bg-orange-100 transition-colors duration-300">
+                          <ChatBubbleLeftRightIcon className="w-6 h-6 text-orange-600" />
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.totalWhatsAppMessages}</div>
@@ -723,8 +732,8 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">{t('dashboard.stats.totalMessages')}</span>
-                        <div className="flex items-center text-green-600 text-sm">
-                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        <div className="flex items-center text-orange-600 text-sm">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
                           {t('dashboard.stats.allTime')}
                         </div>
                       </div>
@@ -739,10 +748,10 @@ export const AdminDashboard: React.FC = () => {
                     whileHover={{ y: -8, transition: { duration: 0.3 } }}
                     className="group cursor-pointer"
                   >
-                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200">
+                    <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-red-50 rounded-2xl group-hover:bg-red-100 transition-colors duration-300">
-                          <ChatBubbleLeftRightIcon className="w-6 h-6 text-red-600" />
+                        <div className="p-3 bg-orange-50 rounded-2xl group-hover:bg-orange-100 transition-colors duration-300">
+                          <ChatBubbleLeftRightIcon className="w-6 h-6 text-orange-600" />
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.unreadWhatsAppMessages}</div>
@@ -751,8 +760,8 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">{t('dashboard.stats.needsAttention')}</span>
-                        <div className="flex items-center text-red-600 text-sm">
-                          <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                        <div className="flex items-center text-orange-600 text-sm">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></div>
                           {t('dashboard.stats.unread')}
                         </div>
                       </div>
@@ -784,15 +793,15 @@ export const AdminDashboard: React.FC = () => {
                       setActiveTab('bookings');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-blue-200 overflow-hidden"
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-orange-200 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="relative z-10">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors duration-300">
-                        <ClipboardDocumentListIcon className="w-6 h-6 text-blue-600" />
+                      <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors duration-300">
+                        <ClipboardDocumentListIcon className="w-6 h-6 text-orange-600" />
                       </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.manageBookings.title')}</h3>
                       <p className="text-sm text-gray-600">{t('dashboard.quickActions.manageBookings.description')}</p>
-                      <div className="mt-4 text-xs text-blue-600 font-medium">{t('dashboard.quickActions.manageBookings.action')}</div>
+                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('dashboard.quickActions.manageBookings.action')}</div>
                     </div>
                   </motion.button>                  <motion.button
                     initial={{ opacity: 0, y: 20 }}
@@ -804,15 +813,15 @@ export const AdminDashboard: React.FC = () => {
                       setActiveTab('clients');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-amber-200 overflow-hidden"
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-orange-200 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="relative z-10">
-                      <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-amber-200 transition-colors duration-300">
-                        <UserGroupIcon className="w-6 h-6 text-amber-600" />
+                      <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors duration-300">
+                        <UserGroupIcon className="w-6 h-6 text-orange-600" />
                       </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.clientDatabase.title')}</h3>
                       <p className="text-sm text-gray-600">{t('dashboard.quickActions.clientDatabase.description')}</p>
-                      <div className="mt-4 text-xs text-amber-600 font-medium">{t('dashboard.quickActions.clientDatabase.action')}</div>
+                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('dashboard.quickActions.clientDatabase.action')}</div>
                     </div>
                   </motion.button>                  <motion.button
                     initial={{ opacity: 0, y: 20 }}
@@ -821,38 +830,18 @@ export const AdminDashboard: React.FC = () => {
                     whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      setActiveTab('invoices');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-purple-200 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative z-10">
-                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors duration-300">
-                        <DocumentTextIcon className="w-6 h-6 text-purple-600" />
-                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.invoiceCenter.title')}</h3>
-                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.invoiceCenter.description')}</p>
-                      <div className="mt-4 text-xs text-purple-600 font-medium">{t('dashboard.quickActions.invoiceCenter.action')}</div>
-                    </div>
-                  </motion.button>                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 1.1 }}
-                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
                       setActiveTab('payments');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-emerald-200 overflow-hidden"
+                    className="group relative bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-orange-200 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="relative z-10">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-colors duration-300">
-                        <CreditCardIcon className="w-6 h-6 text-emerald-600" />
+                      <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors duration-300">
+                        <CreditCardIcon className="w-6 h-6 text-orange-600" />
                       </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.paymentTracking.title')}</h3>
                       <p className="text-sm text-gray-600">{t('dashboard.quickActions.paymentTracking.description')}</p>
-                      <div className="mt-4 text-xs text-emerald-600 font-medium">{t('dashboard.quickActions.paymentTracking.action')}</div>
+                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('dashboard.quickActions.paymentTracking.action')}</div>
                     </div>
                   </motion.button>
                 </motion.div>
@@ -911,19 +900,9 @@ export const AdminDashboard: React.FC = () => {
               onRefreshBookings={fetchBookings}
               isCreatingBooking={loading}
             />
-          )}{/* Invoices Tab */}
-          {activeTab === 'invoices' && (
-            <InvoicesTab
-              invoices={invoices}
-              invoiceStatus={invoiceStatus}
-              setInvoiceStatus={setInvoiceStatus}
-              isRTL={isRTL}
-              setSelectedInvoice={handleSetSelectedInvoice}
-              setShowInvoiceDetailsModal={setShowInvoiceDetailsModal}
-              getStatusBadge={handleGetStatusBadge}
-            />
           )}{/* Payments Tab */}
-          {activeTab === 'payments' && (            <PaymentsTab
+          {activeTab === 'payments' && (
+            <PaymentsTab
               payments={payments}
               paymentStatus={paymentStatus}
               setPaymentStatus={setPaymentStatus}
@@ -932,9 +911,21 @@ export const AdminDashboard: React.FC = () => {
               setShowPaymentDetailsModal={setShowPaymentDetailsModal}
               getStatusBadge={handleGetStatusBadge}
             />
+          )}{/* Profit Margins Tab */}
+          {activeTab === 'margins' && (
+            <ProfitMarginTab isRTL={isRTL} />
+          )}{/* Promo Codes Tab */}
+          {activeTab === 'promo_codes' && (
+            <PromoCodesTab />
           )}{/* WhatsApp Messages Tab */}
           {activeTab === 'whatsapp' && (
             <WhatsAppTab />
+          )}{/* Admin Management Tab - Super Admin Only */}
+          {activeTab === 'admin_management' && isSuperAdmin && (
+            <AdminManagementTab isRTL={isRTL} />
+          )}{/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <AnalyticsTab />
           )}
         </div>
       </div>      {/* Approval Modal */}
@@ -1063,14 +1054,14 @@ export const AdminDashboard: React.FC = () => {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 text-sm underline"
                         >
-                          🔗 Visit Hotel Website
+                          Visit Hotel Website
                         </a>
                       </div>
                     )}
                     {selectedBooking.hotel.price && (
                       <div className="mt-2">
                         <span className="text-green-600 font-medium text-sm">
-                          💰 Expected Price: {selectedBooking.hotel.price} SAR
+                          Expected Price: {selectedBooking.hotel.price} $
                         </span>
                       </div>
                     )}
@@ -1209,9 +1200,9 @@ export const AdminDashboard: React.FC = () => {
                       <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
                         <div className="flex items-center space-x-3">
                           {attachment.fileType === 'pdf' ? (
-                            <div className="text-red-500">📄</div>
+                            <div className="text-red-500 font-medium text-sm">PDF</div>
                           ) : (
-                            <div className="text-blue-500">🖼️</div>
+                            <div className="text-blue-500 font-medium text-sm">IMG</div>
                           )}                          <div>
                             <p className="text-sm font-medium text-gray-900 truncate pr-2">{attachment.fileName}</p>
                             <p className="text-xs text-gray-500 truncate pr-2">
@@ -1562,11 +1553,11 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Customer:</span>
-                      <span className="font-medium">{selectedPayment.user.name}</span>
+                      <span className="font-medium">{selectedPayment.user?.name || 'Guest'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{selectedPayment.user.email}</span>
+                      <span className="font-medium">{selectedPayment.user?.email || 'N/A'}</span>
                     </div>
                   </div>
                 </div>

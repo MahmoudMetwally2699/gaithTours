@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { Hotel } from '../services/api';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface HotelCardProps {
   hotel: Hotel & {
@@ -11,6 +12,8 @@ interface HotelCardProps {
     pricePerNight?: number;
     nights?: number;
     currency?: string;
+    total_taxes?: number;
+    taxes_currency?: string;
     reviewCount?: number;
     reviewScoreWord?: string;
   };
@@ -19,13 +22,15 @@ interface HotelCardProps {
 
 export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
   const { t } = useTranslation();
+  const { currency: globalCurrency } = useCurrency();
 
-  // Helper to format currency
+  // Helper to format currency - use hotel currency if available, else global
   const formatPrice = (price?: number, currency?: string) => {
     if (!price || price <= 0) return null;
+    const currencyToUse = currency || globalCurrency || 'USD';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'SAR',
+      currency: currencyToUse,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);

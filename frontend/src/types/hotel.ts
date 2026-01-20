@@ -7,8 +7,10 @@ export interface Hotel {
     address: string;
     city?: string; // Optional - from Content API region.name
     country?: string; // Optional - not reliable in Content API
-    price: number;
+    price: number; // Base price WITHOUT taxes (after margin)
     currency: string;
+    total_taxes?: number; // Total taxes amount (displayed separately)
+    taxes_currency?: string; // Currency for taxes
     rating: number;
     image: string | null;
     images?: string[]; // Array of image URLs

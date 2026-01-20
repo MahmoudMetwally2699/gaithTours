@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -54,14 +55,26 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'super_admin', 'sub_admin'],
     default: 'user'
+  },
+  adminPermissions: {
+    type: [{
+      type: String,
+      enum: ['dashboard', 'clients', 'bookings', 'payments', 'margins', 'whatsapp', 'admin_management']
+    }],
+    default: []
+  },
+  invitedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   isEmailVerified: {
     type: Boolean,
     default: false
   },
   emailVerificationToken: String,
+  emailVerificationExpires: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
   createdAt: {
@@ -98,6 +111,24 @@ userSchema.pre('save', function(next) {
 // Instance method to check password
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Instance method to generate email verification token
+userSchema.methods.generateVerificationToken = function() {
+  // Generate random token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+
+  // Hash and store in database
+  this.emailVerificationToken = crypto
+    .createHash('sha256')
+    .update(verificationToken)
+    .digest('hex');
+
+  // Set expiry to 24 hours from now
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  // Return unhashed token to send via email
+  return verificationToken;
 };
 
 // Remove password from JSON output

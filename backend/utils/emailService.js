@@ -539,19 +539,165 @@ const sendCancellationEmail = async (reservationData) => {
   try {
     const transporter = createTransporter();
 
-    const { email, reservationId } = reservationData;
+    const {
+      email,
+      reservationId,
+      hotelName,
+      customerName,
+      checkInDate,
+      checkOutDate,
+      penalty,
+      refundAmount
+    } = reservationData;
+
+    const formatDate = (date) => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    const formatCurrency = (amount, currency = 'USD') => {
+      if (!amount) return null;
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency
+      }).format(amount);
+    };
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
-      subject: 'Reservation Cancellation - Gaith Tours',
+      subject: '❌ Booking Cancellation Confirmed - Gaith Tours | تأكيد إلغاء الحجز',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #dc2626;">Reservation Cancelled</h2>
-          <p>Your reservation (ID: ${reservationId}) has been cancelled.</p>
-          <p>If you have any questions, please contact us.</p>
-          <p>Thank you for choosing Gaith Tours.</p>
-        </div>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Booking Cancellation</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 45px 30px; text-align: center; position: relative;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1);"></div>
+              <div style="position: relative; z-index: 1;">
+                <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2); letter-spacing: -0.5px;">✈️ Gaith Tours</h1>
+                <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px; border: 1px solid rgba(255,255,255,0.3);">
+                  <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">❌ Booking Cancelled</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+
+              <!-- English Section -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 15px 0;">Hello ${customerName || 'Valued Guest'},</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                  Your booking has been cancelled as requested. We hope to see you again soon for your future travel needs.
+                </p>
+              </div>
+
+              <!-- Cancelled Booking Details -->
+              <div style="background: #fef2f2; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #dc2626;">
+                <h3 style="color: #991b1b; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Cancelled Booking Details</h3>
+                <div style="display: grid; gap: 12px;">
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fecaca;">
+                    <span style="color: #991b1b; font-weight: 500;">Reservation ID:</span>
+                    <span style="color: #7f1d1d; font-weight: 600; font-family: monospace;">${reservationId}</span>
+                  </div>
+                  ${hotelName ? `
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fecaca;">
+                    <span style="color: #991b1b; font-weight: 500;">Hotel:</span>
+                    <span style="color: #7f1d1d; font-weight: 600;">${hotelName}</span>
+                  </div>
+                  ` : ''}
+                  ${checkInDate ? `
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fecaca;">
+                    <span style="color: #991b1b; font-weight: 500;">Check-in Date:</span>
+                    <span style="color: #7f1d1d; font-weight: 600;">${formatDate(checkInDate)}</span>
+                  </div>
+                  ` : ''}
+                  ${checkOutDate ? `
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                    <span style="color: #991b1b; font-weight: 500;">Check-out Date:</span>
+                    <span style="color: #7f1d1d; font-weight: 600;">${formatDate(checkOutDate)}</span>
+                  </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              ${penalty && penalty.amount > 0 ? `
+              <!-- Cancellation Fee -->
+              <div style="background: #fef3c7; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+                <h3 style="color: #92400e; font-size: 18px; font-weight: 600; margin: 0 0 10px 0;">Cancellation Fee</h3>
+                <p style="color: #78350f; font-size: 24px; font-weight: 700; margin: 0;">
+                  ${formatCurrency(penalty.showAmount || penalty.amount, penalty.currency)}
+                </p>
+                <p style="color: #92400e; font-size: 14px; margin: 10px 0 0 0;">
+                  This amount has been deducted as per the cancellation policy.
+                </p>
+              </div>
+              ` : ''}
+
+              ${refundAmount ? `
+              <!-- Refund Info -->
+              <div style="background: #dcfce7; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #22c55e;">
+                <h3 style="color: #166534; font-size: 18px; font-weight: 600; margin: 0 0 10px 0;">Refund Amount</h3>
+                <p style="color: #14532d; font-size: 24px; font-weight: 700; margin: 0;">
+                  ${formatCurrency(refundAmount)}
+                </p>
+                <p style="color: #166534; font-size: 14px; margin: 10px 0 0 0;">
+                  Your refund will be processed within 5-10 business days.
+                </p>
+              </div>
+              ` : ''}
+
+              <!-- Arabic Section -->
+              <div style="margin: 30px 0; text-align: right; direction: rtl; border-top: 1px solid #e5e7eb; padding-top: 30px;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 15px 0;">مرحباً ${customerName || 'عزيزنا الضيف'},</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.8; margin: 0 0 20px 0;">
+                  تم إلغاء حجزك بناءً على طلبك. نأمل أن نراك مجدداً قريباً لتلبية احتياجات سفرك المستقبلية.
+                </p>
+              </div>
+
+              <!-- Book Again CTA -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 18px 45px; border-radius: 50px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 10px 30px rgba(79, 70, 229, 0.4);">
+                  🏨 Book Another Stay
+                </a>
+              </div>
+
+              <!-- Contact Info -->
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+                  Questions about your cancellation? Contact us at<br>
+                  <a href="mailto:${process.env.EMAIL_FROM}" style="color: #4f46e5; text-decoration: none;">${process.env.EMAIL_FROM}</a>
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} Gaith Tours. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
       `
     };
 
@@ -959,6 +1105,250 @@ const sendPaymentConfirmationEmail = async (paymentData) => {
   }
 };
 
+// Send email verification email
+const sendVerificationEmail = async (userData) => {
+  try {
+    const transporter = createTransporter();
+
+    const { email, name, verificationToken, verificationUrl } = userData;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: '✉️ Verify Your Email - Gaith Tours | تحقق من بريدك الإلكتروني',
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Email Verification</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); padding: 45px 30px; text-align: center; position: relative;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1);"></div>
+              <div style="position: relative; z-index: 1;">
+                <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2); letter-spacing: -0.5px;">✈️ Gaith Tours</h1>
+                <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px; border: 1px solid rgba(255,255,255,0.3);">
+                  <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">✉️ Email Verification Required</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+
+              <!-- English Section -->
+              <div style="margin-bottom: 30px;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 15px 0;">Hello ${name}! 👋</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                  Thank you for registering with Gaith Tours! Please verify your email address by clicking the button below to activate your account and start booking amazing hotels.
+                </p>
+              </div>
+
+              <!-- Verification Button -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="${verificationUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 18px 45px; border-radius: 50px; font-weight: 700; font-size: 18px; display: inline-block; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); transition: all 0.3s ease;">
+                  ✅ Verify My Email
+                </a>
+              </div>
+
+              <!-- Arabic Section -->
+              <div style="margin: 30px 0; text-align: right; direction: rtl; border-top: 1px solid #e5e7eb; padding-top: 30px;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 15px 0;">مرحباً ${name}! 👋</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.8; margin: 0 0 20px 0;">
+                  شكراً لتسجيلك في غيث تورز! يرجى التحقق من عنوان بريدك الإلكتروني بالنقر على الزر أعلاه لتفعيل حسابك والبدء في حجز الفنادق الرائعة.
+                </p>
+              </div>
+
+              <!-- Expiry Notice -->
+              <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 16px; padding: 20px; margin: 25px 0; border-left: 4px solid #f59e0b;">
+                <p style="color: #92400e; font-size: 14px; margin: 0; text-align: center;">
+                  ⏰ <strong>This link will expire in 24 hours.</strong><br>
+                  <span style="direction: rtl; display: block; margin-top: 5px;">هذا الرابط سينتهي خلال 24 ساعة.</span>
+                </p>
+              </div>
+
+              <!-- Alternative Link -->
+              <div style="background: #f3f4f6; border-radius: 12px; padding: 20px; margin: 25px 0;">
+                <p style="color: #6b7280; font-size: 14px; margin: 0 0 10px 0; text-align: center;">
+                  If the button doesn't work, copy and paste this link in your browser:
+                </p>
+                <p style="color: #4f46e5; font-size: 12px; margin: 0; word-break: break-all; text-align: center; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  ${verificationUrl}
+                </p>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+                  🔒 If you didn't create an account with Gaith Tours, please ignore this email.<br>
+                  <span style="direction: rtl; display: block; margin-top: 5px;">إذا لم تقم بإنشاء حساب في غيث تورز، يرجى تجاهل هذا البريد الإلكتروني.</span>
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} Gaith Tours. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Verification email error:', error);
+    throw new Error('Verification email could not be sent: ' + error.message);
+  }
+};
+
+// Send sub-admin invitation email
+const sendSubAdminInvitation = async (invitationData) => {
+  try {
+    const transporter = createTransporter();
+
+    const { email, inviterName, permissions, invitationUrl, expiresAt } = invitationData;
+
+    // Format permissions for display
+    const permissionLabels = {
+      dashboard: '📊 Dashboard Overview',
+      clients: '👥 Client Management',
+      bookings: '📋 Booking Management',
+      payments: '💳 Payment Tracking',
+      margins: '💰 Profit Margins',
+      whatsapp: '💬 WhatsApp Messages'
+    };
+
+    const permissionsList = permissions
+      .map(p => permissionLabels[p] || p)
+      .join('<br>');
+
+    const expiresDate = new Date(expiresAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: '🎉 You\'ve Been Invited as an Admin - Gaith Tours',
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Admin Invitation</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 45px 30px; text-align: center; position: relative;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1);"></div>
+              <div style="position: relative; z-index: 1;">
+                <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2); letter-spacing: -0.5px;">✈️ Gaith Tours</h1>
+                <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px; border: 1px solid rgba(255,255,255,0.3);">
+                  <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">🎉 You're Invited to Join the Admin Team!</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+              <div style="margin-bottom: 30px;">
+                <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 15px 0;">Hello!</h2>
+                <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                  <strong style="color: #f97316;">${inviterName}</strong> has invited you to join the Gaith Tours admin team as a Sub-Admin.
+                </p>
+              </div>
+
+              <!-- Permissions Card -->
+              <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 16px; padding: 25px; margin-bottom: 25px; border-left: 4px solid #f97316;">
+                <h3 style="color: #1e293b; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">
+                  🔐 Your Assigned Permissions
+                </h3>
+                <p style="color: #64748b; font-size: 14px; margin: 0 0 15px 0;">
+                  You will have access to the following areas of the admin dashboard:
+                </p>
+                <div style="background: #ffffff; border-radius: 12px; padding: 15px; line-height: 2;">
+                  ${permissionsList}
+                </div>
+              </div>
+
+              <!-- Expiration Notice -->
+              <div style="background: #fef3c7; border-radius: 16px; padding: 20px; margin-bottom: 25px; border-left: 4px solid #f59e0b;">
+                <p style="color: #92400e; font-size: 14px; font-weight: 500; margin: 0;">
+                  ⏰ This invitation expires on <strong>${expiresDate}</strong>
+                </p>
+              </div>
+
+              <!-- Accept Button -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="${invitationUrl}" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; text-decoration: none; padding: 18px 45px; border-radius: 50px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 10px 30px rgba(249, 115, 22, 0.4);">
+                  ✅ Accept Invitation
+                </a>
+              </div>
+
+              <!-- Alternative Link -->
+              <div style="background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                <p style="color: #64748b; font-size: 14px; margin: 0 0 10px 0;">
+                  Or copy and paste this link into your browser:
+                </p>
+                <p style="color: #f97316; font-size: 12px; word-break: break-all; margin: 0; font-family: monospace; background: #ffffff; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                  ${invitationUrl}
+                </p>
+              </div>
+
+              <!-- Security Notice -->
+              <div style="background: #fee2e2; border-radius: 16px; padding: 20px; margin-bottom: 25px; border-left: 4px solid #ef4444;">
+                <p style="color: #991b1b; font-size: 14px; font-weight: 500; margin: 0;">
+                  🔒 <strong>Security Notice:</strong> If you didn't expect this invitation, please ignore this email or contact the administrator.
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} Gaith Tours. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Sub-admin invitation email error:', error);
+    throw new Error('Invitation email could not be sent: ' + error.message);
+  }
+};
+
 module.exports = {
   sendReservationConfirmation,
   sendAgencyNotification,
@@ -967,5 +1357,7 @@ module.exports = {
   sendInvoiceEmail,
   sendBookingDenialEmail,
   sendBookingConfirmationEmail,
-  sendPaymentConfirmationEmail
+  sendPaymentConfirmationEmail,
+  sendVerificationEmail,
+  sendSubAdminInvitation
 };

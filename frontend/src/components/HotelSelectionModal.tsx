@@ -19,12 +19,21 @@ interface HotelSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectHotel: (hotel: Hotel) => void;
+  // Optional date parameters for real-time availability search
+  checkInDate?: string;
+  checkOutDate?: string;
+  adults?: number;
+  children?: number;
 }
 
 export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
   isOpen,
   onClose,
-  onSelectHotel
+  onSelectHotel,
+  checkInDate,
+  checkOutDate,
+  adults = 2,
+  children = 0
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useDirection();
@@ -49,7 +58,12 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
     setError('');
 
     try {
-      const response = await searchHotels(query, page, hotelsPerPage);
+      const response = await searchHotels(query, page, hotelsPerPage, {
+        checkin: checkInDate,
+        checkout: checkOutDate,
+        adults: adults,
+        children: children
+      });
 
       if (response?.hotels) {
         setHotels(response.hotels);

@@ -24,6 +24,10 @@ import L from 'leaflet';
 import { searchHotels } from '../services/hotelService';
 import { Hotel } from '../types/hotel';
 import { useDirection } from '../hooks/useDirection';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { CurrencySelector } from '../components/CurrencySelector';
+import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 // Fix for default marker icons in Leaflet with React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -39,6 +43,9 @@ interface SearchFilters {
   propertyTypes: string[];
   facilities: string[];
   sortBy: string;
+  mealPlan: string[];        // 'breakfast', 'half_board', 'full_board', 'all_inclusive'
+  cancellationPolicy: string; // 'any', 'free_cancellation', 'non_refundable'
+  guestRating: number;       // 0 = any, 7 = 7+, 8 = 8+, 9 = 9+
 }
 
 // Autocomplete types
@@ -148,17 +155,23 @@ export const HotelSearchResults: React.FC = () => {
   const { direction } = useDirection();
   const history = useHistory();
   const location = useLocation();
+  const { user, logout } = useAuth();
   const isRTL = direction === 'rtl';
+  const { currency } = useCurrency();
 
   // Parse URL parameters
   const searchParams = new URLSearchParams(location.search);
+  const childrenParam = searchParams.get('children') || '';
+  const initialChildrenAges = childrenParam ? childrenParam.split(',').map(Number).filter(n => !isNaN(n)) : [];
+
   const searchQuery = {
     destination: searchParams.get('destination') || '',
     checkIn: searchParams.get('checkIn') || '',
     checkOut: searchParams.get('checkOut') || '',
     rooms: parseInt(searchParams.get('rooms') || '1'),
     adults: parseInt(searchParams.get('adults') || '2'),
-    children: parseInt(searchParams.get('children') || '0')
+    children: initialChildrenAges.length,
+    childrenAges: initialChildrenAges
   };
 
   const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -178,7 +191,10 @@ export const HotelSearchResults: React.FC = () => {
     starRating: [],
     propertyTypes: [],
     facilities: [],
-    sortBy: 'top_picks'
+    sortBy: 'top_picks',
+    mealPlan: [],
+    cancellationPolicy: 'any',
+    guestRating: 0
   });
 
   // Autocomplete state
@@ -198,7 +214,8 @@ export const HotelSearchResults: React.FC = () => {
   const [guestCounts, setGuestCounts] = useState({
     rooms: searchQuery.rooms,
     adults: searchQuery.adults,
-    children: searchQuery.children
+    children: searchQuery.children,
+    childrenAges: searchQuery.childrenAges
   });
   const [showGuestPopover, setShowGuestPopover] = useState(false);
 
@@ -209,7 +226,8 @@ export const HotelSearchResults: React.FC = () => {
     setGuestCounts({
         rooms: searchQuery.rooms,
         adults: searchQuery.adults,
-        children: searchQuery.children
+        children: searchQuery.children,
+        childrenAges: searchQuery.childrenAges
     });
     setEditableDestination(searchQuery.destination);
   }, [searchQuery.checkIn, searchQuery.checkOut, searchQuery.rooms, searchQuery.adults, searchQuery.children, searchQuery.destination]);
@@ -221,7 +239,11 @@ export const HotelSearchResults: React.FC = () => {
     if (checkOutDate) params.set('checkOut', checkOutDate.toISOString().split('T')[0]);
     params.set('rooms', guestCounts.rooms.toString());
     params.set('adults', guestCounts.adults.toString());
-    params.set('children', guestCounts.children.toString());
+    if (guestCounts.childrenAges && guestCounts.childrenAges.length > 0) {
+      params.set('children', guestCounts.childrenAges.join(','));
+    } else {
+      params.set('children', '');
+    }
 
     // Reset page to 1 on new search
     params.set('page', '1');
@@ -336,7 +358,8 @@ export const HotelSearchResults: React.FC = () => {
             checkin: searchQuery.checkIn || undefined,
             checkout: searchQuery.checkOut || undefined,
             adults: searchQuery.adults,
-            children: searchQuery.children > 0 ? searchQuery.children : undefined
+            children: searchQuery.children > 0 ? searchQuery.children : undefined,
+            currency: currency
           }
         );
 
@@ -359,7 +382,7 @@ export const HotelSearchResults: React.FC = () => {
     };
 
     performSearch();
-  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currentPage]);
+  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currentPage, currency]);
 
   // Calculate max price for budget filter
   const maxPrice = useMemo(() => {
@@ -420,6 +443,53 @@ export const HotelSearchResults: React.FC = () => {
       if (!hotel.price || hotel.price === 0) return true;
       return hotel.price >= filters.priceRange[0] && hotel.price <= filters.priceRange[1];
     });
+
+    // Apply meal plan filter
+    if (filters.mealPlan.length > 0) {
+      filtered = filtered.filter(hotel => {
+        const hotelData = hotel as any;
+        const hotelMeal = (hotelData.meal || hotelData.mealType || '').toLowerCase();
+        return filters.mealPlan.some(meal => {
+          switch (meal) {
+            case 'breakfast':
+              return hotelMeal.includes('breakfast') || hotelData.breakfast_included;
+            case 'half_board':
+              return hotelMeal.includes('half') || hotelMeal === 'hb';
+            case 'full_board':
+              return hotelMeal.includes('full') || hotelMeal === 'fb';
+            case 'all_inclusive':
+              return hotelMeal.includes('all') || hotelMeal === 'ai';
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    // Apply cancellation policy filter
+    if (filters.cancellationPolicy !== 'any') {
+      filtered = filtered.filter(hotel => {
+        const hotelData = hotel as any;
+        if (filters.cancellationPolicy === 'free_cancellation') {
+          return hotelData.free_cancellation ||
+                 hotelData.freeCancellation ||
+                 hotelData.cancellation_policy === 'free' ||
+                 (hotelData.free_cancellation_before && new Date(hotelData.free_cancellation_before) > new Date());
+        } else if (filters.cancellationPolicy === 'non_refundable') {
+          return !hotelData.free_cancellation && !hotelData.freeCancellation;
+        }
+        return true;
+      });
+    }
+
+    // Apply guest rating filter
+    if (filters.guestRating > 0) {
+      filtered = filtered.filter(hotel => {
+        const hotelData = hotel as any;
+        const guestScore = hotelData.review_score || hotelData.guestRating || hotel.rating || 0;
+        return guestScore >= filters.guestRating;
+      });
+    }
 
     // Sort hotels - always keep searched hotel first
     filtered.sort((a, b) => {
@@ -494,10 +564,7 @@ export const HotelSearchResults: React.FC = () => {
              {/* Right Side: Auth & Settings */}
              <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
                 <div className="hidden md:flex items-center space-x-4 bg-white/10 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/20">
-                   <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-100 transition-colors">
-                      <span className="text-sm font-medium">USD</span>
-                      <ChevronDownIcon className="w-3 h-3" />
-                   </div>
+                   <CurrencySelector variant="light" />
                    <div className="w-px h-4 bg-white/30"></div>
                    <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-100 transition-colors">
                       <span className="text-sm font-medium">EN</span>
@@ -505,8 +572,21 @@ export const HotelSearchResults: React.FC = () => {
                    </div>
                 </div>
 
-                <a href="/login" className="text-sm font-medium hover:text-orange-100 transition-colors hidden sm:block">Sign in</a>
-                <a href="/register" className="bg-white text-[#E67915] text-sm font-bold px-4 py-2 rounded-full hover:bg-orange-50 transition shadow-sm">Register</a>
+                {!user ? (
+                   <>
+                      <Link to="/login" className="text-sm font-medium hover:text-orange-100 transition-colors hidden sm:block">Sign in</Link>
+                      <Link to="/register" className="bg-white text-[#E67915] text-sm font-bold px-4 py-2 rounded-full hover:bg-orange-50 transition shadow-sm">Register</Link>
+                   </>
+                ) : (
+                   <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
+                      <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors">
+                        {user.name}
+                      </Link>
+                      <button onClick={logout} className="text-sm opacity-80 hover:opacity-100">
+                        Logout
+                      </button>
+                   </div>
+                )}
              </div>
           </header>
 
@@ -671,27 +751,67 @@ export const HotelSearchResults: React.FC = () => {
                                </div>
                             </div>
                             {/* Children */}
-                            <div className="flex justify-between items-center mb-6">
-                               <div className="flex flex-col">
-                                  <span className="font-bold text-sm text-gray-800">Children</span>
-                                  <span className="text-xs text-gray-500">Ages 0-17</span>
+                            {/* Children */}
+                            <div className="mb-6">
+                               <div className="flex justify-between items-center">
+                                  <div className="flex flex-col">
+                                     <span className="font-bold text-sm text-gray-800">Children</span>
+                                     <span className="text-xs text-gray-500">Ages 0-17</span>
+                                  </div>
+                                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                                     <button
+                                        onClick={() => setGuestCounts(prev => ({
+                                           ...prev,
+                                           children: Math.max(0, prev.children - 1),
+                                           childrenAges: (prev.childrenAges || []).slice(0, -1)
+                                        }))}
+                                        className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                                        disabled={guestCounts.children <= 0}
+                                     >
+                                        <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                                     </button>
+                                     <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
+                                     <button
+                                        onClick={() => setGuestCounts(prev => ({
+                                           ...prev,
+                                           children: Math.min(10, prev.children + 1),
+                                           childrenAges: [...(prev.childrenAges || []), 5]
+                                        }))}
+                                        className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                                     >
+                                        <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                                     </button>
+                                  </div>
                                </div>
-                               <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
-                                  <button
-                                     onClick={() => setGuestCounts(prev => ({...prev, children: Math.max(0, prev.children - 1)}))}
-                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
-                                     disabled={guestCounts.children <= 0}
-                                  >
-                                     <MinusIcon className="w-3 h-3 stroke-[2.5]" />
-                                  </button>
-                                  <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
-                                  <button
-                                     onClick={() => setGuestCounts(prev => ({...prev, children: Math.min(10, prev.children + 1)}))}
-                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
-                                  >
-                                     <PlusIcon className="w-3 h-3 stroke-[2.5]" />
-                                  </button>
-                               </div>
+
+                               {/* Child Age Selectors */}
+                               {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
+                                 <div className="mt-4 pt-3 border-t border-gray-100">
+                                   <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
+                                   <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                                     {guestCounts.childrenAges.map((age, index) => (
+                                       <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                                         <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                         <select
+                                           value={age}
+                                           onChange={(e) => {
+                                             const newAges = [...guestCounts.childrenAges];
+                                             newAges[index] = parseInt(e.target.value);
+                                             setGuestCounts(prev => ({ ...prev, childrenAges: newAges }));
+                                           }}
+                                           className="flex-1 min-w-0 px-2 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                                         >
+                                           {[...Array(18)].map((_, i) => (
+                                             <option key={i} value={i}>
+                                               {i} {i === 1 ? 'yr' : 'yrs'}
+                                             </option>
+                                           ))}
+                                         </select>
+                                       </div>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
                             </div>
 
                             <button
@@ -794,7 +914,7 @@ export const HotelSearchResults: React.FC = () => {
                                 <strong>{hotel.name}</strong>
                                 {hotel.price && hotel.price > 0 && (
                                   <div className="text-orange-600 font-bold">
-                                    SAR {hotel.price}
+                                    {currency} {hotel.price}
                                   </div>
                                 )}
                               </div>
@@ -903,14 +1023,99 @@ export const HotelSearchResults: React.FC = () => {
                 </div>
               </div>
 
-              {/* Clear Filters */}
+              {/* Meal Plan Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Meal Plan</h3>
+                <div className="space-y-2">
+                  {[
+                    { id: 'breakfast', label: 'Breakfast included' },
+                    { id: 'half_board', label: 'Half board' },
+                    { id: 'full_board', label: 'Full board' },
+                    { id: 'all_inclusive', label: 'All inclusive' }
+                  ].map(meal => (
+                    <label key={meal.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.mealPlan.includes(meal.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFilters(prev => ({
+                              ...prev,
+                              mealPlan: [...prev.mealPlan, meal.id]
+                            }));
+                          } else {
+                            setFilters(prev => ({
+                              ...prev,
+                              mealPlan: prev.mealPlan.filter(m => m !== meal.id)
+                            }));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                      />
+                      <span className="text-sm text-gray-700">{meal.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cancellation Policy Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Cancellation Policy</h3>
+                <div className="space-y-2">
+                  {[
+                    { id: 'any', label: 'Any' },
+                    { id: 'free_cancellation', label: 'Free cancellation' },
+                    { id: 'non_refundable', label: 'Non-refundable' }
+                  ].map(policy => (
+                    <label key={policy.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="cancellationPolicy"
+                        checked={filters.cancellationPolicy === policy.id}
+                        onChange={() => setFilters(prev => ({ ...prev, cancellationPolicy: policy.id }))}
+                        className="border-gray-300 text-orange-500 focus:ring-orange-500"
+                      />
+                      <span className="text-sm text-gray-700">{policy.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Guest Rating Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Guest Rating</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 0, label: 'Any' },
+                    { value: 7, label: '7+' },
+                    { value: 8, label: '8+' },
+                    { value: 9, label: '9+' }
+                  ].map(rating => (
+                    <button
+                      key={rating.value}
+                      onClick={() => setFilters(prev => ({ ...prev, guestRating: rating.value }))}
+                      className={`px-3 py-1.5 rounded border text-sm transition-colors ${
+                        filters.guestRating === rating.value
+                          ? 'bg-orange-500 border-orange-500 text-white'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-300'
+                      }`}
+                    >
+                      {rating.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button
                 onClick={() => setFilters({
                   priceRange: [0, maxPrice],
                   starRating: [],
                   propertyTypes: [],
                   facilities: [],
-                  sortBy: 'top_picks'
+                  sortBy: 'top_picks',
+                  mealPlan: [],
+                  cancellationPolicy: 'any',
+                  guestRating: 0
                 })}
                 className="w-full text-orange-500 hover:text-orange-600 text-sm font-medium py-2"
               >
@@ -1051,11 +1256,20 @@ export const HotelSearchResults: React.FC = () => {
 
                               {/* Badges */}
                               <div className="flex flex-wrap gap-2">
-                                {((hotel as any).meal_included || (hotel as any).meal === 'breakfast' || (hotel as any).breakfast_included) && (
-                                  <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">
-                                    Free Breakfast
+                                {(hotel as any).free_cancellation && (
+                                  <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Free cancellation
                                   </span>
                                 )}
+                                {((hotel as any).meal_included || (hotel as any).meal === 'breakfast' || (hotel as any).breakfast_included) && (
+                                  <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200 flex items-center gap-1">
+                                    🍳 Breakfast included
+                                  </span>
+                                )}
+
                               </div>
                             </div>
 
@@ -1091,9 +1305,6 @@ export const HotelSearchResults: React.FC = () => {
                                   <div className="text-xs text-gray-500">1 night, {searchQuery.adults} adults</div>
                                   <div className="text-xl font-bold text-gray-900">
                                     SAR {Math.round(hotel.price).toLocaleString()}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    Total inc. tax & fees: SAR {Math.round(hotel.price).toLocaleString()}
                                   </div>
                                 </>
                               ) : (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { HotelCard } from './HotelCard';
 import { useHistory } from 'react-router-dom';
 import { MapPinIcon } from '@heroicons/react/24/outline';
@@ -25,11 +26,13 @@ interface SuggestionResponse {
 export const SuggestedHotels: React.FC = () => {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const { currency } = useCurrency();
   const history = useHistory();
   const [hotels, setHotels] = useState<ExtendedHotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<string>('');
   const [destinationName, setDestinationName] = useState<string>('');
+  const [lastLocationQuery, setLastLocationQuery] = useState<string | undefined>(undefined);
 
   const fetchSuggestions = async (locationQuery?: string, keepLoading: boolean = false) => {
     try {
@@ -44,9 +47,10 @@ export const SuggestedHotels: React.FC = () => {
       }
 
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-      let url = `${API_URL}/hotels/suggested`;
+      let url = `${API_URL}/hotels/suggested?currency=${currency}`;
       if (locationQuery) {
-        url += `?location=${encodeURIComponent(locationQuery)}`;
+        url += `&location=${encodeURIComponent(locationQuery)}`;
+        setLastLocationQuery(locationQuery);
       }
 
       const response = await fetch(url, { headers });
@@ -81,6 +85,13 @@ export const SuggestedHotels: React.FC = () => {
       fetchSuggestions(undefined, false);
     }
   }, [isAuthenticated]); // Re-run if auth state changes
+
+  // Re-fetch with same location when currency changes
+  useEffect(() => {
+    if (!loading && (hotels.length > 0 || lastLocationQuery)) {
+      fetchSuggestions(lastLocationQuery, false);
+    }
+  }, [currency]); // Re-fetch when currency changes
 
   const getUserLocation = () => {
     console.log('🌍 Requesting browser geolocation...');

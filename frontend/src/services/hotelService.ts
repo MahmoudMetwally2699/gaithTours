@@ -16,6 +16,7 @@ interface SearchOptions {
     checkout?: string;
     adults?: number;
     children?: number | string;
+    currency?: string;
 }
 
 const searchHotels = async (
@@ -48,6 +49,7 @@ const searchHotels = async (
         if (options?.checkout) params.append('checkout', options.checkout);
         if (options?.adults) params.append('adults', options.adults.toString());
         if (options?.children) params.append('children', options.children.toString());
+        if (options?.currency) params.append('currency', options.currency);
 
         const url = `${API_BASE_URL}/hotels/search?${params.toString()}`;
 
@@ -83,6 +85,7 @@ interface HotelDetailsOptions {
     checkout?: string;
     adults?: number;
     children?: string;
+    currency?: string;
 }
 
 const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) => {
@@ -106,6 +109,7 @@ const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) =
         if (options?.checkout) params.append('checkout', options.checkout);
         if (options?.adults) params.append('adults', options.adults.toString());
         if (options?.children) params.append('children', options.children);
+        if (options?.currency) params.append('currency', options.currency);
 
         if (params.toString()) {
             url += `?${params.toString()}`;

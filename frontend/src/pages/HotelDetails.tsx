@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useHistory, useLocation } from 'react-router-dom';
+import { useParams, useHistory, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import {
   StarIcon,
   MapPinIcon,
@@ -33,6 +34,10 @@ import { RoomCard } from '../components/RoomCard';
 import { PriceBreakdownCard } from '../components/PriceBreakdownCard';
 import { CancellationPolicyCard } from '../components/CancellationPolicyCard';
 import { HotelPoliciesCard } from '../components/HotelPoliciesCard';
+import { LazyImage } from '../components/LazyImage';
+import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { CurrencySelector } from '../components/CurrencySelector';
 
 interface HotelDetailsParams {
   hotelId: string;
@@ -74,12 +79,16 @@ export const HotelDetails: React.FC = () => {
   const { hotelId } = useParams<HotelDetailsParams>();
   const history = useHistory();
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   // Check if current language is RTL
   const isRTL = i18n.language === 'ar';
+  const { currency } = useCurrency();
 
   // Parse URL parameters
   const searchParams = new URLSearchParams(location.search);
+  const childrenParam = searchParams.get('children') || '';
+  const initialChildrenAges = childrenParam ? childrenParam.split(',').map(Number).filter(n => !isNaN(n)) : [];
 
   // Generate default dates if not provided
   const getDefaultCheckIn = () => {
@@ -105,7 +114,8 @@ export const HotelDetails: React.FC = () => {
   const [guestCounts, setGuestCounts] = useState({
     rooms: parseInt(searchParams.get('rooms') || '1'),
     adults: parseInt(searchParams.get('adults') || '2'),
-    children: parseInt(searchParams.get('children') || '0')
+    children: initialChildrenAges.length,
+    childrenAges: initialChildrenAges
   });
 
   const [showGuestPopover, setShowGuestPopover] = useState(false);
@@ -116,17 +126,23 @@ export const HotelDetails: React.FC = () => {
     checkOut: searchParams.get('checkOut') || getDefaultCheckOut(),
     rooms: parseInt(searchParams.get('rooms') || '1'),
     adults: parseInt(searchParams.get('adults') || '2'),
-    children: parseInt(searchParams.get('children') || '0')
+    children: initialChildrenAges.length,
+    childrenAges: initialChildrenAges
   };
 
   // Sync state with URL params when they change (e.g. back button)
   useEffect(() => {
      if(searchParams.get('checkIn')) setCheckInDate(new Date(searchParams.get('checkIn')!));
      if(searchParams.get('checkOut')) setCheckOutDate(new Date(searchParams.get('checkOut')!));
+
+     const currentChildrenParam = searchParams.get('children') || '';
+     const currentChildrenAges = currentChildrenParam ? currentChildrenParam.split(',').map(Number).filter(n => !isNaN(n)) : [];
+
      setGuestCounts({
         rooms: parseInt(searchParams.get('rooms') || '1'),
         adults: parseInt(searchParams.get('adults') || '2'),
-        children: parseInt(searchParams.get('children') || '0')
+        children: currentChildrenAges.length,
+        childrenAges: currentChildrenAges
      });
   }, [location.search]);
 
@@ -154,7 +170,11 @@ export const HotelDetails: React.FC = () => {
     params.set('checkOut', checkOutDate.toISOString().split('T')[0]);
     params.set('rooms', guestCounts.rooms.toString());
     params.set('adults', guestCounts.adults.toString());
-    params.set('children', guestCounts.children.toString());
+    if (guestCounts.childrenAges && guestCounts.childrenAges.length > 0) {
+      params.set('children', guestCounts.childrenAges.join(','));
+    } else {
+      params.set('children', '');
+    }
 
     history.push({
        pathname: location.pathname,
@@ -195,7 +215,8 @@ export const HotelDetails: React.FC = () => {
           checkin: bookingParams.checkIn,
           checkout: bookingParams.checkOut,
           adults: bookingParams.adults,
-          children: bookingParams.children > 0 ? bookingParams.children.toString() : undefined
+          children: bookingParams.children > 0 ? bookingParams.children.toString() : undefined,
+          currency: currency
         });
 
         // Transform the API response to match our Hotel interface
@@ -206,7 +227,7 @@ export const HotelDetails: React.FC = () => {
           city: hotelData.city || bookingParams.destination || '',
           country: hotelData.country || 'Saudi Arabia',
           price: 0,
-          currency: 'SAR',
+          currency: currency,
           rating: hotelData.rating || hotelData.reviewScore || 0,
           image: hotelData.images?.[0] || hotelData.mainImage || null,
           images: hotelData.images || (hotelData.mainImage ? [hotelData.mainImage] : []),
@@ -227,6 +248,27 @@ export const HotelDetails: React.FC = () => {
         };
 
         setHotel(transformedHotel);
+
+        // Preload hotel images for better performance
+        const imagesToPreload = transformedHotel.images || [];
+        if (imagesToPreload.length > 0) {
+          // Use requestIdleCallback or setTimeout to avoid blocking main thread
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+              smartPreload(imagesToPreload, {
+                maxImages: 10,
+                respectDataSaver: true
+              });
+            });
+          } else {
+            setTimeout(() => {
+              smartPreload(imagesToPreload, {
+                maxImages: 10,
+                respectDataSaver: true
+              });
+            }, 100);
+          }
+        }
       } catch (err: any) {
         console.error('Failed to fetch hotel details:', err);
         setError(err.message || 'Failed to load hotel details');
@@ -236,7 +278,7 @@ export const HotelDetails: React.FC = () => {
     };
 
     fetchHotelDetails();
-  }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination]);
+  }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination, currency]);
 
   // Helper to clean room name for grouping
   const normalizeRoomName = (name: string) => {
@@ -332,7 +374,7 @@ export const HotelDetails: React.FC = () => {
       checkOut: bookingParams.checkOut,
       rooms: totalRooms.toString(),
       adults: bookingParams.adults.toString(),
-      children: bookingParams.children.toString(),
+      children: bookingParams.childrenAges && bookingParams.childrenAges.length > 0 ? bookingParams.childrenAges.join(',') : '',
       // Primary room details
       matchHash: primaryRate?.match_hash || '',
       roomName: primaryRate?.room_name || '',
@@ -350,7 +392,9 @@ export const HotelDetails: React.FC = () => {
       selectedRate: primaryRate,
       checkIn: bookingParams.checkIn,
       checkOut: bookingParams.checkOut,
-      guests: bookingParams.adults
+      guests: bookingParams.adults,
+      children: bookingParams.children,
+      childrenAges: bookingParams.childrenAges
     });
   };
 
@@ -541,23 +585,62 @@ export const HotelDetails: React.FC = () => {
                                  </div>
                               </div>
                               {/* Children */}
-                              <div className="flex justify-between items-center">
-                                 <span className="font-medium text-sm">Children</span>
-                                 <div className="flex items-center gap-3">
-                                    <button
-                                       onClick={() => setGuestCounts(prev => ({...prev, children: Math.max(0, prev.children - 1)}))}
-                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-                                    >
-                                       <MinusIcon className="w-4 h-4" />
-                                    </button>
-                                    <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
-                                    <button
-                                       onClick={() => setGuestCounts(prev => ({...prev, children: Math.min(10, prev.children + 1)}))}
-                                       className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
-                                    >
-                                       <PlusIcon className="w-4 h-4" />
-                                    </button>
+                              <div className="mb-0">
+                                 <div className="flex justify-between items-center">
+                                    <span className="font-medium text-sm">Children</span>
+                                    <div className="flex items-center gap-3">
+                                       <button
+                                          onClick={() => setGuestCounts(prev => ({
+                                             ...prev,
+                                             children: Math.max(0, prev.children - 1),
+                                             childrenAges: (prev.childrenAges || []).slice(0, -1)
+                                          }))}
+                                          className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                       >
+                                          <MinusIcon className="w-4 h-4" />
+                                       </button>
+                                       <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
+                                       <button
+                                          onClick={() => setGuestCounts(prev => ({
+                                             ...prev,
+                                             children: Math.min(10, prev.children + 1),
+                                             childrenAges: [...(prev.childrenAges || []), 5]
+                                          }))}
+                                          className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600"
+                                       >
+                                          <PlusIcon className="w-4 h-4" />
+                                       </button>
+                                    </div>
                                  </div>
+
+                                 {/* Child Age Selectors */}
+                                 {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
+                                   <div className="mt-4 pt-3 border-t border-gray-100">
+                                     <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
+                                     <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                                       {guestCounts.childrenAges.map((age, index) => (
+                                         <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                                           <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                           <select
+                                             value={age}
+                                             onChange={(e) => {
+                                               const newAges = [...guestCounts.childrenAges];
+                                               newAges[index] = parseInt(e.target.value);
+                                               setGuestCounts(prev => ({ ...prev, childrenAges: newAges }));
+                                             }}
+                                             className="flex-1 min-w-0 px-2 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                                           >
+                                             {[...Array(18)].map((_, i) => (
+                                               <option key={i} value={i}>
+                                                 {i} {i === 1 ? 'yr' : 'yrs'}
+                                               </option>
+                                             ))}
+                                           </select>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
                               </div>
 
                               <button
@@ -584,19 +667,29 @@ export const HotelDetails: React.FC = () => {
 
             {/* Auth & Settings */}
             <div className="flex items-center gap-4 shrink-0 text-white">
-               <button className="text-sm font-medium hover:text-orange-100 flex items-center gap-1">
-                  <span>SAR</span>
-                  <ChevronDownIcon className="w-3 h-3" />
-               </button>
+               <CurrencySelector variant="light" />
                <button className="text-sm font-medium hover:text-orange-100 flex items-center gap-1">
                   <img src="/saudi-flag.png" alt="AR" className="w-5 h-3 object-cover rounded shadow-sm" onError={(e) => e.currentTarget.style.display='none'} />
                   <span>AR</span>
                </button>
                <div className="h-4 w-px bg-white/30"></div>
-               <a href="/login" className="text-sm font-medium hover:text-orange-100">Sign In</a>
-               <a href="/register" className="bg-white text-orange-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm hover:bg-orange-50 transition-colors">
-                  Register
-               </a>
+               {!user ? (
+                  <>
+                     <Link to="/login" className="text-sm font-medium hover:text-orange-100">Sign In</Link>
+                     <Link to="/register" className="bg-white text-orange-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm hover:bg-orange-50 transition-colors">
+                        Register
+                     </Link>
+                  </>
+               ) : (
+                  <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
+                     <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors">
+                       {user.name}
+                     </Link>
+                     <button onClick={logout} className="text-sm opacity-80 hover:opacity-100">
+                       {t('nav.logout', 'Logout')}
+                     </button>
+                  </div>
+               )}
             </div>
           </div>
         </div>
@@ -653,7 +746,7 @@ export const HotelDetails: React.FC = () => {
            <div className="hidden md:flex flex-col items-end">
               <div className="flex items-baseline mb-2">
                  <span className="text-gray-500 text-lg mr-2">{t('hotels.from', 'From')}</span>
-                 <span className="text-3xl font-bold text-black">SAR {lowestPrice.toFixed(0)}</span>
+                 <span className="text-3xl font-bold text-black">{currency} {lowestPrice.toFixed(0)}</span>
               </div>
               <button
                  onClick={() => document.getElementById('room-selection')?.scrollIntoView({ behavior: 'smooth' })}
@@ -676,10 +769,13 @@ export const HotelDetails: React.FC = () => {
                 className={`relative cursor-pointer overflow-hidden bg-gray-200 group md:col-span-2 md:row-span-2 ${hotelImages.length === 1 ? 'col-span-full row-span-full' : ''}`}
                 onClick={() => { setSelectedImageIndex(0); setShowAllPhotos(true); }}
               >
-                <img
+                <LazyImage
                   src={hotelImages[0]}
                   alt={hotel.name}
-                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full transition-transform duration-700 group-hover:scale-105"
+                  priority={true}
+                  objectFit="cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
 
@@ -690,11 +786,13 @@ export const HotelDetails: React.FC = () => {
                    className="hidden md:block relative cursor-pointer overflow-hidden bg-gray-200 group"
                    onClick={() => { setSelectedImageIndex(idx + 1); setShowAllPhotos(true); }}
                  >
-                   <img
+                   <LazyImage
                      src={getResizedImageUrl(img, '640x400')}
                      alt={`View ${idx + 2}`}
-                     className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
+                     className="w-full h-full transition-transform duration-500 group-hover:scale-110"
                      loading="lazy"
+                     objectFit="cover"
+                     sizes="(max-width: 768px) 0vw, 25vw"
                    />
 
                    {/* Overlay for the last visible grid item if there are more photos */}
@@ -831,6 +929,8 @@ export const HotelDetails: React.FC = () => {
                        onSelectResult={handleRateSelect}
                        selectedRates={selectedRates}
                        nights={numberOfNights}
+                       adults={guestCounts.adults}
+                       children={guestCounts.children}
                     />
                  ))}
               </div>
@@ -915,7 +1015,13 @@ export const HotelDetails: React.FC = () => {
                </button>
 
                <div className="relative w-full flex-1 flex items-center justify-center">
-                  <img src={hotelImages[selectedImageIndex]} className="max-h-[85vh] max-w-full object-contain" alt="" />
+                  <LazyImage
+                    src={hotelImages[selectedImageIndex]}
+                    className="max-h-[85vh] max-w-full"
+                    alt={`${hotel.name} - Image ${selectedImageIndex + 1}`}
+                    priority={true}
+                    objectFit="contain"
+                  />
 
                   <button onClick={() => setSelectedImageIndex((i) => i > 0 ? i - 1 : hotelImages.length - 1)} className="absolute left-4 p-2 bg-white/10 rounded-full hover:bg-white/20 text-white">
                      <ArrowLeftIcon className="h-8 w-8" />
@@ -928,14 +1034,20 @@ export const HotelDetails: React.FC = () => {
                {/* Thumbnails strip */}
                <div className="h-24 w-full overflow-x-auto flex gap-2 p-2 justify-center">
                   {hotelImages.map((img: string, idx: number) => (
-                     <img
+                     <div
                         key={idx}
-                        src={getResizedImageUrl(img, 'x220')}
                         onClick={() => setSelectedImageIndex(idx)}
-                        className={`h-full w-auto object-cover cursor-pointer rounded border-2 ${selectedImageIndex === idx ? 'border-orange-500' : 'border-transparent opacity-60'}`}
-                        alt=""
-                        loading="lazy"
-                     />
+                        className={`h-full w-auto cursor-pointer rounded border-2 ${selectedImageIndex === idx ? 'border-orange-500' : 'border-transparent opacity-60'}`}
+                        style={{ minWidth: '120px' }}
+                     >
+                        <LazyImage
+                           src={getResizedImageUrl(img, 'x220')}
+                           className="h-full w-auto"
+                           alt={`Thumbnail ${idx + 1}`}
+                           loading="lazy"
+                           objectFit="cover"
+                        />
+                     </div>
                   ))}
                </div>
              </div>

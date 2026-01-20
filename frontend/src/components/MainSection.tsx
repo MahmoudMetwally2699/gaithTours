@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HomeIcon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import { DateRangePicker } from './DateRangePicker';
+import { CurrencySelector } from './CurrencySelector';
 import dayjs from 'dayjs';
 
 // Types for autocomplete
@@ -309,7 +310,9 @@ export const MainSection: React.FC = () => {
               </>
             ) : (
                <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
-                  <span className="font-medium">{user.name}</span>
+                  <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors">
+                    {user.name}
+                  </Link>
                   <button onClick={logout} className="text-sm opacity-80 hover:opacity-100">
                     {t('nav.logout', 'Logout')}
                   </button>
@@ -327,10 +330,7 @@ export const MainSection: React.FC = () => {
                 <span>+966549412412</span>
               </div>
 
-              <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-200">
-                <span>US</span>
-                <ChevronDownIcon className="w-3 h-3" />
-              </div>
+              <CurrencySelector variant="light" />
 
               <button
                 onClick={toggleLanguage}

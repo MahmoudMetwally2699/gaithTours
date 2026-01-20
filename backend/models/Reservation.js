@@ -116,6 +116,15 @@ const reservationSchema = new mongoose.Schema({
       type: String,
       required: false // Book hash for booking creation
     },
+    // Prebook payment details (from RateHawk API)
+    prebookPaymentAmount: {
+      type: String, // Stored as string to preserve precision
+      required: false
+    },
+    prebookPaymentCurrency: {
+      type: String,
+      required: false
+    },
     rateHawkOrderId: {
       type: String,
       required: false // RateHawk order confirmation ID
@@ -150,6 +159,17 @@ const reservationSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Payment method cannot exceed 100 characters'],
     default: 'pending' // Default value
+  },
+  promoCode: {
+    type: String,
+    required: false,
+    trim: true,
+    uppercase: true
+  },
+  discountAmount: {
+    type: Number,
+    required: false,
+    min: [0, 'Discount amount cannot be negative']
   },
   numberOfGuests: {
     type: Number,
@@ -204,9 +224,58 @@ const reservationSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  totalPrice: {
+    type: Number,
+    required: false,
+    min: [0, 'Total price cannot be negative']
+  },
+  currency: {
+    type: String,
+    required: false,
+    default: 'EGP'
+  },
+  numberOfNights: {
+    type: Number,
+    required: false,
+    min: [0, 'Number of nights cannot be negative']
+  },
+  numberOfRooms: {
+    type: Number,
+    required: false,
+    default: 1,
+    min: [1, 'Must have at least 1 room']
+  },
+  numberOfAdults: {
+    type: Number,
+    required: false,
+    min: [1, 'Must have at least 1 adult']
+  },
+  numberOfChildren: {
+    type: Number,
+    required: false,
+    default: 0,
+    min: [0, 'Number of children cannot be negative']
+  },
+  meal: {
+    type: String,
+    required: false
+  },
+  // Cancellation policy from rate
+  isRefundable: {
+    type: Boolean,
+    default: true // Default to refundable unless specified otherwise
+  },
+  freeCancellationBefore: {
+    type: Date,
+    required: false // Date before which cancellation is free
+  },
+  cancellationPenalty: {
+    type: mongoose.Schema.Types.Mixed, // Can store penalty details
+    required: false
+  },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'denied', 'invoiced', 'paid', 'confirmed', 'cancelled', 'completed'],
+    enum: ['pending', 'pending_payment', 'payment_confirmed', 'payment_failed', 'approved', 'denied', 'invoiced', 'paid', 'confirmed', 'cancelled', 'completed', 'failed'],
     default: 'pending'
   },
   notes: {
@@ -216,7 +285,11 @@ const reservationSchema = new mongoose.Schema({
   // RateHawk booking tracking
   ratehawkOrderId: {
     type: String,
-    required: false // RateHawk order ID from booking confirmation
+    required: false // RateHawk Partner Order ID (GH-...)
+  },
+  ratehawkSystemOrderId: {
+    type: String, // Numeric ID from RateHawk (e.g. 299890524)
+    required: false
   },
   ratehawkStatus: {
     type: String,
@@ -236,6 +309,34 @@ const reservationSchema = new mongoose.Schema({
     type: Number,
     default: 1, // Number of rooms booked in this specific reservation
     min: 1
+  },
+  // Kashier payment tracking
+  kashierOrderId: {
+    type: String,
+    required: false, // Kashier order reference ID
+    index: true
+  },
+  kashierSessionId: {
+    type: String,
+    required: false // Kashier payment session ID
+  },
+  paymentConfirmedAt: {
+    type: Date,
+    required: false // Timestamp when payment was confirmed
+  },
+  // Refund tracking
+  refundStatus: {
+    type: String,
+    enum: ['SUCCESS', 'PENDING', 'FAILURE', 'ERROR'],
+    required: false
+  },
+  refundAmount: {
+    type: Number,
+    required: false
+  },
+  refundedAt: {
+    type: Date,
+    required: false
   },
   createdAt: {
     type: Date,

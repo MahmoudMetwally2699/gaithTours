@@ -56,7 +56,9 @@ export interface User {
     phone: string;
     nationality: string;
     preferredLanguage: 'en' | 'ar';
-    role: 'user' | 'admin';
+    role: 'user' | 'admin' | 'super_admin' | 'sub_admin';
+    adminPermissions?: string[]; // For sub_admin: array of permitted tabs
+    invitedBy?: string; // For sub_admin: ID of the super_admin who invited
     isEmailVerified: boolean;
     createdAt: string;
     updatedAt: string;
@@ -574,6 +576,31 @@ export const bookingsAPI = {
     },
 
     /**
+     * Pre-book a rate to get book_hash and valid price
+     */
+    prebookRate: async (data: {
+        matchHash: string;
+        hotelId: string;
+        checkIn: string;
+        checkOut: string;
+    }): Promise<ApiResponse<{ bookHash: string; payment: { amount: string; currency: string } }>> => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await api.post('/bookings/prebook-rate', data, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                timeout: 120000 // Increase timeout to 2 minutes
+            });
+            return response.data;
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Failed to pre-book rate';
+            // Don't show toast here - let the page component handle it
+            throw error;
+        }
+    },
+
+    /**
      * Create multiple bookings for different room types
      * Handles RateHawk API limitation where different room types need separate requests
      */
@@ -600,6 +627,109 @@ export const bookingsAPI = {
         } catch (error: any) {
             const message = error.response?.data?.message || 'Failed to create multi-room booking';
             toast.error(message);
+            throw error;
+        }
+    }
+};
+
+// Payments API (Kashier integration)
+export const paymentsAPI = {
+    /**
+     * Create a Kashier payment session for booking
+     */
+    createKashierSession: async (bookingData: {
+        hotelId: string;
+        hotelName: string;
+        hotelAddress?: string;
+        hotelCity?: string;
+        hotelCountry?: string;
+        hotelRating?: number;
+        hotelImage?: string;
+        checkInDate: string;
+        checkOutDate: string;
+        numberOfGuests: number;
+        roomType?: string;
+        guestName: string;
+        guestEmail: string;
+        guestPhone: string;
+        totalPrice: number;
+        currency: string;
+        specialRequests?: string;
+        selectedRate: {
+            matchHash: string;
+            roomName?: string;
+            meal?: string;
+            price?: number;
+            currency?: string;
+        };
+    }): Promise<ApiResponse<{
+        sessionId: string;
+        sessionUrl: string;
+        orderId: string;
+        reservationId: string;
+        expireAt: string;
+    }>> => {
+        try {
+            const response = await api.post('/payments/kashier/create-session', bookingData);
+            return response.data;
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Failed to create payment session';
+            toast.error(message);
+            throw error;
+        }
+    },
+
+    /**
+     * Get Kashier payment status by session ID
+     */
+    getKashierStatus: async (sessionId: string): Promise<ApiResponse<{
+        payment: {
+            success: boolean;
+            status: string;
+            amount?: string;
+            currency?: string;
+        };
+        reservation?: {
+            id: string;
+            status: string;
+            hotelName: string;
+            checkIn: string;
+            checkOut: string;
+            totalPrice: number;
+            currency: string;
+            ratehawkStatus?: string;
+        };
+    }>> => {
+        try {
+            const response = await api.get(`/payments/kashier/status/${sessionId}`);
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+
+    /**
+     * Get payment status by order ID
+     */
+    getKashierOrderStatus: async (orderId: string): Promise<ApiResponse<{
+        orderId: string;
+        payment: any;
+        reservation: {
+            id: string;
+            status: string;
+            hotelName: string;
+            checkIn: string;
+            checkOut: string;
+            totalPrice: number;
+            currency: string;
+            ratehawkStatus?: string;
+            ratehawkOrderId?: string;
+        };
+    }>> => {
+        try {
+            const response = await api.get(`/payments/kashier/order/${orderId}`);
+            return response.data;
+        } catch (error: any) {
             throw error;
         }
     }

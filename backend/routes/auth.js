@@ -1,8 +1,9 @@
 const express = require('express');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken, sendEmail, sanitizeInput, successResponse, errorResponse } = require('../utils/helpers');
-const { sendWelcomeEmail } = require('../utils/emailService');
+const { sendWelcomeEmail, sendVerificationEmail } = require('../utils/emailService');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -60,22 +61,35 @@ router.post('/register', [
       nationality: sanitizedData.nationality,
       preferredLanguage: sanitizedData.preferredLanguage
     });
-    // Generate token
-    const token = generateToken(user._id);
-    // Send welcome email
+
+    // Generate verification token
+    const verificationToken = user.generateVerificationToken();
+    await user.save();
+
+    // Create verification URL
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
+
+    // Send verification email
     try {
-      await sendWelcomeEmail({
+      await sendVerificationEmail({
         email: user.email,
-        name: user.name
+        name: user.name,
+        verificationToken,
+        verificationUrl
       });
     } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
       // Don't fail registration if email fails
     }
 
+    // Generate token
+    const token = generateToken(user._id);
+
     successResponse(res, {
       user,
-      token
-    }, 'User registered successfully', 201);
+      token,
+      message: 'Please check your email to verify your account'
+    }, 'User registered successfully. Please verify your email.', 201);
 
   } catch (error) {
     console.error('Registration error:', error);
@@ -318,6 +332,111 @@ router.post('/reset-password', [
 
   } catch (error) {
     errorResponse(res, 'Failed to reset password', 500);
+  }
+});
+
+// Verify email
+router.get('/verify-email/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    // Hash the token to compare with stored hash
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid verification token that hasn't expired
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return errorResponse(res, 'Invalid or expired verification token', 400);
+    }
+
+    // Mark email as verified
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    // Send welcome email after successful verification
+    try {
+      await sendWelcomeEmail({
+        email: user.email,
+        name: user.name
+      });
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
+
+    successResponse(res, {
+      verified: true,
+      email: user.email
+    }, 'Email verified successfully! Welcome to Gaith Tours.');
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    errorResponse(res, 'Failed to verify email', 500);
+  }
+});
+
+// Resend verification email
+router.post('/resend-verification', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email: sanitizeInput(email) });
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return successResponse(res, null, 'If an account exists with this email, a verification link will be sent.');
+    }
+
+    // Check if already verified
+    if (user.isEmailVerified) {
+      return errorResponse(res, 'Email is already verified', 400);
+    }
+
+    // Check if there's a recent verification email sent (rate limiting - 1 min)
+    if (user.emailVerificationExpires &&
+        new Date(user.emailVerificationExpires).getTime() > Date.now() + (23 * 60 * 60 * 1000)) {
+      return errorResponse(res, 'Please wait a minute before requesting another verification email', 429);
+    }
+
+    // Generate new verification token
+    const verificationToken = user.generateVerificationToken();
+    await user.save();
+
+    // Create verification URL
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
+
+    // Send verification email
+    try {
+      await sendVerificationEmail({
+        email: user.email,
+        name: user.name,
+        verificationToken,
+        verificationUrl
+      });
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      return errorResponse(res, 'Failed to send verification email', 500);
+    }
+
+    successResponse(res, null, 'Verification email sent successfully');
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    errorResponse(res, 'Failed to resend verification email', 500);
   }
 });
 

@@ -20,7 +20,8 @@ export const AdminLogin: React.FC = () => {
 
   // Redirect if already logged in as admin
   React.useEffect(() => {
-    if (user && user.role === 'admin') {
+    const adminRoles = ['admin', 'super_admin', 'sub_admin'];
+    if (user && adminRoles.includes(user.role)) {
       history.push('/admin/dashboard');
     } else if (user && user.role === 'user') {
       toast.error('Access denied. Admin credentials required.');
@@ -43,10 +44,11 @@ export const AdminLogin: React.FC = () => {
       await login(formData.email, formData.password);
 
       // The login function will set the user in context
-      // We need to check if the user is admin after login
+      // We need to check if the user has an admin role after login
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const adminRoles = ['admin', 'super_admin', 'sub_admin'];
 
-      if (currentUser.role !== 'admin') {
+      if (!adminRoles.includes(currentUser.role)) {
         setError('Access denied. Admin credentials required.');
         // Logout the user since they're not admin
         localStorage.removeItem('token');

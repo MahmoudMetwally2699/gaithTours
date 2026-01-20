@@ -9,6 +9,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { UserIcon } from '@heroicons/react/24/solid';
+import { LazyImage } from './LazyImage';
 
 /**
  * RoomCard Component - Displays hotel room information with rates
@@ -84,6 +85,8 @@ interface RoomCardProps {
   onSelectResult: (rate: RoomRate, count: number) => void;
   selectedRates: Map<string, number>; // match_hash -> count
   nights?: number; // Number of nights for the stay
+  adults?: number; // Number of adults for occupancy validation
+  children?: number; // Number of children for occupancy validation
 }
 
 export const RoomCard: React.FC<RoomCardProps> = ({
@@ -91,11 +94,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   rates,
   onSelectResult,
   selectedRates,
-  nights = 1
+  nights = 1,
+  adults = 2,
+  children = 0
 }) => {
   const { t } = useTranslation();
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+
+  // Calculate total guests for occupancy validation
+  const totalGuests = adults + children;
 
   // Base room details from the first rate (assuming consistent per room type)
   const baseRate = rates[0];
@@ -126,6 +134,42 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         return { label: t('hotels.allInclusive', 'All Inclusive'), icon: '🌟', color: 'text-green-700' };
       default:
         return { label: meal, icon: '🍽️', color: 'text-green-700' };
+    }
+  };
+
+  // Helper to calculate occupancy compatibility
+  // Per RateHawk API: max_occupancy = "main bed places without extra beds/cots"
+  // Children typically use cots/extra beds, so we only count adults against max_occupancy
+  const getOccupancyInfo = (rate: RoomRate, selectedCount: number) => {
+    const maxOccupancy = rate.max_occupancy || 2;
+
+    // Only count adults against main bed capacity (children use cots/extra beds)
+    const roomsNeededForAdults = Math.ceil(adults / maxOccupancy);
+
+    if (adults <= maxOccupancy) {
+      // Single room can fit all adults (children on cots)
+      return {
+        fits: true,
+        message: null,
+        badge: { text: t('hotels.fitsYourGroup', 'Fits your group'), color: 'bg-green-100 text-green-700' },
+        roomsNeeded: 1
+      };
+    } else if (selectedCount >= roomsNeededForAdults) {
+      // Selected enough rooms for all adults
+      return {
+        fits: true,
+        message: null,
+        badge: { text: `${roomsNeededForAdults}+ ${t('hotels.roomsNeeded', 'rooms needed')}`, color: 'bg-blue-100 text-blue-700' },
+        roomsNeeded: roomsNeededForAdults
+      };
+    } else {
+      // Not enough rooms selected
+      return {
+        fits: false,
+        message: t('hotels.selectMoreRooms', 'Select at least {{count}} rooms for {{guests}} adults', { count: roomsNeededForAdults, guests: adults }),
+        badge: { text: `${roomsNeededForAdults} ${t('hotels.roomsNeeded', 'rooms needed')}`, color: 'bg-amber-100 text-amber-700' },
+        roomsNeeded: roomsNeededForAdults
+      };
     }
   };
 
@@ -189,12 +233,15 @@ export const RoomCard: React.FC<RoomCardProps> = ({
             onClick={() => setShowDetailsModal(true)}
           >
             {baseRate.room_images && baseRate.room_images[0] ? (
-              <img
+              <LazyImage
                 src={baseRate.room_images[0].replace('170x154', '640x400')}
                 alt={roomType}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+                objectFit="cover"
+                sizes="(max-width: 1024px) 100vw, 33vw"
                 onError={(e) => {
-                   e.currentTarget.src = '/placeholder-room.jpg';
+                   // Fallback will be handled by LazyImage component
                 }}
               />
             ) : (
@@ -233,10 +280,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                      <div className="relative h-64">
                          {baseRate.room_images && baseRate.room_images.length > 0 ? (
                            <>
-                             <img
+                             <LazyImage
                                src={baseRate.room_images[currentImageIndex]?.replace('170x154', '640x400')}
                                alt={`${roomType} - Image ${currentImageIndex + 1}`}
-                               className="w-full h-full object-cover"
+                               className="w-full h-full"
+                               objectFit="cover"
+                               priority={true}
                              />
                              {baseRate.room_images.length > 1 && (
                                <>
@@ -338,6 +387,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               const isBestPrice = index === 0;
               const isSelected = selectedRates.get(rate.match_hash) || 0;
               const showSpecificName = rate.room_name !== roomType;
+              const occupancyInfo = getOccupancyInfo(rate, isSelected);
 
               return (
                 <div key={rate.match_hash} className="grid grid-cols-12 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
@@ -401,13 +451,17 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                   </div>
 
                   {/* Sleeps Column */}
-                  <div className="col-span-6 md:col-span-2 p-4 flex items-center justify-center border-r border-gray-100">
-                     <div className="flex text-gray-700">
+                  <div className="col-span-6 md:col-span-2 p-4 flex flex-col items-center justify-center border-r border-gray-100">
+                     <div className="flex text-gray-700 mb-1">
                         {[...Array(Math.min(rate.max_occupancy || 2, 4))].map((_, i) => (
                            <UserIcon key={i} className="w-5 h-5" />
                         ))}
                         {(rate.max_occupancy || 0) > 4 && <span className="text-sm ml-1">+{ (rate.max_occupancy || 0) - 4}</span>}
                      </div>
+                     {/* Occupancy compatibility badge */}
+                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium text-center ${occupancyInfo.badge.color}`}>
+                        {occupancyInfo.badge.text}
+                     </span>
                   </div>
 
                   {/* Price & Action Column */}
@@ -507,6 +561,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                            </button>
                         )}
                       </div>
+
+                      {/* Warning when not enough rooms selected */}
+                      {isSelected > 0 && !occupancyInfo.fits && occupancyInfo.message && (
+                        <div className="text-xs text-amber-600 mt-2 text-right">
+                          ⚠️ {occupancyInfo.message}
+                        </div>
+                      )}
                     </div>
                   </div>
 

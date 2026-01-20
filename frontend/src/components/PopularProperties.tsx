@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import { HotelCard } from './HotelCard';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface ExtendedHotel extends Hotel {
   hid?: string;
@@ -19,6 +20,7 @@ interface ExtendedHotel extends Hotel {
 export const PopularProperties: React.FC = () => {
   const { t } = useTranslation();
   const history = useHistory();
+  const { currency } = useCurrency();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hotels, setHotels] = useState<ExtendedHotel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,7 @@ export const PopularProperties: React.FC = () => {
 
         const cityPromises = cities.map(async (city) => {
           try {
-            const response = await fetch(`${API_URL}/hotels/suggested?location=${city}`);
+            const response = await fetch(`${API_URL}/hotels/suggested?location=${city}&currency=${currency}`);
             const data = await response.json();
             return data.success && data.data.hotels ? data.data.hotels : [];
           } catch (error) {
@@ -89,7 +91,7 @@ export const PopularProperties: React.FC = () => {
     };
 
     fetchPopularHotels();
-  }, []);
+  }, [currency]); // Re-fetch when currency changes
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {

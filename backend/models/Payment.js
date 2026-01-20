@@ -9,7 +9,7 @@ const paymentSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   amount: {
     type: Number,
@@ -22,7 +22,7 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['stripe', 'bank_transfer', 'cash'],
+    enum: ['stripe', 'bank_transfer', 'cash', 'kashier'],
     default: 'stripe'
   },
   status: {
