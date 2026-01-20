@@ -73,19 +73,31 @@ export const SuggestedHotels: React.FC = () => {
 
   // Default city to show immediately (no waiting for geolocation)
   const DEFAULT_CITY = 'Makkah';
+  const locationDetectedRef = React.useRef(false);
 
   useEffect(() => {
-    // OPTIMIZATION: Show default city (Makkah) immediately, then update with user location
+    // Reset on mount
+    locationDetectedRef.current = false;
     const locationDenied = localStorage.getItem('locationDenied');
 
-    // Step 1: Immediately fetch default city hotels (no waiting)
-    console.log(`🚀 Loading ${DEFAULT_CITY} hotels immediately...`);
-    fetchSuggestions(DEFAULT_CITY, !locationDenied); // Keep loading if we'll get location next
+    if (locationDenied) {
+      // Location denied - just show default city
+      console.log(`🚀 Location denied - loading ${DEFAULT_CITY} hotels...`);
+      fetchSuggestions(DEFAULT_CITY, false);
+    } else {
+      // Try to get location first, with a quick timeout fallback to default city
+      console.log('🌍 Attempting to get user location...');
+      setLoading(true);
 
-    // Step 2: Try to get user location in background (non-blocking)
-    if (!locationDenied) {
-      console.log('🌍 Getting user location in background...');
-      getUserLocationBackground();
+      // Set a timeout - if location not detected in 3 seconds, show Makkah
+      const fallbackTimer = setTimeout(() => {
+        if (!locationDetectedRef.current) {
+          console.log(`⏱️ Location timeout - showing ${DEFAULT_CITY} as fallback...`);
+          fetchSuggestions(DEFAULT_CITY, false);
+        }
+      }, 3000);
+
+      getUserLocationBackground(fallbackTimer);
     }
   }, [isAuthenticated]);
 
@@ -96,19 +108,24 @@ export const SuggestedHotels: React.FC = () => {
     }
   }, [currency]);
 
-  // Background location detection (doesn't block initial render)
-  const getUserLocationBackground = () => {
+  // Background location detection
+  const getUserLocationBackground = (fallbackTimer?: NodeJS.Timeout) => {
     if (!navigator.geolocation) {
       console.log('❌ Geolocation not supported');
-      setLoading(false);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      fetchSuggestions(DEFAULT_CITY, false);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        // Clear the fallback timer since we got location
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        locationDetectedRef.current = true;
+
         try {
           const { latitude, longitude } = position.coords;
-          console.log(`📍 Background: Coordinates received: ${latitude}, ${longitude}`);
+          console.log(`📍 Coordinates received: ${latitude}, ${longitude}`);
 
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
@@ -116,27 +133,31 @@ export const SuggestedHotels: React.FC = () => {
           const geoData = await response.json();
           const city = geoData.address?.city || geoData.address?.town || geoData.address?.state || geoData.address?.country;
 
-          if (city && city !== DEFAULT_CITY) {
-            console.log(`✅ Background: User location detected: ${city} - updating hotels...`);
+          if (city) {
+            console.log(`✅ User location detected: ${city} - fetching hotels...`);
             fetchSuggestions(city, false);
           } else {
-            console.log(`📍 User already in ${DEFAULT_CITY} or same location`);
-            setLoading(false);
+            console.warn('⚠️ Could not determine city - using default');
+            fetchSuggestions(DEFAULT_CITY, false);
           }
         } catch (error) {
           console.error('❌ Reverse geocoding failed:', error);
-          setLoading(false);
+          fetchSuggestions(DEFAULT_CITY, false);
         }
       },
       (error) => {
-        console.log('📍 Location denied - keeping default city');
+        console.log('📍 Location denied:', error.message);
+        if (fallbackTimer) clearTimeout(fallbackTimer);
         localStorage.setItem('locationDenied', 'true');
-        setLoading(false);
+        // Only fetch if we haven't already shown the fallback
+        if (!locationDetectedRef.current) {
+          fetchSuggestions(DEFAULT_CITY, false);
+        }
       },
       {
-        enableHighAccuracy: false, // Faster, less accurate is fine
-        timeout: 5000, // Reduced from 10s
-        maximumAge: 300000 // Cache for 5 minutes
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 300000
       }
     );
   };

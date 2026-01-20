@@ -17,7 +17,6 @@ const HotelReviewSchema = new mongoose.Schema({
   hid: {
     type: Number,
     required: true,
-    unique: true,
     index: true,
     comment: 'Hotel ID from RateHawk (numeric format)'
   },
@@ -219,7 +218,7 @@ const HotelReviewSchema = new mongoose.Schema({
 });
 
 // Indexes for efficient querying
-HotelReviewSchema.index({ hid: 1, language: 1 });
+HotelReviewSchema.index({ hid: 1, language: 1 }, { unique: true }); // Compound unique index
 HotelReviewSchema.index({ hotel_id: 1, language: 1 });
 HotelReviewSchema.index({ average_rating: -1 });
 HotelReviewSchema.index({ review_count: -1 });
