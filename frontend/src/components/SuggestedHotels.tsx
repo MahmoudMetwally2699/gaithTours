@@ -71,72 +71,74 @@ export const SuggestedHotels: React.FC = () => {
     }
   };
 
+  // Default city to show immediately (no waiting for geolocation)
+  const DEFAULT_CITY = 'Makkah';
+
   useEffect(() => {
-    // Check if location was previously denied
+    // OPTIMIZATION: Show default city (Makkah) immediately, then update with user location
     const locationDenied = localStorage.getItem('locationDenied');
 
-    // Always try to get user location first if not denied
+    // Step 1: Immediately fetch default city hotels (no waiting)
+    console.log(`🚀 Loading ${DEFAULT_CITY} hotels immediately...`);
+    fetchSuggestions(DEFAULT_CITY, !locationDenied); // Keep loading if we'll get location next
+
+    // Step 2: Try to get user location in background (non-blocking)
     if (!locationDenied) {
-      console.log('🌍 Requesting user location for "Popular near you"...');
-      getUserLocation();
-    } else {
-      // If location denied, fetch default suggestions
-      console.log('📍 Location access denied - showing default suggestions');
-      fetchSuggestions(undefined, false);
+      console.log('🌍 Getting user location in background...');
+      getUserLocationBackground();
     }
-  }, [isAuthenticated]); // Re-run if auth state changes
+  }, [isAuthenticated]);
 
   // Re-fetch with same location when currency changes
   useEffect(() => {
     if (!loading && (hotels.length > 0 || lastLocationQuery)) {
-      fetchSuggestions(lastLocationQuery, false);
+      fetchSuggestions(lastLocationQuery || DEFAULT_CITY, false);
     }
-  }, [currency]); // Re-fetch when currency changes
+  }, [currency]);
 
-  const getUserLocation = () => {
-    console.log('🌍 Requesting browser geolocation...');
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            // Reverse geocoding to get city name
-            const { latitude, longitude } = position.coords;
-            console.log(`📍 Coordinates received: ${latitude}, ${longitude}`);
+  // Background location detection (doesn't block initial render)
+  const getUserLocationBackground = () => {
+    if (!navigator.geolocation) {
+      console.log('❌ Geolocation not supported');
+      setLoading(false);
+      return;
+    }
 
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-            const geoData = await response.json();
-            console.log('🗺️ Reverse geocoding response:', geoData);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          console.log(`📍 Background: Coordinates received: ${latitude}, ${longitude}`);
 
-            const city = geoData.address.city || geoData.address.town || geoData.address.state || geoData.address.country;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const geoData = await response.json();
+          const city = geoData.address?.city || geoData.address?.town || geoData.address?.state || geoData.address?.country;
 
-            if (city) {
-              console.log('✅ User location detected:', city);
-              fetchSuggestions(city, false); // Don't keep loading, we are done after this
-            } else {
-              console.warn('⚠️ Could not determine city from coordinates');
-              setLoading(false);
-            }
-          } catch (error) {
-            console.error('❌ Reverse geocoding failed:', error);
+          if (city && city !== DEFAULT_CITY) {
+            console.log(`✅ Background: User location detected: ${city} - updating hotels...`);
+            fetchSuggestions(city, false);
+          } else {
+            console.log(`📍 User already in ${DEFAULT_CITY} or same location`);
             setLoading(false);
           }
-        },
-        (error) => {
-          console.error('❌ Location access denied or failed:', error.message);
-          console.log('💡 Falling back to default suggestions');
-          localStorage.setItem('locationDenied', 'true');
-          fetchSuggestions(undefined, false); // Fetch fallback suggestions
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+        } catch (error) {
+          console.error('❌ Reverse geocoding failed:', error);
+          setLoading(false);
         }
-      );
-    } else {
-      console.error('❌ Geolocation not supported by browser');
-      fetchSuggestions(undefined, false);
-    }
+      },
+      (error) => {
+        console.log('📍 Location denied - keeping default city');
+        localStorage.setItem('locationDenied', 'true');
+        setLoading(false);
+      },
+      {
+        enableHighAccuracy: false, // Faster, less accurate is fine
+        timeout: 5000, // Reduced from 10s
+        maximumAge: 300000 // Cache for 5 minutes
+      }
+    );
   };
 
   if (loading) {
@@ -205,7 +207,8 @@ export const SuggestedHotels: React.FC = () => {
               <button
                 onClick={() => {
                   localStorage.removeItem('locationDenied');
-                  getUserLocation();
+                  setLoading(true);
+                  getUserLocationBackground();
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap"
               >
