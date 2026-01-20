@@ -13,8 +13,19 @@ const HotelReview = require('../models/HotelReview');
 
 // Configuration
 const BATCH_SIZE = 1000;
-const DOWNLOAD_PATH = path.join(__dirname, '../temp/reviews_dump.json.gz');
-const EXTRACT_PATH = path.join(__dirname, '../temp/reviews_dump.json');
+
+// Get language from command line argument (default: 'en')
+const language = process.argv[2] || 'en';
+const validLanguages = ['en', 'ar', 'ru', 'fr', 'de', 'es', 'it', 'pt', 'zh', 'ja'];
+
+if (!validLanguages.includes(language)) {
+  console.error(`❌ Invalid language: ${language}`);
+  console.log(`Valid languages: ${validLanguages.join(', ')}`);
+  process.exit(1);
+}
+
+const DOWNLOAD_PATH = path.join(__dirname, `../temp/reviews_dump_${language}.json.gz`);
+const EXTRACT_PATH = path.join(__dirname, `../temp/reviews_dump_${language}.json`);
 
 // Ensure temp directory exists
 if (!fs.existsSync(path.join(__dirname, '../temp'))) {
@@ -22,7 +33,8 @@ if (!fs.existsSync(path.join(__dirname, '../temp'))) {
 }
 
 async function runImport() {
-  console.log('🚀 Starting Incremental Reviews Import...');
+  console.log('🚀 Starting Reviews Import...');
+  console.log(`📝 Language: ${language}`);
 
   try {
     // 1. Connect to Database
@@ -34,7 +46,7 @@ async function runImport() {
     // 2. Get Dump URL
     const service = RateHawkService;
     console.log('🔗 Fetching Dump URL...');
-    const urlResult = await service.getIncrementalReviewsDump('en');
+    const urlResult = await service.getIncrementalReviewsDump(language);
 
     if (!urlResult.success || !urlResult.url) {
       throw new Error('Failed to get dump URL');
@@ -119,12 +131,12 @@ async function runImport() {
             updateOne: {
                 filter: {
                     hotel_id: hotel.hotel_id,
-                    language: 'en' // Using language from the dump
+                    language: language
                 },
                 update: {
                     $set: {
                         ...hotel,
-                        language: 'en',
+                        language: language,
                         imported_at: new Date(),
                         dump_date: new Date()
                     }

@@ -210,43 +210,86 @@ async function processDumpFile(filePath, language, isIncremental) {
 
 /**
  * Process dump as a single JSON file (array or object with data property)
+ * Note: This function is memory-intensive for large files (270+ MB).
+ * For production use, prefer the import-reviews.js script instead.
  */
 async function processSingleJSON(filePath, language, isIncremental) {
-  console.log(`📖 Reading entire file as JSON...`);
+  console.log(`📖 Parsing large JSON file...`);
+  console.log(`⚠️  This may take several minutes and use significant memory.`);
+  console.log(`💡 TIP: Use 'node scripts/import-reviews.js ${language}' for better performance.`);
 
-  const content = fs.readFileSync(filePath, 'utf8');
-  let hotels = [];
-
-  try {
-    const parsed = JSON.parse(content);
-
-    if (Array.isArray(parsed)) {
-      hotels = parsed;
-      console.log('✅ Parsed as JSON Array');
-    } else if (parsed.data && Array.isArray(parsed.data)) {
-      hotels = parsed.data;
-      console.log('✅ Parsed as JSON Object with data array');
-    } else if (typeof parsed === 'object' && parsed.hid) {
-      hotels = [parsed];
-      console.log('✅ Parsed as single hotel object');
-    } else if (typeof parsed === 'object') {
-      // Object with hotel IDs as keys (e.g., {"hotel_id_1": {...}, "hotel_id_2": {...}})
-      hotels = Object.keys(parsed).map(key => {
-        const hotel = parsed[key];
-        if (!hotel.hotel_id && !hotel.id) {
-          hotel.hotel_id = key; // Use the key as hotel_id if not present
+  // Simple approach: just use import-reviews.js logic
+  // Read, decompress already done, just need to parse and process
+  const { PassThrough } = require('stream');
+  const readline = require('readline');
+  
+  // Try reading line-by-line even for JSON object format
+  // We'll buffer and reconstruct the object
+  let jsonBuffer = '';
+  let objectDepth = 0;
+  let inString = false;
+  let escapeNext = false;
+  
+  return new Promise((resolve, reject) => {
+    const fileStream = fs.createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
+    
+    let buffer = '';
+    
+    fileStream.on('data', (chunk) => {
+      buffer += chunk;
+      
+      // Show progress
+      const sizeMB = (buffer.length / 1024 / 1024).toFixed(1);
+      process.stdout.write(`\r📊 Reading... ${sizeMB} MB`);
+    });
+    
+    fileStream.on('end', async () => {
+      console.log(`\n📖 Parsing JSON...`);
+      
+      try {
+        const parsed = JSON.parse(buffer);
+        buffer = null; // Free memory
+        
+        let hotels = [];
+        
+        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+          // Object with hotel IDs as keys
+          console.log('✅ Format: Object with hotel keys');
+          const keys = Object.keys(parsed);
+          console.log(`📊 Found ${keys.length} hotels`);
+          
+          for (const key of keys) {
+            const hotel = parsed[key];
+            if (!hotel.hotel_id && !hotel.id) {
+              hotel.hotel_id = key;
+            }
+            hotels.push(hotel);
+          }
+        } else if (Array.isArray(parsed)) {
+          hotels = parsed;
+          console.log('✅ Format: Array');
         }
-        return hotel;
-      });
-      console.log('✅ Parsed as JSON Object with hotel IDs as keys');
-    } else {
-      throw new Error('Unrecognized JSON structure');
-    }
-  } catch (error) {
-    console.error('❌ Failed to parse JSON:', error.message);
-    console.error('First 500 chars:', content.substring(0, 500));
-    throw error;
-  }
+        
+        console.log(`📊 Processing ${hotels.length} hotels...`);
+        await processHotelsArray(hotels, language, isIncremental);
+        resolve();
+      } catch (error) {
+        console.error('❌ Failed to parse JSON:', error.message);
+        reject(error);
+      }
+    });
+    
+    fileStream.on('error', (error) => {
+      console.error('❌ Failed to read file:', error.message);
+      reject(error);
+    });
+  });
+}
+
+/**
+ * Process an array of hotels
+ */
+async function processHotelsArray(hotels, language, isIncremental) {
 
   console.log(`📊 Total hotels in dump: ${hotels.length}`);
 
