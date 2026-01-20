@@ -42,32 +42,32 @@ async function createSuperAdmin() {
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: SUPER_ADMIN_DATA.email });
-    
+
     if (existingUser) {
       console.log('⚠️  User already exists with this email');
       console.log(`   Email: ${existingUser.email}`);
       console.log(`   Role: ${existingUser.role}`);
       console.log(`   Permissions: ${existingUser.adminPermissions.join(', ')}`);
-      
+
       // Ask if we should update the existing user
       console.log('\n🔄 Updating existing user to super admin with full permissions...');
-      
+
       existingUser.role = 'super_admin';
       existingUser.adminPermissions = ALL_PERMISSIONS;
       existingUser.isEmailVerified = true;
       existingUser.password = SUPER_ADMIN_DATA.password; // This will be hashed by the pre-save hook
       existingUser.phone = SUPER_ADMIN_DATA.phone;
       existingUser.nationality = SUPER_ADMIN_DATA.nationality;
-      
+
       await existingUser.save();
       console.log('✅ User updated successfully!');
     } else {
       // Create new super admin user
       console.log('📝 Creating new super admin user...');
-      
+
       const newUser = new User(SUPER_ADMIN_DATA);
       await newUser.save();
-      
+
       console.log('✅ Super admin user created successfully!');
     }
 
