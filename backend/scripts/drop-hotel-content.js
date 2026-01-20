@@ -40,8 +40,9 @@ async function dropHotelContent() {
 
     // Ask for confirmation
     console.log('⚠️  WARNING: This will delete ALL hotel content data!');
-    rl.question('Are you sure you want to proceed? (yes/no): ', async (answer) => {
-      if (answer.toLowerCase() === 'yes') {
+    rl.question('Are you sure you want to proceed? (yes/y): ', async (answer) => {
+      const confirmation = answer.toLowerCase().trim();
+      if (confirmation === 'yes' || confirmation === 'y') {
         console.log('\n🗑️  Dropping hotel content collection...');
 
         const result = await HotelContent.deleteMany({});
