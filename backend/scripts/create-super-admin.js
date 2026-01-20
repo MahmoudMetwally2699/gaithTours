@@ -24,7 +24,7 @@ const SUPER_ADMIN_DATA = {
   name: 'Mohamed Abdalla',
   email: 'm.abdalla@gaithtours.com',
   password: 'Gaith@2035',
-  phone: '01025900963',
+  phone: '+201025900963',
   nationality: 'Egypt',
   role: 'super_admin',
   adminPermissions: ALL_PERMISSIONS,
@@ -34,10 +34,7 @@ const SUPER_ADMIN_DATA = {
 async function createSuperAdmin() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtours', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gaithtours');
     console.log('✅ Connected to MongoDB');
 
     // Check if user already exists
