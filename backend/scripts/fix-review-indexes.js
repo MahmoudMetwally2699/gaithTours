@@ -1,8 +1,8 @@
 /**
  * Fix Hotel Review Indexes
- * 
+ *
  * Drops the old unique index on 'hid' and recreates proper compound index
- * 
+ *
  * Usage:
  *   node scripts/fix-review-indexes.js
  */
