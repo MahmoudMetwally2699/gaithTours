@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCurrency } from '../contexts/CurrencyContext';
 import {
   UserGroupIcon,
   WifiIcon,
@@ -99,6 +100,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   children = 0
 }) => {
   const { t } = useTranslation();
+  const { currencySymbol } = useCurrency();
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
@@ -477,23 +479,23 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                       <div className="text-right mt-2">
                         {rate.original_price && Number(rate.price) < Number(rate.original_price) && (
                            <div className="text-xs text-red-500 line-through mb-1">
-                              {rate.currency} {Number(rate.original_price).toFixed(0)}
+                              {currencySymbol} {Number(rate.original_price).toFixed(0)}
                            </div>
                         )}
                         <div className="text-2xl font-bold text-gray-900 leading-none">
-                           {rate.currency} {Number(rate.price).toFixed(0)}
+                           {currencySymbol} {Number(rate.price).toFixed(0)}
                         </div>
                         {/* Per-night price if multiple nights */}
                         {nights > 1 && (
                           <div className="text-xs text-gray-600 mt-0.5">
-                            ({rate.currency} {Math.round(Number(rate.price) / nights)}/night)
+                            ({currencySymbol} {Math.round(Number(rate.price) / nights)}/night)
                           </div>
                         )}
                         {/* Tax display - Booking.com style: single line with tooltip */}
                         {rate.total_taxes && rate.total_taxes > 0 ? (
                           <div className="text-xs text-gray-500 mt-1 relative group cursor-help">
                             <span className="border-b border-dotted border-gray-400">
-                               +{rate.taxes_currency || rate.currency} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
+                               +{currencySymbol} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
                             </span>
 
                             {/* Tax Breakdown Tooltip */}
@@ -503,7 +505,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
                                     <div className="flex justify-between mb-1">
                                         <span>Base Price:</span>
-                                        <span>{rate.currency} {rate.price}</span>
+                                        <span>{currencySymbol} {rate.price}</span>
                                     </div>
 
                                     {rate.tax_data.taxes.map((tax: TaxItem, idx: number) => (
@@ -511,14 +513,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                             <span>{tax.name}:</span>
                                             <span>
                                                 {tax.included ? '(Incl.) ' : '+'}
-                                                {tax.currency} {tax.amount}
+                                                {currencySymbol} {tax.amount}
                                             </span>
                                         </div>
                                     ))}
 
                                     <div className="flex justify-between font-bold text-gray-900 mt-2 border-t pt-2">
                                         <span>Total:</span>
-                                        <span>{rate.currency} {(Number(rate.price) + Number(rate.total_taxes)).toFixed(0)}</span>
+                                        <span>{currencySymbol} {(Number(rate.price) + Number(rate.total_taxes)).toFixed(0)}</span>
                                     </div>
                                 </div>
                             )}

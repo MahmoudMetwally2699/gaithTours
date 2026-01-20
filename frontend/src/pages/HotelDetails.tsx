@@ -84,7 +84,7 @@ export const HotelDetails: React.FC = () => {
 
   // Check if current language is RTL
   const isRTL = i18n.language === 'ar';
-  const { currency } = useCurrency();
+  const { currency, currencySymbol } = useCurrency();
 
   // Parse URL parameters
   const searchParams = new URLSearchParams(location.search);
@@ -762,7 +762,7 @@ export const HotelDetails: React.FC = () => {
            <div className="hidden md:flex flex-col items-end">
               <div className="flex items-baseline mb-2">
                  <span className="text-gray-500 text-lg mr-2">{t('hotels.from', 'From')}</span>
-                 <span className="text-3xl font-bold text-black">{currency} {lowestPrice.toFixed(0)}</span>
+                 <span className="text-3xl font-bold text-black">{currencySymbol} {lowestPrice.toFixed(0)}</span>
               </div>
               <button
                  onClick={() => document.getElementById('room-selection')?.scrollIntoView({ behavior: 'smooth' })}
