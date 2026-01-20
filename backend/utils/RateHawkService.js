@@ -250,6 +250,255 @@ class RateHawkService {
   }
 
   /**
+   * Fetch hotel reviews from RateHawk Content API
+   * @param {number[]} hids - Array of hotel IDs to fetch reviews for
+   * @param {string} language - Language code (default: 'en')
+   * @returns {Promise<Object>} - Reviews data keyed by hid
+   */
+  async getReviewsByHids(hids, language = 'en') {
+    if (!hids || hids.length === 0) return {};
+
+    try {
+      console.log(`📝 Fetching reviews from API for ${hids.length} hotels...`);
+      const response = await this.makeRequest(
+        '/content/v1/hotel_reviews_by_ids/',
+        'POST',
+        { hids, language },
+        'https://api.worldota.net/api'
+      );
+
+      if (!response.data || response.error) {
+        console.log('⚠️ No review data from API');
+        return {};
+      }
+
+      // Transform response into a map keyed by hid
+      const reviewsMap = {};
+      for (const hotel of response.data) {
+        if (hotel.hid && hotel.reviews) {
+          // Calculate overall rating from individual reviews
+          const reviews = hotel.reviews || [];
+          const totalRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+          const avgRating = reviews.length > 0 ? totalRating / reviews.length : null;
+
+          // Calculate detailed ratings averages
+          const detailedRatings = this.calculateDetailedRatings(reviews);
+
+          reviewsMap[hotel.hid] = {
+            hid: hotel.hid,
+            hotel_id: hotel.id,
+            overall_rating: avgRating ? parseFloat(avgRating.toFixed(1)) : null,
+            average_rating: avgRating ? parseFloat(avgRating.toFixed(2)) : null,
+            review_count: reviews.length,
+            detailed_ratings: detailedRatings,
+            reviews: reviews.slice(0, 10), // Limit to 10 reviews
+            language
+          };
+        }
+      }
+
+      console.log(`✅ Fetched reviews for ${Object.keys(reviewsMap).length} hotels`);
+      return reviewsMap;
+    } catch (error) {
+      console.error('❌ Error fetching reviews from API:', error.message);
+      return {};
+    }
+  }
+
+  /**
+   * Calculate average detailed ratings from reviews
+   * @param {Array} reviews - Array of review objects
+   * @returns {Object} - Averaged detailed ratings
+   */
+  calculateDetailedRatings(reviews) {
+    if (!reviews || reviews.length === 0) return null;
+
+    const categories = ['cleanness', 'location', 'price', 'services', 'room', 'meal', 'wifi', 'hygiene'];
+    const totals = {};
+    const counts = {};
+
+    for (const review of reviews) {
+      const detailed = review.detailed_review || {};
+      for (const cat of categories) {
+        const value = detailed[cat];
+        // Skip "unspecified" string values
+        if (typeof value === 'number' && value > 0) {
+          totals[cat] = (totals[cat] || 0) + value;
+          counts[cat] = (counts[cat] || 0) + 1;
+        }
+      }
+    }
+
+    const result = {};
+    for (const cat of categories) {
+      if (counts[cat] > 0) {
+        result[cat] = parseFloat((totals[cat] / counts[cat]).toFixed(1));
+      }
+    }
+
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  /**
+   * Get reviews with hybrid approach: DB first, API fallback, save to DB
+   * @param {number} hid - Hotel ID
+   * @param {string} language - Language code
+   * @param {number} maxAgeDays - Max age in days before considering stale (default: 7)
+   * @returns {Promise<Object|null>} - Review data or null
+   */
+  async getOrFetchReviews(hid, language = 'en', maxAgeDays = 7) {
+    const HotelReview = require('../models/HotelReview');
+    const numericHid = parseInt(hid);
+
+    try {
+      // Step 1: Check database first
+      const dbReview = await HotelReview.findOne({ hid: numericHid, language }).lean();
+
+      if (dbReview) {
+        // Check if data is stale
+        const lastUpdated = dbReview.last_updated || dbReview.createdAt;
+        const ageMs = Date.now() - new Date(lastUpdated).getTime();
+        const ageDays = ageMs / (1000 * 60 * 60 * 24);
+
+        // OPTIMIZATION: If cached data has NO RATING, treat it as 'stale/invalid' to trigger fallback logic
+        // preventing the system from indefinitely serving "null" just because it was recently checked.
+        if (dbReview.overall_rating || dbReview.review_count) {
+          if (ageDays < maxAgeDays) {
+            console.log(`📦 Using cached reviews for HID ${hid} (${ageDays.toFixed(1)} days old)`);
+            return dbReview;
+          }
+          console.log(`⏰ Reviews for HID ${hid} are stale (${ageDays.toFixed(1)} days) - refreshing...`);
+        } else {
+           console.log(`⚠️ Cached reviews for HID ${hid} are empty - ignoring cache to try fallback...`);
+        }
+      } else {
+        console.log(`📝 No cached reviews for HID ${hid} - fetching from API...`);
+      }
+
+      // Step 2: Fetch from API
+      // Check requested language first
+      const apiReviews = await this.getReviewsByHids([numericHid], language);
+      let reviewData = apiReviews[numericHid];
+
+      // Step 2b: If no reviews in requested language, try FALLBACK languages
+      // Priority: Arabic -> Russian -> French -> German -> Spanish
+      // (Russian is high priority as it often has data where others don't)
+      if (!reviewData || (!reviewData.review_count && !reviewData.overall_rating)) {
+        const fallbackLangs = ['ar', 'ru', 'fr', 'de', 'es', 'it'];
+        // Remove requested language from fallback list
+        const langsToCheck = fallbackLangs.filter(l => l !== language);
+
+        console.log(`⚠️ No reviews in '${language}' for HID ${hid}. Checking fallbacks: ${langsToCheck.join(', ')}...`);
+
+        // Check cache for fallbacks first (avoid API calls)
+        for (const lang of langsToCheck) {
+           const cached = await HotelReview.findOne({ hid: numericHid, language: lang }).lean();
+           if (cached && (cached.overall_rating || cached.review_count)) {
+             console.log(`✅ Found cached fallback reviews in '${lang}'!`);
+             // Return hybrid object: Score from fallback, but marked as requested language (no text reviews)
+             return {
+               ...cached,
+               language: language, // Masquerade as requested language
+               reviews: [], // Hide text reviews to avoid language confusion
+               _fallbackFrom: lang
+             };
+           }
+        }
+
+        // Fetch from API for fallbacks
+        for (const lang of langsToCheck) {
+           // Small delay to be gentle
+           if (langsToCheck.indexOf(lang) > 0) await this.sleep(100);
+
+           const fbReviews = await this.getReviewsByHids([numericHid], lang);
+           const fbData = fbReviews[numericHid];
+
+           if (fbData && (fbData.overall_rating || fbData.review_count)) {
+             console.log(`✅ Found fallback reviews in '${lang}'!`);
+
+             // Save the ACTUAL language data to DB
+             await HotelReview.findOneAndUpdate(
+                { hid: numericHid, language: lang },
+                { ...fbData, last_updated: new Date(), dump_date: new Date() },
+                { upsert: true, new: true }
+             );
+
+             // Return hybrid object for display
+             return {
+               ...fbData,
+               language: language,
+               reviews: [],
+               _fallbackFrom: lang
+             };
+           }
+        }
+        console.log(`❌ No reviews found in any fallback languages for HID ${hid}`);
+      }
+
+      if (reviewData) {
+        // Step 3: Save to database (upsert)
+        await HotelReview.findOneAndUpdate(
+          { hid: numericHid, language },
+          {
+            ...reviewData,
+            last_updated: new Date(),
+            dump_date: new Date()
+          },
+          { upsert: true, new: true }
+        );
+        console.log(`💾 Saved reviews for HID ${hid} to database`);
+        return reviewData;
+      }
+
+      // Return stale data if API failed but we had cached data
+      if (dbReview) {
+        console.log(`⚠️ API failed, using stale cached data for HID ${hid}`);
+        return dbReview;
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`❌ Error in getOrFetchReviews for HID ${hid}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch filter values (languages, countries, amenities, etc.) from RateHawk
+   * @returns {Promise<Object>} - Filter values data
+   */
+  async getFilterValues() {
+    // Check in-memory cache first (24h validity)
+    if (this.filterValuesCache && (Date.now() - this.filterValuesTimestamp < 24 * 60 * 60 * 1000)) {
+      console.log('♻️  Serving filter values from cache');
+      return this.filterValuesCache;
+    }
+
+    try {
+      console.log('📝 Fetching filter values from RateHawk API...');
+      const response = await this.makeRequest(
+        '/content/v1/filter_values/',
+        'GET', // Usually GET for this, but could be POST. Documentation implies simple retrieval.
+        null,
+        'https://api.worldota.net/api'
+      );
+
+      if (response.data) {
+        // Cache the result
+        this.filterValuesCache = response.data;
+        this.filterValuesTimestamp = Date.now();
+        console.log('✅ Fetched and cached filter values');
+        return response.data;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching filter values:', error.message);
+      return null;
+    }
+  }
+
+  /**
    * Make authenticated request to RateHawk API with retry logic and rate limiting
    * @param {string} endpoint - API endpoint
    * @param {string} method - HTTP method
@@ -688,23 +937,79 @@ class RateHawkService {
       if (hotelHidsForReviews.length > 0) {
         console.log(`⭐ Fetching review ratings for ${hotelHidsForReviews.length} hotels...`);
 
-        // Batch query all review summaries
+        // 1. Batch query DB first
         const reviewSummaries = await HotelReview.find({
           hid: { $in: hotelHidsForReviews },
           language: 'en'
-        }).select('hid overall_rating review_count average_rating').lean();
+        }).select('hid overall_rating review_count average_rating last_updated').lean();
 
         // Create lookup map
         const reviewMap = new Map();
+        const foundHids = new Set();
+
         reviewSummaries.forEach(review => {
-          reviewMap.set(review.hid, {
-            overall_rating: review.overall_rating,
-            review_count: review.review_count,
-            average_rating: review.average_rating
-          });
+          // Check for stale data (older than 7 days)
+          const lastUpdated = review.last_updated || review.createdAt || 0;
+          const ageDays = (Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60 * 24);
+
+          if (ageDays < 7) {
+            reviewMap.set(review.hid, {
+              overall_rating: review.overall_rating,
+              review_count: review.review_count,
+              average_rating: review.average_rating
+            });
+            foundHids.add(review.hid);
+          }
         });
 
-        // Set review data from hotel_reviews only (no fallback to other sources)
+        // 2. Identify missing or stale hotels
+        const missingHids = hotelHidsForReviews.filter(hid => !foundHids.has(hid));
+
+        // 3. Bulk fetch missing from API (if any)
+        if (missingHids.length > 0) {
+          console.log(`📝 Bulk fetching missing/stale reviews for ${missingHids.length} hotels...`);
+          // Fetch directly using our bulk API method
+          const apiReviews = await this.getReviewsByHids(missingHids, 'en');
+
+          if (Object.keys(apiReviews).length > 0) {
+            // Prepare bulk write operations for DB
+            const bulkOps = [];
+
+            for (const hidStr of Object.keys(apiReviews)) {
+              const hid = parseInt(hidStr);
+              const data = apiReviews[hid];
+
+              if (data) {
+                // Add to our map for immediate display
+                reviewMap.set(hid, {
+                  overall_rating: data.overall_rating,
+                  review_count: data.review_count,
+                  average_rating: data.average_rating
+                });
+
+                // Add to bulk DB save
+                bulkOps.push({
+                  updateOne: {
+                    filter: { hid: hid, language: 'en' },
+                    update: {
+                      $set: { ...data, last_updated: new Date(), dump_date: new Date() }
+                    },
+                    upsert: true
+                  }
+                });
+              }
+            }
+
+            // Save to DB in background
+            if (bulkOps.length > 0) {
+              HotelReview.bulkWrite(bulkOps).then(res =>
+                console.log(`💾 Bulk saved ${res.modifiedCount + res.upsertedCount} review records`)
+              ).catch(err => console.error('Error bulk saving reviews:', err.message));
+            }
+          }
+        }
+
+        // 4. Apply ratings to hotels
         let enrichedCount = 0;
         hotels.forEach(hotel => {
           const reviewData = reviewMap.get(hotel.hid);
@@ -715,10 +1020,9 @@ class RateHawkService {
             hotel.reviewCount = reviewData.review_count || 0;
             enrichedCount++;
           }
-          // If no review data found, rating stays null (will not display badge)
         });
 
-        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings`);
+        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings (${missingHids.length} from API)`);
       }
     } catch (reviewError) {
       console.error('⚠️ Error enriching hotels with review ratings:', reviewError.message);
@@ -828,15 +1132,14 @@ class RateHawkService {
 
     // OPTIMIZATION: Fetch pricing, static content, AND reviews in PARALLEL (saves ~5-10s)
     const HotelContent = require('../models/HotelContent');
-    const HotelReview = require('../models/HotelReview');
 
     const [response, staticContent, reviewData] = await Promise.all([
       // 1. Get pricing and availability from RateHawk API
       this.makeRequest('/search/hp/', 'POST', payload),
       // 2. Get static content from local DB (faster)
       HotelContent.findOne({ hid }).lean(),
-      // 3. Get review data from hotel_reviews collection (hid is stored as number in DB)
-      HotelReview.findOne({ hid: parseInt(hid), language: 'en' }).lean()
+      // 3. Get review data with hybrid approach (DB first, API fallback)
+      this.getOrFetchReviews(hid, 'en', 7) // 7 days max age
     ]);
 
     const hotelData = response.data?.hotels?.[0];
@@ -855,7 +1158,7 @@ class RateHawkService {
 
     // Log review data results
     if (reviewData) {
-      console.log(`⭐ Found review data for HID ${hid}:`);
+      console.log(`⭐ Review data for HID ${hid}: Rating ${reviewData.overall_rating}, ${reviewData.review_count} reviews`);
       console.log(`   Overall Rating: ${reviewData.overall_rating}`);
       console.log(`   Review Count: ${reviewData.review_count}`);
       console.log(`   Detailed Ratings: ${JSON.stringify(reviewData.detailed_ratings)}`);

@@ -229,11 +229,11 @@ export const HotelDetails: React.FC = () => {
           country: hotelData.country || 'Saudi Arabia',
           price: 0,
           currency: currency,
-          rating: hotelData.rating || hotelData.reviewScore || 0,
+          rating: hotelData.rating || hotelData.reviewScore || null,
           image: hotelData.images?.[0] || hotelData.mainImage || null,
           images: hotelData.images || (hotelData.mainImage ? [hotelData.mainImage] : []),
           description: hotelData.description || '',
-          reviewScore: hotelData.reviewScore || hotelData.rating || 0,
+          reviewScore: hotelData.reviewScore || hotelData.rating || null,
           reviewCount: hotelData.reviewCount || 0,
           amenities: hotelData.amenities || [],
           facilities: hotelData.facilities || [],
@@ -719,18 +719,30 @@ export const HotelDetails: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                 <span className="bg-orange-500 text-white px-2 py-1 rounded text-sm font-bold">
-                    {hotel.reviewScore || hotel.rating}
-                 </span>
-                 <span className="font-bold text-gray-800">
-                    {hotel.reviewScoreWord || 'Very Good'}
-                 </span>
-                 <span className="text-gray-500 text-sm">
-                    {hotel.reviewCount} {t('hotels.reviews', 'reviews')}
-                 </span>
-
-                 <div className="h-4 w-px bg-gray-300 mx-2"></div>
-
+                 {/* Only show rating if there are actual reviews */}
+                 {(hotel.reviewScore || hotel.rating) && (
+                   <>
+                     <span className="bg-orange-500 text-white px-2 py-1 rounded text-sm font-bold">
+                        {hotel.reviewScore || hotel.rating}
+                     </span>
+                     <span className="font-bold text-gray-800">
+                        {hotel.reviewScoreWord || (hotel.reviewScore >= 9 ? 'Excellent' : hotel.reviewScore >= 8 ? 'Very Good' : hotel.reviewScore >= 7 ? 'Good' : 'Pleasant')}
+                     </span>
+                     <span className="text-gray-500 text-sm">
+                        {hotel.reviewCount} {t('hotels.reviews', 'reviews')}
+                     </span>
+                     <div className="h-4 w-px bg-gray-300 mx-2"></div>
+                   </>
+                 )}
+                 {/* Show "No reviews yet" if hotel has no reviews */}
+                 {!hotel.reviewScore && !hotel.rating && (
+                   <>
+                     <span className="text-gray-500 text-sm italic">
+                        {t('hotels.noReviews', 'No reviews yet')}
+                     </span>
+                     <div className="h-4 w-px bg-gray-300 mx-2"></div>
+                   </>
+                 )}
                  <button className="flex items-center text-gray-500 hover:text-gray-700">
                     <ShareIcon className="h-4 w-4 mr-1" />
                     {t('common.share', 'Share')}

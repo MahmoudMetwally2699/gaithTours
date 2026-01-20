@@ -28,6 +28,24 @@ function setCachedResults(key, data) {
 }
 
 /**
+ * Get available filter values (languages, amenities, etc.)
+ * GET /api/hotels/filters
+ */
+router.get('/filters', async (req, res) => {
+  try {
+    const filters = await rateHawkService.getFilterValues();
+    if (filters) {
+      successResponse(res, filters, 'Filter values retrieved successfully');
+    } else {
+      errorResponse(res, 'Failed to retrieve filter values', 500);
+    }
+  } catch (error) {
+    console.error('Filter values error:', error);
+    errorResponse(res, 'Failed to get filter values', 500);
+  }
+});
+
+/**
  * Get personalized hotel suggestions
  * GET /api/hotels/suggested
  * Optional Query: location (for guest geolocation)
@@ -708,16 +726,12 @@ router.get('/details/:hid', async (req, res) => {
           });
         }
 
-        // Fetch review data from hotel_reviews collection
+        // Fetch review data with hybrid approach (DB first, API fallback)
         try {
-          const HotelReview = require('../models/HotelReview');
-          const reviewData = await HotelReview.findOne({
-            hid: parseInt(hotelId),
-            language: 'en'
-          }).lean();
+          const reviewData = await rateHawkService.getOrFetchReviews(hotelId, 'en', 7);
 
           if (reviewData) {
-            console.log(`⭐ Found review data for HID ${hotelId}: Rating ${reviewData.overall_rating}, ${reviewData.review_count} reviews`);
+            console.log(`⭐ Review data for HID ${hotelId}: Rating ${reviewData.overall_rating}, ${reviewData.review_count} reviews`);
             hotelDetails.rating = reviewData.overall_rating;
             hotelDetails.reviewScore = reviewData.overall_rating;
             hotelDetails.reviewCount = reviewData.review_count || 0;
@@ -750,9 +764,9 @@ router.get('/details/:hid', async (req, res) => {
       images: hotelDetails.images,
       mainImage: hotelDetails.mainImage,
       star_rating: hotelDetails.star_rating,
-      // Review data from hotel_reviews collection
-      rating: hotelDetails.rating || hotelDetails.reviewScore || hotelDetails.star_rating,
-      reviewScore: hotelDetails.reviewScore || hotelDetails.rating,
+      // Review data from hotel_reviews - DO NOT fallback to star_rating
+      rating: hotelDetails.rating || hotelDetails.reviewScore || null,
+      reviewScore: hotelDetails.reviewScore || hotelDetails.rating || null,
       reviewCount: hotelDetails.reviewCount || 0,
       detailed_ratings: hotelDetails.detailed_ratings || null,
       reviews: hotelDetails.reviews || [],
