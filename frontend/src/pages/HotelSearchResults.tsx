@@ -157,7 +157,7 @@ export const HotelSearchResults: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const isRTL = direction === 'rtl';
-  const { currency } = useCurrency();
+  const { currency, currencySymbol } = useCurrency();
 
   // Parse URL parameters
   const searchParams = new URLSearchParams(location.search);
@@ -956,8 +956,8 @@ export const HotelSearchResults: React.FC = () => {
                   className="w-full accent-orange-500"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>SAR 0</span>
-                  <span>SAR {filters.priceRange[1].toLocaleString()}</span>
+                  <span>{currencySymbol} 0</span>
+                  <span>{currencySymbol} {filters.priceRange[1].toLocaleString()}</span>
                 </div>
               </div>
 
@@ -1304,7 +1304,7 @@ export const HotelSearchResults: React.FC = () => {
                                 <>
                                   <div className="text-xs text-gray-500">1 night, {searchQuery.adults} adults</div>
                                   <div className="text-xl font-bold text-gray-900">
-                                    SAR {Math.round(hotel.price).toLocaleString()}
+                                    {currencySymbol} {Math.round(hotel.price).toLocaleString()}
                                   </div>
                                 </>
                               ) : (
@@ -1387,8 +1387,8 @@ export const HotelSearchResults: React.FC = () => {
                   className="w-full accent-orange-500"
                 />
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>SAR 0</span>
-                  <span>SAR {filters.priceRange[1].toLocaleString()}</span>
+                  <span>{currencySymbol} 0</span>
+                  <span>{currencySymbol} {filters.priceRange[1].toLocaleString()}</span>
                 </div>
               </div>
 
@@ -1516,7 +1516,7 @@ export const HotelSearchResults: React.FC = () => {
                       {hotel.price && hotel.price > 0 && (
                         <div className="mt-1.5">
                           <span className="font-bold text-gray-900">
-                            US$ {Math.round(hotel.price / 3.75)}
+                            {currencySymbol} {Math.round(hotel.price)}
                           </span>
                           <span className="text-xs text-gray-500 ml-1">per night</span>
                         </div>
@@ -1557,7 +1557,7 @@ export const HotelSearchResults: React.FC = () => {
                         ? 'bg-blue-600 text-white scale-110'
                         : 'bg-white text-gray-900 border border-gray-300'
                     }" style="transform: translate(-50%, -50%);">
-                      ${hotel.price && hotel.price > 0 ? `US$${Math.round(hotel.price / 3.75)}` : 'View'}
+                      ${hotel.price && hotel.price > 0 ? `${currencySymbol}${Math.round(hotel.price)}` : 'View'}
                     </div>`,
                     iconSize: [80, 30],
                     iconAnchor: [40, 15],
@@ -1596,7 +1596,7 @@ export const HotelSearchResults: React.FC = () => {
                             </div>
                             {hotel.price && hotel.price > 0 && (
                               <div className="mt-2 font-bold">
-                                US$ {Math.round(hotel.price / 3.75)} <span className="text-xs font-normal text-gray-500">per night</span>
+                                {currencySymbol} {Math.round(hotel.price)} <span className="text-xs font-normal text-gray-500">per night</span>
                               </div>
                             )}
                             <button
