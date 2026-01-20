@@ -38,6 +38,19 @@ async function fixIndexes() {
       }
     }
 
+    // Drop the existing compound index (without unique constraint)
+    try {
+      console.log('\n🗑️  Dropping existing hid_1_language_1 index...');
+      await collection.dropIndex('hid_1_language_1');
+      console.log('✅ Dropped hid_1_language_1 index');
+    } catch (err) {
+      if (err.code === 27) {
+        console.log('⚠️  Index hid_1_language_1 does not exist');
+      } else {
+        throw err;
+      }
+    }
+
     // Ensure compound unique index exists
     console.log('\n📌 Creating compound unique index on hid + language...');
     await collection.createIndex(
