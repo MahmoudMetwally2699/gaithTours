@@ -266,7 +266,7 @@ async function processSingleJSON(filePath, language, isIncremental) {
       // Transform data to match our schema
       const reviews = hotelData.reviews || [];
 
-      // Calculate average rating and review count
+      // Calculate average rating from individual reviews
       let averageRating = null;
       let reviewCount = reviews.length;
 
@@ -281,6 +281,8 @@ async function processSingleJSON(filePath, language, isIncremental) {
         hotel_id: hotelData.id || hotelData.hotel_id || `hotel_${hotelData.hid}`,
         hid: hotelData.hid,
         language: language,
+        overall_rating: hotelData.rating || null,
+        detailed_ratings: hotelData.detailed_ratings || null,
         reviews: reviews,
         average_rating: averageRating,
         review_count: reviewCount,
@@ -369,7 +371,7 @@ async function processDumpLineByLine(filePath, language, isIncremental) {
         // Transform data to match our schema
         const reviews = hotelData.reviews || [];
 
-        // Calculate average rating and review count
+        // Calculate average rating from individual reviews
         let averageRating = null;
         let reviewCount = reviews.length;
 
@@ -384,6 +386,8 @@ async function processDumpLineByLine(filePath, language, isIncremental) {
           hotel_id: hotelData.id || hotelData.hotel_id || `hotel_${hotelData.hid}`,
           hid: hotelData.hid,
           language: language,
+          overall_rating: hotelData.rating || null,
+          detailed_ratings: hotelData.detailed_ratings || null,
           reviews: reviews,
           average_rating: averageRating,
           review_count: reviewCount,

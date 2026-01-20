@@ -38,6 +38,7 @@ import { LazyImage } from '../components/LazyImage';
 import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
+import { GuestReviews } from '../components/GuestReviews';
 
 interface HotelDetailsParams {
   hotelId: string;
@@ -244,8 +245,11 @@ export const HotelDetails: React.FC = () => {
           coordinates: hotelData.coordinates || { latitude: 0, longitude: 0 },
           rates: hotelData.rates || [],
           metapolicy_extra_info: hotelData.metapolicy_extra_info || '',
-          metapolicy_struct: hotelData.metapolicy_struct || null
-        };
+          metapolicy_struct: hotelData.metapolicy_struct || null,
+          // Review data from hotel_reviews collection
+          detailed_ratings: hotelData.detailed_ratings || null,
+          reviews: hotelData.reviews || []
+        } as Hotel & { detailed_ratings?: any; reviews?: any[] };
 
         setHotel(transformedHotel);
 
@@ -966,6 +970,14 @@ export const HotelDetails: React.FC = () => {
               </div>
            )}
         </div>
+
+        {/* Guest Reviews Section */}
+        <GuestReviews
+          rating={hotel.reviewScore || hotel.rating || null}
+          reviewCount={hotel.reviewCount || 0}
+          detailedRatings={(hotel as any).detailed_ratings}
+          reviews={(hotel as any).reviews}
+        />
 
         {/* Hotel Policies Section */}
         <div className="mb-12">

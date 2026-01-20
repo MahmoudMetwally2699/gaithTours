@@ -277,15 +277,13 @@ export const MainSection: React.FC = () => {
 
   return (
     <div className="relative z-50 h-[300px] w-full overflow-visible font-sans">
-      {/* Background Image */}
+      {/* Background Image - optimized WebP */}
       <div className="absolute inset-0 z-0 h-[300px] overflow-hidden rounded-b-[3rem]">
         <img
-          src="/new-design/header-photo-background.svg"
+          src="/new-design/header-photo-background.webp"
           alt="Background"
           className="w-full h-full object-cover object-center"
         />
-        {/* Overlay for better text readability if needed, though design seems clear */}
-        {/* <div className="absolute inset-0 bg-black/10"></div> */}
       </div>
 
       {/* Main Content Container */}

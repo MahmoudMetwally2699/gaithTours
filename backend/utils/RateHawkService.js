@@ -431,8 +431,9 @@ class RateHawkService {
         hid: hotel.hid,
         hotelId: hotel.id, // Keep original ID for static content lookup
         name: hotel.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format ID as name fallback
-        rating: firstRate?.rg_ext?.quality || 0,
-        reviewScore: firstRate?.rg_ext?.quality || 0,
+        rating: null, // Will be set from hotel_reviews collection only
+        reviewScore: null, // Will be set from hotel_reviews collection only
+        reviewCount: null, // Will be set from hotel_reviews collection only
         price: totalPrice, // Base price without taxes (margin will be applied later)
         pricePerNight: pricePerNight, // New field for per-night display
         nights: nights, // Include nights for reference
@@ -679,6 +680,51 @@ class RateHawkService {
       MarginRule.bulkWrite(bulkOps).catch(() => {}); // Fire and forget
     }
 
+    // Enrich hotels with review ratings from hotel_reviews collection
+    try {
+      const HotelReview = require('../models/HotelReview');
+      const hotelHidsForReviews = hotels.map(h => h.hid).filter(hid => hid);
+
+      if (hotelHidsForReviews.length > 0) {
+        console.log(`⭐ Fetching review ratings for ${hotelHidsForReviews.length} hotels...`);
+
+        // Batch query all review summaries
+        const reviewSummaries = await HotelReview.find({
+          hid: { $in: hotelHidsForReviews },
+          language: 'en'
+        }).select('hid overall_rating review_count average_rating').lean();
+
+        // Create lookup map
+        const reviewMap = new Map();
+        reviewSummaries.forEach(review => {
+          reviewMap.set(review.hid, {
+            overall_rating: review.overall_rating,
+            review_count: review.review_count,
+            average_rating: review.average_rating
+          });
+        });
+
+        // Set review data from hotel_reviews only (no fallback to other sources)
+        let enrichedCount = 0;
+        hotels.forEach(hotel => {
+          const reviewData = reviewMap.get(hotel.hid);
+          if (reviewData && reviewData.overall_rating != null) {
+            // Use ONLY overall_rating from hotel_reviews collection (0-10 scale)
+            hotel.rating = reviewData.overall_rating;
+            hotel.reviewScore = reviewData.overall_rating;
+            hotel.reviewCount = reviewData.review_count || 0;
+            enrichedCount++;
+          }
+          // If no review data found, rating stays null (will not display badge)
+        });
+
+        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings`);
+      }
+    } catch (reviewError) {
+      console.error('⚠️ Error enriching hotels with review ratings:', reviewError.message);
+      // Continue without review data - not critical
+    }
+
     const result = {
       hotels,
       total: hotels.length,
@@ -780,14 +826,17 @@ class RateHawkService {
       payload.match_hash = match_hash;
     }
 
-    // OPTIMIZATION: Fetch pricing AND static content in PARALLEL (saves ~5-10s)
+    // OPTIMIZATION: Fetch pricing, static content, AND reviews in PARALLEL (saves ~5-10s)
     const HotelContent = require('../models/HotelContent');
+    const HotelReview = require('../models/HotelReview');
 
-    const [response, staticContent] = await Promise.all([
+    const [response, staticContent, reviewData] = await Promise.all([
       // 1. Get pricing and availability from RateHawk API
       this.makeRequest('/search/hp/', 'POST', payload),
       // 2. Get static content from local DB (faster)
-      HotelContent.findOne({ hid }).lean()
+      HotelContent.findOne({ hid }).lean(),
+      // 3. Get review data from hotel_reviews collection (hid is stored as number in DB)
+      HotelReview.findOne({ hid: parseInt(hid), language: 'en' }).lean()
     ]);
 
     const hotelData = response.data?.hotels?.[0];
@@ -802,6 +851,17 @@ class RateHawkService {
       console.log(`   Images: ${staticContent.images?.length || 0}`);
     } else {
       console.log(`⚠️ No local content found for HID: ${hid}`);
+    }
+
+    // Log review data results
+    if (reviewData) {
+      console.log(`⭐ Found review data for HID ${hid}:`);
+      console.log(`   Overall Rating: ${reviewData.overall_rating}`);
+      console.log(`   Review Count: ${reviewData.review_count}`);
+      console.log(`   Detailed Ratings: ${JSON.stringify(reviewData.detailed_ratings)}`);
+      console.log(`   Reviews: ${reviewData.reviews?.length || 0}`);
+    } else {
+      console.log(`⚠️ No review data found for HID: ${hid} (parseInt: ${parseInt(hid)})`);
     }
 
     // Extract images from static content
@@ -1235,6 +1295,12 @@ class RateHawkService {
       check_out_time: staticContent?.checkOutTime || staticContent?.check_out_time || '12:00',
       metapolicy_extra_info: staticContent?.metapolicyExtraInfo || staticContent?.metapolicy_extra_info || '',
       metapolicy_struct: staticContent?.metapolicyStruct || staticContent?.metapolicy_struct || null,
+      // Review data from hotel_reviews collection
+      rating: reviewData?.overall_rating || null,
+      reviewScore: reviewData?.overall_rating || null,
+      reviewCount: reviewData?.review_count || 0,
+      detailed_ratings: reviewData?.detailed_ratings || null,
+      reviews: (reviewData?.reviews || []).slice(0, 10), // Limit to 10 reviews for performance
       debug: response.debug
     };
   }

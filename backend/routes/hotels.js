@@ -708,6 +708,28 @@ router.get('/details/:hid', async (req, res) => {
           });
         }
 
+        // Fetch review data from hotel_reviews collection
+        try {
+          const HotelReview = require('../models/HotelReview');
+          const reviewData = await HotelReview.findOne({
+            hid: parseInt(hotelId),
+            language: 'en'
+          }).lean();
+
+          if (reviewData) {
+            console.log(`⭐ Found review data for HID ${hotelId}: Rating ${reviewData.overall_rating}, ${reviewData.review_count} reviews`);
+            hotelDetails.rating = reviewData.overall_rating;
+            hotelDetails.reviewScore = reviewData.overall_rating;
+            hotelDetails.reviewCount = reviewData.review_count || 0;
+            hotelDetails.detailed_ratings = reviewData.detailed_ratings;
+            hotelDetails.reviews = (reviewData.reviews || []).slice(0, 10);
+          } else {
+            console.log(`⚠️ No review data found for HID: ${hotelId}`);
+          }
+        } catch (reviewError) {
+          console.error('Error fetching review data:', reviewError.message);
+        }
+
         console.log(`✅ Hotel fetched from Content API: ${hotelDetails.name}`);
       } catch (contentError) {
         console.error('Error fetching from Content API:', contentError.message);
@@ -728,7 +750,12 @@ router.get('/details/:hid', async (req, res) => {
       images: hotelDetails.images,
       mainImage: hotelDetails.mainImage,
       star_rating: hotelDetails.star_rating,
-      rating: hotelDetails.star_rating,
+      // Review data from hotel_reviews collection
+      rating: hotelDetails.rating || hotelDetails.reviewScore || hotelDetails.star_rating,
+      reviewScore: hotelDetails.reviewScore || hotelDetails.rating,
+      reviewCount: hotelDetails.reviewCount || 0,
+      detailed_ratings: hotelDetails.detailed_ratings || null,
+      reviews: hotelDetails.reviews || [],
       amenities: hotelDetails.amenities,
       facts: hotelDetails.facts,
       rates: hotelDetails.rates,

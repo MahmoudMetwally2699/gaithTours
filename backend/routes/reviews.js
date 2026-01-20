@@ -126,6 +126,7 @@ router.post('/summaries', async (req, res) => {
         hotel_id: summary.hotel_id,
         hid: summary.hid,
         average_rating: summary.average_rating,
+        overall_rating: summary.overall_rating,
         review_count: summary.review_count
       };
     });

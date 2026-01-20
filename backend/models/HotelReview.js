@@ -31,12 +31,32 @@ const HotelReviewSchema = new mongoose.Schema({
     comment: 'ISO 639-1 language code (en, ar, etc.)'
   },
 
-  // Aggregated review data
+  // Overall hotel rating from RateHawk
+  overall_rating: {
+    type: Number,
+    min: 0,
+    max: 10,
+    comment: 'Overall hotel rating from RateHawk (0-10 scale)'
+  },
+
+  // Detailed ratings breakdown
+  detailed_ratings: {
+    cleanness: { type: Number, min: 0, max: 10 },
+    location: { type: Number, min: 0, max: 10 },
+    price: { type: Number, min: 0, max: 10 },
+    services: { type: Number, min: 0, max: 10 },
+    room: { type: Number, min: 0, max: 10 },
+    meal: { type: Number, min: 0, max: 10 },
+    wifi: { type: Number, min: 0, max: 10 },
+    hygiene: { type: Number, min: 0, max: 10 }
+  },
+
+  // Aggregated review data (calculated from reviews array)
   average_rating: {
     type: Number,
     min: 0,
     max: 10,
-    comment: 'Average rating from all reviews (0-10 scale)'
+    comment: 'Average rating calculated from all reviews (0-10 scale)'
   },
 
   review_count: {
@@ -140,13 +160,13 @@ const HotelReviewSchema = new mongoose.Schema({
       },
       wifi: {
         type: String,
-        enum: ['unspecified', 'good', 'average', 'poor'],
+        enum: ['unspecified', 'perfect', 'good', 'slow', 'downtime', 'unused'],
         default: 'unspecified',
         comment: 'WiFi quality'
       },
       hygiene: {
         type: String,
-        enum: ['unspecified', 'good', 'average', 'poor'],
+        enum: ['unspecified', 'good', 'ok', 'bad', 'unused'],
         default: 'unspecified',
         comment: 'Hygiene level'
       }
@@ -154,7 +174,7 @@ const HotelReviewSchema = new mongoose.Schema({
 
     traveller_type: {
       type: String,
-      enum: ['unspecified', 'family', 'couple', 'solo', 'business', 'group'],
+      enum: ['unspecified', 'family', 'couple', 'solo_travel', 'business', 'group'],
       default: 'unspecified',
       comment: 'Type of traveller'
     },
@@ -236,7 +256,7 @@ HotelReviewSchema.statics.getSummaries = async function(hotelIds, language = 'en
     ? { hid: { $in: hotelIds.map(id => parseInt(id)) }, language }
     : { hotel_id: { $in: hotelIds }, language };
 
-  return this.find(query).select('hotel_id hid average_rating review_count language');
+  return this.find(query).select('hotel_id hid average_rating overall_rating review_count language');
 };
 
 // Instance method to get top reviews (sorted by rating)
