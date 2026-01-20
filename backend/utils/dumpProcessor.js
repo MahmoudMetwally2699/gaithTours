@@ -232,15 +232,6 @@ class DumpProcessor {
       try {
         const hotel = JSON.parse(line);
 
-        // Filter by country code (keep only target countries to save space)
-        // SA=Saudi Arabia, AE=UAE, EG=Egypt, BH=Bahrain, KW=Kuwait, OM=Oman, QA=Qatar, TR=Turkey, JO=Jordan
-        const targetCountries = ['SA', 'AE', 'EG', 'BH', 'KW', 'OM', 'QA', 'TR', 'JO'];
-        const countryCode = hotel.region?.country_code;
-
-        if (!countryCode || !targetCountries.includes(countryCode)) {
-          continue; // Skip this hotel
-        }
-
         const transformed = this.transformHotelData(hotel);
         batch.push(transformed);
 
