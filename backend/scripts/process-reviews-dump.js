@@ -222,42 +222,42 @@ async function processSingleJSON(filePath, language, isIncremental) {
   // Read, decompress already done, just need to parse and process
   const { PassThrough } = require('stream');
   const readline = require('readline');
-  
+
   // Try reading line-by-line even for JSON object format
   // We'll buffer and reconstruct the object
   let jsonBuffer = '';
   let objectDepth = 0;
   let inString = false;
   let escapeNext = false;
-  
+
   return new Promise((resolve, reject) => {
     const fileStream = fs.createReadStream(filePath, { encoding: 'utf8', highWaterMark: 64 * 1024 });
-    
+
     let buffer = '';
-    
+
     fileStream.on('data', (chunk) => {
       buffer += chunk;
-      
+
       // Show progress
       const sizeMB = (buffer.length / 1024 / 1024).toFixed(1);
       process.stdout.write(`\r📊 Reading... ${sizeMB} MB`);
     });
-    
+
     fileStream.on('end', async () => {
       console.log(`\n📖 Parsing JSON...`);
-      
+
       try {
         const parsed = JSON.parse(buffer);
         buffer = null; // Free memory
-        
+
         let hotels = [];
-        
+
         if (typeof parsed === 'object' && !Array.isArray(parsed)) {
           // Object with hotel IDs as keys
           console.log('✅ Format: Object with hotel keys');
           const keys = Object.keys(parsed);
           console.log(`📊 Found ${keys.length} hotels`);
-          
+
           for (const key of keys) {
             const hotel = parsed[key];
             if (!hotel.hotel_id && !hotel.id) {
@@ -269,7 +269,7 @@ async function processSingleJSON(filePath, language, isIncremental) {
           hotels = parsed;
           console.log('✅ Format: Array');
         }
-        
+
         console.log(`📊 Processing ${hotels.length} hotels...`);
         await processHotelsArray(hotels, language, isIncremental);
         resolve();
@@ -278,7 +278,7 @@ async function processSingleJSON(filePath, language, isIncremental) {
         reject(error);
       }
     });
-    
+
     fileStream.on('error', (error) => {
       console.error('❌ Failed to read file:', error.message);
       reject(error);
