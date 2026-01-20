@@ -1,12 +1,12 @@
 /**
  * Drop Hotel Content Collection
- * 
+ *
  * This script removes all documents from the HotelContent collection.
  * Useful before re-importing fresh data from dumps.
- * 
+ *
  * Usage:
  *   node scripts/drop-hotel-content.js
- * 
+ *
  * WARNING: This will delete ALL hotel content data!
  */
 
@@ -43,9 +43,9 @@ async function dropHotelContent() {
     rl.question('Are you sure you want to proceed? (yes/no): ', async (answer) => {
       if (answer.toLowerCase() === 'yes') {
         console.log('\n🗑️  Dropping hotel content collection...');
-        
+
         const result = await HotelContent.deleteMany({});
-        
+
         console.log(`✅ Deleted ${result.deletedCount.toLocaleString()} records`);
         console.log('✅ Hotel content collection cleared successfully!\n');
       } else {
