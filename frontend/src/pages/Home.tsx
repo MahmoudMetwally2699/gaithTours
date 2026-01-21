@@ -2,6 +2,7 @@ import React from 'react';
 import { MainSection } from '../components/MainSection';
 import { SuggestedHotels } from '../components/SuggestedHotels';
 import { OffersBanner } from '../components/OffersBanner';
+import { ForNewUsers } from '../components/ForNewUsers';
 import { PopularProperties } from '../components/PopularProperties';
 import { PopularCities } from '../components/PopularCities';
 import { PopularCitiesWorldwide } from '../components/PopularCitiesWorldwide';
@@ -12,6 +13,7 @@ export const Home: React.FC = () => {
       <MainSection />
       <SuggestedHotels />
       <OffersBanner />
+      <ForNewUsers />
       <PopularProperties />
       <PopularCities />
       <PopularCitiesWorldwide />

@@ -198,6 +198,14 @@ try {
   console.error('Error loading reviews routes:', error);
 }
 
+// Promotional banners routes
+try {
+  app.use('/api/promotional-banners', require('./routes/promotional-banners'));
+  console.log('✅ Promotional banners routes loaded');
+} catch (error) {
+  console.error('Error loading promotional banners routes:', error);
+}
+
 
 // Debug routes (development only)
 if (process.env.NODE_ENV !== 'production') {

@@ -15,6 +15,7 @@ import { ProfitMarginTab } from '../components/AdminDashboard/ProfitMarginTab';
 import { AdminManagementTab } from '../components/AdminDashboard/AdminManagementTab';
 import { AnalyticsTab } from '../components/AdminDashboard/AnalyticsTab';
 import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
+import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalBannersTab';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import {
   UserGroupIcon,
@@ -28,7 +29,8 @@ import {
   GlobeAltIcon,
   CurrencyDollarIcon,
   ShieldExclamationIcon,
-  TagIcon
+  TagIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
@@ -431,6 +433,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
     { id: 'margins', name: 'Profit Margins', icon: CurrencyDollarIcon },
     { id: 'promo_codes', name: 'Promo Codes', icon: TagIcon },
+    { id: 'promotional_banners', name: 'Promo Banners', icon: PhotoIcon },
     { id: 'whatsapp', name: t('dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
     { id: 'admin_management', name: 'Admin Management', icon: ShieldExclamationIcon, superAdminOnly: true }
   ];
@@ -457,7 +460,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex">        {/* Mobile Menu Button */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg"
+          className={`lg:hidden fixed top-4 ${isRTL ? 'right-4' : 'left-4'} z-50 p-3 bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl shadow-lg`}
         >
           <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isMobileMenuOpen ? (
@@ -478,26 +481,37 @@ export const AdminDashboard: React.FC = () => {
         <div className={`bg-white/80 backdrop-blur-xl border-r border-white/20 shadow-2xl h-screen fixed ${isRTL ? 'right-0' : 'left-0'} w-64 z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isMobileMenuOpen ? 'translate-x-0' : `${isRTL ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}`
         }`}>
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200/50">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
-                <ChartBarIcon className="w-6 h-6 text-white" />
+          {/* Header with Mobile Close */}
+          <div className="p-4 sm:p-6 border-b border-gray-200/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
+                  <ChartBarIcon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                    {t('dashboard.title')}
+                  </h1>
+                  <p className="text-xs text-gray-500">Admin Panel</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                  {t('dashboard.title')}
-                </h1>
-                <p className="text-xs text-gray-500">Admin Panel</p>
-              </div>
+              {/* Mobile Close Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
 
           {/* Language Switcher */}
-          <div className="px-6 py-4 border-b border-gray-200/50">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200/50">
             <button
               onClick={toggleLanguage}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:text-orange-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
+              className={`w-full flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:text-orange-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
             >
               <div className="w-8 h-8 bg-gradient-to-r from-gray-100 to-gray-200 group-hover:from-orange-100 group-hover:to-amber-100 rounded-lg flex items-center justify-center transition-all duration-300">
                 <GlobeAltIcon className="w-4 h-4" />
@@ -508,8 +522,8 @@ export const AdminDashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Navigation */}
-          <nav className="mt-6 flex-1 px-3">
+          {/* Navigation - Scrollable */}
+          <nav className="mt-4 sm:mt-6 flex-1 px-2 sm:px-3 overflow-y-auto">
             {tabs.map((tab, index) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -548,20 +562,20 @@ export const AdminDashboard: React.FC = () => {
                     setActiveTab(tab.id);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center px-4 py-3 mb-2 text-sm font-medium transition-all duration-300 rounded-xl group ${
+                  className={`w-full flex items-center px-3 sm:px-4 py-2.5 sm:py-3 mb-1.5 sm:mb-2 text-sm font-medium transition-all duration-300 rounded-xl group ${
                     isActive
-                      ? `bg-gradient-to-r ${gradients[index]} text-white shadow-lg transform scale-105`
-                      : `text-gray-600 hover:bg-gradient-to-r ${hoverGradients[index]} ${textColors[index]} hover:shadow-md hover:transform hover:scale-105`
+                      ? `bg-gradient-to-r ${gradients[index % gradients.length]} text-white shadow-lg`
+                      : `text-gray-600 hover:bg-gradient-to-r ${hoverGradients[index % hoverGradients.length]} ${textColors[index % textColors.length]} hover:shadow-md`
                   } ${isRTL ? 'text-right' : 'text-left'}`}
                 >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
                     isActive
                       ? 'bg-white/20'
                       : `bg-gray-100 group-hover:bg-white group-hover:shadow-sm`
                   }`}>
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : ''}`} />
                   </div>
-                  <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium`}>
+                  <span className={`${isRTL ? 'mr-2 sm:mr-3' : 'ml-2 sm:ml-3'} font-medium text-xs sm:text-sm truncate`}>
                     {tab.name}
                   </span>
                   {isActive && (
@@ -573,15 +587,15 @@ export const AdminDashboard: React.FC = () => {
           </nav>
 
           {/* Logout Button */}
-          <div className="border-t border-gray-200/50 p-4">
+          <div className="border-t border-gray-200/50 p-3 sm:p-4">
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
+              className={`w-full flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
             >
-              <div className="w-8 h-8 bg-red-100 group-hover:bg-red-200 rounded-lg flex items-center justify-center transition-all duration-300">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-red-100 group-hover:bg-red-200 rounded-lg flex items-center justify-center transition-all duration-300">
                 <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-600" />
               </div>
-              <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium`}>
+              <span className={`${isRTL ? 'mr-2 sm:mr-3' : 'ml-2 sm:ml-3'} font-medium`}>
                 {t('dashboard.actions.logout')}
               </span>
             </button>
@@ -917,6 +931,9 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Promo Codes Tab */}
           {activeTab === 'promo_codes' && (
             <PromoCodesTab />
+          )}{/* Promotional Banners Tab */}
+          {activeTab === 'promotional_banners' && (
+            <PromotionalBannersTab />
           )}{/* WhatsApp Messages Tab */}
           {activeTab === 'whatsapp' && (
             <WhatsAppTab />
