@@ -54,9 +54,9 @@ export const ForNewUsers: React.FC = () => {
   }
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
+    <section className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 md:pt-20 pb-6 md:pb-8">
       <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4 px-1">
-        For new users
+        Special offers
       </h3>
 
       <div className="relative group">

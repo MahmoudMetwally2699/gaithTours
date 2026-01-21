@@ -13,15 +13,15 @@ export const OffersBanner: React.FC = () => {
 
       {/* Wrapper for positioning the illustration outside the clipped banner */}
       <div className="relative">
-        {/* Illustration on the right - positioned to overflow at top */}
+        {/* Illustration on the right - smaller on mobile */}
         <img
           src="/new-design/Shipping 2 Streamline Manchester.svg"
           alt="Offers Illustration"
-          className="absolute right-4 sm:right-8 md:right-16 -top-8 sm:-top-10 h-[140px] sm:h-[160px] w-auto object-contain pointer-events-none z-10"
+          className="absolute right-2 sm:right-8 md:right-16 -top-4 sm:-top-10 h-[80px] sm:h-[140px] md:h-[160px] w-auto object-contain pointer-events-none z-10"
         />
 
         {/* Banner with overflow-hidden to clip the circle */}
-        <div className="bg-[#FCAE61] rounded-xl md:rounded-lg p-4 sm:p-5 md:p-6 relative overflow-hidden shadow-sm min-h-[100px] sm:min-h-[120px]">
+        <div className="bg-[#FCAE61] rounded-xl md:rounded-lg p-4 sm:p-5 md:p-6 relative overflow-hidden shadow-sm min-h-[80px] sm:min-h-[120px]">
 
           {/* Yellow semi-circle decorative element on bottom-left */}
           <div
@@ -29,16 +29,16 @@ export const OffersBanner: React.FC = () => {
             style={{ backgroundColor: '#F5C97A' }}
           />
 
-          {/* Content */}
-          <div className="flex flex-row items-center z-10 relative gap-3 sm:gap-4 md:gap-6">
+          {/* Content - limit width on mobile to avoid illustration overlap */}
+          <div className="flex flex-row items-center z-10 relative gap-3 sm:gap-4 md:gap-6 pr-16 sm:pr-32 md:pr-40">
             <button
               onClick={() => history.push('/register')}
-              className="bg-[#FF385C] text-white font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-lg shadow-md hover:bg-[#ff1f48] transition-colors whitespace-nowrap text-sm sm:text-base flex-shrink-0"
+              className="bg-[#FF385C] text-white font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-md hover:bg-[#ff1f48] transition-colors whitespace-nowrap text-xs sm:text-base flex-shrink-0"
             >
               Join now
             </button>
 
-            <span className="text-white text-sm sm:text-base md:text-lg lg:text-xl font-bold leading-snug">
+            <span className="text-white text-xs sm:text-base md:text-lg lg:text-xl font-bold leading-snug">
               Exclusive prices for Gaith Tours members
             </span>
           </div>

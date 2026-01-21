@@ -192,6 +192,11 @@ router.get('/suggest', async (req, res) => {
     // Use RateHawk multicomplete API for worldwide search
     const results = await rateHawkService.suggest(query, 'en');
 
+    // Debug: log raw region structure to understand the API response
+    if (results.regions && results.regions.length > 0) {
+      console.log('🔍 Raw region sample:', JSON.stringify(results.regions[0], null, 2));
+    }
+
     // Format hotels for frontend
     const hotels = (results.hotels || []).map(hotel => ({
       id: hotel.id,
@@ -218,9 +223,10 @@ router.get('/suggest', async (req, res) => {
 
     const regions = (results.regions || []).map(region => ({
       id: region.id,
-      name: region.label,
+      name: region.name || region.label || region.id,
       type: region.type,
-      location: region.location
+      location: region.location,
+      country_code: region.country_code
     }));
 
     console.log(`✅ Found ${hotels.length} hotels and ${regions.length} regions worldwide`);

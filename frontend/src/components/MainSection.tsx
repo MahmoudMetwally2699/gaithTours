@@ -372,12 +372,21 @@ export const MainSection: React.FC = () => {
 
             {/* Tabs */}
             <div className="flex space-x-3 sm:space-x-4 rtl:space-x-reverse mb-2 justify-center md:justify-start rtl:justify-start px-2 md:px-0">
-             <button className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-2 sm:px-4 py-1.5 sm:py-2">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                <span className="text-base sm:text-lg font-medium">Flights</span>
-             </button>
+             <div className="relative group/flights">
+               <button className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-2 sm:px-4 py-1.5 sm:py-2 cursor-not-allowed">
+                 <svg className="w-5 h-5 sm:w-6 sm:h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                 </svg>
+                 <span className="text-base sm:text-lg font-medium">Flights</span>
+               </button>
+               {/* Coming Soon Tooltip - positioned on left */}
+               <div className="absolute top-1/2 -translate-y-1/2 right-full mr-2 opacity-0 group-hover/flights:opacity-100 transition-all duration-300 pointer-events-none z-[200]">
+                 <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+                   ✈️ Coming soon!
+                 </div>
+                 <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-orange-600 rotate-45"></div>
+               </div>
+             </div>
 
              <button className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-2 sm:px-4 py-1.5 sm:py-2">
                 <HomeIcon className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -433,26 +442,48 @@ export const MainSection: React.FC = () => {
                       </div>
 
                       {/* Autocomplete Dropdown */}
-                      {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                      {showAutocomplete && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0) && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl md:rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-60 md:max-h-80 overflow-y-auto">
+                          {/* Regions/Cities */}
+                          {autocompleteResults.regions.length > 0 && (
+                            <div className="p-2 border-b border-gray-100">
+                              <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Cities & Regions</p>
+                              {autocompleteResults.regions.slice(0, 5).map((region) => (
+                                <button
+                                  key={region.id}
+                                  type="button"
+                                  onClick={() => handleSelectSuggestion(region)}
+                                  className="w-full flex items-center space-x-2 md:space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
+                                >
+                                  <MapPinIcon className="w-4 h-4 md:w-5 md:h-5 text-orange-500 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-gray-800 font-medium text-sm md:text-base truncate">{region.name}</p>
+                                    <p className="text-xs text-gray-400 capitalize">{region.type || 'Region'}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           {/* Hotels */}
-                          <div className="p-2">
-                            <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Hotels</p>
-                            {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
-                              <button
-                                key={hotel.id}
-                                type="button"
-                                onClick={() => handleSelectSuggestion(hotel)}
-                                className="w-full flex items-center space-x-2 md:space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
-                              >
-                                <BuildingOffice2Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-500 flex-shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-gray-800 font-medium text-sm md:text-base truncate">{hotel.name}</p>
-                                  <p className="text-xs text-gray-400">Hotel</p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
+                          {autocompleteResults.hotels.length > 0 && (
+                            <div className="p-2">
+                              <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Hotels</p>
+                              {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                                <button
+                                  key={hotel.id}
+                                  type="button"
+                                  onClick={() => handleSelectSuggestion(hotel)}
+                                  className="w-full flex items-center space-x-2 md:space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
+                                >
+                                  <BuildingOffice2Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-500 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-gray-800 font-medium text-sm md:text-base truncate">{hotel.name}</p>
+                                    <p className="text-xs text-gray-400">Hotel</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
