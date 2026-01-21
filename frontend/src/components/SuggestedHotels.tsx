@@ -23,7 +23,11 @@ interface SuggestionResponse {
   destination: string;
 }
 
-export const SuggestedHotels: React.FC = () => {
+interface SuggestedHotelsProps {
+  onLoaded?: () => void;
+}
+
+export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) => {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { currency } = useCurrency();
@@ -67,6 +71,10 @@ export const SuggestedHotels: React.FC = () => {
     } finally {
       if (!keepLoading) {
         setLoading(false);
+        // Notify parent that content is loaded
+        if (onLoaded) {
+          onLoaded();
+        }
       }
     }
   };
