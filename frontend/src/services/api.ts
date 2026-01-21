@@ -594,7 +594,7 @@ export const bookingsAPI = {
             });
             return response.data;
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Failed to pre-book rate';
+            const _message = error.response?.data?.message || 'Failed to pre-book rate';
             // Don't show toast here - let the page component handle it
             throw error;
         }

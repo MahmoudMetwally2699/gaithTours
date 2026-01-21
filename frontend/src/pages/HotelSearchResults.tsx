@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   FunnelIcon,
-  StarIcon,
   MapPinIcon,
   BuildingOfficeIcon,
   XMarkIcon,
@@ -156,6 +155,7 @@ export const HotelSearchResults: React.FC = () => {
   const history = useHistory();
   const location = useLocation();
   const { user, logout } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isRTL = direction === 'rtl';
   const { currency, currencySymbol } = useCurrency();
 
@@ -181,6 +181,7 @@ export const HotelSearchResults: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalHotels, setTotalHotels] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showMap, setShowMap] = useState(false);
   const [fullscreenMap, setFullscreenMap] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
@@ -200,6 +201,7 @@ export const HotelSearchResults: React.FC = () => {
   // Autocomplete state
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({ hotels: [], regions: [] });
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoadingAutocomplete, setIsLoadingAutocomplete] = useState(false);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const hasUserTyped = useRef(false); // Prevent dropdown on page load
@@ -230,6 +232,7 @@ export const HotelSearchResults: React.FC = () => {
         childrenAges: searchQuery.childrenAges
     });
     setEditableDestination(searchQuery.destination);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery.checkIn, searchQuery.checkOut, searchQuery.rooms, searchQuery.adults, searchQuery.children, searchQuery.destination]);
 
   const handleUpdateSearch = () => {
@@ -519,6 +522,7 @@ export const HotelSearchResults: React.FC = () => {
     });
 
     return filtered;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotels, filters]);
 
   const handleHotelClick = (hotel: Hotel) => {

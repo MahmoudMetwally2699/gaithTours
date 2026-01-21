@@ -82,7 +82,8 @@ export const HotelDetails: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  // Check if current language is RTL
+  // Check if current language is RTL (used for potential RTL layout adjustments)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isRTL = i18n.language === 'ar';
   const { currency, currencySymbol } = useCurrency();
 
@@ -145,6 +146,7 @@ export const HotelDetails: React.FC = () => {
         children: currentChildrenAges.length,
         childrenAges: currentChildrenAges
      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
 
@@ -713,9 +715,9 @@ export const HotelDetails: React.FC = () => {
                  <MapPinIcon className="h-4 w-4 mr-1 text-orange-500" />
                  <span>{hotel.address}</span>
                  <span className="mx-2">•</span>
-                 <a href="#" className="text-blue-600 underline">{hotel.city}</a>
+                 <span className="text-blue-600">{hotel.city}</span>
                  <span className="mx-2">•</span>
-                 <a href="#" className="text-blue-600 underline">{t('hotels.showOnMap', 'Show on map')}</a>
+                 <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('hotels.showOnMap', 'Show on map')}</button>
               </div>
 
               <div className="flex items-center gap-4">

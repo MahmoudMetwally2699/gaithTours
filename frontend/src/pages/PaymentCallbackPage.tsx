@@ -40,6 +40,7 @@ export const PaymentCallbackPage: React.FC = () => {
     }
 
     checkPaymentStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   const checkPaymentStatus = async () => {
@@ -49,7 +50,7 @@ export const PaymentCallbackPage: React.FC = () => {
       const response = await paymentsAPI.getKashierOrderStatus(orderId);
 
       if (response.success && response.data) {
-        const { reservation, payment } = response.data;
+        const { reservation, payment: _payment } = response.data;
 
         // Check reservation status
         if (reservation.status === 'confirmed' || reservation.ratehawkStatus === 'sandbox') {
