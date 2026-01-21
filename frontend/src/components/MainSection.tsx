@@ -458,7 +458,10 @@ export const MainSection: React.FC = () => {
                                   <MapPinIcon className="w-4 h-4 md:w-5 md:h-5 text-orange-500 flex-shrink-0" />
                                   <div className="min-w-0 flex-1">
                                     <p className="text-gray-800 font-medium text-sm md:text-base truncate">{region.name}</p>
-                                    <p className="text-xs text-gray-400 capitalize">{region.type || 'Region'}</p>
+                                    <p className="text-xs text-gray-400 capitalize">
+                                      {region.type || 'Region'}
+                                      {(region as any).country_code && ` · ${(region as any).country_code}`}
+                                    </p>
                                   </div>
                                 </button>
                               ))}
