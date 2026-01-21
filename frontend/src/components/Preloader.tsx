@@ -46,33 +46,7 @@ export const Preloader: React.FC<PreloaderProps> = ({
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500"
           style={{ pointerEvents: showPreloader ? 'auto' : 'none' }}
         >
-          {/* Animated Background Patterns */}
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Floating circles */}
-            {[...Array(6)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-white/10"
-                style={{
-                  width: `${100 + i * 50}px`,
-                  height: `${100 + i * 50}px`,
-                  left: `${10 + i * 15}%`,
-                  top: `${20 + (i % 3) * 25}%`,
-                }}
-                animate={{
-                  y: [0, -30, 0],
-                  x: [0, 15, 0],
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 3 + i * 0.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: i * 0.2,
-                }}
-              />
-            ))}
-          </div>
+
 
           {/* Main Content */}
           <div className="relative flex flex-col items-center justify-center">

@@ -180,7 +180,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         loading={priority ? 'eager' : loading}
         decoding={decoding}
         sizes={sizes}
-        {...(priority && { fetchPriority: 'high' as const })}
+        {...(priority && { fetchpriority: 'high' as const })}
       />
 
       {/* Loading spinner overlay */}
