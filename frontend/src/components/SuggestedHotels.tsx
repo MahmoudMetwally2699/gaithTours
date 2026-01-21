@@ -164,42 +164,35 @@ export const SuggestedHotels: React.FC = () => {
 
   if (loading) {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">{t('hotels.suggestedForYou', 'Suggested for You')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 md:py-12">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 px-1">{t('hotels.suggestedForYou', 'Suggested for You')}</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-[1.5rem] overflow-hidden shadow-sm h-[320px] animate-pulse border border-gray-100 flex flex-col">
-              {/* Image placeholder with lighter tone */}
-              <div className="bg-gray-100 h-40 w-full relative">
-                 {/* Badge placeholder with border */}
-                 <div className="absolute -bottom-5 right-4 h-11 w-11 bg-gray-200 rounded-xl border-4 border-white"></div>
+            <div key={i} className="bg-white rounded-2xl md:rounded-[1.5rem] overflow-hidden shadow-sm h-[280px] sm:h-[300px] md:h-[320px] animate-pulse border border-gray-100 flex flex-col">
+              <div className="bg-gray-100 h-32 sm:h-36 md:h-40 w-full relative">
+                 <div className="absolute -bottom-4 md:-bottom-5 right-3 md:right-4 h-9 w-9 md:h-11 md:w-11 bg-gray-200 rounded-xl border-3 md:border-4 border-white"></div>
               </div>
 
-              {/* Content placeholder */}
-              <div className="pt-6 pb-4 px-4 flex flex-col flex-grow space-y-3">
-                {/* Title and Reviews */}
-                <div className="space-y-3">
+              <div className="pt-5 md:pt-6 pb-3 md:pb-4 px-3 md:px-4 flex flex-col flex-grow space-y-2 md:space-y-3">
+                <div className="space-y-2 md:space-y-3">
                    <div className="flex justify-between items-start">
-                      <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
+                      <div className="h-5 md:h-6 bg-gray-200 rounded-md w-3/4"></div>
                    </div>
-                   {/* Stars placeholder */}
                    <div className="flex gap-1">
                       {[...Array(5)].map((_, j) => (
-                        <div key={j} className="h-4 w-4 bg-gray-100 rounded-full"></div>
+                        <div key={j} className="h-3 w-3 md:h-4 md:w-4 bg-gray-100 rounded-full"></div>
                       ))}
                    </div>
                 </div>
 
-                {/* Address */}
-                <div className="space-y-2 mt-2">
-                   <div className="h-3 bg-gray-100 rounded w-full"></div>
-                   <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                <div className="space-y-1.5 md:space-y-2 mt-1 md:mt-2">
+                   <div className="h-2.5 md:h-3 bg-gray-100 rounded w-full"></div>
+                   <div className="h-2.5 md:h-3 bg-gray-100 rounded w-2/3"></div>
                 </div>
 
-                {/* Price section at bottom */}
-                <div className="mt-auto pt-3 flex justify-end items-baseline border-t border-gray-50">
-                   <div className="h-3 bg-gray-100 rounded w-8 mr-1"></div>
-                   <div className="h-6 bg-gray-200 rounded-lg w-20"></div>
+                <div className="mt-auto pt-2 md:pt-3 flex justify-end items-baseline border-t border-gray-50">
+                   <div className="h-2.5 md:h-3 bg-gray-100 rounded w-6 md:w-8 mr-1"></div>
+                   <div className="h-5 md:h-6 bg-gray-200 rounded-lg w-16 md:w-20"></div>
                 </div>
               </div>
             </div>
@@ -212,11 +205,11 @@ export const SuggestedHotels: React.FC = () => {
   if (hotels.length === 0) return null;
 
   return (
-    <section className="py-16 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <h2 className="text-3xl font-bold text-gray-900">
+    <section className="py-8 md:py-12 lg:py-16 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="text-center mb-6 md:mb-8 lg:mb-12 px-2 md:px-0">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-3 md:mb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 text-center">
               {source === 'history'
                 ? t('suggestions.historyTitle', `Because you viewed ${destinationName}`)
                 : source === 'location'
@@ -231,29 +224,29 @@ export const SuggestedHotels: React.FC = () => {
                   setLoading(true);
                   getUserLocationBackground();
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap"
+                className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Use my location
+                <span className="hidden sm:inline">Use my location</span>
+                <span className="sm:hidden">Location</span>
               </button>
             )}
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm md:text-base">
             {source === 'history'
               ? 'Pick up where you left off'
               : 'Discover top rated stays'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {hotels
             .filter(h => h.price && h.price > 0)
             .slice(0, 8)
             .map((hotel) => {
-              // Generate dates matching what the backend uses (today, 1 night)
               const today = new Date();
               const tomorrow = new Date(today);
               tomorrow.setDate(tomorrow.getDate() + 1);

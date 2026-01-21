@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './DateRangePicker.css';
@@ -20,6 +20,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 }) => {
   const [localStartDate, setLocalStartDate] = useState<Date | null>(startDate);
   const [localEndDate, setLocalEndDate] = useState<Date | null>(endDate);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleDateChange = (dates: [Date | null, Date | null]) => {
     const [start, end] = dates;
@@ -39,9 +46,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         endDate={localEndDate}
         onChange={handleDateChange}
         minDate={minDate}
-        monthsShown={2}
+        monthsShown={isMobile ? 1 : 2}
         inline
-        calendarClassName="custom-calendar"
+        calendarClassName={`custom-calendar ${isMobile ? 'mobile-calendar' : ''}`}
       />
     </div>
   );

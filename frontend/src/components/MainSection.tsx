@@ -276,9 +276,9 @@ export const MainSection: React.FC = () => {
   };
 
   return (
-    <div className="relative z-50 h-[300px] w-full overflow-visible font-sans">
+    <div className="relative z-50 min-h-[300px] md:h-[300px] w-full overflow-visible font-sans pb-4 md:pb-0">
       {/* Background Image - optimized WebP */}
-      <div className="absolute inset-0 z-0 h-[300px] overflow-hidden rounded-b-[3rem]">
+      <div className="absolute inset-0 z-0 min-h-[300px] md:h-[300px] overflow-hidden rounded-b-[2rem] md:rounded-b-[3rem]">
         <img
           src="/new-design/header-photo-background.webp"
           alt="Background"
@@ -287,114 +287,122 @@ export const MainSection: React.FC = () => {
       </div>
 
       {/* Main Content Container */}
-      <div className="relative z-10 flex flex-col h-full px-4 sm:px-8 lg:px-16 py-3">
+      <div className="relative z-10 flex flex-col h-full px-3 sm:px-6 lg:px-16 py-2 md:py-3">
 
         {/* Custom Header */}
-        <header className="flex flex-col sm:flex-row justify-between items-center w-full mb-2 sm:mb-4 space-y-2 sm:space-y-0">
+        <header className="flex flex-row justify-between items-center w-full mb-2 md:mb-4">
 
-          {/* Left: Auth Buttons */}
-          <div className="flex items-center space-x-4 rtl:space-x-reverse order-2 sm:order-1 w-full sm:w-auto justify-center sm:justify-start">
+          {/* Logo - First on Mobile */}
+          <Link to="/" className="flex-shrink-0 order-1">
+            <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-10 sm:h-12 md:h-14 w-auto drop-shadow-lg" />
+          </Link>
+
+          {/* Contact & Settings - Desktop Only */}
+          <div className="hidden lg:flex items-center space-x-4 xl:space-x-6 rtl:space-x-reverse text-white text-sm font-medium order-2">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:text-orange-200">
+              <PhoneIcon className="w-4 h-4" />
+              <span>+966549412412</span>
+            </div>
+
+            <CurrencySelector variant="light" />
+
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center space-x-1 hover:text-orange-200 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm"
+            >
+              <GlobeAltIcon className="w-4 h-4" />
+              <span className="uppercase">{i18n.language}</span>
+              <ChevronDownIcon className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Auth Buttons - Compact on Mobile */}
+          <div className="flex items-center space-x-2 sm:space-x-3 rtl:space-x-reverse order-3">
             {!user ? (
               <>
-                <Link to="/login" className="text-white font-medium hover:text-orange-200 transition text-lg shadow-sm">
+                <Link to="/login" className="text-white font-medium hover:text-orange-200 transition text-sm sm:text-base md:text-lg">
                   {t('nav.login', 'Sign in')}
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-[#F7871D] hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition shadow-md"
+                  className="bg-[#F7871D] hover:bg-orange-600 text-white px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-medium transition shadow-md text-sm sm:text-base"
                 >
                   {t('nav.register', 'Register')}
                 </Link>
               </>
             ) : (
-               <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
-                  <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors">
-                    {user.name}
-                  </Link>
-                  <button onClick={logout} className="text-sm opacity-80 hover:opacity-100">
-                    {t('nav.logout', 'Logout')}
-                  </button>
-               </div>
-            )}
-          </div>
-
-          {/* Center/Right: Info & Logo */}
-          <div className="flex items-center space-x-6 lg:space-x-8 rtl:space-x-reverse order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
-
-            {/* Contact & Settings (Hidden on small mobile for space if needed, or stacked) */}
-            <div className="hidden md:flex items-center space-x-6 rtl:space-x-reverse text-white text-sm font-medium">
-              <div className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer hover:text-orange-200">
-                <PhoneIcon className="w-4 h-4" />
-                <span>+966549412412</span>
+              <div className="flex items-center space-x-2 sm:space-x-4 rtl:space-x-reverse text-white">
+                <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors text-sm sm:text-base truncate max-w-[100px] sm:max-w-none">
+                  {user.name}
+                </Link>
+                <button onClick={logout} className="text-xs sm:text-sm opacity-80 hover:opacity-100">
+                  {t('nav.logout', 'Logout')}
+                </button>
               </div>
-
-              <CurrencySelector variant="light" />
-
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center space-x-1 hover:text-orange-200 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm"
-              >
-                 <GlobeAltIcon className="w-4 h-4" />
-                 <span className="uppercase">{i18n.language}</span>
-                 <ChevronDownIcon className="w-3 h-3" />
-              </button>
-            </div>
-
-            {/* Logo */}
-            <Link to="/" className="flex-shrink-0">
-               <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-12 sm:h-14 w-auto drop-shadow-lg" />
-            </Link>
+            )}
           </div>
         </header>
 
+        {/* Mobile-only Currency & Language Row */}
+        <div className="flex lg:hidden items-center justify-center space-x-3 rtl:space-x-reverse mb-2">
+          <CurrencySelector variant="light" />
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center space-x-1 text-white hover:text-orange-200 bg-white/20 px-2 py-1 rounded-full backdrop-blur-sm text-sm"
+          >
+            <GlobeAltIcon className="w-4 h-4" />
+            <span className="uppercase">{i18n.language}</span>
+          </button>
+        </div>
+
         {/* Hero Content */}
-        <main className="flex-grow flex flex-col justify-center max-w-7xl mx-auto w-full">
+        <main className="flex-grow flex flex-col justify-center max-w-7xl mx-auto w-full px-1 sm:px-0">
 
            {/* Heading */}
            <motion.div
              initial={{ opacity: 0, y: 30 }}
              animate={{ opacity: 1, y: 0 }}
-              className="mb-3 text-center sm:text-left rtl:text-right"
+              className="mb-2 md:mb-3 text-center md:text-left rtl:text-right"
             >
-               <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-white leading-tight drop-shadow-md">
+               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white leading-tight drop-shadow-md px-2 md:px-0">
                 Wherever you are...<br />
                 <span className="font-medium">enjoy the best prices</span>
               </h1>
            </motion.div>
 
             {/* Tabs */}
-            <div className="flex space-x-4 rtl:space-x-reverse mb-2 justify-center sm:justify-start rtl:justify-start">
-             <button className="flex items-center space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-4 py-2">
-                <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex space-x-3 sm:space-x-4 rtl:space-x-reverse mb-2 justify-center md:justify-start rtl:justify-start px-2 md:px-0">
+             <button className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse text-white/70 hover:text-white transition px-2 sm:px-4 py-1.5 sm:py-2">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                <span className="text-lg font-medium">Flights</span>
+                <span className="text-base sm:text-lg font-medium">Flights</span>
              </button>
 
-             <button className="flex items-center space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-4 py-2">
-                <HomeIcon className="w-6 h-6" />
-                <span className="text-lg font-medium">Stays</span>
+             <button className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-2 sm:px-4 py-1.5 sm:py-2">
+                <HomeIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                <span className="text-base sm:text-lg font-medium">Stays</span>
              </button>
            </div>
 
-           {/* Search Bar - Pill Shape */}
+           {/* Search Bar - Responsive Layout */}
            <motion.div
              initial={{ opacity: 0, y: 20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             className="relative z-[100] w-full bg-white rounded-[2rem] p-2 shadow-2xl border-4 border-white/50 backdrop-blur-sm"
+             className="relative z-[100] w-full bg-white rounded-2xl md:rounded-[2rem] p-1.5 md:p-2 shadow-2xl border-2 md:border-4 border-white/50 backdrop-blur-sm mx-auto max-w-full"
            >
-              <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
+              <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-stretch md:items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
 
                  {/* Destination */}
-                 <div className="flex-[1.5] w-full p-4 flex items-center space-x-3 rtl:space-x-reverse relative min-w-0" ref={autocompleteRef}>
-                    <MapPinIcon className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                 <div className="flex-[1.5] w-full p-3 md:p-4 flex items-center space-x-2 md:space-x-3 rtl:space-x-reverse relative min-w-0" ref={autocompleteRef}>
+                    <MapPinIcon className="w-5 h-5 md:w-6 md:h-6 text-gray-400 flex-shrink-0" />
                     <div className="flex-1 flex flex-col relative min-w-0">
                       <div className="flex items-center space-x-2 min-w-0">
                         <input
                           type="text"
                           value={destination}
-                          title={destination} // Show full name on hover
+                          title={destination}
                           onChange={(e) => {
                             hasUserTyped.current = true;
                             setDestination(e.target.value);
@@ -404,20 +412,20 @@ export const MainSection: React.FC = () => {
                               setShowAutocomplete(true);
                             }
                           }}
-                          placeholder={isDetectingLocation ? "Detecting location..." : "where to ?"}
-                          className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-lg truncate"
+                          placeholder={isDetectingLocation ? "Detecting..." : "where to ?"}
+                          className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-base md:text-lg truncate"
                           required
                           disabled={isDetectingLocation}
                           autoComplete="off"
                         />
                         {isDetectingLocation && (
-                          <svg className="animate-spin h-5 w-5 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin h-4 w-4 md:h-5 md:w-5 text-orange-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                         )}
                         {isLoadingAutocomplete && !isDetectingLocation && (
-                          <svg className="animate-spin h-5 w-5 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin h-4 w-4 md:h-5 md:w-5 text-orange-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
@@ -426,7 +434,7 @@ export const MainSection: React.FC = () => {
 
                       {/* Autocomplete Dropdown */}
                       {showAutocomplete && autocompleteResults.hotels.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl md:rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-60 md:max-h-80 overflow-y-auto">
                           {/* Hotels */}
                           <div className="p-2">
                             <p className="text-xs font-semibold text-gray-400 px-3 py-1 uppercase">Hotels</p>
@@ -435,11 +443,11 @@ export const MainSection: React.FC = () => {
                                 key={hotel.id}
                                 type="button"
                                 onClick={() => handleSelectSuggestion(hotel)}
-                                className="w-full flex items-center space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
+                                className="w-full flex items-center space-x-2 md:space-x-3 px-3 py-2 hover:bg-orange-50 rounded-lg transition text-left"
                               >
-                                <BuildingOffice2Icon className="w-5 h-5 text-gray-500" />
-                                <div>
-                                  <p className="text-gray-800 font-medium">{hotel.name}</p>
+                                <BuildingOffice2Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-500 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-gray-800 font-medium text-sm md:text-base truncate">{hotel.name}</p>
                                   <p className="text-xs text-gray-400">Hotel</p>
                                 </div>
                               </button>
@@ -451,56 +459,68 @@ export const MainSection: React.FC = () => {
                  </div>
 
                  {/* Dates */}
-                 <div className="flex-1 w-full p-4 flex items-center space-x-3 rtl:space-x-reverse relative" ref={datePickerRef}>
-                    <CalendarIcon className="w-6 h-6 text-gray-700" />
+                 <div className="flex-1 w-full p-3 md:p-4 flex items-center space-x-2 md:space-x-3 rtl:space-x-reverse relative" ref={datePickerRef}>
+                    <CalendarIcon className="w-5 h-5 md:w-6 md:h-6 text-gray-700 flex-shrink-0" />
                     <div
-                      className="flex flex-col w-full cursor-pointer"
+                      className="flex flex-col w-full cursor-pointer min-w-0"
                       onClick={() => setShowDatePicker(!showDatePicker)}
                     >
-                       <span className="text-sm font-bold text-gray-800">{formatDateDisplay()}</span>
+                       <span className="text-sm md:text-sm font-bold text-gray-800 truncate">{formatDateDisplay()}</span>
                        <div className="flex items-center space-x-2 text-xs text-gray-400">
-                          <span>Check-in - Check-out</span>
+                          <span className="truncate">Check-in - Check-out</span>
                        </div>
                     </div>
                     {/* Nights tag */}
                     {calculateNights() > 0 && (
-                      <div className="hidden lg:block bg-orange-100 text-orange-600 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap">
+                      <div className="hidden sm:block bg-orange-100 text-orange-600 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
                          {calculateNights()} nights
                       </div>
                     )}
 
                     {/* Date Range Picker Popup */}
                     {showDatePicker && (
-                      <div className="absolute top-full left-0 mt-2 z-50 shadow-2xl rounded-xl">
-                        <DateRangePicker
-                          startDate={checkInDate}
-                          endDate={checkOutDate}
-                          onChange={handleDateChange}
-                          minDate={new Date()}
-                        />
+                      <div className="fixed inset-0 md:absolute md:inset-auto md:top-full md:left-0 md:mt-2 z-[9999] md:z-50 flex items-end md:items-start justify-center md:justify-start bg-black/30 md:bg-transparent">
+                        <div className="w-full md:w-auto max-w-full bg-white rounded-t-2xl md:rounded-xl shadow-2xl overflow-hidden">
+                          <DateRangePicker
+                            startDate={checkInDate}
+                            endDate={checkOutDate}
+                            onChange={handleDateChange}
+                            minDate={new Date()}
+                          />
+                          {/* Mobile close button */}
+                          <div className="md:hidden p-3 border-t border-gray-100">
+                            <button
+                              type="button"
+                              onClick={() => setShowDatePicker(false)}
+                              className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
                  </div>
 
-                 {/* Guests */}
-                 <div className="flex-1 w-full p-4 flex items-center justify-between relative" ref={guestPickerRef}>
+                 {/* Guests - Simplified on Mobile */}
+                 <div className="flex-1 w-full p-3 md:p-4 flex items-center justify-between relative min-w-0" ref={guestPickerRef}>
                     <div
-                      className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer w-full"
+                      className="flex items-center space-x-2 md:space-x-3 rtl:space-x-reverse cursor-pointer w-full min-w-0"
                       onClick={() => setShowGuestPicker(!showGuestPicker)}
                     >
-                       <UserIcon className="w-6 h-6 text-gray-700" />
-                       <span className="text-gray-700 text-lg">
-                          {guests.rooms} room, {guests.adults} adults, {guests.children} children
+                       <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-gray-700 flex-shrink-0" />
+                       <span className="text-gray-700 text-sm md:text-base lg:text-lg truncate">
+                          {guests.rooms} room, {guests.adults} adults{guests.children > 0 ? `, ${guests.children} child${guests.children > 1 ? 'ren' : ''}` : ''}
                        </span>
                     </div>
 
                     {/* Guest Picker Popup */}
                     {showGuestPicker && (
-                      <div className="absolute top-full right-0 mt-2 z-[9999] bg-white rounded-2xl shadow-2xl w-80 max-h-[400px] flex flex-col">
-                        <h3 className="text-lg font-bold text-gray-800 p-6 pb-2">Rooms and Guests</h3>
+                      <div className="fixed inset-x-0 md:absolute md:inset-x-auto bottom-0 md:top-full md:right-0 md:bottom-auto mt-0 md:mt-2 z-[9999] bg-white rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:w-80 max-h-[85vh] md:max-h-[400px] flex flex-col">
+                        <h3 className="text-lg font-bold text-gray-800 p-4 md:p-6 pb-2">Rooms and Guests</h3>
 
                         {/* Scrollable content area */}
-                        <div className="flex-1 overflow-y-auto px-6 pb-2">
+                        <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-2">
 
                         {/* Rooms */}
                         <div className="flex items-center justify-between py-3 border-b border-gray-200">
@@ -512,15 +532,15 @@ export const MainSection: React.FC = () => {
                               type="button"
                               onClick={() => setGuests(prev => ({ ...prev, rooms: Math.max(1, prev.rooms - 1) }))}
                               disabled={guests.rooms <= 1}
-                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                              className="w-9 h-9 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold text-lg"
                             >
                               −
                             </button>
-                            <span className="w-8 text-center font-medium text-gray-800">{guests.rooms}</span>
+                            <span className="w-10 text-center font-medium text-gray-800 text-lg">{guests.rooms}</span>
                             <button
                               type="button"
                               onClick={() => setGuests(prev => ({ ...prev, rooms: prev.rooms + 1 }))}
-                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                              className="w-9 h-9 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold text-lg"
                             >
                               +
                             </button>
@@ -538,15 +558,15 @@ export const MainSection: React.FC = () => {
                               type="button"
                               onClick={() => setGuests(prev => ({ ...prev, adults: Math.max(1, prev.adults - 1) }))}
                               disabled={guests.adults <= 1}
-                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                              className="w-9 h-9 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold text-lg"
                             >
                               −
                             </button>
-                            <span className="w-8 text-center font-medium text-gray-800">{guests.adults}</span>
+                            <span className="w-10 text-center font-medium text-gray-800 text-lg">{guests.adults}</span>
                             <button
                               type="button"
                               onClick={() => setGuests(prev => ({ ...prev, adults: prev.adults + 1 }))}
-                              className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                              className="w-9 h-9 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold text-lg"
                             >
                               +
                             </button>
@@ -569,26 +589,26 @@ export const MainSection: React.FC = () => {
                                   childrenAges: prev.childrenAges.slice(0, -1)
                                 }))}
                                 disabled={guests.children <= 0}
-                                className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold"
+                                className="w-9 h-9 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 disabled:border-gray-300 disabled:text-gray-300 disabled:hover:bg-transparent flex items-center justify-center font-bold text-lg"
                               >
                                 −
                               </button>
-                              <span className="w-8 text-center font-medium text-gray-800">{guests.children}</span>
+                              <span className="w-10 text-center font-medium text-gray-800 text-lg">{guests.children}</span>
                               <button
                                 type="button"
                                 onClick={() => setGuests(prev => ({
                                   ...prev,
                                   children: prev.children + 1,
-                                  childrenAges: [...prev.childrenAges, 5] // Default age 5
+                                  childrenAges: [...prev.childrenAges, 5]
                                 }))}
-                                className="w-8 h-8 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold"
+                                className="w-9 h-9 rounded-full border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center font-bold text-lg"
                               >
                                 +
                               </button>
                             </div>
                           </div>
 
-                          {/* Child Age Selectors - Improved Grid Layout */}
+                          {/* Child Age Selectors */}
                           {guests.childrenAges.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-100">
                               <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
@@ -624,7 +644,7 @@ export const MainSection: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setShowGuestPicker(false)}
-                            className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition"
+                            className="w-full bg-orange-500 text-white py-3 md:py-3 rounded-lg font-medium hover:bg-orange-600 transition text-base md:text-base"
                           >
                             Done
                           </button>
@@ -633,8 +653,8 @@ export const MainSection: React.FC = () => {
                     )}
                  </div>
 
-                 {/* Work Travel */}
-                 <div className="p-4 flex items-center justify-center md:justify-start space-x-2 rtl:space-x-reverse cursor-pointer" onClick={() => setIsWorkTravel(!isWorkTravel)}>
+                 {/* Work Travel - Hidden on small mobile */}
+                 <div className="hidden sm:flex p-3 md:p-4 items-center justify-center md:justify-start space-x-2 rtl:space-x-reverse cursor-pointer" onClick={() => setIsWorkTravel(!isWorkTravel)}>
                     <input
                       type="checkbox"
                       checked={isWorkTravel}
@@ -648,10 +668,10 @@ export const MainSection: React.FC = () => {
                  <div className="p-2 w-full md:w-auto">
                     <button
                       type="submit"
-                      className="w-full md:w-auto bg-[#F7871D] hover:bg-orange-600 text-white px-8 py-4 rounded-[1.5rem] flex items-center justify-center space-x-2 transition shadow-lg"
+                      className="w-full md:w-auto bg-[#F7871D] hover:bg-orange-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-[1.5rem] flex items-center justify-center space-x-2 transition shadow-lg active:scale-95"
                     >
-                       <MagnifyingGlassIcon className="w-6 h-6" />
-                       <span className="text-xl font-medium">Search</span>
+                       <MagnifyingGlassIcon className="w-5 h-5 md:w-6 md:h-6" />
+                       <span className="text-lg md:text-xl font-medium">Search</span>
                     </button>
                  </div>
               </form>

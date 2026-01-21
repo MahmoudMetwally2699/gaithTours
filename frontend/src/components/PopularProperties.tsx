@@ -95,7 +95,7 @@ export const PopularProperties: React.FC = () => {
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 350;
+      const scrollAmount = scrollRef.current.clientWidth * 0.8;
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -105,30 +105,30 @@ export const PopularProperties: React.FC = () => {
 
   if (loading) {
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Popular 5-star hotels in Saudi Arabia</h2>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+      <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 px-1">Popular 5-star hotels in Saudi Arabia</h2>
+        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="min-w-[240px] md:min-w-[280px] bg-white rounded-[1.5rem] overflow-hidden shadow-sm h-[320px] animate-pulse border border-gray-100 flex flex-col">
-              <div className="bg-gray-100 h-40 w-full relative">
-                <div className="absolute -bottom-5 right-4 h-11 w-11 bg-gray-200 rounded-xl border-4 border-white"></div>
+            <div key={i} className="min-w-[160px] sm:min-w-[200px] md:min-w-[240px] lg:min-w-[280px] bg-white rounded-2xl md:rounded-[1.5rem] overflow-hidden shadow-sm h-[280px] sm:h-[300px] md:h-[320px] animate-pulse border border-gray-100 flex flex-col flex-shrink-0">
+              <div className="bg-gray-100 h-32 sm:h-36 md:h-40 w-full relative">
+                <div className="absolute -bottom-4 md:-bottom-5 right-3 md:right-4 h-9 w-9 md:h-11 md:w-11 bg-gray-200 rounded-xl border-3 md:border-4 border-white"></div>
               </div>
-              <div className="pt-6 pb-4 px-4 flex flex-col flex-grow space-y-3">
-                <div className="space-y-3">
-                  <div className="h-6 bg-gray-200 rounded-md w-3/4"></div>
+              <div className="pt-5 md:pt-6 pb-3 md:pb-4 px-3 md:px-4 flex flex-col flex-grow space-y-2 md:space-y-3">
+                <div className="space-y-2 md:space-y-3">
+                  <div className="h-5 md:h-6 bg-gray-200 rounded-md w-3/4"></div>
                   <div className="flex gap-1">
                     {[...Array(5)].map((_, j) => (
-                      <div key={j} className="h-4 w-4 bg-gray-100 rounded-full"></div>
+                      <div key={j} className="h-3 w-3 md:h-4 md:w-4 bg-gray-100 rounded-full"></div>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-2 mt-2">
-                  <div className="h-3 bg-gray-100 rounded w-full"></div>
-                  <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                <div className="space-y-1.5 md:space-y-2 mt-1 md:mt-2">
+                  <div className="h-2.5 md:h-3 bg-gray-100 rounded w-full"></div>
+                  <div className="h-2.5 md:h-3 bg-gray-100 rounded w-2/3"></div>
                 </div>
-                <div className="mt-auto pt-3 flex justify-end items-baseline border-t border-gray-50">
-                  <div className="h-3 bg-gray-100 rounded w-8 mr-1"></div>
-                  <div className="h-6 bg-gray-200 rounded-lg w-20"></div>
+                <div className="mt-auto pt-2 md:pt-3 flex justify-end items-baseline border-t border-gray-50">
+                  <div className="h-2.5 md:h-3 bg-gray-100 rounded w-6 md:w-8 mr-1"></div>
+                  <div className="h-5 md:h-6 bg-gray-200 rounded-lg w-16 md:w-20"></div>
                 </div>
               </div>
             </div>
@@ -139,10 +139,9 @@ export const PopularProperties: React.FC = () => {
   }
 
   if (hotels.length === 0 && !loading) {
-    // Show a message instead of hiding completely
     return (
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-8">Popular 5-star hotels in Saudi Arabia</h2>
+      <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 md:mb-8 px-1">Popular 5-star hotels in Saudi Arabia</h2>
         <p className="text-gray-500 text-center py-8">Loading popular properties...</p>
       </section>
     );
@@ -152,7 +151,6 @@ export const PopularProperties: React.FC = () => {
     return null;
   }
 
-  // Generate dates matching what the backend uses (today, 1 night)
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -160,38 +158,47 @@ export const PopularProperties: React.FC = () => {
   const checkOut = tomorrow.toISOString().split('T')[0];
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Popular 5-star hotels in Saudi Arabia</h2>
-        <div className="flex gap-2">
+    <section className="w-full max-w-7xl mx-auto py-6 md:py-8">
+      <div className="flex items-center justify-between mb-4 md:mb-6 px-3 sm:px-4 md:px-6 lg:px-8">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Popular 5-star hotels in Saudi Arabia</h2>
+        <div className="hidden sm:flex gap-2">
            <button
             onClick={() => scroll('left')}
-            className="p-2 rounded-full border-2 border-[#FCAE61] text-[#FCAE61] hover:bg-[#FCAE61] hover:text-white transition-colors"
+            className="p-1.5 md:p-2 rounded-full border-2 border-[#FCAE61] text-[#FCAE61] hover:bg-[#FCAE61] hover:text-white transition-colors"
           >
-            <ChevronLeftIcon className="h-6 w-6" />
+            <ChevronLeftIcon className="h-5 w-5 md:h-6 md:w-6" />
           </button>
           <button
             onClick={() => scroll('right')}
-            className="p-2 rounded-full border-2 border-[#FCAE61] text-[#FCAE61] hover:bg-[#FCAE61] hover:text-white transition-colors"
+            className="p-1.5 md:p-2 rounded-full border-2 border-[#FCAE61] text-[#FCAE61] hover:bg-[#FCAE61] hover:text-white transition-colors"
           >
-            <ChevronRightIcon className="h-6 w-6" />
+            <ChevronRightIcon className="h-5 w-5 md:h-6 md:w-6" />
           </button>
         </div>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {hotels.map((hotel) => (
-          <div key={hotel.id} className="min-w-[240px] md:min-w-[280px] snap-start">
-            <HotelCard
-              hotel={hotel}
-              onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&adults=2`)}
-            />
-          </div>
-        ))}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          className="flex gap-3 md:gap-4 overflow-x-auto pb-4 px-3 sm:px-4 md:px-6 lg:px-8 scrollbar-hide scroll-smooth overscroll-x-contain snap-x snap-proximity md:snap-mandatory w-full max-w-full"
+          style={{
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+        >
+          {hotels.map((hotel) => (
+            <div
+              key={hotel.id}
+              className="w-[78%] max-w-[280px] sm:w-auto min-w-[180px] sm:min-w-[200px] md:min-w-[240px] lg:min-w-[280px] flex-shrink-0 snap-start"
+            >
+              <HotelCard
+                hotel={hotel}
+                onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&adults=2`)}
+              />
+            </div>
+          ))}
+          <div className="w-[22%] sm:w-4 md:w-6 lg:w-8 flex-shrink-0" aria-hidden="true" />
+        </div>
       </div>
     </section>
   );
