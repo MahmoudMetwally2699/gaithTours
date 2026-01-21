@@ -41,9 +41,10 @@ export const Preloader: React.FC<PreloaderProps> = ({
       {showPreloader ? (
         <motion.div
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.1 }}
+          exit={{ opacity: 0, scale: 1.1, pointerEvents: 'none' }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500"
+          style={{ pointerEvents: showPreloader ? 'auto' : 'none' }}
         >
           {/* Animated Background Patterns */}
           <div className="absolute inset-0 overflow-hidden">
