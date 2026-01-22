@@ -48,6 +48,7 @@ interface TaxItem {
   amount: number;
   currency: string;
   included: boolean;
+  included_by_supplier?: boolean; // True = paid at booking, False = pay at hotel
 }
 
 interface RoomRate {
@@ -221,7 +222,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 mb-6 shadow-sm hover:shadow-md transition-shadow">
       {/* Room Name Header */}
       <div className="p-4 border-b border-gray-100">
         <h3 className="text-xl font-bold text-gray-800">{roomType}</h3>
@@ -491,39 +492,92 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                             ({currencySymbol} {Math.round(Number(rate.price) / nights)}/night)
                           </div>
                         )}
-                        {/* Tax display - Booking.com style: single line with tooltip */}
-                        {rate.total_taxes && rate.total_taxes > 0 ? (
+                        {/* Tax display - Detailed breakdown with Pay at Booking vs Pay at Hotel */}
+                        {rate.tax_data && rate.tax_data.taxes && rate.tax_data.taxes.length > 0 ? (
                           <div className="text-xs text-gray-500 mt-1 relative group cursor-help">
-                            <span className="border-b border-dotted border-gray-400">
-                               +{currencySymbol} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
-                            </span>
+                            {(() => {
+                              // Separate taxes by included_by_supplier
+                              const allTaxes = rate.tax_data.taxes || [];
+                              const paidAtBookingTaxes = allTaxes.filter((tax: TaxItem) => tax.included_by_supplier || tax.included);
+                              const payAtHotelTaxes = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
 
-                            {/* Tax Breakdown Tooltip */}
-                            {rate.tax_data && rate.tax_data.taxes && (
-                                <div className="absolute bottom-full right-0 mb-2 w-64 bg-white shadow-xl rounded-lg p-3 text-xs z-50 invisible group-hover:visible border border-gray-200">
-                                    <h5 className="font-bold text-gray-800 mb-2 border-b pb-1">Price Breakdown</h5>
+                              const paidAtBookingTotal = paidAtBookingTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
+                              const payAtHotelTotal = payAtHotelTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
 
-                                    <div className="flex justify-between mb-1">
-                                        <span>Base Price:</span>
-                                        <span>{currencySymbol} {rate.price}</span>
+                              return (
+                                <>
+                                  <span className="border-b border-dotted border-gray-400">
+                                    +{currencySymbol} {Math.round(rate.total_taxes || 0)} {t('hotels.taxesAndFees', 'taxes and fees')}
+                                  </span>
+
+                                  {/* Tax Breakdown Tooltip */}
+                                  <div className="absolute bottom-full right-0 mb-2 w-80 bg-white shadow-2xl rounded-lg p-4 text-xs z-[9999] invisible group-hover:visible border border-gray-200 text-left">
+                                    <h5 className="font-bold text-gray-800 mb-3 border-b pb-2 text-sm">{t('hotels.priceBreakdown', 'Price Breakdown')}</h5>
+
+                                    <div className="flex justify-between mb-2 text-gray-700">
+                                      <span>{t('hotels.basePrice', 'Base Price')}:</span>
+                                      <span className="font-medium">{currencySymbol} {Number(rate.price).toFixed(2)}</span>
                                     </div>
 
-                                    {rate.tax_data.taxes.map((tax: TaxItem, idx: number) => (
-                                        <div key={idx} className="flex justify-between text-gray-600 mb-1">
-                                            <span>{tax.name}:</span>
-                                            <span>
-                                                {tax.included ? '(Incl.) ' : '+'}
-                                                {currencySymbol} {tax.amount}
-                                            </span>
+                                    {/* Paid at Booking Section */}
+                                    {paidAtBookingTaxes.length > 0 && (
+                                      <div className="mb-3">
+                                        <div className="text-green-700 font-semibold mb-1 flex items-center">
+                                          <span className="mr-1">✓</span> {t('hotels.paidAtBooking', 'Paid at Booking')}:
                                         </div>
-                                    ))}
+                                        {paidAtBookingTaxes.map((tax: TaxItem, idx: number) => (
+                                          <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
+                                            <span>{tax.name}:</span>
+                                            <span className="text-green-600">+{currencySymbol} {Number(tax.amount).toFixed(2)}</span>
+                                          </div>
+                                        ))}
+                                        <div className="flex justify-between ml-4 text-green-700 font-medium border-t border-gray-100 pt-1 mt-1">
+                                          <span>{t('hotels.subtotal', 'Subtotal')}:</span>
+                                          <span>+{currencySymbol} {paidAtBookingTotal.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    )}
 
-                                    <div className="flex justify-between font-bold text-gray-900 mt-2 border-t pt-2">
-                                        <span>Total:</span>
-                                        <span>{currencySymbol} {(Number(rate.price) + Number(rate.total_taxes)).toFixed(0)}</span>
+                                    {/* Pay at Hotel Section */}
+                                    {payAtHotelTaxes.length > 0 && (
+                                      <div className="mb-3">
+                                        <div className="text-orange-600 font-semibold mb-1 flex items-center">
+                                          <span className="mr-1">🏨</span> {t('hotels.payAtHotel', 'Pay at Hotel')}:
+                                        </div>
+                                        {payAtHotelTaxes.map((tax: TaxItem, idx: number) => (
+                                          <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
+                                            <span>{tax.name}:</span>
+                                            <span className="text-orange-500">+{currencySymbol} {Number(tax.amount).toFixed(2)}</span>
+                                          </div>
+                                        ))}
+                                        <div className="flex justify-between ml-4 text-orange-600 font-medium border-t border-gray-100 pt-1 mt-1">
+                                          <span>{t('hotels.subtotal', 'Subtotal')}:</span>
+                                          <span>+{currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Total Section */}
+                                    <div className="border-t-2 border-gray-300 pt-2 mt-2">
+                                      <div className="flex justify-between font-bold text-gray-900">
+                                        <span>{t('hotels.totalAtBooking', 'Total at Booking')}:</span>
+                                        <span>{currencySymbol} {(Number(rate.price) + paidAtBookingTotal).toFixed(2)}</span>
+                                      </div>
+                                      {payAtHotelTotal > 0 && (
+                                        <div className="flex justify-between text-orange-600 mt-1 text-[11px]">
+                                          <span>{t('hotels.dueAtHotel', 'Due at Hotel')}:</span>
+                                          <span>+{currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
+                                        </div>
+                                      )}
                                     </div>
-                                </div>
-                            )}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : rate.total_taxes && rate.total_taxes > 0 ? (
+                          <div className="text-xs text-gray-500 mt-1">
+                            +{currencySymbol} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-500 mt-1">

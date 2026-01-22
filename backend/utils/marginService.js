@@ -46,7 +46,7 @@ class MarginService {
         return {
           rule: null,
           marginType: 'percentage',
-          marginValue: 15, // Default 15% margin
+          marginValue: 0, // Default 0% margin
           isDefault: true
         };
       }
@@ -65,7 +65,7 @@ class MarginService {
       return {
         rule: null,
         marginType: 'percentage',
-        marginValue: 15,
+        marginValue: 0,
         isDefault: true,
         error: error.message
       };
@@ -97,7 +97,7 @@ class MarginService {
         marginAmount = Math.max(percentageMargin, fixedMargin);
         break;
       default:
-        marginAmount = basePrice * 0.15; // Default 15%
+        marginAmount = basePrice * 0; // Default 0%
     }
 
     finalPrice = basePrice + marginAmount;
@@ -233,7 +233,7 @@ class MarginService {
       } : {
         rule: null,
         marginType: 'percentage',
-        marginValue: 15,
+        marginValue: 0,
         isDefault: true
       };
 

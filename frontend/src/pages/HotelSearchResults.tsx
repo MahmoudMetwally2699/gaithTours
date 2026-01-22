@@ -398,6 +398,16 @@ export const HotelSearchResults: React.FC = () => {
     return generateBudgetHistogram(hotels, maxPrice);
   }, [hotels, maxPrice]);
 
+  // Update price filter when max price changes to ensure all hotels are visible
+  useEffect(() => {
+    if (maxPrice > 0) {
+      setFilters(prev => ({
+        ...prev,
+        priceRange: [0, maxPrice]
+      }));
+    }
+  }, [maxPrice]);
+
   // Filter and sort hotels
   const filteredHotels = useMemo(() => {
     let filtered = [...hotels];

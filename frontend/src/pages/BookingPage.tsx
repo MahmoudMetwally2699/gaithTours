@@ -76,6 +76,24 @@ export const BookingPage: React.FC = () => {
   });
   const [showGuestPopover, setShowGuestPopover] = useState(false);
 
+  // Helper to calculate only taxes paid at booking
+  const calculateBookingTaxes = (rate: any, numberOfRooms: number) => {
+    if (rate.tax_data && rate.tax_data.taxes && rate.tax_data.taxes.length > 0) {
+       // Filter for taxes that are EITHER 'included_by_supplier' OR 'included'
+       const bookingTaxes = rate.tax_data.taxes.filter((t: any) => t.included_by_supplier || t.included);
+       const bookingTaxAmount = bookingTaxes.reduce((sum: number, t: any) => sum + parseFloat(t.amount || 0), 0);
+       return bookingTaxAmount * numberOfRooms;
+    }
+
+    // Fallback if no breakdown
+    if (rate.total_taxes && Number(rate.total_taxes) > 0) {
+        return Number(rate.total_taxes) * numberOfRooms;
+    }
+
+    // Fallback to 14%
+    return Number(rate.price) * numberOfRooms * 0.14;
+  };
+
   const handleUpdateSearch = () => {
     if (!checkInDate || !checkOutDate) return;
 
@@ -166,9 +184,9 @@ export const BookingPage: React.FC = () => {
       const numberOfRooms = rooms || 1;
       const pricePerRoomWithMargin = Number(selectedRate.price);
       const totalPriceWithMargin = pricePerRoomWithMargin * numberOfRooms;
-      const taxAmount = selectedRate.total_taxes && Number(selectedRate.total_taxes) > 0
-        ? Number(selectedRate.total_taxes) * numberOfRooms
-        : totalPriceWithMargin * 0.14;
+
+      // Use helper for accurate tax calculation
+      const taxAmount = calculateBookingTaxes(selectedRate, numberOfRooms);
       const bookingValue = totalPriceWithMargin + taxAmount;
 
       const response = await fetch(`${API_URL}/promo-codes/validate`, {
@@ -252,18 +270,15 @@ export const BookingPage: React.FC = () => {
       const pricePerRoomWithMargin = Number(selectedRate.price); // Already includes margin
       const totalPriceWithMargin = pricePerRoomWithMargin * numberOfRooms;
 
-      // Calculate taxes
-      const taxAmount = selectedRate.total_taxes && Number(selectedRate.total_taxes) > 0
-        ? Number(selectedRate.total_taxes) * numberOfRooms // Multiply taxes by room count
-        : totalPriceWithMargin * 0.14;
+      const taxAmount = calculateBookingTaxes(selectedRate, numberOfRooms);
       const displayedTotal = totalPriceWithMargin + taxAmount;
 
       console.log('💰 Price calculation:');
       console.log('   Price per room (with margin):', pricePerRoomWithMargin, `(${nights} nights)`);
       console.log('   Number of rooms:', numberOfRooms);
       console.log('   Total price (all rooms):', totalPriceWithMargin);
-      console.log('   Taxes:', taxAmount, selectedRate.total_taxes ? '(from API)' : '(14% fallback)');
-      console.log('   Displayed total:', displayedTotal);
+      console.log('   Booking Taxes (Paid Now):', taxAmount);
+      console.log('   Displayed total (to charge):', displayedTotal);
       console.log('   Prebook payment.amount (1 room, no margin):', payment?.amount, payment?.currency);
 
       // Step 2: Create Kashier booking with the CALCULATED TOTAL (with margin and multiple rooms)

@@ -11,6 +11,14 @@ interface Hotel {
   images?: string[];
 }
 
+interface TaxItem {
+  name: string;
+  amount: number;
+  currency?: string;
+  included?: boolean;
+  included_by_supplier?: boolean;
+}
+
 interface RoomRate {
   match_hash: string;
   room_name: string;
@@ -23,6 +31,10 @@ interface RoomRate {
   };
   total_taxes?: number; // Actual taxes from RateHawk API
   taxes_currency?: string;
+  tax_data?: {
+    taxes?: TaxItem[];
+  };
+  taxes?: TaxItem[];
 }
 
 interface BookingSummaryCardProps {
@@ -85,27 +97,60 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
 
   const totalPrice = calculateTotalPrice();
 
-  // Use actual taxes from RateHawk API if available, otherwise fall back to 14%
-  // IMPORTANT: Taxes are also for the TOTAL stay, not per-night!
+  // Helper to get tax breakdown from a room rate
+  const getTaxBreakdown = (room: RoomRate) => {
+    const allTaxes = room.tax_data?.taxes || room.taxes || [];
+    const paidAtBooking = allTaxes.filter((tax: TaxItem) => tax.included_by_supplier || tax.included);
+    const payAtHotel = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
+
+    return {
+      paidAtBooking,
+      payAtHotel,
+      paidAtBookingTotal: paidAtBooking.reduce((sum, tax) => sum + Number(tax.amount || 0), 0),
+      payAtHotelTotal: payAtHotel.reduce((sum, tax) => sum + Number(tax.amount || 0), 0)
+    };
+  };
+
+  // Calculate taxes - ONLY include taxes that are paid at booking, NOT pay-at-hotel taxes
   const calculateTaxes = () => {
     if (selectedRooms && selectedRooms.length > 0) {
-      // Sum taxes for all selected rooms (already includes nights)
-      const roomTaxes = selectedRooms.reduce((sum, room) => {
-        const roomTax = room.total_taxes ? Number(room.total_taxes) * (room.count || 1) : 0;
-        return sum + roomTax;
+      // Sum taxes for all selected rooms
+      return selectedRooms.reduce((sum, room) => {
+        const breakdown = getTaxBreakdown(room);
+        const roomCount = room.count || 1;
+        // ONLY include taxes paid at booking in the total
+        return sum + (breakdown.paidAtBookingTotal * roomCount);
       }, 0);
-      if (roomTaxes > 0) return roomTaxes;
     }
-    // Single room or fallback
-    if (selectedRate.total_taxes && selectedRate.total_taxes > 0) {
-      return Number(selectedRate.total_taxes) * Math.max(rooms, 1); // Only multiply by room count, not nights
+
+    // Single room
+    const breakdown = getTaxBreakdown(selectedRate);
+    if (breakdown.paidAtBookingTotal > 0) {
+      return breakdown.paidAtBookingTotal * Math.max(rooms, 1);
     }
+
     // Fallback to 14% if no tax data available
     return totalPrice * 0.14;
   };
 
+  // Calculate pay at hotel taxes (for display only, not included in total)
+  const calculatePayAtHotelTaxes = () => {
+    if (selectedRooms && selectedRooms.length > 0) {
+      return selectedRooms.reduce((sum, room) => {
+        const breakdown = getTaxBreakdown(room);
+        const roomCount = room.count || 1;
+        return sum + (breakdown.payAtHotelTotal * roomCount);
+      }, 0);
+    }
+
+    const breakdown = getTaxBreakdown(selectedRate);
+    return breakdown.payAtHotelTotal * Math.max(rooms, 1);
+  };
+
   const taxes = calculateTaxes();
-  const taxPercentage = selectedRate.total_taxes ? null : '14%'; // Only show percentage if using fallback
+  const payAtHotelTaxes = calculatePayAtHotelTaxes();
+  const hasTaxData = selectedRate.tax_data?.taxes && selectedRate.tax_data.taxes.length > 0;
+  const taxPercentage = hasTaxData ? null : '14%'; // Only show percentage if using fallback
   const totalRooms = selectedRooms?.reduce((sum, r) => sum + (r.count || 1), 0) || rooms;
 
   // Format date with validation
@@ -290,21 +335,33 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
               </div>
             )}
 
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                {t('booking.taxesAndFees', 'Taxes and fees')}{taxPercentage ? ` (${taxPercentage})` : ''}
+            <div className="flex justify-between text-sm text-green-700">
+              <span>
+                ✓ {t('booking.taxesAtBooking', 'Taxes (paid at booking)')}{taxPercentage ? ` (${taxPercentage})` : ''}
               </span>
               <span className="font-medium">
                 {selectedRate.currency} {taxes.toFixed(2)}
               </span>
             </div>
+
+            {/* Pay at Hotel Taxes - shown separately */}
+            {payAtHotelTaxes > 0 && (
+              <div className="flex justify-between text-sm text-orange-600">
+                <span>
+                  🏨 {t('booking.dueAtHotel', 'Due at hotel')}
+                </span>
+                <span className="font-medium">
+                  {selectedRate.currency} {payAtHotelTaxes.toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Total */}
           <div className="border-t border-gray-200 pt-3">
             <div className="flex justify-between items-center">
               <span className="text-lg font-bold text-gray-900">
-                {t('booking.total', 'Total')}
+                {t('booking.totalNow', 'Total to pay now')}
               </span>
               <span className="text-2xl font-bold text-orange-600">
                 {selectedRate.currency} {(totalPrice + taxes).toFixed(2)}

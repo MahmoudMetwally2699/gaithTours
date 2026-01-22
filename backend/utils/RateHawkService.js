@@ -895,7 +895,7 @@ class RateHawkService {
       } : {
         rule: null,
         marginType: 'percentage',
-        marginValue: 15, // Default usage matching existing logic
+        marginValue: 0, // Default 0%
         isDefault: true
       };
 
@@ -1379,7 +1379,7 @@ class RateHawkService {
       } : {
         rule: null,
         marginType: 'percentage',
-        marginValue: 15, // Default
+        marginValue: 0, // Default
         isDefault: true
       };
 
