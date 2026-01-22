@@ -40,8 +40,8 @@ export const MainSection: React.FC = () => {
 
   // Search State
   const [destination, setDestination] = useState('');
-  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
-  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
+  const [checkInDate, setCheckInDate] = useState<Date | null>(dayjs().toDate());
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(dayjs().add(1, 'day').toDate());
   const [guests, setGuests] = useState({ rooms: 1, adults: 2, children: 0, childrenAges: [] as number[] });
   const [isWorkTravel, setIsWorkTravel] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -159,7 +159,11 @@ export const MainSection: React.FC = () => {
       setIsLoadingAutocomplete(true);
       try {
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-        const response = await fetch(`${API_URL}/hotels/suggest?query=${encodeURIComponent(destination)}`);
+        // Smart detection: If query contains Arabic characters, use 'ar' regardless of app language
+        const isArabic = /[\u0600-\u06FF]/.test(destination);
+        const searchLanguage = isArabic ? 'ar' : i18n.language;
+
+        const response = await fetch(`${API_URL}/hotels/suggest?query=${encodeURIComponent(destination)}&language=${searchLanguage}`);
         const data = await response.json();
 
         if (data.success && data.data) {
@@ -270,7 +274,8 @@ export const MainSection: React.FC = () => {
       checkOut: checkOutDate ? dayjs(checkOutDate).format('YYYY-MM-DD') : '',
       rooms: guests.rooms.toString(),
       adults: guests.adults.toString(),
-      children: guests.childrenAges.length > 0 ? guests.childrenAges.join(',') : ''
+      children: guests.childrenAges.length > 0 ? guests.childrenAges.join(',') : '',
+      language: /[\u0600-\u06FF]/.test(destination) ? 'ar' : i18n.language
     });
     history.push(`/hotels/search?${queryParams.toString()}`);
   };

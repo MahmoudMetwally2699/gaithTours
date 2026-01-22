@@ -150,7 +150,7 @@ const getCityCoordinates = (destination: string): [number, number] => {
 };
 
 export const HotelSearchResults: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { direction } = useDirection();
   const history = useHistory();
   const location = useLocation();
@@ -288,7 +288,12 @@ export const HotelSearchResults: React.FC = () => {
       setIsLoadingAutocomplete(true);
       try {
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-        const response = await fetch(`${API_URL}/hotels/suggest?query=${encodeURIComponent(editableDestination)}`);
+
+        // Smart detection: If query contains Arabic characters, use 'ar' regardless of app language
+        const isArabic = /[\u0600-\u06FF]/.test(editableDestination);
+        const searchLanguage = isArabic ? 'ar' : i18n.language;
+
+        const response = await fetch(`${API_URL}/hotels/suggest?query=${encodeURIComponent(editableDestination)}&language=${searchLanguage}`);
         const data = await response.json();
 
         if (data.success && data.data) {
@@ -362,7 +367,10 @@ export const HotelSearchResults: React.FC = () => {
             checkout: searchQuery.checkOut || undefined,
             adults: searchQuery.adults,
             children: searchQuery.children > 0 ? searchQuery.children : undefined,
-            currency: currency
+            currency: currency,
+             // If destination has Arabic chars, prefer Arabic for results, otherwise use app language or existing param
+             // We prioritize the smart detection on the search query over the i18n language
+             language: /[\u0600-\u06FF]/.test(searchQuery.destination) ? 'ar' : (i18n.language || 'en')
           }
         );
 
@@ -385,7 +393,7 @@ export const HotelSearchResults: React.FC = () => {
     };
 
     performSearch();
-  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currentPage, currency]);
+  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currentPage, currency, i18n.language]);
 
   // Calculate max price for budget filter
   const maxPrice = useMemo(() => {

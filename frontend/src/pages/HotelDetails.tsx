@@ -219,7 +219,8 @@ export const HotelDetails: React.FC = () => {
           checkout: bookingParams.checkOut,
           adults: bookingParams.adults,
           children: bookingParams.children > 0 ? bookingParams.children.toString() : undefined,
-          currency: currency
+          currency: currency,
+          language: i18n.language
         });
 
         // Transform the API response to match our Hotel interface
@@ -284,7 +285,7 @@ export const HotelDetails: React.FC = () => {
     };
 
     fetchHotelDetails();
-  }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination, currency]);
+  }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination, currency, i18n.language]);
 
   // Helper to clean room name for grouping
   const normalizeRoomName = (name: string) => {

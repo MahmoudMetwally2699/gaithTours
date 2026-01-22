@@ -181,16 +181,23 @@ router.get('/suggested', async (req, res) => {
  */
 router.get('/suggest', async (req, res) => {
   try {
-    const { query } = req.query;
+    const { query, language = 'en' } = req.query;
 
     if (!query || query.length < 2) {
       return errorResponse(res, 'Query must be at least 2 characters', 400);
     }
 
-    console.log(`🔍 Worldwide hotel suggest for: "${query}"`);
+    // Smart detection: If query contains Arabic characters, use 'ar' regardless of requested language
+    // This fixes issues where frontend might send 'en' by default even for Arabic queries
+    let finalLanguage = language;
+    if (query && /[\u0600-\u06FF]/.test(query)) {
+      finalLanguage = 'ar';
+    }
+
+    console.log(`🔍 Worldwide hotel suggest for: "${query}" (Language: ${finalLanguage})`);
 
     // Use RateHawk multicomplete API for worldwide search
-    const results = await rateHawkService.suggest(query, 'en');
+    const results = await rateHawkService.suggest(query, finalLanguage);
 
     // Debug: log raw region structure to understand the API response
     if (results.regions && results.regions.length > 0) {
@@ -201,7 +208,8 @@ router.get('/suggest', async (req, res) => {
     const hotels = (results.hotels || []).map(hotel => ({
       id: hotel.id,
       hid: hotel.hid,
-      name: hotel.label || hotel.id.replace(/_/g, ' ').toUpperCase(),
+      // Prioritize label, then name, then ID fallback
+      name: hotel.label || hotel.name || hotel.id.replace(/_/g, ' ').toUpperCase(),
       type: hotel.type || 'hotel',
       location: hotel.location,
       coordinates: hotel.coordinates
@@ -256,8 +264,15 @@ router.get('/search', async (req, res) => {
       children = 0,
       page = 1,
       limit = 20,
-      currency = 'USD'
+      currency = 'USD',
+      language = 'en'
     } = req.query;
+
+    // Smart detection: If destination contains Arabic characters, use 'ar'
+    let finalLanguage = language;
+    if (destination && /[\u0600-\u06FF]/.test(destination)) {
+      finalLanguage = 'ar';
+    }
 
     if (!destination) {
       return errorResponse(res, 'Destination is required', 400);
@@ -409,7 +424,9 @@ router.get('/search', async (req, res) => {
       ...searchDates,
       adults: parseInt(adults) || 2,
       children: childrenAges,
-      currency
+      children: childrenAges,
+      currency,
+      language: finalLanguage
     });
 
     // Step 3.5: If API returns empty, fallback to HotelContent by city name
@@ -703,7 +720,8 @@ router.get('/details/:hid', async (req, res) => {
       adults = 2,
       children = 0,
       match_hash,
-      currency = 'USD'
+      currency = 'USD',
+      language = 'en'
     } = req.query;
 
     // Validate hid
@@ -750,7 +768,8 @@ router.get('/details/:hid', async (req, res) => {
         adults: parseInt(adults) || 2,
         children: childrenAges,
         match_hash,
-        currency
+        currency,
+        language
       });
     } catch (error) {
       // If hotel not found (no rates), fetch from Content API
@@ -762,7 +781,8 @@ router.get('/details/:hid', async (req, res) => {
           'POST',
           {
             hids: [hotelId],
-            language: 'en'
+             hids: [hotelId],
+            language: language
           },
           'https://api.worldota.net/api'
         );

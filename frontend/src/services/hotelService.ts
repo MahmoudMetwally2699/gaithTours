@@ -17,6 +17,7 @@ interface SearchOptions {
     adults?: number;
     children?: number | string;
     currency?: string;
+    language?: string;
 }
 
 const searchHotels = async (
@@ -48,8 +49,9 @@ const searchHotels = async (
         if (options?.checkin) params.append('checkin', options.checkin);
         if (options?.checkout) params.append('checkout', options.checkout);
         if (options?.adults) params.append('adults', options.adults.toString());
-        if (options?.children) params.append('children', options.children.toString());
+        if (options?.children) params.append('children', options.children?.toString() || '');
         if (options?.currency) params.append('currency', options.currency);
+        if (options?.language) params.append('language', options.language);
 
         const url = `${API_BASE_URL}/hotels/search?${params.toString()}`;
 
@@ -86,6 +88,7 @@ interface HotelDetailsOptions {
     adults?: number;
     children?: string;
     currency?: string;
+    language?: string;
 }
 
 const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) => {
@@ -110,6 +113,7 @@ const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) =
         if (options?.adults) params.append('adults', options.adults.toString());
         if (options?.children) params.append('children', options.children);
         if (options?.currency) params.append('currency', options.currency);
+        if (options?.language) params.append('language', options.language);
 
         if (params.toString()) {
             url += `?${params.toString()}`;
@@ -212,7 +216,7 @@ const searchDestinations = async (query: string) => {
  * @param {string} query - The search query
  * @returns {Promise<Object>} - Promise that resolves to hotel and region suggestions
  */
-const suggestHotels = async (query: string) => {
+const suggestHotels = async (query: string, language?: string) => {
     try {
         // Get auth token from localStorage (optional for autocomplete)
         const token = localStorage.getItem('token');
@@ -225,7 +229,7 @@ const suggestHotels = async (query: string) => {
             }
         };
 
-        const url = `${API_BASE_URL}/hotels/suggest?query=${encodeURIComponent(query)}`;
+        const url = `${API_BASE_URL}/hotels/suggest?query=${encodeURIComponent(query)}${language ? `&language=${language}` : ''}`;
         const response = await fetch(url, options);
 
         if (!response.ok) {

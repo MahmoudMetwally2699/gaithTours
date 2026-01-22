@@ -21,7 +21,7 @@ interface HotelSearchSectionProps {
 }
 
 export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { direction } = useDirection();
   const history = useHistory();
   const isRTL = direction === 'rtl';
@@ -49,7 +49,11 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
 //    Start loading state
     setLoadingHotels(true);
     try {
-      const response = await suggestHotels(query); // Worldwide suggest - no dates needed
+      // Smart detection: If query contains Arabic characters, use 'ar' regardless of app language
+      const isArabic = /[\u0600-\u06FF]/.test(query);
+      const searchLanguage = isArabic ? 'ar' : i18n.language;
+
+      const response = await suggestHotels(query, searchLanguage); // Worldwide suggest - no dates needed
       if (response?.hotels) {
         setHotels(response.hotels);
         setShowSuggestions(true);
@@ -77,7 +81,7 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
       setHotels([]);
       setShowSuggestions(false);
     }
-  }, [searchParams.destination, searchHotelsAsync]);
+  }, [searchParams.destination, searchHotelsAsync, i18n.language]);
 
   const handleChange = (field: string, value: string | number) => {
     setSearchParams(prev => ({
@@ -167,7 +171,9 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
       checkOut: searchParams.checkOut,
       rooms: searchParams.rooms.toString(),
       adults: searchParams.adults.toString(),
-      children: searchParams.childrenAges.length > 0 ? searchParams.childrenAges.join(',') : ''
+      children: searchParams.childrenAges.length > 0 ? searchParams.childrenAges.join(',') : '',
+      // If destination has Arabic chars, prefer Arabic for results, otherwise use app language
+      language: /[\u0600-\u06FF]/.test(searchParams.destination) ? 'ar' : i18n.language
     });
 
     history.push(`/hotels/search?${queryParams.toString()}`);
