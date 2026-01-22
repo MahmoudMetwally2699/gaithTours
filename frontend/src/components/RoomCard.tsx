@@ -47,6 +47,7 @@ interface TaxItem {
   name: string;
   amount: number;
   currency: string;
+  currency_code?: string; // Raw API field name (some responses use this instead of currency)
   included: boolean;
   included_by_supplier?: boolean; // True = paid at booking, False = pay at hotel
 }
@@ -547,12 +548,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                         {payAtHotelTaxes.map((tax: TaxItem, idx: number) => (
                                           <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
                                             <span>{tax.name}:</span>
-                                            <span className="text-orange-500">+{currencySymbol} {Number(tax.amount).toFixed(2)}</span>
+                                            <span className="text-orange-500">+{tax.currency_code || tax.currency || rate.taxes_currency || currencySymbol} {Number(tax.amount).toFixed(2)}</span>
                                           </div>
                                         ))}
                                         <div className="flex justify-between ml-4 text-orange-600 font-medium border-t border-gray-100 pt-1 mt-1">
                                           <span>{t('hotels.subtotal', 'Subtotal')}:</span>
-                                          <span>+{currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
+                                          <span>+{payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency || currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
                                         </div>
                                       </div>
                                     )}
@@ -566,7 +567,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                       {payAtHotelTotal > 0 && (
                                         <div className="flex justify-between text-orange-600 mt-1 text-[11px]">
                                           <span>{t('hotels.dueAtHotel', 'Due at Hotel')}:</span>
-                                          <span>+{currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
+                                          <span>+{payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency || currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
                                         </div>
                                       )}
                                     </div>

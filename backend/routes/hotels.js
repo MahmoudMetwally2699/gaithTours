@@ -117,11 +117,14 @@ router.get('/suggested', async (req, res) => {
 
         // Search - smart enrichment leverages cache to serve more hotels
         // With cache, we can request more hotels without extra API calls
+        // NEW: refreshPrices=0 disabled by default to avoid rate limiting
+        // Only enable for critical searches or when rate limits allow
         searchResults = await rateHawkService.searchByRegion(regionId, {
           ...dates,
           adults: 2,
           currency: currency,
-          enrichmentLimit: 20 // Increased base limit (cache multiplies this further)
+          enrichmentLimit: 20, // Increased base limit (cache multiplies this further)
+          refreshPrices: 0 // DISABLED: Causes rate limiting with 20 parallel calls
         });
       }
     } catch (error) {

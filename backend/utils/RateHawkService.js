@@ -259,7 +259,52 @@ class RateHawkService {
     if (!hids || hids.length === 0) return {};
 
     try {
-      console.log(`📝 Fetching reviews from API for ${hids.length} hotels...`);
+      // RateHawk API limit: max 100 hotels per request
+      const MAX_BATCH_SIZE = 100;
+
+      if (hids.length > MAX_BATCH_SIZE) {
+        console.log(`📝 Fetching reviews from API for ${hids.length} hotels (in batches of ${MAX_BATCH_SIZE})...`);
+
+        // Split into batches
+        const batches = [];
+        for (let i = 0; i < hids.length; i += MAX_BATCH_SIZE) {
+          batches.push(hids.slice(i, i + MAX_BATCH_SIZE));
+        }
+
+        // Fetch each batch and merge results
+        const allReviews = {};
+        for (let i = 0; i < batches.length; i++) {
+          console.log(`   Batch ${i + 1}/${batches.length}: Fetching ${batches[i].length} hotels...`);
+          const batchReviews = await this._fetchReviewsBatch(batches[i], language);
+          Object.assign(allReviews, batchReviews);
+
+          // Add small delay between batches to avoid rate limiting
+          if (i < batches.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+
+        console.log(`✅ Fetched reviews for ${Object.keys(allReviews).length} hotels (across ${batches.length} batches)`);
+        return allReviews;
+      } else {
+        // Single batch
+        console.log(`📝 Fetching reviews from API for ${hids.length} hotels...`);
+        return await this._fetchReviewsBatch(hids, language);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching reviews from API:', error.message);
+      return {};
+    }
+  }
+
+  /**
+   * Internal method to fetch a single batch of reviews (max 100 hotels)
+   * @param {Array} hids - Array of hotel IDs (max 100)
+   * @param {string} language - Language code
+   * @returns {Promise<Object>} Map of reviews keyed by hid
+   */
+  async _fetchReviewsBatch(hids, language = 'en') {
+    try {
       const response = await this.makeRequest(
         '/content/v1/hotel_reviews_by_ids/',
         'POST',
@@ -300,8 +345,7 @@ class RateHawkService {
       console.log(`✅ Fetched reviews for ${Object.keys(reviewsMap).length} hotels`);
       return reviewsMap;
     } catch (error) {
-      console.error('❌ Error fetching reviews from API:', error.message);
-      return {};
+      throw error; // Re-throw to be handled by parent function
     }
   }
 
@@ -592,7 +636,8 @@ class RateHawkService {
       residency = 'gb',
       language = 'en',
       currency = 'SAR',
-      enrichmentLimit = 0 // Default 0 means no limit (enrich all)
+      enrichmentLimit = 0, // Default 0 means no limit (enrich all)
+      refreshPrices = 0 // NEW: Number of top hotels to refresh prices from hotel details API
     } = params;
 
     // Generate cache key for this search
@@ -639,12 +684,37 @@ class RateHawkService {
 
       // Normalize response to match frontend expectations
     const hotels = (response.data?.hotels || []).map(hotel => {
-      const firstRate = hotel.rates?.[0];
-      const paymentType = firstRate?.payment_options?.payment_types?.[0];
+      // Find the rate with the LOWEST price (not just the first rate)
+      // This ensures search results show the same "From" price as details page
+      let lowestRate = hotel.rates?.[0];
+      let lowestPrice = Infinity;
 
-      // Check for free cancellation and prepayment
-      const paymentOptions = firstRate?.payment_options;
-      const cancellationPenalties = firstRate?.cancellation_penalties;
+      if (hotel.rates && hotel.rates.length > 0) {
+        for (const rate of hotel.rates) {
+          const pt = rate.payment_options?.payment_types?.[0];
+          const showAmt = pt?.show_amount || pt?.amount || Infinity;
+
+          // Calculate included taxes to get base price
+          let rateBasePrice = showAmt;
+          if (pt?.tax_data?.taxes) {
+            const includedTaxes = pt.tax_data.taxes
+              .filter(t => t.included_by_supplier)
+              .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+            rateBasePrice = showAmt - includedTaxes;
+          }
+
+          if (rateBasePrice < lowestPrice) {
+            lowestPrice = rateBasePrice;
+            lowestRate = rate;
+          }
+        }
+      }
+
+      const paymentType = lowestRate?.payment_options?.payment_types?.[0];
+
+      // Check for free cancellation and prepayment (using lowest rate)
+      const paymentOptions = lowestRate?.payment_options;
+      const cancellationPenalties = lowestRate?.cancellation_penalties;
 
       const isFreeCancellation = this.checkFreeCancellation(cancellationPenalties);
       const isNoPrepayment = paymentOptions?.payment_types?.some(pt => pt.is_need_credit_card_data === false) ||
@@ -655,7 +725,6 @@ class RateHawkService {
 
       // Calculate total price and price per night (with markup applied)
       // Calculate total price (Exclusive of taxes, consistent with Details page)
-      // Attempt to extract tax data if available in SERP
       const showAmount = paymentType?.show_amount || paymentType?.amount || 0;
       let basePrice = showAmount;
       let totalTaxes = 0;
@@ -690,9 +759,9 @@ class RateHawkService {
         total_taxes: Math.round(totalTaxes), // Total taxes amount (to be displayed separately)
         taxes_currency: paymentType?.show_currency_code || currency,
         image: placeholderImage,
-        match_hash: firstRate?.match_hash,
-        meal: firstRate?.meal,
-        room_name: firstRate?.room_name,
+        match_hash: lowestRate?.match_hash,
+        meal: lowestRate?.meal,
+        room_name: lowestRate?.room_name,
         // Rate policies for filters
         free_cancellation: isFreeCancellation,
         no_prepayment: isNoPrepayment,
@@ -1027,6 +1096,73 @@ class RateHawkService {
     } catch (reviewError) {
       console.error('⚠️ Error enriching hotels with review ratings:', reviewError.message);
       // Continue without review data - not critical
+    }
+
+    // Refresh prices from hotel details API for top hotels (if requested)
+    if (refreshPrices > 0 && hotels.length > 0) {
+      console.log(`💲 Refreshing accurate prices for top ${Math.min(refreshPrices, hotels.length)} hotels from Hotel Details API...`);
+
+      const hotelsToRefresh = hotels.slice(0, refreshPrices);
+
+      // Process hotels in batches of 3 to avoid rate limiting
+      const batchSize = 3;
+      const batches = [];
+      for (let i = 0; i < hotelsToRefresh.length; i += batchSize) {
+        batches.push(hotelsToRefresh.slice(i, i + batchSize));
+      }
+
+      // Process each batch sequentially, hotels within batch in parallel
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        console.log(`   Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} hotels)...`);
+
+        const batchPromises = batch.map(async (hotel) => {
+          try {
+            // Fetch hotel details to get accurate lowest price
+            const details = await this.getHotelDetails(hotel.hid, {
+              checkin,
+              checkout,
+              adults,
+              children,
+              rooms,
+              currency,
+              language
+            });
+
+            if (details && details.rates && details.rates.length > 0) {
+              // Find the cheapest rate from hotel details
+              const cheapestRate = details.rates.reduce((min, rate) => {
+                return rate.price < min.price ? rate : min;
+              }, details.rates[0]);
+
+              // Update hotel price with the accurate cheapest price
+              const oldPrice = hotel.price;
+              hotel.price = cheapestRate.price;
+              hotel.pricePerNight = hotel.nights > 0 ? Math.round(cheapestRate.price / hotel.nights) : cheapestRate.price;
+              hotel.match_hash = cheapestRate.match_hash;
+              hotel.room_name = cheapestRate.room_name;
+              hotel.meal = cheapestRate.meal;
+
+              if (oldPrice !== cheapestRate.price) {
+                console.log(`   💰 Updated ${hotel.name}: $${oldPrice.toFixed(2)} → $${cheapestRate.price.toFixed(2)}`);
+              }
+            }
+          } catch (error) {
+            // If refresh fails, keep the original SERP price
+            console.log(`   ⚠️  Price refresh failed for ${hotel.name}: ${error.message}`);
+          }
+        });
+
+        // Wait for current batch to complete before moving to next
+        await Promise.all(batchPromises);
+
+        // Add delay between batches to avoid rate limiting
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+        }
+      }
+
+      console.log(`   ✅ Price refresh complete`);
     }
 
     const result = {
@@ -1413,7 +1549,7 @@ class RateHawkService {
         // Frontend should NOT multiply by nights - this is already the full amount
         price: priceResult.finalPrice, // Total stay price with margin
         price_per_night: priceResult.finalPrice / numberOfNights, // Average per night (for display)
-        currency: paymentType?.currency_code || currency,
+        currency: paymentType?.show_currency_code || currency,
         original_price: totalStayPrice, // Store original total for comparison
         original_price_per_night: perNightPrice, // Original per-night average
         margin_applied: {
@@ -1427,7 +1563,7 @@ class RateHawkService {
 
         // Tax Data - ensure each tax has the correct currency
         total_taxes: displayTaxes,
-        taxes_currency: paymentType?.currency_code || currency,
+        taxes_currency: paymentType?.show_currency_code || currency,
         // Map taxes to use the correct currency for display
         tax_data: taxData ? {
           ...taxData,

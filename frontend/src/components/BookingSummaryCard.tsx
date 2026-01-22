@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { StarIcon, MapPinIcon, CalendarIcon, UserGroupIcon, HomeModernIcon } from '@heroicons/react/24/solid';
 
 interface Hotel {
@@ -15,6 +16,7 @@ interface TaxItem {
   name: string;
   amount: number;
   currency?: string;
+  currency_code?: string; // Raw API field name
   included?: boolean;
   included_by_supplier?: boolean;
 }
@@ -59,6 +61,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   rooms = 1
 }) => {
   const { t } = useTranslation();
+  const { currencySymbol } = useCurrency();
   const totalGuests = guests + children;
 
   // Calculate number of nights with validation
@@ -147,8 +150,17 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
     return breakdown.payAtHotelTotal * Math.max(rooms, 1);
   };
 
+  // Get the currency for pay at hotel taxes from the tax data
+  const getPayAtHotelCurrency = () => {
+    const room = selectedRooms?.[0] || selectedRate;
+    const allTaxes = room.tax_data?.taxes || room.taxes || [];
+    const payAtHotelTax = allTaxes.find((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
+    return payAtHotelTax?.currency_code || payAtHotelTax?.currency || room.taxes_currency || selectedRate.currency;
+  };
+
   const taxes = calculateTaxes();
   const payAtHotelTaxes = calculatePayAtHotelTaxes();
+  const payAtHotelCurrency = getPayAtHotelCurrency();
   const hasTaxData = selectedRate.tax_data?.taxes && selectedRate.tax_data.taxes.length > 0;
   const taxPercentage = hasTaxData ? null : '14%'; // Only show percentage if using fallback
   const totalRooms = selectedRooms?.reduce((sum, r) => sum + (r.count || 1), 0) || rooms;
@@ -319,7 +331,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                     {room.room_name} x{room.count || 1} ({nights}n)
                   </span>
                   <span className="font-medium">
-                    {room.currency} {(Number(room.price) * (room.count || 1)).toFixed(2)}
+                    {currencySymbol} {(Number(room.price) * (room.count || 1)).toFixed(2)}
                   </span>
                 </div>
               ))
@@ -330,7 +342,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                   {selectedRate.room_name || 'Room'} x{totalRooms} ({nights}n)
                 </span>
                 <span className="font-medium">
-                  {selectedRate.currency} {totalPrice.toFixed(2)}
+                  {currencySymbol} {totalPrice.toFixed(2)}
                 </span>
               </div>
             )}
@@ -340,7 +352,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 ✓ {t('booking.taxesAtBooking', 'Taxes (paid at booking)')}{taxPercentage ? ` (${taxPercentage})` : ''}
               </span>
               <span className="font-medium">
-                {selectedRate.currency} {taxes.toFixed(2)}
+                {currencySymbol} {taxes.toFixed(2)}
               </span>
             </div>
 
@@ -351,7 +363,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                   🏨 {t('booking.dueAtHotel', 'Due at hotel')}
                 </span>
                 <span className="font-medium">
-                  {selectedRate.currency} {payAtHotelTaxes.toFixed(2)}
+                  {payAtHotelCurrency} {payAtHotelTaxes.toFixed(2)}
                 </span>
               </div>
             )}
@@ -364,7 +376,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 {t('booking.totalNow', 'Total to pay now')}
               </span>
               <span className="text-2xl font-bold text-orange-600">
-                {selectedRate.currency} {(totalPrice + taxes).toFixed(2)}
+                {currencySymbol} {(totalPrice + taxes).toFixed(2)}
               </span>
             </div>
             <div className="text-xs text-gray-500 text-right mt-1">
