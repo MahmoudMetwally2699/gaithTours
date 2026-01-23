@@ -663,29 +663,26 @@ router.get('/search', async (req, res) => {
       if (matchedHotelIndex !== -1) {
         const matchedHotel = allHotels[matchedHotelIndex];
 
-        // If the matched hotel doesn't have location data, enrich it from Content API
+        // If the matched hotel doesn't have location data, enrich it from Local DB (not Content API)
         if (!matchedHotel.address || !matchedHotel.city) {
-          console.log(`⚠️ Searched hotel missing location data, enriching from Content API...`);
+          console.log(`⚠️ Searched hotel missing location data, enriching from Local DB...`);
           try {
-            const contentResponse = await rateHawkService.makeRequest(
-              '/content/v1/hotel_content_by_ids/',
-              'POST',
-              {
-                hids: [matchedHotel.hid],
-                language: 'en'
-              },
-              'https://api.worldota.net/api'
-            );
+            const HotelContent = require('../models/HotelContent');
+            const localHotel = await HotelContent.findOne({ hid: matchedHotel.hid }).lean();
 
-            const hotelContent = contentResponse?.data?.[0];
-            if (hotelContent) {
-              matchedHotel.address = hotelContent.address || '';
-              matchedHotel.city = hotelContent.region?.name || '';
-              matchedHotel.country = hotelContent.region?.country_name || 'Saudi Arabia';
-              console.log(`✅ Enriched searched hotel with location: ${matchedHotel.address}, ${matchedHotel.city}`);
+            if (localHotel) {
+              matchedHotel.address = localHotel.address || '';
+              matchedHotel.city = localHotel.city || '';
+              matchedHotel.country = localHotel.country || 'Saudi Arabia';
+              // Also enrich image from DB if missing
+              if (!matchedHotel.image && localHotel.images?.length > 0) {
+                const imgUrl = localHotel.images[0]?.url || localHotel.images[0];
+                matchedHotel.image = imgUrl?.replace('{size}', '640x400');
+              }
+              console.log(`✅ Enriched searched hotel from Local DB: ${matchedHotel.address}, ${matchedHotel.city}`);
             }
           } catch (err) {
-            console.error('Error enriching searched hotel:', err.message);
+            console.error('Error enriching searched hotel from Local DB:', err.message);
           }
         }
 
@@ -697,8 +694,8 @@ router.get('/search', async (req, res) => {
         allHotels.unshift(matchedHotel);
         console.log(`✅ Found exact match for searched hotel: ${matchedHotel.name} (showing it first with ${allHotels.length - 1} other hotels)`);
       } else {
-        console.log(`⚠️ Searched hotel "${searchedHotelName}" not found in results with rates, will try to fetch from Content API and add it to the top`);
-        // Don't clear the array - we'll add the searched hotel from Content API to the front
+        console.log(`⚠️ Searched hotel "${searchedHotelName}" not found in results with rates, will try to fetch from Local DB and add it to the top`);
+        // Don't clear the array - we'll add the searched hotel from Local DB to the front
       }
     }
 
@@ -883,82 +880,83 @@ router.get('/details/:hid', async (req, res) => {
         language
       });
     } catch (error) {
-      // If hotel not found (no rates), fetch from Content API
-      console.log(`⚠️ Hotel ${hotelId} not found with rates, fetching from Content API...`);
+      // If hotel not found (no rates), fetch from Local DB first (not Content API)
+      console.log(`⚠️ Hotel ${hotelId} not found with rates, fetching from Local DB...`);
 
       try {
-        const contentResponse = await rateHawkService.makeRequest(
-          '/content/v1/hotel_content_by_ids/',
-          'POST',
-          {
-            hids: [hotelId],
-             hids: [hotelId],
-            language: language
-          },
-          'https://api.worldota.net/api'
-        );
+        const HotelContent = require('../models/HotelContent');
+        const localHotel = await HotelContent.findOne({ hid: hotelId }).lean();
 
-        const hotelContent = contentResponse?.data?.[0];
-
-        if (!hotelContent) {
+        if (!localHotel) {
+          console.log(`❌ Hotel ${hotelId} not found in Local DB either`);
           return errorResponse(res, 'Hotel not found', 404);
         }
 
-        // Process images - use images_ext from Content API (per API docs)
-        let hotelImages = [];
-        console.log(`📷 Processing images for hotel ${hotelContent.name}...`);
-        console.log(`   - images_ext exists: ${!!hotelContent.images_ext}, length: ${hotelContent.images_ext?.length || 0}`);
+        console.log(`✅ Found hotel in Local DB: ${localHotel.name}`);
 
-        if (hotelContent.images_ext && hotelContent.images_ext.length > 0) {
-          hotelImages = hotelContent.images_ext.map(img => {
-            // images_ext contains objects with url property
-            if (img.url) {
-              return img.url.replace('{size}', '1024x768');
-            }
-            return null;
+        // Process images from Local DB
+        let hotelImages = [];
+        console.log(`📷 Processing images for hotel ${localHotel.name} from Local DB...`);
+
+        if (localHotel.images && localHotel.images.length > 0) {
+          hotelImages = localHotel.images.map(img => {
+            const imgUrl = typeof img === 'string' ? img : img.url;
+            return imgUrl?.replace('{size}', '1024x768');
           }).filter(Boolean);
-          console.log(`   - Processed ${hotelImages.length} images from images_ext`);
+          console.log(`   - Processed ${hotelImages.length} images from Local DB`);
+        } else if (localHotel.mainImage) {
+          hotelImages = [localHotel.mainImage.replace('{size}', '1024x768')];
+          console.log(`   - Using mainImage from Local DB`);
         }
 
         if (hotelImages.length === 0) {
-          console.log(`   ⚠️ No images found for hotel`);
+          console.log(`   ⚠️ No images found for hotel in Local DB`);
         }
 
-        // Format hotel data from Content API
-        hotelDetails = {
-          id: hotelContent.id,
-          hid: hotelContent.hid,
-          name: hotelContent.name,
-          address: hotelContent.address || '',
-          city: hotelContent.region?.name || '',
-          country: hotelContent.region?.country_name || '',
-          star_rating: hotelContent.star_rating || 0,
-          images: hotelImages,
-          mainImage: hotelImages[0] || null,
-          amenities: [],
-          description: hotelContent.description_struct?.map(d => d.paragraphs?.join(' ')).join('\n\n') || '',
-          coordinates: hotelContent.location || { latitude: 0, longitude: 0 },
-          facts: hotelContent.facts || [],
-          check_in_time: hotelContent.check_in_time || null,
-          check_out_time: hotelContent.check_out_time || null,
-          metapolicy_extra_info: hotelContent.metapolicy_extra_info || null,
-          noRatesAvailable: true,
-          message: 'No rates available for selected dates. Try different dates or contact us for availability.'
-        };
-
-        // Extract amenities
-        if (hotelContent.amenity_groups) {
-          hotelContent.amenity_groups.forEach(group => {
+        // Extract amenities from Local DB structure
+        const amenities = [];
+        if (localHotel.amenityGroups) {
+          localHotel.amenityGroups.forEach(group => {
             if (group.amenities) {
               group.amenities.forEach(amenity => {
                 const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
                 if (amenityName) {
-                  hotelDetails.amenities.push(amenityName);
+                  amenities.push(amenityName);
                 }
               });
             }
           });
         }
+
+        // Build description from Local DB structure
+        let description = '';
+        if (localHotel.descriptionStruct) {
+          description = localHotel.descriptionStruct.map(d => d.paragraphs?.join(' ')).join('\n\n') || '';
+        } else if (localHotel.description) {
+          description = localHotel.description;
+        }
+
+        // Format hotel data from Local DB
+        hotelDetails = {
+          id: localHotel.hotelId || `hid_${localHotel.hid}`,
+          hid: localHotel.hid,
+          name: localHotel.name,
+          address: localHotel.address || '',
+          city: localHotel.city || '',
+          country: localHotel.country || '',
+          star_rating: localHotel.starRating || 0,
+          images: hotelImages,
+          mainImage: hotelImages[0] || null,
+          amenities: amenities,
+          description: description,
+          coordinates: { latitude: localHotel.latitude || 0, longitude: localHotel.longitude || 0 },
+          facts: localHotel.facts || [],
+          check_in_time: localHotel.checkInTime || null,
+          check_out_time: localHotel.checkOutTime || null,
+          metapolicy_extra_info: localHotel.metapolicyExtraInfo || null,
+          noRatesAvailable: true,
+          message: 'No rates available for selected dates. Try different dates or contact us for availability.'
+        };
 
         // Fetch review data with hybrid approach (DB first, API fallback)
         try {
@@ -978,9 +976,9 @@ router.get('/details/:hid', async (req, res) => {
           console.error('Error fetching review data:', reviewError.message);
         }
 
-        console.log(`✅ Hotel fetched from Content API: ${hotelDetails.name}`);
-      } catch (contentError) {
-        console.error('Error fetching from Content API:', contentError.message);
+        console.log(`✅ Hotel fetched from Local DB: ${hotelDetails.name}`);
+      } catch (dbError) {
+        console.error('Error fetching from Local DB:', dbError.message);
         return errorResponse(res, 'Hotel not found', 404);
       }
     }
