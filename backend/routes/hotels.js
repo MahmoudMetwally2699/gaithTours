@@ -498,33 +498,35 @@ router.get('/search', async (req, res) => {
 
     // Step 3.5: Merge API results with DB hotels
     const cityName = destination;
-    console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
-
+    
     const HotelContent = require('../models/HotelContent');
 
-    // Check cached city count first (1 hour TTL)
-    // For city searches, only count rated hotels (starRating > 0)
-    const countCacheKey = isCitySearch ? `count_rated_${cityName}` : `count_${cityName}`;
-    let totalHotelsInDB;
+    // For hotel-specific searches, skip slow DB count query (we'll use API results only)
+    let totalHotelsInDB = 0;
+    
+    if (isCitySearch) {
+      console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
+      
+      // Check cached city count first (1 hour TTL)
+      const countCacheKey = `count_rated_${cityName}`;
 
-    const cachedCount = cityCountCache.get(countCacheKey);
-    if (cachedCount && Date.now() - cachedCount.timestamp < CITY_COUNT_TTL) {
-      totalHotelsInDB = cachedCount.count;
-      console.log(`   📦 Total ${totalHotelsInDB} ${isCitySearch ? 'rated' : ''} hotels in HotelContent for "${cityName}" (cached)`);
-    } else {
-      // Build query based on search type
-      const countQuery = {
-        city: { $regex: new RegExp(`^${cityName}$`, 'i') }
-      };
+      const cachedCount = cityCountCache.get(countCacheKey);
+      if (cachedCount && Date.now() - cachedCount.timestamp < CITY_COUNT_TTL) {
+        totalHotelsInDB = cachedCount.count;
+        console.log(`   📦 Total ${totalHotelsInDB} rated hotels in HotelContent for "${cityName}" (cached)`);
+      } else {
+        // Build query based on search type
+        const countQuery = {
+          city: { $regex: new RegExp(`^${cityName}$`, 'i') },
+          starRating: { $gt: 0 } // Only rated hotels for city searches
+        };
 
-      // For city searches, only count hotels with star ratings
-      if (isCitySearch) {
-        countQuery.starRating = { $gt: 0 }; // Only rated hotels
+        totalHotelsInDB = await HotelContent.countDocuments(countQuery);
+        cityCountCache.set(countCacheKey, { count: totalHotelsInDB, timestamp: Date.now() });
+        console.log(`   📦 Total ${totalHotelsInDB} rated hotels in HotelContent for "${cityName}" (fresh count)`);
       }
-
-      totalHotelsInDB = await HotelContent.countDocuments(countQuery);
-      cityCountCache.set(countCacheKey, { count: totalHotelsInDB, timestamp: Date.now() });
-      console.log(`   📦 Total ${totalHotelsInDB} ${isCitySearch ? 'rated' : ''} hotels in HotelContent for "${cityName}" (fresh count)`);
+    } else {
+      console.log(`📊 Hotel-specific search: "${cityName}" - skipping DB count for speed`);
     }
 
     console.log(`   🌐 Found ${searchResults.hotels.length} hotels with rates from API`);
@@ -539,9 +541,13 @@ router.get('/search', async (req, res) => {
     // Create a Set of HIDs from API results for quick lookup
     const apiHids = new Set(searchResults.hotels.map(h => h.hid).filter(Boolean));
 
-    // Skip DB merge for large cities (>1000 hotels) for performance
+    // Skip DB merge for:
+    // 1. Large cities (>1000 hotels) for performance
+    // 2. Hotel-specific searches (not city searches) - the searched hotel is added separately later
     const dbOnlyHotels = [];
-    if (!isLargeCity) {
+    const shouldMergeDbHotels = !isLargeCity && isCitySearch;
+    
+    if (shouldMergeDbHotels) {
       // Fetch DB-only hotels (those without rates from API) to add to the pool
       // We'll paginate the combined results later
       const maxDbHotels = 100; // Reduced to match API batch size (100 hotels)
@@ -585,12 +591,14 @@ router.get('/search', async (req, res) => {
           currency: currency
         });
     }
-  } // Close if (!isLargeCity) block
+  } // Close if (shouldMergeDbHotels) block
 
     if (dbOnlyHotels.length > 0) {
       console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB`);
     } else if (isLargeCity) {
       console.log(`   ⚡ Skipped DB merge for performance (large city)`);
+    } else if (!isCitySearch) {
+      console.log(`   ⚡ Skipped DB merge for hotel-specific search`);
     }
 
     // Merge: API hotels first (with rates), then DB-only hotels (without rates)
