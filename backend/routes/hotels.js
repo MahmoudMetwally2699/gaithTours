@@ -498,15 +498,15 @@ router.get('/search', async (req, res) => {
 
     // Step 3.5: Merge API results with DB hotels
     const cityName = destination;
-    
+
     const HotelContent = require('../models/HotelContent');
 
     // For hotel-specific searches, skip slow DB count query (we'll use API results only)
     let totalHotelsInDB = 0;
-    
+
     if (isCitySearch) {
       console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
-      
+
       // Check cached city count first (1 hour TTL)
       const countCacheKey = `count_rated_${cityName}`;
 
@@ -546,7 +546,7 @@ router.get('/search', async (req, res) => {
     // 2. Hotel-specific searches (not city searches) - the searched hotel is added separately later
     const dbOnlyHotels = [];
     const shouldMergeDbHotels = !isLargeCity && isCitySearch;
-    
+
     if (shouldMergeDbHotels) {
       // Fetch DB-only hotels (those without rates from API) to add to the pool
       // We'll paginate the combined results later
