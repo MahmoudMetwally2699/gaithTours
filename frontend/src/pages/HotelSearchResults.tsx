@@ -18,6 +18,7 @@ import {
 import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import "../components/DateRangePicker.css";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { searchHotels } from '../services/hotelService';
@@ -220,6 +221,8 @@ export const HotelSearchResults: React.FC = () => {
     childrenAges: searchQuery.childrenAges
   });
   const [showGuestPopover, setShowGuestPopover] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [isTravelingForWork, setIsTravelingForWork] = useState(false);
 
   // Sync state with URL if it changes externally
   useEffect(() => {
@@ -574,341 +577,662 @@ export const HotelSearchResults: React.FC = () => {
         <div className="absolute inset-0 z-0 overflow-hidden bg-[#E67915] h-full shadow-md"></div>
 
         {/* Main Content Container */}
-        <div className="relative z-10 flex flex-col px-4 sm:px-8 lg:px-16 py-3 pb-6">
+        <div className="relative z-10 flex flex-col px-3 sm:px-6 lg:px-16 py-2 sm:py-3 pb-4 sm:pb-6">
 
           {/* Top Bar: Logo & Auth */}
-          <header className="flex flex-row justify-between items-center w-full mb-4">
+          <header className="flex flex-row justify-between items-center w-full mb-3 sm:mb-4 relative z-[60]">
              {/* Logo */}
-             <a href="/" className="flex-shrink-0">
-                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-10 sm:h-12 w-auto drop-shadow-md hover:scale-105 transition-transform" />
+             <a href="/" className="flex-shrink-0 z-10">
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-7 sm:h-10 md:h-12 w-auto drop-shadow-lg hover:scale-105 transition-transform" />
              </a>
 
              {/* Right Side: Auth & Settings */}
-             <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
-                <div className="hidden md:flex items-center space-x-4 bg-white/10 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/20">
+             <div className="flex items-center gap-2 sm:gap-3 rtl:space-x-reverse text-white">
+                {/* Currency & Language - Desktop Only */}
+                <div className="hidden md:flex items-center gap-3 bg-white/15 backdrop-blur-md rounded-full px-4 py-2 border border-white/30 shadow-sm">
                    <CurrencySelector variant="light" />
-                   <div className="w-px h-4 bg-white/30"></div>
-                   <div className="flex items-center space-x-1 cursor-pointer hover:text-orange-100 transition-colors">
-                      <span className="text-sm font-medium">EN</span>
-                      <ChevronDownIcon className="w-3 h-3" />
+                   <div className="w-px h-4 bg-white/40"></div>
+                   <div className="flex items-center gap-1 cursor-pointer hover:text-orange-100 transition-colors">
+                      <span className="text-sm font-semibold">EN</span>
+                      <ChevronDownIcon className="w-3.5 h-3.5" />
                    </div>
                 </div>
 
                 {!user ? (
                    <>
-                      <Link to="/login" className="text-sm font-medium hover:text-orange-100 transition-colors hidden sm:block">Sign in</Link>
-                      <Link to="/register" className="bg-white text-[#E67915] text-sm font-bold px-4 py-2 rounded-full hover:bg-orange-50 transition shadow-sm">Register</Link>
+                      {/* Sign in - Hidden on mobile */}
+                      <Link
+                        to="/login"
+                        className="hidden sm:inline-flex items-center text-sm font-semibold hover:text-orange-100 transition-colors px-3 py-1.5 rounded-full hover:bg-white/10"
+                      >
+                        Sign in
+                      </Link>
+                      {/* Register Button - Modern Style */}
+                      <Link
+                        to="/register"
+                        className="inline-flex items-center bg-white text-[#E67915] text-xs sm:text-sm font-bold px-3 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-orange-50 active:scale-95 transition-all shadow-lg hover:shadow-xl"
+                      >
+                        <span className="hidden sm:inline">Register</span>
+                        <span className="sm:hidden">Join</span>
+                      </Link>
                    </>
                 ) : (
-                   <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
-                      <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors">
-                        {user.name}
+                   <div className="flex items-center gap-2 sm:gap-3 rtl:space-x-reverse text-white">
+                      {/* User Profile - Modern Card Style */}
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/30 hover:bg-white/25 transition-all shadow-sm"
+                      >
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/30 flex items-center justify-center">
+                          <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-[120px]">
+                          {user.name}
+                        </span>
                       </Link>
-                      <button onClick={logout} className="text-sm opacity-80 hover:opacity-100">
-                        Logout
+                      {/* Logout Button - Icon on mobile */}
+                      <button
+                        onClick={logout}
+                        className="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full hover:bg-white/10 transition-colors"
+                        title="Logout"
+                      >
+                        <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span className="hidden sm:inline text-sm font-medium">Logout</span>
                       </button>
                    </div>
                 )}
              </div>
           </header>
 
-          {/* Compact Search Bar */}
-          <div className="w-full max-w-5xl mx-auto">
-             <div className="bg-white/10 backdrop-blur-md rounded-full p-1.5 border border-white/20 flex flex-col md:flex-row items-center relative gap-1 shadow-lg">
+          {/* Mobile Search Bar - Compact & Expandable (md and below) */}
+          <div className="md:hidden">
+            {!isSearchExpanded ? (
+              /* Compact Search Summary */
+              <div className="w-full max-w-5xl mx-auto">
+                <div
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="bg-white rounded-xl p-4 shadow-lg border-2 border-orange-500 cursor-pointer hover:shadow-xl transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-900 truncate">{editableDestination || 'Where to?'}</div>
+                      <div className="text-sm text-gray-600">
+                        {checkInDate && checkOutDate ? (
+                          `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} night${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) > 1 ? 's' : ''}) • ${guestCounts.adults} adult${guestCounts.adults > 1 ? 's' : ''}`
+                        ) : 'Add dates and guests'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Expanded Search Form */
+              <div className="w-full max-w-2xl mx-auto">
+                <div className="bg-white rounded-3xl p-6 shadow-2xl border-2 border-orange-500 relative">
+                  {/* Close button */}
+                  <button
+                    onClick={() => setIsSearchExpanded(false)}
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors z-10"
+                  >
+                    <XMarkIcon className="w-5 h-5 text-gray-600" />
+                  </button>
 
-                {/* Destination */}
-                <div className="w-full md:flex-[1.5] px-4 py-2 md:py-0 border-b md:border-b-0 md:border-r border-white/20 flex items-center gap-3 relative" ref={autocompleteRef}>
-                   <MapPinIcon className="h-5 w-5 text-white/90 shrink-0" />
-                   <div className="flex flex-col w-full min-w-0">
-                      <span className="text-white/70 text-[10px] uppercase tracking-wider font-bold">{t('common.destination', 'Destination')}</span>
+                  {/* Destination Input */}
+                  <div className="mb-4" ref={autocompleteRef}>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Destination
+                    </label>
+                    <div className="relative">
                       <input
-                         type="text"
-                         value={editableDestination}
-                         onChange={(e) => {
-                           hasUserTyped.current = true;
-                           setEditableDestination(e.target.value);
-                         }}
-                         onFocus={() => {
-                           if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
-                             setShowAutocomplete(true);
-                           }
-                         }}
-                         onKeyDown={(e) => {
-                             if (e.key === 'Enter') {
-                               e.preventDefault();
-                               setShowAutocomplete(false);
-                               handleUpdateSearch();
-                             }
-                         }}
-                         className="bg-transparent border-none p-0 text-white text-sm font-bold placeholder-white/50 focus:ring-0 w-full truncate"
-                         placeholder="Where to?"
+                        type="text"
+                        value={editableDestination}
+                        onChange={(e) => {
+                          hasUserTyped.current = true;
+                          setEditableDestination(e.target.value);
+                        }}
+                        onFocus={() => {
+                          if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
+                            setShowAutocomplete(true);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            setShowAutocomplete(false);
+                            handleUpdateSearch();
+                            setIsSearchExpanded(false);
+                          }
+                        }}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium placeholder-gray-400"
+                        placeholder="Where are you going?"
                       />
-                   </div>
+                      <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
 
-                   {/* Autocomplete Dropdown */}
-                   {showAutocomplete && autocompleteResults.hotels.length > 0 && (
-                     <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-64 overflow-y-auto animate-fadeIn">
-                       <div className="p-2">
-                         <p className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">Hotels</p>
-                         {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
-                           <button
-                             key={hotel.id}
-                             type="button"
-                             onClick={() => handleSelectSuggestion(hotel)}
-                             className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
-                           >
-                             <BuildingOffice2Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
-                             <div>
-                               <p className="text-gray-800 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
-                               <p className="text-[10px] text-gray-400 uppercase tracking-wide">Hotel</p>
-                             </div>
-                           </button>
-                         ))}
-                       </div>
-                     </div>
-                   )}
-                </div>
+                      {/* Autocomplete Dropdown */}
+                      {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                          <div className="p-2">
+                            {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                              <button
+                                key={hotel.id}
+                                type="button"
+                                onClick={() => {
+                                  handleSelectSuggestion(hotel);
+                                  setShowAutocomplete(false);
+                                }}
+                                className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                              >
+                                <BuildingOffice2Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                                <div>
+                                  <p className="text-gray-800 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
+                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Hotel</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                {/* Dates - Unified Range */}
-                <div className="w-full md:flex-[2] px-4 py-2 md:py-0 border-b md:border-b-0 md:border-r border-white/20 flex items-center gap-3">
-                   <ClockIcon className="h-5 w-5 text-white/90 shrink-0" />
-                   <div className="flex flex-col w-full">
-                      <span className="text-white/70 text-[10px] uppercase tracking-wider font-bold">Check-in - Check-out</span>
-                      <div className="w-full">
-                         <DatePicker
-                            selected={checkInDate}
-                            onChange={(dates: [Date | null, Date | null]) => {
-                               const [start, end] = dates;
-                               setCheckInDate(start);
-                               setCheckOutDate(end);
-                            }}
-                            startDate={checkInDate}
-                            endDate={checkOutDate}
-                            selectsRange
-                            minDate={new Date()}
-                            className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50"
-                            dateFormat="dd MMM"
-                            placeholderText="Select dates"
-                            customInput={
-                               <input
-                                  value={
-                                     checkInDate && checkOutDate
-                                     ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
-                                     : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : '')
-                                  }
-                                  readOnly
-                                  placeholder="Add dates"
-                                  className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50"
-                               />
-                            }
-                         />
+                  {/* Dates Row */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    {/* Check-in */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Check-in date
+                      </label>
+                      <DatePicker
+                        selected={checkInDate}
+                        onChange={(date: Date | null) => setCheckInDate(date)}
+                        selectsStart
+                        startDate={checkInDate}
+                        endDate={checkOutDate}
+                        minDate={new Date()}
+                        dateFormat="EEE, MMM d, yyyy"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
+                        placeholderText="Select date"
+                        monthsShown={2}
+                      />
+                    </div>
+
+                    {/* Check-out */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Check-out date
+                      </label>
+                      <DatePicker
+                        selected={checkOutDate}
+                        onChange={(date: Date | null) => setCheckOutDate(date)}
+                        selectsEnd
+                        startDate={checkInDate}
+                        endDate={checkOutDate}
+                        minDate={checkInDate || new Date()}
+                        dateFormat="EEE, MMM d, yyyy"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
+                        placeholderText="Select date"
+                        monthsShown={2}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Guests Row */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {/* Adults */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Adults
+                      </label>
+                      <select
+                        value={guestCounts.adults}
+                        onChange={(e) => setGuestCounts(prev => ({ ...prev, adults: parseInt(e.target.value) }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
+                      >
+                        {[...Array(30)].map((_, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Children */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Children
+                      </label>
+                      <select
+                        value={guestCounts.children}
+                        onChange={(e) => {
+                          const count = parseInt(e.target.value);
+                          setGuestCounts(prev => ({
+                            ...prev,
+                            children: count,
+                            childrenAges: count > 0 ? [...Array(count)].map(() => 5) : []
+                          }));
+                        }}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
+                      >
+                        {[...Array(11)].map((_, i) => (
+                          <option key={i} value={i}>{i}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Rooms */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Rooms
+                      </label>
+                      <select
+                        value={guestCounts.rooms}
+                        onChange={(e) => setGuestCounts(prev => ({ ...prev, rooms: parseInt(e.target.value) }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
+                      >
+                        {[...Array(10)].map((_, i) => (
+                          <option key={i + 1} value={i + 1}>{i + 1}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Traveling for work */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Are you traveling for work?
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="travelingForWork"
+                            checked={isTravelingForWork === true}
+                            onChange={() => setIsTravelingForWork(true)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">Yes</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            name="travelingForWork"
+                            checked={isTravelingForWork === false}
+                            onChange={() => setIsTravelingForWork(false)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="ml-2 text-sm text-gray-700">No</span>
+                        </label>
                       </div>
-                   </div>
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <button
+                    onClick={() => {
+                      handleUpdateSearch();
+                      setIsSearchExpanded(false);
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg shadow-lg"
+                  >
+                    Search
+                  </button>
                 </div>
-
-                {/* Guests */}
-                <div className="w-full md:flex-[1.5] relative">
-                   <button
-                      className="w-full px-4 py-2 md:py-0 flex items-center gap-3 text-left"
-                      onClick={() => setShowGuestPopover(!showGuestPopover)}
-                   >
-                      <UserIcon className="h-5 w-5 text-white/90 shrink-0" />
-                      <div className="flex flex-col min-w-0">
-                         <span className="text-white/70 text-[10px] uppercase tracking-wider font-bold">{t('common.guests', 'Guests')}</span>
-                         <span className="text-white text-sm font-bold truncate">
-                            {guestCounts.adults + guestCounts.children} Guests, {guestCounts.rooms} Rm
-                         </span>
-                      </div>
-                   </button>
-
-                   {/* Guest Popover */}
-                   {showGuestPopover && (
-                      <>
-                         <div className="fixed inset-0 z-40" onClick={() => setShowGuestPopover(false)}></div>
-                         <div className="absolute top-full right-0 mt-3 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-5 z-50 text-gray-800 animate-fadeIn cursor-default">
-                            {/* Rooms */}
-                            <div className="flex justify-between items-center mb-4">
-                               <div className="flex flex-col">
-                                  <span className="font-bold text-sm text-gray-800">Rooms</span>
-                                  <span className="text-xs text-gray-500">Number of rooms</span>
-                               </div>
-                               <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
-                                  <button
-                                     onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.max(1, prev.rooms - 1)}))}
-                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
-                                     disabled={guestCounts.rooms <= 1}
-                                  >
-                                     <MinusIcon className="w-3 h-3 stroke-[2.5]" />
-                                  </button>
-                                  <span className="w-4 text-center font-bold text-sm">{guestCounts.rooms}</span>
-                                  <button
-                                     onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.min(10, prev.rooms + 1)}))}
-                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
-                                  >
-                                     <PlusIcon className="w-3 h-3 stroke-[2.5]" />
-                                  </button>
-                               </div>
-                            </div>
-                            {/* Adults */}
-                            <div className="flex justify-between items-center mb-4">
-                               <div className="flex flex-col">
-                                  <span className="font-bold text-sm text-gray-800">Adults</span>
-                                  <span className="text-xs text-gray-500">Ages 18 or above</span>
-                               </div>
-                               <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
-                                  <button
-                                     onClick={() => setGuestCounts(prev => ({...prev, adults: Math.max(1, prev.adults - 1)}))}
-                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
-                                     disabled={guestCounts.adults <= 1}
-                                  >
-                                     <MinusIcon className="w-3 h-3 stroke-[2.5]" />
-                                  </button>
-                                  <span className="w-4 text-center font-bold text-sm">{guestCounts.adults}</span>
-                                  <button
-                                     onClick={() => setGuestCounts(prev => ({...prev, adults: Math.min(30, prev.adults + 1)}))}
-                                     className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
-                                  >
-                                     <PlusIcon className="w-3 h-3 stroke-[2.5]" />
-                                  </button>
-                               </div>
-                            </div>
-                            {/* Children */}
-                            {/* Children */}
-                            <div className="mb-6">
-                               <div className="flex justify-between items-center">
-                                  <div className="flex flex-col">
-                                     <span className="font-bold text-sm text-gray-800">Children</span>
-                                     <span className="text-xs text-gray-500">Ages 0-17</span>
-                                  </div>
-                                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
-                                     <button
-                                        onClick={() => setGuestCounts(prev => ({
-                                           ...prev,
-                                           children: Math.max(0, prev.children - 1),
-                                           childrenAges: (prev.childrenAges || []).slice(0, -1)
-                                        }))}
-                                        className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
-                                        disabled={guestCounts.children <= 0}
-                                     >
-                                        <MinusIcon className="w-3 h-3 stroke-[2.5]" />
-                                     </button>
-                                     <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
-                                     <button
-                                        onClick={() => setGuestCounts(prev => ({
-                                           ...prev,
-                                           children: Math.min(10, prev.children + 1),
-                                           childrenAges: [...(prev.childrenAges || []), 5]
-                                        }))}
-                                        className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
-                                     >
-                                        <PlusIcon className="w-3 h-3 stroke-[2.5]" />
-                                     </button>
-                                  </div>
-                               </div>
-
-                               {/* Child Age Selectors */}
-                               {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
-                                 <div className="mt-4 pt-3 border-t border-gray-100">
-                                   <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
-                                   <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
-                                     {guestCounts.childrenAges.map((age, index) => (
-                                       <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                                         <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
-                                         <select
-                                           value={age}
-                                           onChange={(e) => {
-                                             const newAges = [...guestCounts.childrenAges];
-                                             newAges[index] = parseInt(e.target.value);
-                                             setGuestCounts(prev => ({ ...prev, childrenAges: newAges }));
-                                           }}
-                                           className="flex-1 min-w-0 px-2 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
-                                         >
-                                           {[...Array(18)].map((_, i) => (
-                                             <option key={i} value={i}>
-                                               {i} {i === 1 ? 'yr' : 'yrs'}
-                                             </option>
-                                           ))}
-                                         </select>
-                                       </div>
-                                     ))}
-                                   </div>
-                                 </div>
-                               )}
-                            </div>
-
-                            <button
-                               className="w-full bg-[#E67915] text-white text-sm font-bold py-2.5 rounded-lg hover:bg-orange-600 transition-colors shadow-md"
-                               onClick={() => setShowGuestPopover(false)}
-                            >
-                               Done
-                            </button>
-                         </div>
-                      </>
-                   )}
-                </div>
-
-                {/* Search Button */}
-                <div className="p-1">
-                   <button
-                     onClick={handleUpdateSearch}
-                     className="bg-white text-[#E67915] w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center hover:bg-orange-50 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
-                     title="Update Search"
-                   >
-                      <MagnifyingGlassIcon className="w-5 h-5 md:w-6 md:h-6 stroke-[2.5]" />
-                   </button>
-                </div>
-
-             </div>
+              </div>
+            )}
           </div>
 
+          {/* Desktop Search Bar - Inline (md and above) */}
+          <div className="hidden md:block w-full max-w-5xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-full p-1.5 border border-white/20 flex items-center relative z-50 gap-1 shadow-lg">
+              {/* Destination */}
+              <div className="flex-[1.5] px-4 py-0 border-r border-white/20 flex items-center gap-3 relative z-50" ref={autocompleteRef}>
+                <MapPinIcon className="h-5 w-5 text-white/90 shrink-0" />
+                <div className="flex flex-col w-full min-w-0">
+                  <span className="text-white/70 text-[10px] uppercase tracking-wide font-bold mb-0.5">{t('common.destination', 'Destination')}</span>
+                  <input
+                    type="text"
+                    value={editableDestination}
+                    onChange={(e) => {
+                      hasUserTyped.current = true;
+                      setEditableDestination(e.target.value);
+                    }}
+                    onFocus={() => {
+                      if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
+                        setShowAutocomplete(true);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        setShowAutocomplete(false);
+                        handleUpdateSearch();
+                      }
+                    }}
+                    className="bg-transparent border-none p-0 text-white text-sm font-bold placeholder-white/50 focus:ring-0 w-full truncate focus:outline-none"
+                    placeholder="Where are you going?"
+                  />
+                </div>
 
+                {/* Autocomplete Dropdown */}
+                {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-64 overflow-y-auto animate-fadeIn">
+                    <div className="p-2">
+                      <p className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">Hotels</p>
+                      {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                        <button
+                          key={hotel.id}
+                          type="button"
+                          onClick={() => handleSelectSuggestion(hotel)}
+                          className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                        >
+                          <BuildingOffice2Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                          <div>
+                            <p className="text-gray-800 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Hotel</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
+              {/* Dates - Unified Range */}
+              <div className="flex-[2] px-4 py-0 border-r border-white/20 flex items-center gap-3">
+                <ClockIcon className="h-5 w-5 text-white/90 shrink-0" />
+                <div className="flex flex-col w-full">
+                  <span className="text-white/70 text-[10px] uppercase tracking-wide font-bold mb-0.5">Check-in - Check-out</span>
+                  <div className="w-full">
+                    <DatePicker
+                      selected={checkInDate}
+                      onChange={(dates: [Date | null, Date | null]) => {
+                        const [start, end] = dates;
+                        setCheckInDate(start);
+                        setCheckOutDate(end);
+                      }}
+                      startDate={checkInDate}
+                      endDate={checkOutDate}
+                      selectsRange
+                      minDate={new Date()}
+                      className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50"
+                      dateFormat="dd MMM"
+                      placeholderText="Add dates"
+                      monthsShown={2}
+                      customInput={
+                        <input
+                          value={
+                            checkInDate && checkOutDate
+                              ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                              : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : '')
+                          }
+                          readOnly
+                          placeholder="Add your dates"
+                          className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50 focus:outline-none"
+                        />
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Guests */}
+              <div className="flex-[1.5] relative">
+                <button
+                  className="w-full px-4 py-0 flex items-center gap-3 text-left"
+                  onClick={() => setShowGuestPopover(!showGuestPopover)}
+                >
+                  <UserIcon className="h-5 w-5 text-white/90 shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-white/70 text-[10px] uppercase tracking-wide font-bold mb-0.5">{t('common.guests', 'Guests')}</span>
+                    <span className="text-white text-sm font-bold truncate">
+                      {guestCounts.adults + guestCounts.children} Guests · {guestCounts.rooms} Room{guestCounts.rooms > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Guest Popover */}
+                {showGuestPopover && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowGuestPopover(false)}></div>
+                    <div className="absolute top-full right-0 mt-3 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-5 z-50 text-gray-800 animate-fadeIn cursor-default">
+                      {/* Rooms */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-gray-800">Rooms</span>
+                          <span className="text-xs text-gray-500">Number of rooms</span>
+                        </div>
+                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                          <button
+                            onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.max(1, prev.rooms - 1)}))}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                            disabled={guestCounts.rooms <= 1}
+                          >
+                            <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                          <span className="w-4 text-center font-bold text-sm">{guestCounts.rooms}</span>
+                          <button
+                            onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.min(10, prev.rooms + 1)}))}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                          >
+                            <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Adults */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-gray-800">Adults</span>
+                          <span className="text-xs text-gray-500">Ages 18 or above</span>
+                        </div>
+                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                          <button
+                            onClick={() => setGuestCounts(prev => ({...prev, adults: Math.max(1, prev.adults - 1)}))}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                            disabled={guestCounts.adults <= 1}
+                          >
+                            <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                          <span className="w-4 text-center font-bold text-sm">{guestCounts.adults}</span>
+                          <button
+                            onClick={() => setGuestCounts(prev => ({...prev, adults: Math.min(30, prev.adults + 1)}))}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                          >
+                            <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Children */}
+                      <div className="mb-6">
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-gray-800">Children</span>
+                            <span className="text-xs text-gray-500">Ages 0-17</span>
+                          </div>
+                          <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                            <button
+                              onClick={() => setGuestCounts(prev => ({
+                                ...prev,
+                                children: Math.max(0, prev.children - 1),
+                                childrenAges: (prev.childrenAges || []).slice(0, -1)
+                              }))}
+                              className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                              disabled={guestCounts.children <= 0}
+                            >
+                              <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                            </button>
+                            <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
+                            <button
+                              onClick={() => setGuestCounts(prev => ({
+                                ...prev,
+                                children: Math.min(10, prev.children + 1),
+                                childrenAges: [...(prev.childrenAges || []), 5]
+                              }))}
+                              className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                            >
+                              <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Child Age Selectors */}
+                        {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
+                          <div className="mt-4 pt-3 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
+                            <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                              {guestCounts.childrenAges.map((age, index) => (
+                                <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                                  <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                  <select
+                                    value={age}
+                                    onChange={(e) => {
+                                      const newAges = [...guestCounts.childrenAges];
+                                      newAges[index] = parseInt(e.target.value);
+                                      setGuestCounts(prev => ({ ...prev, childrenAges: newAges }));
+                                    }}
+                                    className="flex-1 min-w-0 px-2 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                                  >
+                                    {[...Array(18)].map((_, i) => (
+                                      <option key={i} value={i}>
+                                        {i} {i === 1 ? 'yr' : 'yrs'}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        className="w-full bg-[#E67915] text-white text-sm font-bold py-2.5 rounded-lg hover:bg-orange-600 transition-colors shadow-md"
+                        onClick={() => setShowGuestPopover(false)}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Search Button */}
+              <div className="p-1">
+                <button
+                  onClick={handleUpdateSearch}
+                  className="w-12 h-12 bg-white text-[#E67915] rounded-full flex items-center justify-center hover:bg-orange-50 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+                  title="Update Search"
+                >
+                  <MagnifyingGlassIcon className="w-6 h-6 stroke-[2.5]" />
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Travelling for work checkbox */}
-          <div className="flex items-center space-x-2 mb-2">
-            <input type="checkbox" id="business" className="w-4 h-4 rounded border-gray-300" />
-            <label htmlFor="business" className="text-white text-sm">I'm travelling for work</label>
+          <div className="hidden sm:flex items-center space-x-2 mt-2">
+            <input type="checkbox" id="business" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-white/30" />
+            <label htmlFor="business" className="text-white text-xs sm:text-sm">I'm travelling for work</label>
           </div>
         </div>
       </div>
 
       {/* Results Header */}
       <div className="bg-white border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-gray-900">
-              {searchQuery.destination}: {totalHotels} properties found
-            </h1>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Sort by:</span>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+        <div className="px-3 sm:px-6 py-3 sm:py-4">
+          {/* Mobile Action Buttons - Only show when search is compact on mobile */}
+          {!isSearchExpanded && (
+            <div className="md:hidden flex items-center justify-center gap-3 mb-4 max-w-md mx-auto">
+              <button
+                onClick={() => {/* Add sort logic */}}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <option value="top_picks">Top picks</option>
-                <option value="price_low">Price (lowest first)</option>
-                <option value="price_high">Price (highest first)</option>
-                <option value="rating">Best reviewed</option>
-              </select>
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+                <span className="text-sm font-medium text-gray-700">Sort</span>
+              </button>
+
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <FunnelIcon className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Filter</span>
+              </button>
+
+              <button
+                onClick={() => setFullscreenMap(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <MapIcon className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Map</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
+                {searchQuery.destination}: {totalHotels} properties found
+              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">Sort by:</span>
+                <select
+                  value={filters.sortBy}
+                  onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+                  className="border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 flex-1 sm:flex-none"
+                >
+                  <option value="top_picks">Top picks</option>
+                  <option value="price_low">Price (lowest first)</option>
+                  <option value="price_high">Price (highest first)</option>
+                  <option value="rating">Best reviewed</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-6">
+        <div className="flex gap-3 sm:gap-6">
           {/* Filters Sidebar - Always visible on desktop */}
           <div className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-24">
               {/* Show on Map */}
-              <button
+              {/* Map Preview Card */}
+              <div
+                className="relative h-24 sm:h-32 w-full rounded-xl overflow-hidden mb-6 cursor-pointer group shadow-sm hover:shadow-md transition-shadow border border-gray-200"
                 onClick={() => setFullscreenMap(true)}
-                className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 mb-4 flex items-center justify-center gap-2 transition-colors"
               >
-                <MapIcon className="h-5 w-5 text-blue-600" />
-                <span className="text-blue-600 font-medium text-sm">Show on map</span>
-              </button>
+                {/* Static Map Background */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <MapContainer
+                    center={getCityCoordinates(searchQuery.destination)}
+                    zoom={13}
+                    zoomControl={false}
+                    dragging={false}
+                    scrollWheelZoom={false}
+                    doubleClickZoom={false}
+                    attributionControl={false}
+                    style={{ height: '100%', width: '100%' }}
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <Marker position={getCityCoordinates(searchQuery.destination)} />
+                  </MapContainer>
+                </div>
+
+                {/* Overlay Button */}
+                <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors pointer-events-none">
+                    <MapIcon className="h-4 w-4" />
+                    Show on map
+                  </button>
+                </div>
+              </div>
 
               {/* Map Preview - Interactive Leaflet Map */}
               {showMap && (
@@ -1149,10 +1473,10 @@ export const HotelSearchResults: React.FC = () => {
           {/* Mobile Filter Button */}
           <button
             onClick={() => setShowMobileFilters(true)}
-            className="lg:hidden fixed bottom-4 left-4 right-4 bg-orange-500 text-white py-3 rounded-lg font-medium shadow-lg z-40 flex items-center justify-center gap-2"
+            className="lg:hidden fixed bottom-4 left-4 right-4 bg-orange-500 text-white py-3 rounded-lg font-semibold shadow-xl z-40 flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-95 transition-all"
           >
             <FunnelIcon className="h-5 w-5" />
-            Filters
+            Filters ({filters.starRating.length + filters.facilities.length + (filters.guestRating > 0 ? 1 : 0)})
           </button>
 
           {/* Hotel Results */}
@@ -1208,11 +1532,26 @@ export const HotelSearchResults: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200"
+                      className={`rounded-lg overflow-hidden transition-all duration-300 relative ${
+                        (hotel as any).isSearchedHotel
+                          ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
+                          : 'bg-white shadow-sm hover:shadow-md border border-gray-200'
+                      }`}
                     >
-                      <div className="flex flex-col sm:flex-row">
+                      {/* Searched Hotel Badge */}
+                      {(hotel as any).isSearchedHotel && (
+                        <div className="absolute -top-0 left-4 z-10">
+                          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-b-lg shadow-md flex items-center gap-1">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                      <div className={(hotel as any).isSearchedHotel ? 'bg-white rounded-[6px]' : ''}>
+                      <div className="flex flex-col sm:flex-row h-full">
                         {/* Hotel Image with Heart Icon */}
-                        <div className="relative sm:w-52 lg:w-60 flex-shrink-0">
+                        <div className="relative w-full sm:w-48 md:w-56 lg:w-64 flex-shrink-0">
                           {hotel.image ? (
                             <img
                               src={hotel.image}
@@ -1225,127 +1564,133 @@ export const HotelSearchResults: React.FC = () => {
                             </div>
                           )}
                           {/* Heart Icon */}
-                          <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors">
+                          <button className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors">
                             <svg className="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                             </svg>
                           </button>
                         </div>
 
-                        {/* Hotel Info */}
-                        <div className="flex-1 p-4">
-                          <div className="flex justify-between gap-4">
-                            {/* Left Content */}
-                            <div className="flex-1">
-                              {/* Name and Stars */}
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3
-                                  onClick={() => handleHotelClick(hotel)}
-                                  className="text-lg font-bold text-blue-700 hover:text-blue-800 cursor-pointer"
-                                >
-                                  {hotel.name}
-                                </h3>
-                                <div className="flex">
-                                  {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
-                                </div>
-                              </div>
+                        {/* Content Container - Split into Info and Price columns for desktop */}
+                        <div className="flex-1 flex flex-col sm:flex-row min-w-0">
+                          {/* Left: Hotel Info */}
+                          <div className="flex-1 p-4 flex flex-col gap-3">
+                            <div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <h3
+                                            onClick={() => handleHotelClick(hotel)}
+                                            className="text-base sm:text-lg font-bold text-[#003B95] hover:text-[#cd924a] cursor-pointer leading-tight transition-colors"
+                                        >
+                                            {hotel.name}
+                                        </h3>
+                                        <div className="flex">
+                                            {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
+                                        </div>
+                                    </div>
 
-                              {/* Location with Show on map */}
-                              <div className="flex items-center gap-2 text-xs mb-3">
-                                <span className="text-orange-500 font-medium">{hotel.city || searchQuery.destination}</span>
-                                <span
-                                  className="text-orange-500 hover:underline cursor-pointer"
-                                  onClick={() => setFullscreenMap(true)}
-                                >
-                                  Show on map
-                                </span>
-                                {hotel.address && (
-                                  <span className="text-gray-500">· {hotel.address}</span>
+                                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                                        <span className="text-[#003B95] underline cursor-pointer" onClick={() => setFullscreenMap(true)}>
+                                            {hotel.city || searchQuery.destination}
+                                        </span>
+                                        <span className="text-[#003B95] cursor-pointer" onClick={() => setFullscreenMap(true)}>
+                                            Show on map
+                                        </span>
+                                        {hotel.address && (
+                                            <span className="text-gray-600 hidden sm:inline">· {hotel.address}</span>
+                                        )}
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+
+                            {/* Room Info */}
+                            <div className="border-l-2 border-gray-200 pl-3 mt-1">
+                                {(hotel as any).room_name && (
+                                    <div className="font-bold text-xs sm:text-sm text-gray-900 mb-1">
+                                        {(hotel as any).room_name}
+                                    </div>
                                 )}
-                              </div>
+                                {(hotel as any).bed_type && (
+                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" className="w-4 h-4 text-gray-500" fill="currentColor">
+                                            <path d="M32 32c17.7 0 32 14.3 32 32l0 224 224 0 0-128c0-17.7 14.3-32 32-32l160 0c53 0 96 43 96 96l0 224c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-64-448 0 0 64c0 17.7-14.3 32-32 32S0 465.7 0 448L0 64C0 46.3 14.3 32 32 32zm80 160a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z"/>
+                                        </svg>
+                                        <span>{(hotel as any).bed_type}</span>
+                                    </div>
+                                )}
+                            </div>
 
-                              {/* Room Info */}
-                              <div className="border-l-2 border-gray-200 pl-3 mb-3">
-                                <div className="font-semibold text-sm text-gray-900">
-                                  {(hotel as any).room_name || 'King room'}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
-                                  <span>🛏️</span>
-                                  <span>🛏️</span>
-                                  <span className="ml-1">{(hotel as any).bed_type || '1 double bed'}</span>
-                                </div>
-                              </div>
-
-                              {/* Badges */}
-                              <div className="flex flex-wrap gap-2">
+                            {/* Badges */}
+                            <div className="flex flex-wrap gap-2 mt-auto">
                                 {(hotel as any).free_cancellation && (
-                                  <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200 flex items-center gap-1">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Free cancellation
-                                  </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-green-700">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Free cancellation
+                                    </div>
                                 )}
                                 {((hotel as any).meal_included || (hotel as any).meal === 'breakfast' || (hotel as any).breakfast_included) && (
-                                  <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200 flex items-center gap-1">
-                                    🍳 Breakfast included
-                                  </span>
+                                    <div className="flex items-center gap-1 text-xs font-bold text-green-700">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        </svg>
+                                        Breakfast included
+                                    </div>
+                                )}
+                            </div>
+                          </div>
+
+                          {/* Right: Price & Action */}
+                          <div className="p-4 flex flex-row sm:flex-col justify-between items-end sm:border-l border-t sm:border-t-0 border-gray-100 sm:w-48 lg:w-60 bg-gray-50/50 sm:bg-transparent">
+                            {/* Reviews */}
+                            <div className="flex items-center gap-2 mb-auto order-1 sm:order-none">
+                                <div className="text-right hidden sm:block">
+                                    <div className="text-sm font-medium text-gray-900 leading-tight">
+                                        {getScoreText(hotel.rating)}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                        {hotel.reviewCount?.toLocaleString()} reviews
+                                    </div>
+                                </div>
+                                <div className="bg-[#003580] text-white p-1.5 rounded-t-lg rounded-br-lg text-sm font-bold min-w-[2rem] text-center" style={{ backgroundColor: '#F7871D' }}>
+                                    {Math.min(hotel.rating, 10).toFixed(1)}
+                                </div>
+                            </div>
+
+                            {/* Price Block */}
+                            <div className="flex flex-col items-end gap-2 mt-4 order-2 sm:order-none w-full sm:w-auto">
+                                <div className="text-xs text-gray-500">
+                                    1 night, {searchQuery.adults} adults
+                                </div>
+                                {(hotel as any).noRatesAvailable ? (
+                                    <div className="text-sm font-bold text-red-600">No rates data</div>
+                                ) : (
+                                    <>
+                                        <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-none">
+                                            {currencySymbol} {Math.round(hotel.price).toLocaleString()}
+                                        </div>
+                                        <div className="text-[10px] text-gray-500 font-medium mb-1">
+                                            Total (incl. taxes & fees): {currencySymbol}{Math.round(hotel.price + ((hotel as any).booking_taxes || 0)).toLocaleString()}
+                                        </div>
+                                    </>
                                 )}
 
-                              </div>
+                                <button
+                                    onClick={() => handleHotelClick(hotel)}
+                                    className="w-full sm:w-auto bg-[#F7871D] hover:bg-[#c5650f] text-white px-4 py-2 rounded-md font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                    See availability
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
                             </div>
-
-                            {/* Right Content - Review Score */}
-                            <div className="text-right flex-shrink-0">
-                              <div className="flex items-start gap-2">
-                                <div className="text-right">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {getScoreText(hotel.rating)}
-                                  </div>
-                                  {(hotel.reviewCount ?? 0) > 0 && (
-                                    <div className="text-xs text-gray-500">
-                                      {hotel.reviewCount?.toLocaleString()} reviews
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="bg-[#F7871D] text-white px-2.5 py-1.5 rounded-tl-lg rounded-tr-lg rounded-br-lg text-sm font-bold">
-                                  {Math.min(hotel.rating, 10).toFixed(1)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Price and Action */}
-                          <div className="flex items-end justify-end mt-4 pt-3 border-t border-gray-100 gap-4">
-                            <div className="text-right">
-                              {(hotel as any).noRatesAvailable ? (
-                                <div className="text-sm font-medium text-red-500">
-                                  No rooms available
-                                </div>
-                              ) : hotel.price && hotel.price > 0 ? (
-                                <>
-                                  <div className="text-xs text-gray-500">1 night, {searchQuery.adults} adults</div>
-                                  <div className="text-xl font-bold text-gray-900">
-                                    {currencySymbol} {Math.round(hotel.price).toLocaleString()}
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="text-sm text-gray-500">
-                                  See availability for prices
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => handleHotelClick(hotel)}
-                              className="bg-[#F7871D] hover:bg-[#e67915] text-white px-4 py-2.5 rounded font-medium text-sm transition-colors whitespace-nowrap flex items-center gap-1"
-                            >
-                              See availability
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                            </button>
                           </div>
                         </div>
+                      </div>
                       </div>
                     </motion.div>
                   ))
@@ -1385,11 +1730,11 @@ export const HotelSearchResults: React.FC = () => {
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setShowMobileFilters(false)} />
-          <div className="absolute inset-y-0 left-0 w-80 bg-white shadow-xl overflow-y-auto">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-6">
+          <div className="absolute inset-y-0 left-0 right-0 sm:right-auto sm:w-80 bg-white shadow-xl overflow-y-auto">
+            <div className="p-4 pb-24">
+              <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-3 border-b z-10">
                 <h2 className="text-lg font-semibold">Filters</h2>
-                <button onClick={() => setShowMobileFilters(false)}>
+                <button onClick={() => setShowMobileFilters(false)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
@@ -1445,12 +1790,14 @@ export const HotelSearchResults: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowMobileFilters(false)}
-                className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium"
-              >
-                Show {filteredHotels.length} results
-              </button>
+              <div className="fixed bottom-0 left-0 right-0 sm:relative p-4 bg-white border-t sm:border-t-0 shadow-lg sm:shadow-none">
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Show {filteredHotels.length} results
+                </button>
+              </div>
             </div>
           </div>
         </div>

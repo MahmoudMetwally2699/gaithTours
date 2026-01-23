@@ -104,6 +104,14 @@ router.get('/suggested', async (req, res) => {
     let suggestions;
     let searchResults = { hotels: [] };
 
+    // Get dates for hotel search
+    // If it's after 10 PM, show hotels starting from next day (people booking late want next day)
+    const now = new Date();
+    const currentHour = now.getHours();
+    const daysOffset = currentHour >= 22 ? 1 : 0; // After 10 PM (22:00), search from tomorrow
+
+    const dates = rateHawkService.constructor.getDefaultDates(daysOffset, 1);
+
     try {
       suggestions = await rateHawkService.suggest(destination);
 
@@ -112,8 +120,9 @@ router.get('/suggested', async (req, res) => {
         const target = suggestions.regions[0] || suggestions.hotels[0];
         const regionId = target.region_id || target.id;
 
-        // Get dates (today, 1 night) for current per-night pricing
-        const dates = rateHawkService.constructor.getDefaultDates(0, 1);
+        if (daysOffset === 1) {
+          console.log(`🌙 After 10 PM - Showing hotels from tomorrow (${dates.checkin})`);
+        }
 
         // Search - smart enrichment leverages cache to serve more hotels
         // With cache, we can request more hotels without extra API calls
@@ -164,7 +173,12 @@ router.get('/suggested', async (req, res) => {
     const responseData = {
       hotels: suggestedHotels,
       source,
-      destination
+      destination,
+      // Include the actual search dates so frontend can use them in detail page links
+      searchDates: {
+        checkIn: dates.checkin,
+        checkOut: dates.checkout
+      }
     };
 
     // Cache the successful result
@@ -432,101 +446,57 @@ router.get('/search', async (req, res) => {
       language: finalLanguage
     });
 
-    // Step 3.5: If API returns empty, fallback to HotelContent by city name
-    if (searchResults.hotels.length === 0) {
-      const cityName = regionToSearch.name || destination;
-      console.log(`⚠️ No hotels with rates from API, checking HotelContent for city: ${cityName}`);
+    // Step 3.5: ALWAYS merge API results with ALL hotels from HotelContent for the city
+    // This ensures we show ALL hotels in the database, not just those with rates from API
+    // Use destination parameter directly - regionToSearch.name might be a hotel name, not city
+    const cityName = destination;
+    console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
 
-      const HotelContent = require('../models/HotelContent');
+    const HotelContent = require('../models/HotelContent');
 
-      // Search by city name (case-insensitive)
-      const localHotels = await HotelContent.find({
-        city: { $regex: new RegExp(`^${cityName}$`, 'i') }
-      }).limit(50).lean();
+    // Fetch ALL hotels from database for this city
+    const localHotels = await HotelContent.find({
+      city: { $regex: new RegExp(`^${cityName}$`, 'i') }
+    }).lean();
 
-      if (localHotels.length > 0) {
-        console.log(`✅ Found ${localHotels.length} hotels in HotelContent for "${cityName}"`);
+    console.log(`   📦 Found ${localHotels.length} hotels in HotelContent for "${cityName}"`);
+    console.log(`   🌐 Found ${searchResults.hotels.length} hotels with rates from API`);
 
-        // Map local hotels to search result format
-        searchResults.hotels = localHotels.map(hotel => {
-          const imageUrl = (hotel.images?.[0]?.url || hotel.mainImage)?.replace('{size}', '640x400');
+    // Create a Set of HIDs from API results for quick lookup
+    const apiHids = new Set(searchResults.hotels.map(h => h.hid).filter(Boolean));
 
-          return {
-            id: hotel.hotelId || `hid_${hotel.hid}`,
-            hid: hotel.hid,
-            hotelId: hotel.hotelId,
-            name: hotel.name,
-            address: hotel.address,
-            city: hotel.city,
-            country: hotel.country,
-            image: imageUrl,
-            images: hotel.images?.slice(0, 5).map(img => (img.url || img)?.replace('{size}', '640x400')).filter(Boolean) || [],
-            star_rating: hotel.starRating,
-            latitude: hotel.latitude,
-            longitude: hotel.longitude,
-            isEnriched: true,
-            price: null,  // No price available from API
-            noRatesAvailable: true,  // Flag for frontend to show "Check availability"
-            currency: currency
-          };
-        });
+    // Map local hotels that are NOT in API results (no rates available)
+    const dbOnlyHotels = localHotels
+      .filter(hotel => !apiHids.has(hotel.hid))
+      .map(hotel => {
+        const imageUrl = (hotel.images?.[0]?.url || hotel.mainImage)?.replace('{size}', '640x400');
 
-        console.log(`📦 Returning ${searchResults.hotels.length} hotels from Local DB (no rates available)`);
-      } else {
-        console.log(`❌ No hotels found in HotelContent for city "${cityName}"`);
+        return {
+          id: hotel.hotelId || `hid_${hotel.hid}`,
+          hid: hotel.hid,
+          hotelId: hotel.hotelId,
+          name: hotel.name,
+          address: hotel.address,
+          city: hotel.city,
+          country: hotel.country,
+          image: imageUrl,
+          images: hotel.images?.slice(0, 5).map(img => (img.url || img)?.replace('{size}', '640x400')).filter(Boolean) || [],
+          star_rating: hotel.starRating,
+          latitude: hotel.latitude,
+          longitude: hotel.longitude,
+          isEnriched: true,
+          price: null,  // No price available from API
+          noRatesAvailable: true,  // Flag for frontend to show "Check availability"
+          currency: currency
+        };
+      });
 
-        // Step 3.5b: If city search returned nothing AND it was a hotel search, try name search
-        if (hasHotels && suggestions.hotels[0]) {
-          const searchedHotelName = suggestions.hotels[0].name || suggestions.hotels[0].label || destination;
-          const searchedHotelHid = suggestions.hotels[0].hid;
+    console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB (no rates from API)`);
 
-          console.log(`🔍 Trying to find hotel by name: "${searchedHotelName}" or HID: ${searchedHotelHid}`);
+    // Merge: API hotels first (with rates), then DB-only hotels (without rates)
+    searchResults.hotels = [...searchResults.hotels, ...dbOnlyHotels];
 
-          // Try by HID first (most reliable)
-          let localHotel = null;
-          if (searchedHotelHid) {
-            localHotel = await HotelContent.findOne({ hid: searchedHotelHid }).lean();
-          }
-
-          // If not found by HID, try by name (fuzzy search)
-          if (!localHotel) {
-            localHotel = await HotelContent.findOne({
-              name: { $regex: new RegExp(searchedHotelName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }
-            }).lean();
-          }
-
-          if (localHotel) {
-            console.log(`✅ Found hotel "${localHotel.name}" by name/HID search in HotelContent`);
-
-            const imageUrl = (localHotel.images?.[0]?.url || localHotel.mainImage)?.replace('{size}', '640x400');
-
-            searchResults.hotels = [{
-              id: localHotel.hotelId || `hid_${localHotel.hid}`,
-              hid: localHotel.hid,
-              hotelId: localHotel.hotelId,
-              name: localHotel.name,
-              address: localHotel.address,
-              city: localHotel.city,
-              country: localHotel.country,
-              image: imageUrl,
-              images: localHotel.images?.slice(0, 5).map(img => (img.url || img)?.replace('{size}', '640x400')).filter(Boolean) || [],
-              star_rating: localHotel.starRating,
-              latitude: localHotel.latitude,
-              longitude: localHotel.longitude,
-              isEnriched: true,
-              price: null,
-              noRatesAvailable: true,
-              currency: currency,
-              isSearchedHotel: true
-            }];
-
-            console.log(`📦 Returning 1 hotel from Local DB (found by name search)`);
-          } else {
-            console.log(`❌ Hotel "${searchedHotelName}" not found in HotelContent either`);
-          }
-        }
-      }
-    }
+    console.log(`   ✅ Total merged: ${searchResults.hotels.length} hotels`);
 
     // If searching for a specific hotel (not a region), prioritize it but show other hotels too
     if (hasHotels && searchResults.hotels.length > 0) {
@@ -536,7 +506,10 @@ router.get('/search', async (req, res) => {
 
       console.log(`🔍 Looking for searched hotel: id=${searchedHotelId}, hid=${searchedHotelHid}, name=${searchedHotelName}`);
 
-      // Find the searched hotel using multiple matching strategies
+      // IMPORTANT: Clear all isSearchedHotel flags first to ensure only ONE hotel is highlighted
+      searchResults.hotels.forEach(h => { h.isSearchedHotel = false; });
+
+      // Find the searched hotel using EXACT matching only (by hid or id, NOT by name)
       let matchedHotelIndex = searchResults.hotels.findIndex(hotel => {
         // Match by hid (most reliable)
         if (searchedHotelHid && hotel.hid === searchedHotelHid) return true;
@@ -547,18 +520,16 @@ router.get('/search', async (req, res) => {
         return false;
       });
 
-      // If no exact ID match, try name matching as fallback
+      // If no exact ID match, try EXACT name matching only (not partial matching)
       if (matchedHotelIndex === -1 && searchedHotelName) {
         const normalizedSearchName = searchedHotelName.toLowerCase().trim();
         matchedHotelIndex = searchResults.hotels.findIndex(hotel => {
           const hotelName = (hotel.name || '').toLowerCase().trim();
-          // Exact name match or one contains the other
-          return hotelName === normalizedSearchName ||
-                 hotelName.includes(normalizedSearchName) ||
-                 normalizedSearchName.includes(hotelName);
+          // Only exact name match - no partial matching to avoid multiple matches
+          return hotelName === normalizedSearchName;
         });
         if (matchedHotelIndex !== -1) {
-          console.log(`🔍 Found hotel by name match: "${searchResults.hotels[matchedHotelIndex].name}"`);
+          console.log(`🔍 Found hotel by exact name match: "${searchResults.hotels[matchedHotelIndex].name}"`);
         }
       }
 
@@ -591,7 +562,7 @@ router.get('/search', async (req, res) => {
           }
         }
 
-        // Mark this as the searched hotel for frontend prioritization
+        // Mark ONLY this hotel as the searched hotel for frontend prioritization
         matchedHotel.isSearchedHotel = true;
 
         // Move the searched hotel to the front of the array

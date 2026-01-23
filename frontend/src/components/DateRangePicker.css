@@ -51,31 +51,45 @@
   border-radius: 0.5rem;
 }
 
-/* Selected dates */
+/* Selected dates - Check-in and Check-out - Custom Orange */
 .react-datepicker__day--selected,
 .react-datepicker__day--range-start,
-.react-datepicker__day--range-end {
-  background-color: #FF8C00 !important;
+.react-datepicker__day--range-end,
+.react-datepicker__day--selecting-range-start,
+.react-datepicker__day--selecting-range-end {
+  background-color: #E67915 !important;
   color: white !important;
   border-radius: 0.5rem !important;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(230, 121, 21, 0.4);
+}
+
+/* Force override if it has in-range class too */
+.react-datepicker__day--range-start.react-datepicker__day--in-range,
+.react-datepicker__day--range-end.react-datepicker__day--in-range,
+.react-datepicker__day--selected.react-datepicker__day--in-range {
+    background-color: #E67915 !important;
+    color: white !important;
 }
 
 .react-datepicker__day--selected:hover,
 .react-datepicker__day--range-start:hover,
 .react-datepicker__day--range-end:hover {
-  background-color: #e67e00 !important;
+  background-color: #c5650f !important;
 }
 
-/* Range interval */
+/* Range interval - Light beige for dates between start and end */
 .react-datepicker__day--in-range {
-  background-color: rgba(255, 140, 0, 0.15) !important;
+  background-color: rgba(230, 121, 21, 0.2) !important;
   color: #1f2937 !important;
   border-radius: 0 !important;
 }
 
-.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range) {
-  background-color: rgba(255, 140, 0, 0.1) !important;
+/* Solid orange while actively selecting */
+.react-datepicker__day--in-selecting-range:not(.react-datepicker__day--in-range),
+.react-datepicker__day--in-selecting-range {
+  background-color: #E67915 !important;
+  color: white !important;
 }
 
 /* Navigation buttons */
@@ -100,13 +114,13 @@
 /* Today */
 .react-datepicker__day--today {
   font-weight: 600;
-  color: #FF8C00;
+  color: #E67915;
 }
 
 /* Month container */
 .react-datepicker__month-container {
   padding: 0.5rem;
-  display: inline-block;
+  /* display: inline-block; - Ignored due to float */
   float: left;
 }
 

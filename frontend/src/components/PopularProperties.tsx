@@ -151,14 +151,32 @@ export const PopularProperties: React.FC = () => {
     return null;
   }
 
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const checkIn = today.toISOString().split('T')[0];
-  const checkOut = tomorrow.toISOString().split('T')[0];
+  // Apply the same 10 PM rule as the backend
+  const now = new Date();
+  const currentHour = now.getHours();
+  const daysOffset = currentHour >= 22 ? 1 : 0; // After 10 PM, use tomorrow
+
+  const checkInDate = new Date();
+  checkInDate.setDate(checkInDate.getDate() + daysOffset);
+  const checkOutDate = new Date(checkInDate);
+  checkOutDate.setDate(checkOutDate.getDate() + 1);
+
+  const checkIn = checkInDate.toISOString().split('T')[0];
+  const checkOut = checkOutDate.toISOString().split('T')[0];
+  const isAfter10PM = daysOffset === 1;
 
   return (
     <section className="w-full max-w-7xl mx-auto py-6 md:py-8">
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8">
+        {isAfter10PM && (
+          <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F7871D] to-[#FCAE61] text-white rounded-full shadow-lg">
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <span className="font-semibold text-sm md:text-base">Checking hotels for tomorrow</span>
+          </div>
+        )}
+      </div>
       <div className="flex items-center justify-between mb-4 md:mb-6 px-3 sm:px-4 md:px-6 lg:px-8">
         <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Popular 5-star hotels in Saudi Arabia</h2>
         <div className="hidden sm:flex gap-2">

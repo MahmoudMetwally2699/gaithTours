@@ -741,6 +741,13 @@ class RateHawkService {
         basePrice = showAmount - includedTaxes;
       }
 
+      const bookingTaxes = paymentType?.tax_data?.taxes
+        ? paymentType.tax_data.taxes
+            .filter(t => t.included_by_supplier)
+            .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+        : 0;
+
+
       const totalPrice = basePrice; // No markup yet - will be applied dynamically after enrichment
       const pricePerNight = totalPrice > 0 ? Math.round(totalPrice / nights) : 0;
 
@@ -757,6 +764,7 @@ class RateHawkService {
         nights: nights, // Include nights for reference
         currency: paymentType?.show_currency_code || currency,
         total_taxes: Math.round(totalTaxes), // Total taxes amount (to be displayed separately)
+        booking_taxes: bookingTaxes, // Taxes included in booking (pay now)
         taxes_currency: paymentType?.show_currency_code || currency,
         image: placeholderImage,
         match_hash: lowestRate?.match_hash,

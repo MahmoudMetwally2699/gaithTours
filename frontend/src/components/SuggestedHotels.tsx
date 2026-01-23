@@ -21,6 +21,10 @@ interface SuggestionResponse {
   hotels: ExtendedHotel[];
   source: 'history' | 'location' | 'fallback';
   destination: string;
+  searchDates?: {
+    checkIn: string;
+    checkOut: string;
+  };
 }
 
 interface SuggestedHotelsProps {
@@ -37,6 +41,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   const [source, setSource] = useState<string>('');
   const [destinationName, setDestinationName] = useState<string>('');
   const [lastLocationQuery, setLastLocationQuery] = useState<string | undefined>(undefined);
+  const [searchDates, setSearchDates] = useState<{ checkIn: string; checkOut: string } | null>(null);
 
   const fetchSuggestions = async (locationQuery?: string, keepLoading: boolean = false) => {
     try {
@@ -64,6 +69,10 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
         setHotels(data.data.hotels);
         setSource(data.data.source);
         setDestinationName(data.data.destination);
+        // Store the searchDates from the API response
+        if (data.data.searchDates) {
+          setSearchDates(data.data.searchDates);
+        }
         return data.data; // Return for chaining
       }
     } catch (error) {
@@ -212,10 +221,24 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
 
   if (hotels.length === 0) return null;
 
+  // Check if it's after 10 PM to show tomorrow indicator
+  const now = new Date();
+  const isAfter10PM = now.getHours() >= 22;
+
   return (
     <section className="py-8 md:py-12 lg:py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="text-center mb-6 md:mb-8 lg:mb-12 px-2 md:px-0">
+          {isAfter10PM && (
+            <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F7871D] to-[#FCAE61] text-white rounded-full shadow-lg animate-pulse">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+              <span className="font-semibold text-sm md:text-base">
+                {t('suggestions.tomorrowAvailability', 'Showing availability for tomorrow')}
+              </span>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-3 md:mb-4">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 text-center">
               {source === 'history'
@@ -255,11 +278,18 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
             .filter(h => h.price && h.price > 0)
             .slice(0, 8)
             .map((hotel) => {
-              const today = new Date();
-              const tomorrow = new Date(today);
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              const checkIn = today.toISOString().split('T')[0];
-              const checkOut = tomorrow.toISOString().split('T')[0];
+              // Use the searchDates from API if available, otherwise fallback to today/tomorrow
+              let checkIn: string, checkOut: string;
+              if (searchDates) {
+                checkIn = searchDates.checkIn;
+                checkOut = searchDates.checkOut;
+              } else {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                checkIn = today.toISOString().split('T')[0];
+                checkOut = tomorrow.toISOString().split('T')[0];
+              }
 
               return (
                 <HotelCard
