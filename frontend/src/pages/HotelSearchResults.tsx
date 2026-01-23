@@ -372,8 +372,10 @@ export const HotelSearchResults: React.FC = () => {
       if (currentPage === 1) {
         setLoading(true);
         setHotels([]); // Clear existing hotels on new search
+        console.log('🔄 Initial load - page 1');
       } else {
         setLoadingMore(true);
+        console.log('🔄 Loading more - page', currentPage, '- loadingMore:', true);
       }
       setError('');
       setIsBackgroundLoading(false);
@@ -432,7 +434,7 @@ export const HotelSearchResults: React.FC = () => {
           setCurrentPage(prev => prev + 1);
         }
       },
-      { threshold: 0.1, rootMargin: '200px' } // Trigger 200px before reaching bottom
+      { threshold: 0, rootMargin: '800px' } // Trigger 800px before reaching bottom (no white space!)
     );
 
     observer.observe(loadMoreRef.current);
@@ -1750,11 +1752,43 @@ export const HotelSearchResults: React.FC = () => {
                 )}
 
                 {/* Infinite Scroll Loading Indicator */}
-                <div ref={loadMoreRef} className="py-8">
-                  {loadingMore && (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
-                      <p className="text-sm text-gray-600">Loading more hotels...</p>
+                <div ref={loadMoreRef} className="py-4 relative" style={{ minHeight: '100px' }}>
+                  {hasMore && hotels.length > 0 && (
+                    <div className="space-y-4 relative">
+                      {/* Skeleton hotel cards - always show when more content available */}
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                          <div className="flex gap-4">
+                            <div className="w-48 h-32 bg-gray-200 rounded-lg flex-shrink-0" />
+                            <div className="flex-1 space-y-3">
+                              <div className="h-5 bg-gray-200 rounded w-3/4" />
+                              <div className="h-4 bg-gray-200 rounded w-1/2" />
+                              <div className="h-4 bg-gray-200 rounded w-2/3" />
+                              <div className="flex gap-2 mt-2">
+                                <div className="h-6 bg-gray-200 rounded w-20" />
+                                <div className="h-6 bg-gray-200 rounded w-20" />
+                              </div>
+                            </div>
+                            <div className="w-32 space-y-2">
+                              <div className="h-6 bg-gray-200 rounded" />
+                              <div className="h-8 bg-gray-200 rounded" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Show spinner on top of skeletons when actively loading */}
+                      {loadingMore && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="relative">
+                              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200"></div>
+                              <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent absolute top-0 left-0"></div>
+                            </div>
+                            <p className="text-sm font-semibold text-gray-800">Loading...</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {!hasMore && hotels.length > 0 && (
