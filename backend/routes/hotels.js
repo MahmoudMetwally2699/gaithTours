@@ -424,7 +424,7 @@ router.get('/search', async (req, res) => {
     }
 
     // Step 1: Get region and hotel suggestions
-    const suggestions = await rateHawkService.suggest(destination);
+    const suggestions = await rateHawkService.suggest(destination, finalLanguage);
 
     // Check if we found any regions OR hotels
     const hasRegions = suggestions.regions && suggestions.regions.length > 0;
