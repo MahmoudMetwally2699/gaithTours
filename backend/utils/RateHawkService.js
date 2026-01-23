@@ -33,6 +33,10 @@ class RateHawkService {
     this.searchCacheTTL = 15 * 60 * 1000; // 15 minutes
     this.searchStaleCacheTTL = 6 * 60 * 60 * 1000; // 6 hours for stale search results
 
+    // Cache for suggestions (region IDs) - saves ~200ms per search
+    this.suggestionCache = new Map();
+    this.suggestionCacheTTL = 24 * 60 * 60 * 1000; // 24 hours (region IDs rarely change)
+
     // Rate limiting and circuit breaker
     this.requestQueue = [];
     this.isProcessingQueue = false;
@@ -584,15 +588,33 @@ class RateHawkService {
    * @returns {Promise<Object>} - Regions and hotels matching the query
    */
   async suggest(query, language = 'en') {
+    // Check suggestion cache first (saves ~200ms per search)
+    const cacheKey = `${query.toLowerCase().trim()}_${language}`;
+    const cached = this.suggestionCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < this.suggestionCacheTTL) {
+      console.log(`⚡ Using cached suggestion for "${query}" (saves ~200ms)`);
+      return cached.data;
+    }
+
     const response = await this.makeRequest('/search/multicomplete/', 'POST', {
       query,
       language
     });
 
-    return {
+    const result = {
       regions: response.data?.regions || [],
       hotels: response.data?.hotels || []
     };
+
+    // Cache the result
+    this.suggestionCache.set(cacheKey, {
+      data: result,
+      timestamp: now
+    });
+
+    return result;
   }
 
   /**
@@ -996,99 +1018,35 @@ class RateHawkService {
       MarginRule.bulkWrite(bulkOps).catch(() => {}); // Fire and forget
     }
 
-    // Enrich hotels with review ratings from hotel_reviews collection
+    // PERFORMANCE OPTIMIZATION: Only use DB-cached reviews (skip API fetching)
+    // API review fetching was taking 0-3 seconds per search
+    // Reviews will be fetched on hotel details page instead
     try {
       const HotelReview = require('../models/HotelReview');
       const hotelHidsForReviews = hotels.map(h => h.hid).filter(hid => hid);
 
       if (hotelHidsForReviews.length > 0) {
-        console.log(`⭐ Fetching review ratings for ${hotelHidsForReviews.length} hotels...`);
-
-        // 1. Batch query DB first
+        // Only query DB - no API calls (saves 0-3 seconds)
         const reviewSummaries = await HotelReview.find({
           hid: { $in: hotelHidsForReviews },
           language: 'en'
-        }).select('hid overall_rating review_count average_rating last_updated').lean();
+        }).select('hid overall_rating review_count average_rating').lean();
 
         // Create lookup map
         const reviewMap = new Map();
-        const foundHids = new Set();
-
         reviewSummaries.forEach(review => {
-          // Check for stale data (older than 7 days)
-          const lastUpdated = review.last_updated || review.createdAt || 0;
-          const ageDays = (Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60 * 24);
-
-          if (ageDays < 7) {
-            reviewMap.set(review.hid, {
-              overall_rating: review.overall_rating,
-              review_count: review.review_count,
-              average_rating: review.average_rating
-            });
-            foundHids.add(review.hid);
-          }
+          reviewMap.set(review.hid, {
+            overall_rating: review.overall_rating,
+            review_count: review.review_count,
+            average_rating: review.average_rating
+          });
         });
 
-        // 2. Identify missing or stale hotels
-        const missingHids = hotelHidsForReviews.filter(hid => !foundHids.has(hid));
-
-        // 3. Bulk fetch missing from API (if any)
-        // OPTIMIZATION: Limit API review fetching to first 100 hotels (rest will have no rating)
-        const maxReviewFetches = 100;
-        if (missingHids.length > 0) {
-          const hidsToFetch = missingHids.slice(0, maxReviewFetches);
-          if (missingHids.length > maxReviewFetches) {
-            console.log(`📝 Bulk fetching missing/stale reviews for ${hidsToFetch.length}/${missingHids.length} hotels (limited for performance)...`);
-          } else {
-            console.log(`📝 Bulk fetching missing/stale reviews for ${hidsToFetch.length} hotels...`);
-          }
-          // Fetch directly using our bulk API method
-          const apiReviews = await this.getReviewsByHids(hidsToFetch, 'en');
-
-          if (Object.keys(apiReviews).length > 0) {
-            // Prepare bulk write operations for DB
-            const bulkOps = [];
-
-            for (const hidStr of Object.keys(apiReviews)) {
-              const hid = parseInt(hidStr);
-              const data = apiReviews[hid];
-
-              if (data) {
-                // Add to our map for immediate display
-                reviewMap.set(hid, {
-                  overall_rating: data.overall_rating,
-                  review_count: data.review_count,
-                  average_rating: data.average_rating
-                });
-
-                // Add to bulk DB save
-                bulkOps.push({
-                  updateOne: {
-                    filter: { hid: hid, language: 'en' },
-                    update: {
-                      $set: { ...data, last_updated: new Date(), dump_date: new Date() }
-                    },
-                    upsert: true
-                  }
-                });
-              }
-            }
-
-            // Save to DB in background
-            if (bulkOps.length > 0) {
-              HotelReview.bulkWrite(bulkOps).then(res =>
-                console.log(`💾 Bulk saved ${res.modifiedCount + res.upsertedCount} review records`)
-              ).catch(err => console.error('Error bulk saving reviews:', err.message));
-            }
-          }
-        }
-
-        // 4. Apply ratings to hotels
+        // Apply ratings to hotels (DB only - no API fetching)
         let enrichedCount = 0;
         hotels.forEach(hotel => {
           const reviewData = reviewMap.get(hotel.hid);
           if (reviewData && reviewData.overall_rating != null) {
-            // Use ONLY overall_rating from hotel_reviews collection (0-10 scale)
             hotel.rating = reviewData.overall_rating;
             hotel.reviewScore = reviewData.overall_rating;
             hotel.reviewCount = reviewData.review_count || 0;
@@ -1096,7 +1054,7 @@ class RateHawkService {
           }
         });
 
-        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings (${missingHids.length} from API)`);
+        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings (DB only - fast)`);
       }
     } catch (reviewError) {
       console.error('⚠️ Error enriching hotels with review ratings:', reviewError.message);
