@@ -891,8 +891,20 @@ class RateHawkService {
                   hid: hotel.hid
                 });
 
-                // Update internal cache
+                // Update internal cache with proper data structure
                 this.contentCache.set(hotel.hid, {
+                  data: {
+                    name: hotel.name,
+                    address: hotel.address,
+                    city: hotel.city,
+                    country: countryName,
+                    image: imageUrl,
+                    images: imageUrl ? [imageUrl] : [],
+                    star_rating: hotel.starRating,
+                    kind: 'Hotel',
+                    hid: hotel.hid
+                  },
+                  timestamp: now
                 });
               });
             } catch (error) {

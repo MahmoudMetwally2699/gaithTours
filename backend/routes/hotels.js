@@ -479,8 +479,8 @@ router.get('/search', async (req, res) => {
       children: childrenAges,
       currency,
       language: finalLanguage,
-      // Smart limits to reduce API overhead:
-      enrichmentLimit: 100, // Only enrich first 100 hotels (rest from cache/DB)
+      // Local DB enrichment - no limit needed (DB has no rate limits)
+      enrichmentLimit: 0, // 0 = enrich all hotels
       maxResults: maxResultsForBatch // Fetch only 100 hotels (5 pages worth)
     });
 
