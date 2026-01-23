@@ -615,17 +615,13 @@ router.get('/search', async (req, res) => {
     // Calculate realistic total for pagination
     // For large cities, we can only show hotels from API (we fetch 100 per batch)
     // For small cities, we show all hotels from DB
-    let realisticTotal;
+    // Calculate realistic total for pagination
+    // NEW: Always show the full DB total so users see "4500 properties found" instead of "1000"
+    let realisticTotal = Math.max(totalHotelsInDB, allHotels.length);
+
     if (isLargeCity) {
-      // For large cities: Estimate based on API capability
-      // We fetch 100 hotels per batch, so assume we can get at least 10 batches (1000 hotels)
-      // But cap at DB total to not overpromise
-      const estimatedApiTotal = Math.min(1000, totalHotelsInDB);
-      realisticTotal = estimatedApiTotal;
-      console.log(`   🎯 Large city: Using estimated total ${realisticTotal} (API batches available)`);
+      console.log(`   🎯 Large city: Showing accurate DB total ${realisticTotal} (capped at 1000 for API fetching only)`);
     } else {
-      // For small cities or specific hotel searches: Use actual DB count merged with API count
-      realisticTotal = Math.max(totalHotelsInDB, allHotels.length);
       console.log(`   🎯 Small search: Using max(DB=${totalHotelsInDB}, API=${allHotels.length}) = ${realisticTotal}`);
     }
 

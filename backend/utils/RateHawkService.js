@@ -416,13 +416,13 @@ class RateHawkService {
            console.log(`⚠️ Cached reviews for HID ${hid} are empty - ignoring cache to try fallback...`);
         }
       } else {
-        console.log(`📝 No cached reviews for HID ${hid} - fetching from API...`);
+        console.log(`📝 No cached reviews for HID ${hid} - (API Disabled per user request)`);
       }
 
-      // Step 2: Fetch from API
-      // Check requested language first
-      const apiReviews = await this.getReviewsByHids([numericHid], language);
-      let reviewData = apiReviews[numericHid];
+      // Step 2: Fetch from API - DISABLED
+      // const apiReviews = await this.getReviewsByHids([numericHid], language);
+      // let reviewData = apiReviews[numericHid];
+      let reviewData = null; // Force null to skip API and go to fallbacks (cache-only)
 
       // Step 2b: If no reviews in requested language, try FALLBACK languages
       // Priority: Arabic -> Russian -> French -> German -> Spanish
@@ -449,34 +449,9 @@ class RateHawkService {
            }
         }
 
-        // Fetch from API for fallbacks
-        for (const lang of langsToCheck) {
-           // Small delay to be gentle
-           if (langsToCheck.indexOf(lang) > 0) await this.sleep(100);
-
-           const fbReviews = await this.getReviewsByHids([numericHid], lang);
-           const fbData = fbReviews[numericHid];
-
-           if (fbData && (fbData.overall_rating || fbData.review_count)) {
-             console.log(`✅ Found fallback reviews in '${lang}'!`);
-
-             // Save the ACTUAL language data to DB
-             await HotelReview.findOneAndUpdate(
-                { hid: numericHid, language: lang },
-                { ...fbData, last_updated: new Date(), dump_date: new Date() },
-                { upsert: true, new: true }
-             );
-
-             // Return hybrid object for display
-             return {
-               ...fbData,
-               language: language,
-               reviews: [],
-               _fallbackFrom: lang
-             };
-           }
-        }
-        console.log(`❌ No reviews found in any fallback languages for HID ${hid}`);
+        console.log(`❌ No reviews found in primary language or cached fallbacks for HID ${hid}`);
+        // PER USER REQUEST: Do NOT fetch fallbacks from API to save time.
+        // If it's not in DB, we skip it.
       }
 
       if (reviewData) {
