@@ -223,6 +223,7 @@ export const HotelSearchResults: React.FC = () => {
   const [showGuestPopover, setShowGuestPopover] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isTravelingForWork, setIsTravelingForWork] = useState(false);
+  const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
 
   // Sync state with URL if it changes externally
   useEffect(() => {
@@ -235,6 +236,8 @@ export const HotelSearchResults: React.FC = () => {
         childrenAges: searchQuery.childrenAges
     });
     setEditableDestination(searchQuery.destination);
+    // Reset to page 1 when search parameters change
+    setCurrentPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery.checkIn, searchQuery.checkOut, searchQuery.rooms, searchQuery.adults, searchQuery.children, searchQuery.destination]);
 
@@ -348,6 +351,7 @@ export const HotelSearchResults: React.FC = () => {
   };
 
   // Search hotels
+  // Search hotels
   useEffect(() => {
     const performSearch = async () => {
       if (!searchQuery.destination) {
@@ -358,9 +362,11 @@ export const HotelSearchResults: React.FC = () => {
 
       setLoading(true);
       setError('');
+      setIsBackgroundLoading(false); // Reset background loading
 
       try {
         // Pass dates and guest count from URL parameters
+        // Use currentPage state for pagination
         const response = await searchHotels(
           searchQuery.destination,
           currentPage,
@@ -396,7 +402,10 @@ export const HotelSearchResults: React.FC = () => {
     };
 
     performSearch();
-  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currentPage, currency, i18n.language]);
+    // currentPage dependency restored for standard pagination
+  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currency, i18n.language, currentPage]);
+
+  // Background loading removed - using standard pagination instead
 
   // Calculate max price for budget filter
   const maxPrice = useMemo(() => {
@@ -1698,22 +1707,28 @@ export const HotelSearchResults: React.FC = () => {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center mt-8">
+                  <div className="flex justify-center mt-8 mb-8">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        onClick={() => {
+                          setCurrentPage(p => Math.max(1, p - 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         disabled={currentPage === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium"
                       >
                         Previous
                       </button>
-                      <span className="px-4 py-2 text-gray-600">
+                      <span className="px-4 py-2 text-gray-700 font-medium">
                         Page {currentPage} of {totalPages}
                       </span>
                       <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() => {
+                          setCurrentPage(p => Math.min(totalPages, p + 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         disabled={currentPage === totalPages}
-                        className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium"
                       >
                         Next
                       </button>

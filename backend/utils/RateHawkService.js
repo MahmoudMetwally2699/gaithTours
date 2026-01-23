@@ -637,11 +637,13 @@ class RateHawkService {
       language = 'en',
       currency = 'SAR',
       enrichmentLimit = 0, // Default 0 means no limit (enrich all)
-      refreshPrices = 0 // NEW: Number of top hotels to refresh prices from hotel details API
+      refreshPrices = 0, // NEW: Number of top hotels to refresh prices from hotel details API
+      page, // Pagination: Page number
+      limit // Pagination: Items per page
     } = params;
 
     // Generate cache key for this search
-    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency });
+    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency, page, limit });
     const now = Date.now();
 
     // Check fresh cache first
@@ -667,7 +669,7 @@ class RateHawkService {
 
     // Try to make the API request
     try {
-      const response = await this.makeRequest('/search/serp/region/', 'POST', {
+      const apiPayload = {
         region_id: regionId,
         checkin,
         checkout,
@@ -675,7 +677,13 @@ class RateHawkService {
         language,
         guests: this.buildGuestsArray(adults, children, rooms),
         currency
-      });
+      };
+
+      // Add pagination to API payload if provided
+      if (page) apiPayload.page = parseInt(page);
+      if (limit) apiPayload.limit = parseInt(limit); // RateHawk field might be 'rows' or 'page_size' - defaulting to limit/page for now based on assumption
+
+      const response = await this.makeRequest('/search/serp/region/', 'POST', apiPayload);
 
       // Calculate number of nights for per-night pricing
       const checkinDate = new Date(checkin);
@@ -1175,7 +1183,7 @@ class RateHawkService {
 
     const result = {
       hotels,
-      total: hotels.length,
+      total: response.data?.total_hotels || hotels.length,
       debug: response.debug
     };
 

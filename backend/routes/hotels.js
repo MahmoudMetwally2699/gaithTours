@@ -437,13 +437,19 @@ router.get('/search', async (req, res) => {
     }
 
     const regionId = regionToSearch.region_id || regionToSearch.id;
+
+    // Pass pagination parameters to RateHawkService
+    const pageNumber = parseInt(page) || 1;
+    const limitNumber = parseInt(limit) || 20;
+
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
       adults: parseInt(adults) || 2,
       children: childrenAges,
-      children: childrenAges,
       currency,
-      language: finalLanguage
+      language: finalLanguage,
+      page: pageNumber,
+      limit: limitNumber
     });
 
     // Step 3.5: ALWAYS merge API results with ALL hotels from HotelContent for the city
@@ -660,17 +666,25 @@ router.get('/search', async (req, res) => {
     }, 10 * 60 * 1000);
 
     // Paginate results
-    const pageNumber = parseInt(page) || 1;
-    const limitNumber = parseInt(limit) || 20;
+    // pageNumber and limitNumber are already defined above
     const startIndex = (pageNumber - 1) * limitNumber;
     const endIndex = startIndex + limitNumber;
 
+    // Use correct total from API (or merged length if API total missing)
+    // If API returned total, use it. Otherwise fall back to current list length
+    const finalTotal = searchResults.total || searchResults.hotels.length;
+
+    // Calculate total pages
+    const finalTotalPages = Math.ceil(finalTotal / limitNumber);
+
     successResponse(res, {
-      hotels: searchResults.hotels.slice(startIndex, endIndex),
-      total: searchResults.hotels.length,
+      // Return hotels for this page (RateHawk already handled offset, so we just take the window)
+      // Merge might add extra DB items, so we trim to limit
+      hotels: searchResults.hotels.slice(0, limitNumber),
+      total: finalTotal,
       page: pageNumber,
       limit: limitNumber,
-      totalPages: Math.ceil(searchResults.hotels.length / limitNumber),
+      totalPages: finalTotalPages,
       region: regionToSearch.name || regionToSearch.region_name || 'Unknown',
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
     }, 'Hotels retrieved successfully');
