@@ -179,9 +179,11 @@ export const HotelSearchResults: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalHotels, setTotalHotels] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showMap, setShowMap] = useState(false);
   const [fullscreenMap, setFullscreenMap] = useState(false);
@@ -265,58 +267,11 @@ export const HotelSearchResults: React.FC = () => {
 
   const hotelsPerPage = 20;
 
-  // Helper function to navigate to a page
-  const goToPage = (page: number) => {
-    const params = new URLSearchParams(location.search);
-    params.set('page', page.toString());
-    history.push({
-      pathname: location.pathname,
-      search: params.toString()
-    });
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
-  // Generate page numbers for pagination
-  const generatePageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 7; // Max page buttons to show
 
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is small
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Always show first page
-      pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push('...');
-      }
-
-      // Show pages around current page
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (currentPage < totalPages - 2) {
-        pages.push('...');
-      }
-
-      // Always show last page
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  // Calculate results range
-  const resultsStart = (currentPage - 1) * hotelsPerPage + 1;
-  const resultsEnd = Math.min(currentPage * hotelsPerPage, totalHotels);
+  // Calculate results range for infinite scroll
+  const resultsEnd = hotels.length;
+  const resultsStart = resultsEnd > 0 ? 1 : 0;
 
   // Facilities options
   const facilityOptions = [
@@ -404,7 +359,7 @@ export const HotelSearchResults: React.FC = () => {
   };
 
   // Search hotels
-  // Search hotels
+  // Search hotels with infinite scroll
   useEffect(() => {
     const performSearch = async () => {
       if (!searchQuery.destination) {
@@ -413,13 +368,17 @@ export const HotelSearchResults: React.FC = () => {
         return;
       }
 
-      setLoading(true);
+      // If it's page 1 (new search), show main loader, otherwise show bottom loader
+      if (currentPage === 1) {
+        setLoading(true);
+        setHotels([]); // Clear existing hotels on new search
+      } else {
+        setLoadingMore(true);
+      }
       setError('');
-      setIsBackgroundLoading(false); // Reset background loading
+      setIsBackgroundLoading(false);
 
       try {
-        // Pass dates and guest count from URL parameters
-        // Use currentPage state for pagination
         const response = await searchHotels(
           searchQuery.destination,
           currentPage,
@@ -430,35 +389,61 @@ export const HotelSearchResults: React.FC = () => {
             adults: searchQuery.adults,
             children: searchQuery.children > 0 ? searchQuery.children : undefined,
             currency: currency,
-             // If destination has Arabic chars, prefer Arabic for results, otherwise use app language or existing param
-             // We prioritize the smart detection on the search query over the i18n language
-             language: /[\u0600-\u06FF]/.test(searchQuery.destination) ? 'ar' : (i18n.language || 'en')
+            language: /[\u0600-\u06FF]/.test(searchQuery.destination) ? 'ar' : (i18n.language || 'en')
           }
         );
 
         if (response?.hotels) {
-          setHotels(response.hotels);
+          // Append new hotels to existing list (infinite scroll)
+          setHotels(prev => currentPage === 1 ? response.hotels : [...prev, ...response.hotels]);
           setTotalPages(response.totalPages || 0);
           setTotalHotels(response.total || 0);
+          setHasMore(currentPage < (response.totalPages || 0));
         } else {
           setHotels([]);
           setTotalPages(0);
           setTotalHotels(0);
+          setHasMore(false);
         }
       } catch (err: any) {
         console.error('Hotel search error:', err);
         setError(err.message || 'Failed to search hotels');
-        setHotels([]);
+        if (currentPage === 1) setHotels([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     performSearch();
-    // currentPage dependency restored for standard pagination
   }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currency, i18n.language, currentPage]);
 
-  // Background loading removed - using standard pagination instead
+  // Infinite Scroll: Detect when user scrolls near bottom
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || loading || loadingMore || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          console.log('🔄 Loading more hotels... (page', currentPage + 1, ')');
+          setCurrentPage(prev => prev + 1);
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' } // Trigger 200px before reaching bottom
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [loading, loadingMore, hasMore, currentPage]);
+
+  // Reset to page 1 when search params change
+  useEffect(() => {
+    setCurrentPage(1);
+    setHotels([]);
+  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children]);
 
   // Calculate max price for budget filter
   const maxPrice = useMemo(() => {
@@ -1237,7 +1222,12 @@ export const HotelSearchResults: React.FC = () => {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
-                {searchQuery.destination}: {totalHotels} properties found
+                {searchQuery.destination}: {totalHotels.toLocaleString()} properties found
+                {hotels.length > 0 && hotels.length < totalHotels && (
+                  <span className="ml-2 text-xs sm:text-sm font-normal text-gray-600">
+                    (Showing {hotels.length})
+                  </span>
+                )}
               </h1>
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">Sort by:</span>
@@ -1759,57 +1749,23 @@ export const HotelSearchResults: React.FC = () => {
                   ))
                 )}
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex flex-col items-center gap-4 mt-8 mb-8">
-                    {/* Results Summary */}
-                    <div className="text-sm text-gray-600">
-                      Showing <span className="font-semibold text-gray-900">{resultsStart}-{resultsEnd}</span> of <span className="font-semibold text-gray-900">{totalHotels.toLocaleString()}</span> properties
+                {/* Infinite Scroll Loading Indicator */}
+                <div ref={loadMoreRef} className="py-8">
+                  {loadingMore && (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+                      <p className="text-sm text-gray-600">Loading more hotels...</p>
                     </div>
-
-                    {/* Page Navigation */}
-                    <div className="flex items-center gap-1 flex-wrap justify-center">
-                      {/* Previous Button */}
-                      <button
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium text-sm min-w-[80px]"
-                      >
-                        Previous
-                      </button>
-
-                      {/* Page Numbers */}
-                      {generatePageNumbers().map((page, index) => (
-                        page === '...' ? (
-                          <span key={`ellipsis-${index}`} className="px-2 py-2 text-gray-400">
-                            ...
-                          </span>
-                        ) : (
-                          <button
-                            key={page}
-                            onClick={() => goToPage(page as number)}
-                            className={`px-3 py-2 rounded-lg font-medium text-sm min-w-[40px] transition-colors ${
-                              currentPage === page
-                                ? 'bg-orange-500 text-white border-2 border-orange-500'
-                                : 'bg-white border border-gray-300 hover:bg-orange-50 hover:border-orange-300'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        )
-                      ))}
-
-                      {/* Next Button */}
-                      <button
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium text-sm min-w-[80px]"
-                      >
-                        Next
-                      </button>
+                  )}
+                  {!hasMore && hotels.length > 0 && (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-gray-600 font-medium">
+                        ✓ All {totalHotels.toLocaleString()} properties loaded
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">You've reached the end of the results</p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -11,6 +11,10 @@ const router = express.Router();
 let hotelSearchCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+// Cache for city hotel counts (rarely changes)
+let cityCountCache = new Map();
+const CITY_COUNT_TTL = 60 * 60 * 1000; // 1 hour
+
 // Helper to get/set cache
 function getCachedResults(key) {
   const cached = hotelSearchCache.get(key);
@@ -302,16 +306,28 @@ router.get('/search', async (req, res) => {
     // Generate cache key WITHOUT page number (cache all results together, paginate from cache)
     const cacheKey = `v6_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
 
-    // Check cache first - if we have cached results, paginate from them
-    if (hotelSearchCache.has(cacheKey)) {
-      console.log(`📦 Returning cached results for: ${destination} (page ${pageNumber})`);
-      const cached = hotelSearchCache.get(cacheKey);
+    // PROGRESSIVE LOADING: Determine which batch we need
+    // Batch 1 (pages 1-5): Hotels 0-99
+    // Batch 2 (pages 6-10): Hotels 100-199
+    // Batch 3 (pages 11-15): Hotels 200-299
+    const hotelsPerBatch = 100;
+    const batchNumber = Math.floor((pageNumber - 1) / 5) + 1; // Which batch does this page belong to?
+    const batchCacheKey = `${cacheKey}_batch${batchNumber}`;
 
-      // Paginate the cached results
-      const startIndex = (pageNumber - 1) * limitNumber;
+    console.log(`📄 Page ${pageNumber} → Batch ${batchNumber} (${(batchNumber - 1) * hotelsPerBatch}-${batchNumber * hotelsPerBatch - 1})`);
+
+    // Check cache first - if we have this batch cached, use it
+    if (hotelSearchCache.has(batchCacheKey)) {
+      console.log(`📦 Returning cached batch ${batchNumber} for: ${destination} (page ${pageNumber})`);
+      const cached = hotelSearchCache.get(batchCacheKey);
+
+      // Paginate within the batch
+      const batchStartIndex = (batchNumber - 1) * hotelsPerBatch;
+      const pageIndexInBatch = (pageNumber - 1) - (Math.floor((pageNumber - 1) / 5) * 5);
+      const startIndex = pageIndexInBatch * limitNumber;
       const endIndex = startIndex + limitNumber;
       const paginatedHotels = cached.hotels.slice(startIndex, endIndex);
-      const totalResults = cached.total || cached.hotels.length;
+      const totalResults = cached.total || 13981; // Use rough estimate for large cities
 
       return successResponse(res, {
         hotels: paginatedHotels,
@@ -320,8 +336,9 @@ router.get('/search', async (req, res) => {
         limit: limitNumber,
         totalPages: Math.ceil(totalResults / limitNumber),
         hasMore: pageNumber < Math.ceil(totalResults / limitNumber),
-        fromCache: true
-      }, `Hotels retrieved from cache (page ${pageNumber})`);
+        fromCache: true,
+        batch: batchNumber
+      }, `Hotels retrieved from cache (batch ${batchNumber}, page ${pageNumber})`);
     }
 
     // Use default dates if not provided (today, 1 night - same as homepage)
@@ -445,9 +462,12 @@ router.get('/search', async (req, res) => {
 
     const regionId = regionToSearch.region_id || regionToSearch.id;
 
-    // OPTIMIZATION: Limit API results to reduce enrichment overhead
-    // For pagination, we only need enough hotels to fill a few pages
-    // Users rarely go past page 10 (200 hotels)
+    // PROGRESSIVE LOADING: Only fetch hotels for the current batch
+    // Batch 1 (pages 1-5): Fetch 100 hotels
+    // Batch 2 (pages 6-10): Fetch next 100 hotels
+    // This makes initial load 2x faster!
+    const maxResultsForBatch = 100; // Fetch only 100 hotels per batch
+
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
       adults: parseInt(adults) || 2,
@@ -456,31 +476,50 @@ router.get('/search', async (req, res) => {
       language: finalLanguage,
       // Smart limits to reduce API overhead:
       enrichmentLimit: 100, // Only enrich first 100 hotels (rest from cache/DB)
-      maxResults: 200 // Request max 200 hotels from API (enough for 10 pages)
+      maxResults: maxResultsForBatch // Fetch only 100 hotels (5 pages worth)
     });
 
-    // Step 3.5: Merge API results with paginated HotelContent for the city
-    // OPTIMIZATION: Only fetch the hotels needed for the current page to avoid loading 13,981 hotels at once
+    // Step 3.5: Merge API results with DB hotels
     const cityName = destination;
     console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
 
     const HotelContent = require('../models/HotelContent');
 
-    // First, count total hotels for pagination metadata
-    const totalHotelsInDB = await HotelContent.countDocuments({
-      city: { $regex: new RegExp(`^${cityName}$`, 'i') }
-    });
+    // Check cached city count first (1 hour TTL)
+    const countCacheKey = `count_${cityName}`;
+    let totalHotelsInDB;
 
-    console.log(`   📦 Total ${totalHotelsInDB} hotels in HotelContent for "${cityName}"`);
+    const cachedCount = cityCountCache.get(countCacheKey);
+    if (cachedCount && Date.now() - cachedCount.timestamp < CITY_COUNT_TTL) {
+      totalHotelsInDB = cachedCount.count;
+      console.log(`   📦 Total ${totalHotelsInDB} hotels in HotelContent for "${cityName}" (cached)`);
+    } else {
+      // Only count if not cached (this is the slow part for Dubai with 13,981 hotels)
+      totalHotelsInDB = await HotelContent.countDocuments({
+        city: { $regex: new RegExp(`^${cityName}$`, 'i') }
+      });
+      cityCountCache.set(countCacheKey, { count: totalHotelsInDB, timestamp: Date.now() });
+      console.log(`   📦 Total ${totalHotelsInDB} hotels in HotelContent for "${cityName}" (fresh count)`);
+    }
+
     console.log(`   🌐 Found ${searchResults.hotels.length} hotels with rates from API`);
+
+    // For large cities (>1000 hotels), use API results only to avoid slow DB queries
+    // Users typically only browse first few pages anyway
+    const isLargeCity = totalHotelsInDB > 1000;
+    if (isLargeCity) {
+      console.log(`   ⚡ Large city detected (${totalHotelsInDB} hotels) - Using API results only for speed`);
+    }
 
     // Create a Set of HIDs from API results for quick lookup
     const apiHids = new Set(searchResults.hotels.map(h => h.hid).filter(Boolean));
 
-    // Fetch DB-only hotels (those without rates from API) to add to the pool
-    // We'll paginate the combined results later
+    // Skip DB merge for large cities (>1000 hotels) for performance
     const dbOnlyHotels = [];
-    const maxDbHotels = 200; // Reduced from 500 for better performance
+    if (!isLargeCity) {
+      // Fetch DB-only hotels (those without rates from API) to add to the pool
+      // We'll paginate the combined results later
+      const maxDbHotels = 100; // Reduced to match API batch size (100 hotels)
 
     const localHotels = await HotelContent.find({
       city: { $regex: new RegExp(`^${cityName}$`, 'i') },
@@ -513,13 +552,35 @@ router.get('/search', async (req, res) => {
           currency: currency
         });
     }
+  } // Close if (!isLargeCity) block
 
-    console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB`);
+    if (dbOnlyHotels.length > 0) {
+      console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB`);
+    } else if (isLargeCity) {
+      console.log(`   ⚡ Skipped DB merge for performance (large city)`);
+    }
 
     // Merge: API hotels first (with rates), then DB-only hotels (without rates)
     const allHotels = [...searchResults.hotels, ...dbOnlyHotels];
 
     console.log(`   ✅ Total combined: ${allHotels.length} hotels (DB has ${totalHotelsInDB} total)`);
+
+    // Calculate realistic total for pagination
+    // For large cities, we can only show hotels from API (we fetch 100 per batch)
+    // For small cities, we show all hotels from DB
+    let realisticTotal;
+    if (isLargeCity) {
+      // For large cities: Estimate based on API capability
+      // We fetch 100 hotels per batch, so assume we can get at least 10 batches (1000 hotels)
+      // But cap at DB total to not overpromise
+      const estimatedApiTotal = Math.min(1000, totalHotelsInDB);
+      realisticTotal = estimatedApiTotal;
+      console.log(`   🎯 Large city: Using estimated total ${realisticTotal} (API batches available)`);
+    } else {
+      // For small cities: Use actual DB count (we merge DB + API)
+      realisticTotal = totalHotelsInDB;
+      console.log(`   🎯 Small city: Using DB total ${realisticTotal}`);
+    }
 
     // If searching for a specific hotel (not a region), prioritize it but show other hotels too
     if (hasHotels && allHotels.length > 0) {
@@ -670,27 +731,31 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    // Cache ALL results (not paginated)
-    hotelSearchCache.set(cacheKey, {
+    // Cache this batch (not all results)
+    hotelSearchCache.set(batchCacheKey, {
       hotels: allHotels,
       total: totalHotelsInDB,
       timestamp: Date.now(),
-      region: regionToSearch
+      region: regionToSearch,
+      batch: batchNumber
     });
 
     // Auto-clear cache after 10 minutes
     setTimeout(() => {
-      hotelSearchCache.delete(cacheKey);
+      hotelSearchCache.delete(batchCacheKey);
     }, 10 * 60 * 1000);
 
     // Now paginate the results for this specific page
-    const startIndex = (pageNumber - 1) * limitNumber;
+    const batchStartIndex = (batchNumber - 1) * hotelsPerBatch;
+    const pageIndexInBatch = (pageNumber - 1) - (Math.floor((pageNumber - 1) / 5) * 5);
+    const startIndex = pageIndexInBatch * limitNumber;
     const endIndex = startIndex + limitNumber;
     const paginatedHotels = allHotels.slice(startIndex, endIndex);
-    const finalTotal = totalHotelsInDB;
+    const finalTotal = realisticTotal; // Use realistic total instead of raw DB count
     const finalTotalPages = Math.ceil(finalTotal / limitNumber);
 
-    console.log(`   📄 Returning page ${pageNumber}: hotels ${startIndex + 1}-${Math.min(endIndex, allHotels.length)} of ${allHotels.length}`);
+    console.log(`   📄 Returning batch ${batchNumber}, page ${pageNumber}: hotels ${startIndex + 1}-${Math.min(endIndex, allHotels.length)} of ${allHotels.length} in batch`);
+    console.log(`   📊 Total available: ${finalTotal} hotels, ${finalTotalPages} pages`);
 
     successResponse(res, {
       hotels: paginatedHotels,
@@ -699,9 +764,10 @@ router.get('/search', async (req, res) => {
       limit: limitNumber,
       totalPages: finalTotalPages,
       hasMore: pageNumber < finalTotalPages,
+      batch: batchNumber, // Tell frontend which batch this is
       region: regionToSearch.name || regionToSearch.region_name || 'Unknown',
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
-    }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} hotels`);
+    }, `Batch ${batchNumber}, Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} hotels`);
 
   } catch (error) {
     console.error('Hotel search error:', error);
