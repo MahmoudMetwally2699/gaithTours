@@ -47,7 +47,7 @@ async function checkDubaiHotels() {
     // Check city name variations
     console.log('🔍 Checking for city name variations:');
     const variations = ['dubai', 'Dubai', 'DUBAI', 'دبي'];
-    
+
     for (const variation of variations) {
       const count = await HotelContent.countDocuments({
         city: variation
@@ -70,10 +70,10 @@ async function checkDubaiHotels() {
     // Get star rating distribution for Dubai
     console.log('\n⭐ Dubai Hotels by Star Rating:');
     const starDistribution = await HotelContent.aggregate([
-      { 
-        $match: { 
+      {
+        $match: {
           city: { $regex: new RegExp('^Dubai$', 'i') }
-        } 
+        }
       },
       {
         $group: {
