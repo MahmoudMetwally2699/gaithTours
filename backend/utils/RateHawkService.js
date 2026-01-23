@@ -592,7 +592,7 @@ class RateHawkService {
     const cacheKey = `${query.toLowerCase().trim()}_${language}`;
     const cached = this.suggestionCache.get(cacheKey);
     const now = Date.now();
-    
+
     if (cached && (now - cached.timestamp) < this.suggestionCacheTTL) {
       console.log(`⚡ Using cached suggestion for "${query}" (saves ~200ms)`);
       return cached.data;
