@@ -179,7 +179,7 @@ export const HotelSearchResults: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [totalPages, setTotalPages] = useState(0);
   const [totalHotels, setTotalHotels] = useState(0);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -264,6 +264,59 @@ export const HotelSearchResults: React.FC = () => {
   };
 
   const hotelsPerPage = 20;
+
+  // Helper function to navigate to a page
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(location.search);
+    params.set('page', page.toString());
+    history.push({
+      pathname: location.pathname,
+      search: params.toString()
+    });
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Generate page numbers for pagination
+  const generatePageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 7; // Max page buttons to show
+
+    if (totalPages <= maxVisible) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always show first page
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      // Show pages around current page
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      // Always show last page
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  // Calculate results range
+  const resultsStart = (currentPage - 1) * hotelsPerPage + 1;
+  const resultsEnd = Math.min(currentPage * hotelsPerPage, totalHotels);
 
   // Facilities options
   const facilityOptions = [
@@ -1565,6 +1618,7 @@ export const HotelSearchResults: React.FC = () => {
                             <img
                               src={hotel.image}
                               alt={hotel.name}
+                              loading="lazy"
                               className="w-full h-48 sm:h-full object-cover"
                             />
                           ) : (
@@ -1707,28 +1761,49 @@ export const HotelSearchResults: React.FC = () => {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center mt-8 mb-8">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-4 mt-8 mb-8">
+                    {/* Results Summary */}
+                    <div className="text-sm text-gray-600">
+                      Showing <span className="font-semibold text-gray-900">{resultsStart}-{resultsEnd}</span> of <span className="font-semibold text-gray-900">{totalHotels.toLocaleString()}</span> properties
+                    </div>
+
+                    {/* Page Navigation */}
+                    <div className="flex items-center gap-1 flex-wrap justify-center">
+                      {/* Previous Button */}
                       <button
-                        onClick={() => {
-                          setCurrentPage(p => Math.max(1, p - 1));
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={() => goToPage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium"
+                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium text-sm min-w-[80px]"
                       >
                         Previous
                       </button>
-                      <span className="px-4 py-2 text-gray-700 font-medium">
-                        Page {currentPage} of {totalPages}
-                      </span>
+
+                      {/* Page Numbers */}
+                      {generatePageNumbers().map((page, index) => (
+                        page === '...' ? (
+                          <span key={`ellipsis-${index}`} className="px-2 py-2 text-gray-400">
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => goToPage(page as number)}
+                            className={`px-3 py-2 rounded-lg font-medium text-sm min-w-[40px] transition-colors ${
+                              currentPage === page
+                                ? 'bg-orange-500 text-white border-2 border-orange-500'
+                                : 'bg-white border border-gray-300 hover:bg-orange-50 hover:border-orange-300'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      ))}
+
+                      {/* Next Button */}
                       <button
-                        onClick={() => {
-                          setCurrentPage(p => Math.min(totalPages, p + 1));
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
+                        onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium"
+                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-colors font-medium text-sm min-w-[80px]"
                       >
                         Next
                       </button>
