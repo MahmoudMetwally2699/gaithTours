@@ -637,6 +637,7 @@ class RateHawkService {
       language = 'en',
       currency = 'SAR',
       enrichmentLimit = 0, // Default 0 means no limit (enrich all)
+      maxResults = 0, // NEW: Max hotels to return from API (0 = unlimited)
       refreshPrices = 0, // NEW: Number of top hotels to refresh prices from hotel details API
       page, // Pagination: Page number
       limit // Pagination: Items per page
@@ -691,7 +692,7 @@ class RateHawkService {
       const nights = Math.max(1, Math.round((checkoutDate - checkinDate) / (1000 * 60 * 60 * 24)));
 
       // Normalize response to match frontend expectations
-    const hotels = (response.data?.hotels || []).map(hotel => {
+    let hotels = (response.data?.hotels || []).map(hotel => {
       // Find the rate with the LOWEST price (not just the first rate)
       // This ensures search results show the same "From" price as details page
       let lowestRate = hotel.rates?.[0];
@@ -785,7 +786,13 @@ class RateHawkService {
       };
     });
 
-    // Fetch images for ALL hotels using Content API (max 100 per request)
+    // OPTIMIZATION: Trim results if maxResults is specified
+    if (maxResults > 0 && hotels.length > maxResults) {
+      console.log(`✂️  Trimming API results from ${hotels.length} to ${maxResults} hotels`);
+      hotels = hotels.slice(0, maxResults);
+    }
+
+    // Fetch images for hotels using Content API (max 100 per request)
     let hotelHids = hotels.map(h => h.hid).filter(hid => hid);
 
     // Smart enrichment: Check cache first to determine actual API call needs
@@ -1051,10 +1058,17 @@ class RateHawkService {
         const missingHids = hotelHidsForReviews.filter(hid => !foundHids.has(hid));
 
         // 3. Bulk fetch missing from API (if any)
+        // OPTIMIZATION: Limit API review fetching to first 100 hotels (rest will have no rating)
+        const maxReviewFetches = 100;
         if (missingHids.length > 0) {
-          console.log(`📝 Bulk fetching missing/stale reviews for ${missingHids.length} hotels...`);
+          const hidsToFetch = missingHids.slice(0, maxReviewFetches);
+          if (missingHids.length > maxReviewFetches) {
+            console.log(`📝 Bulk fetching missing/stale reviews for ${hidsToFetch.length}/${missingHids.length} hotels (limited for performance)...`);
+          } else {
+            console.log(`📝 Bulk fetching missing/stale reviews for ${hidsToFetch.length} hotels...`);
+          }
           // Fetch directly using our bulk API method
-          const apiReviews = await this.getReviewsByHids(missingHids, 'en');
+          const apiReviews = await this.getReviewsByHids(hidsToFetch, 'en');
 
           if (Object.keys(apiReviews).length > 0) {
             // Prepare bulk write operations for DB

@@ -295,26 +295,33 @@ router.get('/search', async (req, res) => {
       return errorResponse(res, 'Destination is required', 400);
     }
 
-    // Generate cache key (v4 = includes currency)
-    const cacheKey = `v4_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
+    // Parse pagination parameters first
+    const pageNumber = parseInt(page) || 1;
+    const limitNumber = parseInt(limit) || 20;
 
-    // Check cache first
+    // Generate cache key WITHOUT page number (cache all results together, paginate from cache)
+    const cacheKey = `v6_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
+
+    // Check cache first - if we have cached results, paginate from them
     if (hotelSearchCache.has(cacheKey)) {
-      console.log(`📦 Returning cached results for: ${destination}`);
+      console.log(`📦 Returning cached results for: ${destination} (page ${pageNumber})`);
       const cached = hotelSearchCache.get(cacheKey);
-      const pageNumber = parseInt(page) || 1;
-      const limitNumber = parseInt(limit) || 20;
+
+      // Paginate the cached results
       const startIndex = (pageNumber - 1) * limitNumber;
       const endIndex = startIndex + limitNumber;
+      const paginatedHotels = cached.hotels.slice(startIndex, endIndex);
+      const totalResults = cached.total || cached.hotels.length;
 
       return successResponse(res, {
-        hotels: cached.hotels.slice(startIndex, endIndex),
-        total: cached.hotels.length,
+        hotels: paginatedHotels,
+        total: totalResults,
         page: pageNumber,
         limit: limitNumber,
-        totalPages: Math.ceil(cached.hotels.length / limitNumber),
+        totalPages: Math.ceil(totalResults / limitNumber),
+        hasMore: pageNumber < Math.ceil(totalResults / limitNumber),
         fromCache: true
-      }, 'Hotels retrieved from cache');
+      }, `Hotels retrieved from cache (page ${pageNumber})`);
     }
 
     // Use default dates if not provided (today, 1 night - same as homepage)
@@ -438,46 +445,56 @@ router.get('/search', async (req, res) => {
 
     const regionId = regionToSearch.region_id || regionToSearch.id;
 
-    // Pass pagination parameters to RateHawkService
-    const pageNumber = parseInt(page) || 1;
-    const limitNumber = parseInt(limit) || 20;
-
+    // OPTIMIZATION: Limit API results to reduce enrichment overhead
+    // For pagination, we only need enough hotels to fill a few pages
+    // Users rarely go past page 10 (200 hotels)
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
       adults: parseInt(adults) || 2,
       children: childrenAges,
       currency,
       language: finalLanguage,
-      page: pageNumber,
-      limit: limitNumber
+      // Smart limits to reduce API overhead:
+      enrichmentLimit: 100, // Only enrich first 100 hotels (rest from cache/DB)
+      maxResults: 200 // Request max 200 hotels from API (enough for 10 pages)
     });
 
-    // Step 3.5: ALWAYS merge API results with ALL hotels from HotelContent for the city
-    // This ensures we show ALL hotels in the database, not just those with rates from API
-    // Use destination parameter directly - regionToSearch.name might be a hotel name, not city
+    // Step 3.5: Merge API results with paginated HotelContent for the city
+    // OPTIMIZATION: Only fetch the hotels needed for the current page to avoid loading 13,981 hotels at once
     const cityName = destination;
     console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
 
     const HotelContent = require('../models/HotelContent');
 
-    // Fetch ALL hotels from database for this city
-    const localHotels = await HotelContent.find({
+    // First, count total hotels for pagination metadata
+    const totalHotelsInDB = await HotelContent.countDocuments({
       city: { $regex: new RegExp(`^${cityName}$`, 'i') }
-    }).lean();
+    });
 
-    console.log(`   📦 Found ${localHotels.length} hotels in HotelContent for "${cityName}"`);
+    console.log(`   📦 Total ${totalHotelsInDB} hotels in HotelContent for "${cityName}"`);
     console.log(`   🌐 Found ${searchResults.hotels.length} hotels with rates from API`);
 
     // Create a Set of HIDs from API results for quick lookup
     const apiHids = new Set(searchResults.hotels.map(h => h.hid).filter(Boolean));
 
-    // Map local hotels that are NOT in API results (no rates available)
-    const dbOnlyHotels = localHotels
-      .filter(hotel => !apiHids.has(hotel.hid))
-      .map(hotel => {
-        const imageUrl = (hotel.images?.[0]?.url || hotel.mainImage)?.replace('{size}', '640x400');
+    // Fetch DB-only hotels (those without rates from API) to add to the pool
+    // We'll paginate the combined results later
+    const dbOnlyHotels = [];
+    const maxDbHotels = 200; // Reduced from 500 for better performance
 
-        return {
+    const localHotels = await HotelContent.find({
+      city: { $regex: new RegExp(`^${cityName}$`, 'i') },
+      hid: { $nin: Array.from(apiHids) } // Exclude hotels already in API results
+    })
+    .limit(maxDbHotels) // Fetch up to 200 DB hotels without rates
+    .lean();
+
+    // Map local hotels to the expected format
+    for (const hotel of localHotels) {
+      if (apiHids.has(hotel.hid)) continue; // Skip if already in API results
+
+      const imageUrl = (hotel.images?.[0]?.url || hotel.mainImage)?.replace('{size}', '640x400');
+      dbOnlyHotels.push({
           id: hotel.hotelId || `hid_${hotel.hid}`,
           hid: hotel.hid,
           hotelId: hotel.hotelId,
@@ -494,18 +511,18 @@ router.get('/search', async (req, res) => {
           price: null,  // No price available from API
           noRatesAvailable: true,  // Flag for frontend to show "Check availability"
           currency: currency
-        };
-      });
+        });
+    }
 
-    console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB (no rates from API)`);
+    console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB`);
 
     // Merge: API hotels first (with rates), then DB-only hotels (without rates)
-    searchResults.hotels = [...searchResults.hotels, ...dbOnlyHotels];
+    const allHotels = [...searchResults.hotels, ...dbOnlyHotels];
 
-    console.log(`   ✅ Total merged: ${searchResults.hotels.length} hotels`);
+    console.log(`   ✅ Total combined: ${allHotels.length} hotels (DB has ${totalHotelsInDB} total)`);
 
     // If searching for a specific hotel (not a region), prioritize it but show other hotels too
-    if (hasHotels && searchResults.hotels.length > 0) {
+    if (hasHotels && allHotels.length > 0) {
       const searchedHotelId = suggestions.hotels[0].id;
       const searchedHotelHid = suggestions.hotels[0].hid;
       const searchedHotelName = suggestions.hotels[0].name || suggestions.hotels[0].label || '';
@@ -513,10 +530,10 @@ router.get('/search', async (req, res) => {
       console.log(`🔍 Looking for searched hotel: id=${searchedHotelId}, hid=${searchedHotelHid}, name=${searchedHotelName}`);
 
       // IMPORTANT: Clear all isSearchedHotel flags first to ensure only ONE hotel is highlighted
-      searchResults.hotels.forEach(h => { h.isSearchedHotel = false; });
+      allHotels.forEach(h => { h.isSearchedHotel = false; });
 
       // Find the searched hotel using EXACT matching only (by hid or id, NOT by name)
-      let matchedHotelIndex = searchResults.hotels.findIndex(hotel => {
+      let matchedHotelIndex = allHotels.findIndex(hotel => {
         // Match by hid (most reliable)
         if (searchedHotelHid && hotel.hid === searchedHotelHid) return true;
         // Match by id
@@ -529,18 +546,18 @@ router.get('/search', async (req, res) => {
       // If no exact ID match, try EXACT name matching only (not partial matching)
       if (matchedHotelIndex === -1 && searchedHotelName) {
         const normalizedSearchName = searchedHotelName.toLowerCase().trim();
-        matchedHotelIndex = searchResults.hotels.findIndex(hotel => {
+        matchedHotelIndex = allHotels.findIndex(hotel => {
           const hotelName = (hotel.name || '').toLowerCase().trim();
           // Only exact name match - no partial matching to avoid multiple matches
           return hotelName === normalizedSearchName;
         });
         if (matchedHotelIndex !== -1) {
-          console.log(`🔍 Found hotel by exact name match: "${searchResults.hotels[matchedHotelIndex].name}"`);
+          console.log(`🔍 Found hotel by exact name match: "${allHotels[matchedHotelIndex].name}"`);
         }
       }
 
       if (matchedHotelIndex !== -1) {
-        const matchedHotel = searchResults.hotels[matchedHotelIndex];
+        const matchedHotel = allHotels[matchedHotelIndex];
 
         // If the matched hotel doesn't have location data, enrich it from Content API
         if (!matchedHotel.address || !matchedHotel.city) {
@@ -572,9 +589,9 @@ router.get('/search', async (req, res) => {
         matchedHotel.isSearchedHotel = true;
 
         // Move the searched hotel to the front of the array
-        searchResults.hotels.splice(matchedHotelIndex, 1);
-        searchResults.hotels.unshift(matchedHotel);
-        console.log(`✅ Found exact match for searched hotel: ${matchedHotel.name} (showing it first with ${searchResults.hotels.length - 1} other hotels)`);
+        allHotels.splice(matchedHotelIndex, 1);
+        allHotels.unshift(matchedHotel);
+        console.log(`✅ Found exact match for searched hotel: ${matchedHotel.name} (showing it first with ${allHotels.length - 1} other hotels)`);
       } else {
         console.log(`⚠️ Searched hotel "${searchedHotelName}" not found in results with rates, will try to fetch from Content API and add it to the top`);
         // Don't clear the array - we'll add the searched hotel from Content API to the front
@@ -589,7 +606,7 @@ router.get('/search', async (req, res) => {
       const searchedHotelHid = suggestions.hotels[0].hid;
 
       // Check if the searched hotel is in the results
-      const hotelFoundInResults = searchResults.hotels.some(hotel =>
+      const hotelFoundInResults = allHotels.some(hotel =>
         hotel.id === searchedHotelId || hotel.hid === searchedHotelHid
       );
 
@@ -638,7 +655,7 @@ router.get('/search', async (req, res) => {
              };
 
              // Add to top of results
-             searchResults.hotels.unshift(enrichedHotel);
+             allHotels.unshift(enrichedHotel);
              console.log(`✅ Added ${localHotel.name} to top of results from Local DB`);
 
           } else {
@@ -653,9 +670,10 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    // Cache the results
+    // Cache ALL results (not paginated)
     hotelSearchCache.set(cacheKey, {
-      hotels: searchResults.hotels,
+      hotels: allHotels,
+      total: totalHotelsInDB,
       timestamp: Date.now(),
       region: regionToSearch
     });
@@ -665,29 +683,25 @@ router.get('/search', async (req, res) => {
       hotelSearchCache.delete(cacheKey);
     }, 10 * 60 * 1000);
 
-    // Paginate results
-    // pageNumber and limitNumber are already defined above
+    // Now paginate the results for this specific page
     const startIndex = (pageNumber - 1) * limitNumber;
     const endIndex = startIndex + limitNumber;
-
-    // Use correct total from API (or merged length if API total missing)
-    // If API returned total, use it. Otherwise fall back to current list length
-    const finalTotal = searchResults.total || searchResults.hotels.length;
-
-    // Calculate total pages
+    const paginatedHotels = allHotels.slice(startIndex, endIndex);
+    const finalTotal = totalHotelsInDB;
     const finalTotalPages = Math.ceil(finalTotal / limitNumber);
 
+    console.log(`   📄 Returning page ${pageNumber}: hotels ${startIndex + 1}-${Math.min(endIndex, allHotels.length)} of ${allHotels.length}`);
+
     successResponse(res, {
-      // Return hotels for this page (RateHawk already handled offset, so we just take the window)
-      // Merge might add extra DB items, so we trim to limit
-      hotels: searchResults.hotels.slice(0, limitNumber),
+      hotels: paginatedHotels,
       total: finalTotal,
       page: pageNumber,
       limit: limitNumber,
       totalPages: finalTotalPages,
+      hasMore: pageNumber < finalTotalPages,
       region: regionToSearch.name || regionToSearch.region_name || 'Unknown',
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
-    }, 'Hotels retrieved successfully');
+    }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} hotels`);
 
   } catch (error) {
     console.error('Hotel search error:', error);
