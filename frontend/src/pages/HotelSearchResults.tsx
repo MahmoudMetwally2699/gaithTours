@@ -54,6 +54,7 @@ interface AutocompleteSuggestion {
   name: string;
   type: string;
   hid?: number;
+  country_code?: string;
 }
 
 interface AutocompleteResults {
@@ -265,7 +266,7 @@ export const HotelSearchResults: React.FC = () => {
     });
   };
 
-  const hotelsPerPage = 20;
+  const hotelsPerPage = 50;
 
 
 
@@ -312,8 +313,9 @@ export const HotelSearchResults: React.FC = () => {
 
         if (data.success && data.data) {
           const hotels = Array.isArray(data.data.hotels) ? data.data.hotels : [];
-          setAutocompleteResults({ hotels, regions: [] });
-          if (hotels.length > 0) {
+          const regions = Array.isArray(data.data.regions) ? data.data.regions : [];
+          setAutocompleteResults({ hotels, regions });
+          if (hotels.length > 0 || regions.length > 0) {
             setShowAutocomplete(true);
           }
         }
@@ -434,7 +436,7 @@ export const HotelSearchResults: React.FC = () => {
           setCurrentPage(prev => prev + 1);
         }
       },
-      { threshold: 0, rootMargin: '800px' } // Trigger 800px before reaching bottom (no white space!)
+      { threshold: 0, rootMargin: '1500px' } // Trigger 1500px before bottom for seamless infinite scroll
     );
 
     observer.observe(loadMoreRef.current);
@@ -587,7 +589,7 @@ export const HotelSearchResults: React.FC = () => {
           return b.rating - a.rating;
         case 'top_picks':
         default:
-          return b.rating - a.rating;
+          return 0; // Preserve backend order for top picks to avoid layout shifts/popping
       }
     });
 
@@ -743,7 +745,7 @@ export const HotelSearchResults: React.FC = () => {
                           setEditableDestination(e.target.value);
                         }}
                         onFocus={() => {
-                          if (hasUserTyped.current && editableDestination.length >= 2 && autocompleteResults.hotels.length > 0) {
+                          if (hasUserTyped.current && editableDestination.length >= 2 && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0)) {
                             setShowAutocomplete(true);
                           }
                         }}
@@ -761,26 +763,65 @@ export const HotelSearchResults: React.FC = () => {
                       <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
 
                       {/* Autocomplete Dropdown */}
-                      {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                      {showAutocomplete && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0) && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-64 overflow-y-auto">
                           <div className="p-2">
-                            {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
-                              <button
-                                key={hotel.id}
-                                type="button"
-                                onClick={() => {
-                                  handleSelectSuggestion(hotel);
-                                  setShowAutocomplete(false);
-                                }}
-                                className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
-                              >
-                                <BuildingOffice2Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
-                                <div>
-                                  <p className="text-gray-800 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
-                                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Hotel</p>
+                            {/* Regions Section */}
+                            {autocompleteResults.regions.length > 0 && (
+                              <>
+                                <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
+                                  Cities & Regions
                                 </div>
-                              </button>
-                            ))}
+                                {autocompleteResults.regions.map((region) => (
+                                  <button
+                                    key={region.id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectSuggestion(region);
+                                      setShowAutocomplete(false);
+                                    }}
+                                    className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                                      <MapPinIcon className="w-4 h-4 text-orange-600 group-hover:text-orange-700 transition-colors" />
+                                    </div>
+                                    <div>
+                                      <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{region.name}</p>
+                                      <p className="text-[10px] text-gray-500">{region.country_code || 'Region'}</p>
+                                    </div>
+                                  </button>
+                                ))}
+                              </>
+                            )}
+
+                            {/* Hotels Section */}
+                            {autocompleteResults.hotels.length > 0 && (
+                              <>
+                                {autocompleteResults.regions.length > 0 && <div className="my-2 border-t border-gray-100" />}
+                                <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
+                                  Hotels
+                                </div>
+                                {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                                  <button
+                                    key={hotel.id}
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectSuggestion(hotel);
+                                      setShowAutocomplete(false);
+                                    }}
+                                    className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                                  >
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                      <BuildingOffice2Icon className="w-4 h-4 text-blue-500 group-hover:text-orange-500 transition-colors" />
+                                    </div>
+                                    <div>
+                                      <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
+                                      <p className="text-[10px] text-gray-500">Hotel</p>
+                                    </div>
+                                  </button>
+                                ))}
+                              </>
+                            )}
                           </div>
                         </div>
                       )}
@@ -965,24 +1006,65 @@ export const HotelSearchResults: React.FC = () => {
                 </div>
 
                 {/* Autocomplete Dropdown */}
-                {showAutocomplete && autocompleteResults.hotels.length > 0 && (
+                {showAutocomplete && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0) && (
                   <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-64 overflow-y-auto animate-fadeIn">
                     <div className="p-2">
-                      <p className="text-xs font-bold text-gray-400 px-3 py-1.5 uppercase tracking-wider">Hotels</p>
-                      {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
-                        <button
-                          key={hotel.id}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(hotel)}
-                          className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
-                        >
-                          <BuildingOffice2Icon className="w-5 h-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
-                          <div>
-                            <p className="text-gray-800 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Hotel</p>
+                      {/* Regions Section */}
+                      {autocompleteResults.regions.length > 0 && (
+                        <>
+                          <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
+                            Cities & Regions
                           </div>
-                        </button>
-                      ))}
+                          {autocompleteResults.regions.map((region) => (
+                            <button
+                              key={region.id}
+                              type="button"
+                              onClick={() => {
+                                handleSelectSuggestion(region);
+                                setShowAutocomplete(false);
+                              }}
+                              className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                                <MapPinIcon className="w-4 h-4 text-orange-600 group-hover:text-orange-700 transition-colors" />
+                              </div>
+                              <div>
+                                <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{region.name}</p>
+                                <p className="text-[10px] text-gray-500">{region.country_code || 'Region'}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+
+                      {/* Hotels Section */}
+                      {autocompleteResults.hotels.length > 0 && (
+                        <>
+                          {autocompleteResults.regions.length > 0 && <div className="my-2 border-t border-gray-100" />}
+                          <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
+                            Hotels
+                          </div>
+                          {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
+                            <button
+                              key={hotel.id}
+                              type="button"
+                              onClick={() => {
+                                handleSelectSuggestion(hotel);
+                                setShowAutocomplete(false);
+                              }}
+                              className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                <BuildingOffice2Icon className="w-4 h-4 text-blue-500 group-hover:text-orange-500 transition-colors" />
+                              </div>
+                              <div>
+                                <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
+                                <p className="text-[10px] text-gray-500">Hotel</p>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1585,7 +1667,7 @@ export const HotelSearchResults: React.FC = () => {
                       key={hotel.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      transition={{ duration: 0.3, delay: (index % 10) * 0.05 }}
                       className={`rounded-lg overflow-hidden transition-all duration-300 relative ${
                         (hotel as any).isSearchedHotel
                           ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
@@ -1756,39 +1838,40 @@ export const HotelSearchResults: React.FC = () => {
                   {hasMore && hotels.length > 0 && (
                     <div className="space-y-4 relative">
                       {/* Skeleton hotel cards - always show when more content available */}
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
-                          <div className="flex gap-4">
-                            <div className="w-48 h-32 bg-gray-200 rounded-lg flex-shrink-0" />
-                            <div className="flex-1 space-y-3">
-                              <div className="h-5 bg-gray-200 rounded w-3/4" />
-                              <div className="h-4 bg-gray-200 rounded w-1/2" />
-                              <div className="h-4 bg-gray-200 rounded w-2/3" />
-                              <div className="flex gap-2 mt-2">
-                                <div className="h-6 bg-gray-200 rounded w-20" />
-                                <div className="h-6 bg-gray-200 rounded w-20" />
-                              </div>
-                            </div>
-                            <div className="w-32 space-y-2">
-                              <div className="h-6 bg-gray-200 rounded" />
-                              <div className="h-8 bg-gray-200 rounded" />
-                            </div>
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden flex flex-col sm:flex-row min-h-[220px] animate-pulse">
+                          {/* Image Skeleton */}
+                          <div className="w-full sm:w-48 md:w-56 lg:w-64 h-48 sm:h-auto bg-gray-200 flex-shrink-0" />
+
+                          <div className="flex-1 flex flex-col sm:flex-row min-w-0">
+                             {/* Left: Info */}
+                             <div className="flex-1 p-4 flex flex-col gap-3">
+                                <div className="h-6 bg-gray-200 rounded w-3/4" />
+                                <div className="flex gap-2">
+                                    <div className="h-4 bg-gray-200 rounded w-20" />
+                                    <div className="h-4 bg-gray-200 rounded w-32" />
+                                </div>
+                                <div className="h-4 bg-gray-200 rounded w-1/2 mt-2" />
+                                <div className="flex gap-2 mt-auto">
+                                    <div className="h-5 bg-gray-200 rounded w-20" />
+                                    <div className="h-5 bg-gray-200 rounded w-24" />
+                                </div>
+                             </div>
+
+                             {/* Right: Price */}
+                             <div className="p-4 sm:w-48 lg:w-60 flex flex-row sm:flex-col justify-between sm:border-l border-gray-100">
+                                <div className="flex justify-end w-full">
+                                    <div className="h-10 w-10 bg-gray-200 rounded-lg" />
+                                </div>
+                                <div className="flex flex-col items-end gap-2 w-full mt-auto">
+                                    <div className="h-4 bg-gray-200 rounded w-20" />
+                                    <div className="h-8 bg-gray-200 rounded w-32" />
+                                    <div className="h-10 bg-gray-200 rounded w-full mt-1" />
+                                </div>
+                             </div>
                           </div>
                         </div>
                       ))}
-                      
-                      {/* Show spinner on top of skeletons when actively loading */}
-                      {loadingMore && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
-                          <div className="flex flex-col items-center gap-3">
-                            <div className="relative">
-                              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200"></div>
-                              <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent absolute top-0 left-0"></div>
-                            </div>
-                            <p className="text-sm font-semibold text-gray-800">Loading...</p>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                   {!hasMore && hotels.length > 0 && (

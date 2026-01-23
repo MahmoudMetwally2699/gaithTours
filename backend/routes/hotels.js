@@ -304,7 +304,8 @@ router.get('/search', async (req, res) => {
     const limitNumber = parseInt(limit) || 20;
 
     // Generate cache key WITHOUT page number (cache all results together, paginate from cache)
-    const cacheKey = `v6_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
+    // v7: Added "rated" suffix for city searches to separate filtered results from old unfiltered cache
+    const cacheKey = `v7_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
 
     // PROGRESSIVE LOADING: Determine which batch we need
     // Batch 1 (pages 1-5): Hotels 0-99
@@ -327,7 +328,7 @@ router.get('/search', async (req, res) => {
       const startIndex = pageIndexInBatch * limitNumber;
       const endIndex = startIndex + limitNumber;
       const paginatedHotels = cached.hotels.slice(startIndex, endIndex);
-      const totalResults = cached.total || 13981; // Use rough estimate for large cities
+      const totalResults = cached.total || cached.hotels.length || 0;
 
       return successResponse(res, {
         hotels: paginatedHotels,
@@ -441,14 +442,18 @@ router.get('/search', async (req, res) => {
     // Step 2: Determine which region to search
     let regionToSearch;
 
-    if (hasHotels) {
-      // If specific hotels found, use the first hotel's region
+    if (hasRegions) {
+      // Prioritize regions: If a region matches (e.g., "Dubai"), treat it as a city search
+      // This ensures we get the "unrated hotel" filter applied
+      regionToSearch = suggestions.regions[0];
+      console.log(`📍 Searching by region: ${suggestions.regions[0].name} (id: ${suggestions.regions[0].id})`);
+    } else if (hasHotels) {
+      // Only fallback to hotel search if NO region matched
       regionToSearch = suggestions.hotels[0];
       console.log(`🏨 Searching by hotel: ${suggestions.hotels[0].name} (region_id: ${suggestions.hotels[0].region_id})`);
     } else {
-      // Otherwise use the first region
+      // Should be covered by early return above, but safe fallback
       regionToSearch = suggestions.regions[0];
-      console.log(`📍 Searching by region: ${suggestions.regions[0].name} (id: ${suggestions.regions[0].id})`);
     }
 
     // Step 3: Search hotels in the selected region
@@ -479,6 +484,18 @@ router.get('/search', async (req, res) => {
       maxResults: maxResultsForBatch // Fetch only 100 hotels (5 pages worth)
     });
 
+    // QUALITY FILTER: For city searches, filter out unrated hotels from API results
+    const isCitySearch = hasRegions; // If we found/selected a region/city, it's a city search
+    if (isCitySearch && searchResults.hotels) {
+      const beforeFilter = searchResults.hotels.length;
+      searchResults.hotels = searchResults.hotels.filter(hotel => {
+        const starRating = hotel.star_rating || hotel.starRating || 0;
+        return starRating > 0; // Only hotels with 1+ stars
+      });
+      const afterFilter = searchResults.hotels.length;
+      console.log(`   ⭐ API Filter: Removed ${beforeFilter - afterFilter} unrated hotels from API (${afterFilter} rated remaining)`);
+    }
+
     // Step 3.5: Merge API results with DB hotels
     const cityName = destination;
     console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
@@ -486,20 +503,28 @@ router.get('/search', async (req, res) => {
     const HotelContent = require('../models/HotelContent');
 
     // Check cached city count first (1 hour TTL)
-    const countCacheKey = `count_${cityName}`;
+    // For city searches, only count rated hotels (starRating > 0)
+    const countCacheKey = isCitySearch ? `count_rated_${cityName}` : `count_${cityName}`;
     let totalHotelsInDB;
 
     const cachedCount = cityCountCache.get(countCacheKey);
     if (cachedCount && Date.now() - cachedCount.timestamp < CITY_COUNT_TTL) {
       totalHotelsInDB = cachedCount.count;
-      console.log(`   📦 Total ${totalHotelsInDB} hotels in HotelContent for "${cityName}" (cached)`);
+      console.log(`   📦 Total ${totalHotelsInDB} ${isCitySearch ? 'rated' : ''} hotels in HotelContent for "${cityName}" (cached)`);
     } else {
-      // Only count if not cached (this is the slow part for Dubai with 13,981 hotels)
-      totalHotelsInDB = await HotelContent.countDocuments({
+      // Build query based on search type
+      const countQuery = {
         city: { $regex: new RegExp(`^${cityName}$`, 'i') }
-      });
+      };
+
+      // For city searches, only count hotels with star ratings
+      if (isCitySearch) {
+        countQuery.starRating = { $gt: 0 }; // Only rated hotels
+      }
+
+      totalHotelsInDB = await HotelContent.countDocuments(countQuery);
       cityCountCache.set(countCacheKey, { count: totalHotelsInDB, timestamp: Date.now() });
-      console.log(`   📦 Total ${totalHotelsInDB} hotels in HotelContent for "${cityName}" (fresh count)`);
+      console.log(`   📦 Total ${totalHotelsInDB} ${isCitySearch ? 'rated' : ''} hotels in HotelContent for "${cityName}" (fresh count)`);
     }
 
     console.log(`   🌐 Found ${searchResults.hotels.length} hotels with rates from API`);
@@ -521,11 +546,19 @@ router.get('/search', async (req, res) => {
       // We'll paginate the combined results later
       const maxDbHotels = 100; // Reduced to match API batch size (100 hotels)
 
-    const localHotels = await HotelContent.find({
+    // Build DB query
+    const dbQuery = {
       city: { $regex: new RegExp(`^${cityName}$`, 'i') },
       hid: { $nin: Array.from(apiHids) } // Exclude hotels already in API results
-    })
-    .limit(maxDbHotels) // Fetch up to 200 DB hotels without rates
+    };
+
+    // For city searches, only fetch rated hotels from DB
+    if (isCitySearch) {
+      dbQuery.starRating = { $gt: 0 }; // Only rated hotels
+    }
+
+    const localHotels = await HotelContent.find(dbQuery)
+    .limit(maxDbHotels)
     .lean();
 
     // Map local hotels to the expected format
@@ -561,9 +594,23 @@ router.get('/search', async (req, res) => {
     }
 
     // Merge: API hotels first (with rates), then DB-only hotels (without rates)
-    const allHotels = [...searchResults.hotels, ...dbOnlyHotels];
+    let allHotels = [...searchResults.hotels, ...dbOnlyHotels];
 
     console.log(`   ✅ Total combined: ${allHotels.length} hotels (DB has ${totalHotelsInDB} total)`);
+
+    // QUALITY FILTER: For city searches, only show hotels with star ratings (skip unrated)
+    // But if searching for a specific hotel, show it even if unrated
+    if (isCitySearch) {
+      const beforeFilter = allHotels.length;
+      allHotels = allHotels.filter(hotel => {
+        const starRating = hotel.star_rating || hotel.starRating || 0;
+        return starRating > 0; // Only hotels with 1+ stars
+      });
+      const afterFilter = allHotels.length;
+      console.log(`   ⭐ City search: Filtered out ${beforeFilter - afterFilter} unrated hotels (${afterFilter} rated hotels remaining)`);
+    } else {
+      console.log(`   🏨 Hotel search: Showing all hotels including unrated`);
+    }
 
     // Calculate realistic total for pagination
     // For large cities, we can only show hotels from API (we fetch 100 per batch)
@@ -577,9 +624,9 @@ router.get('/search', async (req, res) => {
       realisticTotal = estimatedApiTotal;
       console.log(`   🎯 Large city: Using estimated total ${realisticTotal} (API batches available)`);
     } else {
-      // For small cities: Use actual DB count (we merge DB + API)
-      realisticTotal = totalHotelsInDB;
-      console.log(`   🎯 Small city: Using DB total ${realisticTotal}`);
+      // For small cities or specific hotel searches: Use actual DB count merged with API count
+      realisticTotal = Math.max(totalHotelsInDB, allHotels.length);
+      console.log(`   🎯 Small search: Using max(DB=${totalHotelsInDB}, API=${allHotels.length}) = ${realisticTotal}`);
     }
 
     // If searching for a specific hotel (not a region), prioritize it but show other hotels too
@@ -734,7 +781,7 @@ router.get('/search', async (req, res) => {
     // Cache this batch (not all results)
     hotelSearchCache.set(batchCacheKey, {
       hotels: allHotels,
-      total: totalHotelsInDB,
+      total: realisticTotal,
       timestamp: Date.now(),
       region: regionToSearch,
       batch: batchNumber
@@ -991,6 +1038,24 @@ router.get('/search-legacy', async (req, res) => {
   // Redirect to new search endpoint
   req.url = '/search';
   return router.handle(req, res);
+});
+
+/**
+ * Clear hotel search cache (for development/testing)
+ * POST /api/hotels/clear-cache
+ */
+router.post('/clear-cache', (req, res) => {
+  const cacheSize = hotelSearchCache.size;
+  const countCacheSize = cityCountCache.size;
+
+  hotelSearchCache.clear();
+  cityCountCache.clear();
+
+  successResponse(res, {
+    cleared: true,
+    searchCacheCleared: cacheSize,
+    countCacheCleared: countCacheSize
+  }, `Cleared ${cacheSize} search cache entries and ${countCacheSize} count cache entries`);
 });
 
 module.exports = router;
