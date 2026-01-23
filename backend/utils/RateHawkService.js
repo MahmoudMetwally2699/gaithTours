@@ -792,33 +792,9 @@ class RateHawkService {
     // Fetch images for hotels using Content API (max 100 per request)
     let hotelHids = hotels.map(h => h.hid).filter(hid => hid);
 
-    // Smart enrichment: Check cache first to determine actual API call needs
-    let effectiveEnrichmentLimit = hotelHids.length;
-    if (enrichmentLimit > 0) {
-      const now = Date.now();
-      const cachedCount = hotelHids.filter(hid => {
-        const cached = this.contentCache.get(hid);
-        return cached && (now - cached.timestamp) < this.cacheTTL;
-      }).length;
-
-      const uncachedCount = hotelHids.length - cachedCount;
-
-      // Smart limit: cached hotels are "free", only limit uncached ones
-      // If we want max 15 API calls, but have 10 cached, we can serve 10 + 15 = 25 total
-      effectiveEnrichmentLimit = Math.min(hotelHids.length, cachedCount + enrichmentLimit);
-
-      if (uncachedCount > enrichmentLimit) {
-        console.log(`💡 Smart Enrichment: Serving ${effectiveEnrichmentLimit} hotels (${cachedCount} cached + ${enrichmentLimit} from Local DB)`);
-        hotelHids = hotelHids.slice(0, effectiveEnrichmentLimit);
-      } else if (cachedCount > 0) {
-        console.log(`✨ Cache advantage: All ${hotelHids.length} hotels available (${cachedCount} cached, ${uncachedCount} new)`);
-      } else {
-        console.log(`📊 Enriching top ${enrichmentLimit} of ${hotelHids.length} hotels (0 cached)`);
-        hotelHids = hotelHids.slice(0, enrichmentLimit);
-      }
-    }
-
-    console.log(`📍 Fetching location data for ${hotelHids.length} hotels using Local DB`);
+    // LOCAL DB ENRICHMENT: No rate limits, so always enrich all hotels
+    // The enrichmentLimit parameter is kept for backward compatibility but ignored
+    console.log(`📍 Fetching location/image data for ${hotelHids.length} hotels using Local DB`);
 
     if (hotelHids.length > 0) {
       try {

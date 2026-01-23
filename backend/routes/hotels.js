@@ -136,7 +136,7 @@ router.get('/suggested', async (req, res) => {
           ...dates,
           adults: 2,
           currency: currency,
-          enrichmentLimit: 20, // Increased base limit (cache multiplies this further)
+          enrichmentLimit: 0, // Local DB enrichment - no limit needed
           refreshPrices: 0 // DISABLED: Causes rate limiting with 20 parallel calls
         });
       }
