@@ -423,8 +423,16 @@ export const HotelSearchResults: React.FC = () => {
         );
 
         if (response?.hotels) {
-          // Append new hotels to existing list (infinite scroll)
-          setHotels(prev => currentPage === 1 ? response.hotels : [...prev, ...response.hotels]);
+          // Append new hotels to existing list (infinite scroll) with deduplication
+          setHotels(prev => {
+            if (currentPage === 1) {
+              return response.hotels;
+            }
+            // Deduplicate: use hid or id as unique key
+            const existingIds = new Set(prev.map(h => h.hid || h.id));
+            const newHotels = response.hotels.filter(h => !existingIds.has(h.hid || h.id));
+            return [...prev, ...newHotels];
+          });
           setTotalPages(response.totalPages || 0);
           setTotalHotels(response.total || 0);
           setHasMore(currentPage < (response.totalPages || 0));
@@ -519,7 +527,16 @@ export const HotelSearchResults: React.FC = () => {
   // NOTE: Most filters (star rating, facilities, meal plan, cancellation, guest rating)
   // are now handled server-side. Only price range filter is applied client-side.
   const filteredHotels = useMemo(() => {
-    let filtered = [...hotels];
+    // Deduplicate hotels first (by hid or id)
+    const seenIds = new Set<string | number>();
+    let filtered = hotels.filter(hotel => {
+      const uniqueId = hotel.hid || hotel.id;
+      if (seenIds.has(uniqueId)) {
+        return false; // Duplicate, skip
+      }
+      seenIds.add(uniqueId);
+      return true;
+    });
 
     // Apply price range filter (client-side only - not sent to server)
     filtered = filtered.filter(hotel => {
