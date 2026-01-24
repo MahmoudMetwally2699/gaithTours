@@ -686,45 +686,24 @@ class RateHawkService {
       if (page) apiPayload.page = parseInt(page);
       if (limit) apiPayload.limit = parseInt(limit);
 
-      // API-LEVEL FILTERS: Add to payload for server-side filtering
-      // This makes results much more accurate and faster
+      // NOTE: RateHawk SERP API does NOT support filtering by star_rating, meal, or facilities
+      // These filters are applied post-API using data from Content API (local DB enrichment)
+      // The filter params are still used in cache key generation for proper caching
+      // Keeping this code commented for reference in case API adds support later
+      /*
       if (stars && stars.length > 0) {
-        apiPayload.stars = stars;
-        console.log(`   🌟 API filter: stars = [${stars.join(', ')}]`);
+        apiPayload.star_rating = stars;
+        console.log(`   🌟 API filter: star_rating = [${stars.join(', ')}]`);
       }
-
-      // Map frontend meal filter values to RateHawk API format
       if (mealFilter && mealFilter.length > 0) {
-        // RateHawk API uses: 'nomeal', 'breakfast', 'halfboard', 'fullboard', 'allinclusive'
-        const mealMapping = {
-          'breakfast': 'breakfast',
-          'half_board': 'halfboard',
-          'full_board': 'fullboard',
-          'all_inclusive': 'allinclusive'
-        };
-        const apiMeals = mealFilter.map(m => mealMapping[m] || m).filter(Boolean);
-        if (apiMeals.length > 0) {
-          apiPayload.meal = apiMeals;
-          console.log(`   🍽️ API filter: meal = [${apiMeals.join(', ')}]`);
-        }
+        const mealMapping = { 'breakfast': 'breakfast', 'half_board': 'halfboard', 'full_board': 'fullboard', 'all_inclusive': 'allinclusive' };
+        apiPayload.meal = mealFilter.map(m => mealMapping[m] || m).filter(Boolean);
       }
-
-      // Map frontend facilities to RateHawk serp_filters
       if (facilitiesFilter && facilitiesFilter.length > 0) {
-        // RateHawk uses: 'has_internet', 'has_parking', 'has_pool', 'has_spa', 'has_fitness'
-        const facilityMapping = {
-          'free_wifi': 'has_internet',
-          'parking': 'has_parking',
-          'pool': 'has_pool',
-          'spa': 'has_spa',
-          'gym': 'has_fitness'
-        };
-        const serpFilters = facilitiesFilter.map(f => facilityMapping[f]).filter(Boolean);
-        if (serpFilters.length > 0) {
-          apiPayload.serp_filters = serpFilters;
-          console.log(`   🏊 API filter: serp_filters = [${serpFilters.join(', ')}]`);
-        }
+        const facilityMapping = { 'free_wifi': 'has_internet', 'parking': 'has_parking', 'pool': 'has_pool', 'spa': 'has_spa', 'gym': 'has_fitness' };
+        apiPayload.serp_filters = facilitiesFilter.map(f => facilityMapping[f]).filter(Boolean);
       }
+      */
 
       const response = await this.makeRequest('/search/serp/region/', 'POST', apiPayload);
 
