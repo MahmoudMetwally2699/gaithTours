@@ -1808,10 +1808,10 @@ export const HotelSearchResults: React.FC = () => {
                                 {(() => {
                                   const amenities = (hotel as any).amenities_data || [];
                                   const roomName = ((hotel as any).room_name || '').toLowerCase();
-                                  
+
                                   // Check for bed types in amenities_data
                                   const bedTypes: { type: string; label: string; icon: 'king' | 'queen' | 'twin' | 'single' | 'double' }[] = [];
-                                  
+
                                   if (amenities.includes('king-bed') || roomName.includes('king')) {
                                     bedTypes.push({ type: 'king', label: 'King bed', icon: 'king' });
                                   }
@@ -1827,9 +1827,9 @@ export const HotelSearchResults: React.FC = () => {
                                   if (amenities.includes('double-bed') || roomName.includes('double')) {
                                     bedTypes.push({ type: 'double', label: 'Double bed', icon: 'double' });
                                   }
-                                  
+
                                   if (bedTypes.length === 0) return null;
-                                  
+
                                   return (
                                     <div className="flex items-center gap-2 text-xs text-gray-600">
                                       <FontAwesomeIcon icon={faBed} className="w-4 h-4 text-gray-500" />
