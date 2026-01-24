@@ -16,6 +16,8 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBed, faBedPulse } from '@fortawesome/free-solid-svg-icons';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import "../components/DateRangePicker.css";
@@ -1802,14 +1804,39 @@ export const HotelSearchResults: React.FC = () => {
                                         {(hotel as any).room_name}
                                     </div>
                                 )}
-                                {(hotel as any).bed_type && (
+                                {/* Bed type from amenities_data or room_name */}
+                                {(() => {
+                                  const amenities = (hotel as any).amenities_data || [];
+                                  const roomName = ((hotel as any).room_name || '').toLowerCase();
+                                  
+                                  // Check for bed types in amenities_data
+                                  const bedTypes: { type: string; label: string; icon: 'king' | 'queen' | 'twin' | 'single' | 'double' }[] = [];
+                                  
+                                  if (amenities.includes('king-bed') || roomName.includes('king')) {
+                                    bedTypes.push({ type: 'king', label: 'King bed', icon: 'king' });
+                                  }
+                                  if (amenities.includes('queen-bed') || roomName.includes('queen')) {
+                                    bedTypes.push({ type: 'queen', label: 'Queen bed', icon: 'queen' });
+                                  }
+                                  if (amenities.includes('twin-bed') || roomName.includes('twin')) {
+                                    bedTypes.push({ type: 'twin', label: 'Twin beds', icon: 'twin' });
+                                  }
+                                  if (amenities.includes('single-bed') || roomName.includes('single')) {
+                                    bedTypes.push({ type: 'single', label: 'Single bed', icon: 'single' });
+                                  }
+                                  if (amenities.includes('double-bed') || roomName.includes('double')) {
+                                    bedTypes.push({ type: 'double', label: 'Double bed', icon: 'double' });
+                                  }
+                                  
+                                  if (bedTypes.length === 0) return null;
+                                  
+                                  return (
                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" className="w-4 h-4 text-gray-500" fill="currentColor">
-                                            <path d="M32 32c17.7 0 32 14.3 32 32l0 224 224 0 0-128c0-17.7 14.3-32 32-32l160 0c53 0 96 43 96 96l0 224c0 17.7-14.3 32-32 32s-32-14.3-32-32l0-64-448 0 0 64c0 17.7-14.3 32-32 32S0 465.7 0 448L0 64C0 46.3 14.3 32 32 32zm80 160a64 64 0 1 1 128 0 64 64 0 1 1 -128 0z"/>
-                                        </svg>
-                                        <span>{(hotel as any).bed_type}</span>
+                                      <FontAwesomeIcon icon={faBed} className="w-4 h-4 text-gray-500" />
+                                      <span>{bedTypes.map(b => b.label).join(' · ')}</span>
                                     </div>
-                                )}
+                                  );
+                                })()}
                             </div>
 
                             {/* Badges */}
