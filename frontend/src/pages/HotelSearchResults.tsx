@@ -1729,16 +1729,6 @@ export const HotelSearchResults: React.FC = () => {
                           : 'bg-white shadow-sm hover:shadow-md border border-gray-200'
                       }`}
                     >
-                      {/* Searched Hotel Badge */}
-                      {(hotel as any).isSearchedHotel && (
-                        <div className="absolute -top-0 left-4 z-10">
-                          <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-b-lg shadow-md flex items-center gap-1">
-                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        </div>
-                      )}
                       <div className={(hotel as any).isSearchedHotel ? 'bg-white rounded-[6px]' : ''}>
                       <div className="flex flex-col sm:flex-row h-full">
                         {/* Hotel Image with Heart Icon */}
