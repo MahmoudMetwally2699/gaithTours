@@ -286,8 +286,28 @@ router.get('/search', async (req, res) => {
       page = 1,
       limit = 20,
       currency = 'USD',
-      language = 'en'
+      language = 'en',
+      starRating = '', // Comma-separated star ratings, e.g., "2,3,4"
+      facilities = '', // Comma-separated facilities, e.g., "free_breakfast,free_wifi"
+      mealPlan = '', // Comma-separated meal plans, e.g., "breakfast,half_board"
+      cancellationPolicy = '', // "free_cancellation" or "non_refundable"
+      guestRating = '' // Minimum guest rating, e.g., "7", "8", "9"
     } = req.query;
+
+    // Parse star rating filter
+    const starRatingFilter = starRating ? starRating.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s) && s >= 1 && s <= 5) : [];
+
+    // Parse facilities filter
+    const facilitiesFilter = facilities ? facilities.split(',').map(f => f.trim()).filter(Boolean) : [];
+
+    // Parse meal plan filter
+    const mealPlanFilter = mealPlan ? mealPlan.split(',').map(m => m.trim()).filter(Boolean) : [];
+
+    // Parse cancellation policy filter
+    const cancellationPolicyFilter = cancellationPolicy.trim() || '';
+
+    // Parse guest rating filter (minimum score)
+    const guestRatingFilter = guestRating ? parseFloat(guestRating) : 0;
 
     // Smart detection: If destination contains Arabic characters, use 'ar'
     let finalLanguage = language;
@@ -304,8 +324,14 @@ router.get('/search', async (req, res) => {
     const limitNumber = parseInt(limit) || 20;
 
     // Generate cache key WITHOUT page number (cache all results together, paginate from cache)
-    // v7: Added "rated" suffix for city searches to separate filtered results from old unfiltered cache
-    const cacheKey = `v7_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
+    // v9: Added all filters to cache key
+    const starFilterKey = starRatingFilter.length > 0 ? `_stars${starRatingFilter.sort().join('')}` : '';
+    const facilitiesKey = facilitiesFilter.length > 0 ? `_fac${facilitiesFilter.sort().join('')}` : '';
+    const mealKey = mealPlanFilter.length > 0 ? `_meal${mealPlanFilter.sort().join('')}` : '';
+    const cancelKey = cancellationPolicyFilter ? `_cancel${cancellationPolicyFilter}` : '';
+    const guestKey = guestRatingFilter > 0 ? `_guest${guestRatingFilter}` : '';
+    const filterKey = `${starFilterKey}${facilitiesKey}${mealKey}${cancelKey}${guestKey}`;
+    const cacheKey = `v10_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}${filterKey}`;
 
     // PROGRESSIVE LOADING: Determine which batch we need
     // Batch 1 (pages 1-5): Hotels 0-99
@@ -489,11 +515,19 @@ router.get('/search', async (req, res) => {
     if (isCitySearch && searchResults.hotels) {
       const beforeFilter = searchResults.hotels.length;
       searchResults.hotels = searchResults.hotels.filter(hotel => {
-        const starRating = hotel.star_rating || hotel.starRating || 0;
-        return starRating > 0; // Only hotels with 1+ stars
+        const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
+        // If star rating filter is set, only include matching hotels
+        if (starRatingFilter.length > 0) {
+          return starRatingFilter.includes(hotelStarRating);
+        }
+        return hotelStarRating > 0; // Only hotels with 1+ stars
       });
       const afterFilter = searchResults.hotels.length;
-      console.log(`   ⭐ API Filter: Removed ${beforeFilter - afterFilter} unrated hotels from API (${afterFilter} rated remaining)`);
+      if (starRatingFilter.length > 0) {
+        console.log(`   ⭐ API Filter: Filtered to ${starRatingFilter.join(',')} star hotels (${afterFilter} remaining)`);
+      } else {
+        console.log(`   ⭐ API Filter: Removed ${beforeFilter - afterFilter} unrated hotels from API (${afterFilter} rated remaining)`);
+      }
     }
 
     // Step 3.5: Merge API results with DB hotels
@@ -508,7 +542,9 @@ router.get('/search', async (req, res) => {
       console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
 
       // Check cached city count first (1 hour TTL)
-      const countCacheKey = `count_rated_${cityName}`;
+      // Include star filter in cache key
+      const starFilterSuffix = starRatingFilter.length > 0 ? `_stars${starRatingFilter.sort().join('')}` : '';
+      const countCacheKey = `count_rated_${cityName}${starFilterSuffix}`;
 
       const cachedCount = cityCountCache.get(countCacheKey);
       if (cachedCount && Date.now() - cachedCount.timestamp < CITY_COUNT_TTL) {
@@ -517,9 +553,15 @@ router.get('/search', async (req, res) => {
       } else {
         // Build query based on search type
         const countQuery = {
-          city: { $regex: new RegExp(`^${cityName}$`, 'i') },
-          starRating: { $gt: 0 } // Only rated hotels for city searches
+          city: { $regex: new RegExp(`^${cityName}$`, 'i') }
         };
+
+        // Apply star rating filter or default to rated hotels only
+        if (starRatingFilter.length > 0) {
+          countQuery.starRating = { $in: starRatingFilter };
+        } else {
+          countQuery.starRating = { $gt: 0 }; // Only rated hotels for city searches
+        }
 
         totalHotelsInDB = await HotelContent.countDocuments(countQuery);
         cityCountCache.set(countCacheKey, { count: totalHotelsInDB, timestamp: Date.now() });
@@ -561,6 +603,12 @@ router.get('/search', async (req, res) => {
     // For city searches, only fetch rated hotels from DB
     if (isCitySearch) {
       dbQuery.starRating = { $gt: 0 }; // Only rated hotels
+    }
+
+    // Apply star rating filter if provided
+    if (starRatingFilter.length > 0) {
+      dbQuery.starRating = { $in: starRatingFilter };
+      console.log(`   ⭐ Filtering DB by star rating: ${starRatingFilter.join(', ')}`);
     }
 
     const localHotels = await HotelContent.find(dbQuery)
@@ -606,16 +654,132 @@ router.get('/search', async (req, res) => {
 
     console.log(`   ✅ Total combined: ${allHotels.length} hotels (DB has ${totalHotelsInDB} total)`);
 
-    // QUALITY FILTER: For city searches, only show hotels with star ratings (skip unrated)
-    // But if searching for a specific hotel, show it even if unrated
+    // Debug: Log sample hotel data structures for filter debugging
+    if (allHotels.length > 0 && (facilitiesFilter.length > 0 || mealPlanFilter.length > 0 || cancellationPolicyFilter)) {
+      const sampleHotel = allHotels[0];
+      console.log(`   🔍 Filter debug - Sample hotel fields:`);
+      console.log(`      meal: "${sampleHotel.meal}", free_cancellation: ${sampleHotel.free_cancellation}, no_prepayment: ${sampleHotel.no_prepayment}`);
+      console.log(`      serp_filters: ${JSON.stringify(sampleHotel.serp_filters || [])}`);
+      console.log(`      amenities: ${JSON.stringify((sampleHotel.amenities || []).slice(0, 5))}${(sampleHotel.amenities || []).length > 5 ? '...' : ''}`);
+    }
+
+    // COMPREHENSIVE FILTER: Apply all filters to the combined results
     if (isCitySearch) {
       const beforeFilter = allHotels.length;
+
       allHotels = allHotels.filter(hotel => {
-        const starRating = hotel.star_rating || hotel.starRating || 0;
-        return starRating > 0; // Only hotels with 1+ stars
+        const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
+
+        // Star rating filter
+        if (starRatingFilter.length > 0) {
+          if (!starRatingFilter.includes(hotelStarRating)) return false;
+        } else if (hotelStarRating <= 0) {
+          return false; // Only rated hotels for city searches
+        }
+
+        // Guest rating filter (review score)
+        if (guestRatingFilter > 0) {
+          const reviewScore = hotel.review_score || hotel.reviewScore || hotel.rating || 0;
+          if (reviewScore < guestRatingFilter) return false;
+        }
+
+        // Cancellation policy filter
+        // ETG API: free_cancellation is boolean set from free_cancellation_before being not null
+        if (cancellationPolicyFilter === 'free_cancellation') {
+          // Check the free_cancellation field which is set in RateHawkService
+          const hasFreeCancellation = hotel.free_cancellation === true;
+          if (!hasFreeCancellation) return false;
+        } else if (cancellationPolicyFilter === 'non_refundable') {
+          const hasFreeCancellation = hotel.free_cancellation === true;
+          if (hasFreeCancellation) return false;
+        }
+
+        // Meal plan filter
+        // ETG API meal values: 'nomeal', 'breakfast', 'halfboard', 'fullboard', 'allinclusive'
+        if (mealPlanFilter.length > 0) {
+          const hotelMeal = (hotel.meal || '').toLowerCase();
+          const hasMatchingMeal = mealPlanFilter.some(meal => {
+            switch (meal) {
+              case 'breakfast':
+                // ETG meal value is exactly 'breakfast'
+                return hotelMeal === 'breakfast';
+              case 'half_board':
+                // ETG meal value is 'halfboard' (no underscore)
+                return hotelMeal === 'halfboard' || hotelMeal === 'half_board';
+              case 'full_board':
+                // ETG meal value is 'fullboard' (no underscore)
+                return hotelMeal === 'fullboard' || hotelMeal === 'full_board';
+              case 'all_inclusive':
+                // ETG meal value is 'allinclusive' (no underscore)
+                return hotelMeal === 'allinclusive' || hotelMeal === 'all_inclusive';
+              default:
+                return false;
+            }
+          });
+          if (!hasMatchingMeal) return false;
+        }
+
+        // Facilities filter
+        // Check amenities from hotel content and serp_filters from API
+        if (facilitiesFilter.length > 0) {
+          const hotelAmenities = (hotel.amenities || []).concat(hotel.facilities || []);
+          const amenitiesLower = hotelAmenities.map(a => (a || '').toLowerCase());
+          // ETG serp_filters: 'has_bathroom', 'has_internet', 'has_parking', 'has_pool', etc.
+          const serpFilters = (hotel.serp_filters || []).map(f => (f || '').toLowerCase());
+
+          const hasAllFacilities = facilitiesFilter.every(facility => {
+            switch (facility) {
+              case 'free_breakfast':
+                // Check if meal includes breakfast (ETG meal value)
+                const hotelMealForBreakfast = (hotel.meal || '').toLowerCase();
+                return hotelMealForBreakfast === 'breakfast' ||
+                       hotelMealForBreakfast === 'halfboard' ||
+                       hotelMealForBreakfast === 'fullboard' ||
+                       hotelMealForBreakfast === 'allinclusive' ||
+                       amenitiesLower.some(a => a.includes('breakfast'));
+              case 'free_cancellation':
+                return hotel.free_cancellation === true;
+              case 'no_prepayment':
+                return hotel.no_prepayment === true;
+              case 'free_wifi':
+                // Check serp_filters for 'has_internet' or amenities
+                return serpFilters.includes('has_internet') ||
+                       amenitiesLower.some(a => a.includes('wifi') || a.includes('internet') || a.includes('wi-fi'));
+              case 'parking':
+                return serpFilters.includes('has_parking') ||
+                       amenitiesLower.some(a => a.includes('parking'));
+              case 'pool':
+                return serpFilters.includes('has_pool') ||
+                       amenitiesLower.some(a => a.includes('pool') || a.includes('swimming'));
+              case 'spa':
+                return serpFilters.includes('has_spa') ||
+                       amenitiesLower.some(a => a.includes('spa') || a.includes('wellness'));
+              case 'gym':
+                return serpFilters.includes('has_fitness') ||
+                       amenitiesLower.some(a => a.includes('gym') || a.includes('fitness'));
+              default:
+                return true;
+            }
+          });
+          if (!hasAllFacilities) return false;
+        }
+
+        return true;
       });
+
       const afterFilter = allHotels.length;
-      console.log(`   ⭐ City search: Filtered out ${beforeFilter - afterFilter} unrated hotels (${afterFilter} rated hotels remaining)`);
+      const filtersApplied = [];
+      if (starRatingFilter.length > 0) filtersApplied.push(`stars:${starRatingFilter.join(',')}`);
+      if (guestRatingFilter > 0) filtersApplied.push(`rating:${guestRatingFilter}+`);
+      if (cancellationPolicyFilter) filtersApplied.push(`cancel:${cancellationPolicyFilter}`);
+      if (mealPlanFilter.length > 0) filtersApplied.push(`meal:${mealPlanFilter.join(',')}`);
+      if (facilitiesFilter.length > 0) filtersApplied.push(`facilities:${facilitiesFilter.join(',')}`);
+
+      if (filtersApplied.length > 0) {
+        console.log(`   🔍 Filters applied: [${filtersApplied.join('] [')}] → ${afterFilter} hotels remaining`);
+      } else {
+        console.log(`   ⭐ City search: Filtered out ${beforeFilter - afterFilter} unrated hotels (${afterFilter} rated hotels remaining)`);
+      }
     } else {
       console.log(`   🏨 Hotel search: Showing all hotels including unrated`);
     }

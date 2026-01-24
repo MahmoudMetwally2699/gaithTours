@@ -779,7 +779,11 @@ class RateHawkService {
         // Rate policies for filters
         free_cancellation: isFreeCancellation,
         no_prepayment: isNoPrepayment,
-        payment_options: paymentOptions
+        payment_options: paymentOptions,
+        // ETG serp_filters for facility filtering (e.g., 'has_bathroom', 'has_internet', 'has_parking')
+        serp_filters: lowestRate?.serp_filters || [],
+        // Room amenities data for filtering
+        amenities_data: lowestRate?.amenities_data || []
       };
     });
 

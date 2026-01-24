@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -202,6 +202,24 @@ export const HotelSearchResults: React.FC = () => {
     guestRating: 0
   });
 
+  // Collapsible filter sections state - budget, stars, facilities open by default
+  const [expandedFilters, setExpandedFilters] = useState<Record<string, boolean>>({
+    budget: true,
+    stars: true,
+    facilities: false,
+    mealPlan: false,
+    cancellation: false,
+    guestRating: false
+  });
+
+  const toggleFilterSection = (section: string) => {
+    setExpandedFilters(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Performance optimization: skip animations when many hotels need to render
+  const [skipAnimations, setSkipAnimations] = useState(false);
+  const prevFilteredCountRef = useRef<number>(0);
+
   // Autocomplete state
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({ hotels: [], regions: [] });
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -393,7 +411,12 @@ export const HotelSearchResults: React.FC = () => {
             adults: searchQuery.adults,
             children: searchQuery.children > 0 ? searchQuery.children : undefined,
             currency: currency,
-            language: /[\u0600-\u06FF]/.test(searchQuery.destination) ? 'ar' : (i18n.language || 'en')
+            language: /[\u0600-\u06FF]/.test(searchQuery.destination) ? 'ar' : (i18n.language || 'en'),
+            starRating: filters.starRating.length > 0 ? filters.starRating : undefined,
+            facilities: filters.facilities.length > 0 ? filters.facilities : undefined,
+            mealPlan: filters.mealPlan.length > 0 ? filters.mealPlan : undefined,
+            cancellationPolicy: filters.cancellationPolicy !== 'any' ? filters.cancellationPolicy : undefined,
+            guestRating: filters.guestRating > 0 ? filters.guestRating : undefined
           }
         );
 
@@ -421,7 +444,27 @@ export const HotelSearchResults: React.FC = () => {
     };
 
     performSearch();
-  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currency, i18n.language, currentPage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery.destination, searchQuery.checkIn, searchQuery.checkOut, searchQuery.adults, searchQuery.children, currency, i18n.language, currentPage,
+      filters.starRating.join(','), filters.facilities.join(','), filters.mealPlan.join(','), filters.cancellationPolicy, filters.guestRating]);
+
+  // Build a filter signature for change detection
+  const getFilterSignature = useCallback(() => {
+    return `${filters.starRating.join(',')}_${filters.facilities.join(',')}_${filters.mealPlan.join(',')}_${filters.cancellationPolicy}_${filters.guestRating}`;
+  }, [filters.starRating, filters.facilities, filters.mealPlan, filters.cancellationPolicy, filters.guestRating]);
+
+  // Reset to page 1 when any server-side filter changes (triggers new server-side search)
+  const prevFilterSignatureRef = useRef<string>('');
+  useEffect(() => {
+    const currentSignature = getFilterSignature();
+    if (prevFilterSignatureRef.current !== '' && prevFilterSignatureRef.current !== currentSignature) {
+      // Filter changed - reset to page 1 and clear hotels
+      setCurrentPage(1);
+      setHotels([]);
+      console.log('🔍 Filter changed, resetting search');
+    }
+    prevFilterSignatureRef.current = currentSignature;
+  }, [getFilterSignature]);
 
   // Infinite Scroll: Detect when user scrolls near bottom
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -471,100 +514,16 @@ export const HotelSearchResults: React.FC = () => {
   }, [maxPrice]);
 
   // Filter and sort hotels
+  // NOTE: Most filters (star rating, facilities, meal plan, cancellation, guest rating)
+  // are now handled server-side. Only price range filter is applied client-side.
   const filteredHotels = useMemo(() => {
     let filtered = [...hotels];
 
-    // Apply star rating filter
-    if (filters.starRating.length > 0) {
-      filtered = filtered.filter(hotel => {
-        const starRating = (hotel as any).star_rating || Math.floor(hotel.rating);
-        return filters.starRating.includes(starRating);
-      });
-    }
-
-    // Apply facilities filter
-    if (filters.facilities.length > 0) {
-      filtered = filtered.filter(hotel => {
-        const hotelData = hotel as any;
-        const amenities = (hotelData.amenities || []).concat(hotelData.facilities || []);
-
-        return filters.facilities.every(facility => {
-          switch (facility) {
-            case 'free_breakfast':
-              return hotelData.meal_included || hotelData.meal === 'breakfast' || hotelData.breakfast_included;
-            case 'free_cancellation':
-              return hotelData.free_cancellation || hotelData.cancellation_policy === 'free';
-            case 'no_prepayment':
-              return hotelData.no_prepayment || hotelData.payment_options?.pay_at_hotel;
-            case 'free_wifi':
-              return hotelData.free_wifi || amenities.some((a: string) => a.toLowerCase().includes('wifi') || a.toLowerCase().includes('internet'));
-            case 'parking':
-              return hotelData.parking || amenities.some((a: string) => a.toLowerCase().includes('parking'));
-            case 'pool':
-              return hotelData.pool || amenities.some((a: string) => a.toLowerCase().includes('pool') || a.toLowerCase().includes('swimming'));
-            case 'spa':
-              return hotelData.spa || amenities.some((a: string) => a.toLowerCase().includes('spa') || a.toLowerCase().includes('wellness'));
-            case 'gym':
-              return hotelData.gym || amenities.some((a: string) => a.toLowerCase().includes('gym') || a.toLowerCase().includes('fitness'));
-            default:
-              return true;
-          }
-        });
-      });
-    }
-
-    // Apply price range filter
+    // Apply price range filter (client-side only - not sent to server)
     filtered = filtered.filter(hotel => {
       if (!hotel.price || hotel.price === 0) return true;
       return hotel.price >= filters.priceRange[0] && hotel.price <= filters.priceRange[1];
     });
-
-    // Apply meal plan filter
-    if (filters.mealPlan.length > 0) {
-      filtered = filtered.filter(hotel => {
-        const hotelData = hotel as any;
-        const hotelMeal = (hotelData.meal || hotelData.mealType || '').toLowerCase();
-        return filters.mealPlan.some(meal => {
-          switch (meal) {
-            case 'breakfast':
-              return hotelMeal.includes('breakfast') || hotelData.breakfast_included;
-            case 'half_board':
-              return hotelMeal.includes('half') || hotelMeal === 'hb';
-            case 'full_board':
-              return hotelMeal.includes('full') || hotelMeal === 'fb';
-            case 'all_inclusive':
-              return hotelMeal.includes('all') || hotelMeal === 'ai';
-            default:
-              return false;
-          }
-        });
-      });
-    }
-
-    // Apply cancellation policy filter
-    if (filters.cancellationPolicy !== 'any') {
-      filtered = filtered.filter(hotel => {
-        const hotelData = hotel as any;
-        if (filters.cancellationPolicy === 'free_cancellation') {
-          return hotelData.free_cancellation ||
-                 hotelData.freeCancellation ||
-                 hotelData.cancellation_policy === 'free' ||
-                 (hotelData.free_cancellation_before && new Date(hotelData.free_cancellation_before) > new Date());
-        } else if (filters.cancellationPolicy === 'non_refundable') {
-          return !hotelData.free_cancellation && !hotelData.freeCancellation;
-        }
-        return true;
-      });
-    }
-
-    // Apply guest rating filter
-    if (filters.guestRating > 0) {
-      filtered = filtered.filter(hotel => {
-        const hotelData = hotel as any;
-        const guestScore = hotelData.review_score || hotelData.guestRating || hotel.rating || 0;
-        return guestScore >= filters.guestRating;
-      });
-    }
 
     // Sort hotels - always keep searched hotel first
     filtered.sort((a, b) => {
@@ -596,6 +555,45 @@ export const HotelSearchResults: React.FC = () => {
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotels, filters]);
+
+  // Check if any filters are active (for UI decisions like showing skeletons)
+  const hasActiveFilters = useMemo(() => {
+    return filters.starRating.length > 0 ||
+           filters.facilities.length > 0 ||
+           filters.guestRating > 0 ||
+           filters.mealPlan.length > 0 ||
+           filters.cancellationPolicy !== 'any';
+  }, [filters.starRating, filters.facilities, filters.guestRating, filters.mealPlan, filters.cancellationPolicy]);
+
+  // Performance optimization: skip animations when filter change causes many hotels to appear at once
+  useEffect(() => {
+    const currentCount = filteredHotels.length;
+    const prevCount = prevFilteredCountRef.current;
+
+    // If going from few hotels to many (filter removed), skip animations
+    if (currentCount > 30 && currentCount > prevCount * 2) {
+      setSkipAnimations(true);
+      // Re-enable animations after a short delay
+      const timer = setTimeout(() => setSkipAnimations(false), 500);
+      return () => clearTimeout(timer);
+    }
+
+    prevFilteredCountRef.current = currentCount;
+  }, [filteredHotels.length]);
+
+  // Optimized star rating toggle handler
+  const handleStarRatingToggle = useCallback((star: number) => {
+    setFilters(prev => {
+      const newStarRating = prev.starRating.includes(star)
+        ? prev.starRating.filter(s => s !== star)
+        : [...prev.starRating, star];
+
+      return {
+        ...prev,
+        starRating: newStarRating
+      };
+    });
+  }, []);
 
   const handleHotelClick = (hotel: Hotel) => {
     const hotelIdentifier = hotel.hid || hotel.id;
@@ -1307,9 +1305,9 @@ export const HotelSearchResults: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
                 {searchQuery.destination}: {totalHotels.toLocaleString()} properties found
-                {hotels.length > 0 && hotels.length < totalHotels && (
+                {hotels.length > 0 && (
                   <span className="ml-2 text-xs sm:text-sm font-normal text-gray-600">
-                    (Showing {hotels.length})
+                    (Showing {filteredHotels.length} of {hotels.length} loaded)
                   </span>
                 )}
               </h1>
@@ -1411,181 +1409,236 @@ export const HotelSearchResults: React.FC = () => {
               )}
 
               {/* Budget Filter with Histogram */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Your budget (per night)</h3>
+              <div className="mb-4 border-b border-gray-200 pb-4">
+                <button
+                  onClick={() => toggleFilterSection('budget')}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
+                >
+                  <span>Your budget (per night)</span>
+                  <svg className={`w-4 h-4 transition-transform ${expandedFilters.budget ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                {/* Histogram */}
-                <div className="h-16 flex items-end gap-0.5 mb-2">
-                  {budgetHistogram.map((height, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 bg-orange-200 rounded-t-sm transition-all"
-                      style={{ height: `${Math.max(height, 5)}%` }}
+                {expandedFilters.budget && (
+                  <>
+                    {/* Histogram */}
+                    <div className="h-16 flex items-end gap-0.5 mb-2">
+                      {budgetHistogram.map((height, i) => (
+                        <div
+                          key={i}
+                          className="flex-1 bg-orange-200 rounded-t-sm transition-all"
+                          style={{ height: `${Math.max(height, 5)}%` }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Slider */}
+                    <input
+                      type="range"
+                      min="0"
+                      max={maxPrice}
+                      value={filters.priceRange[1]}
+                      onChange={(e) => setFilters(prev => ({
+                        ...prev,
+                        priceRange: [0, parseInt(e.target.value)]
+                      }))}
+                      className="w-full accent-orange-500"
                     />
-                  ))}
-                </div>
-
-                {/* Slider */}
-                <input
-                  type="range"
-                  min="0"
-                  max={maxPrice}
-                  value={filters.priceRange[1]}
-                  onChange={(e) => setFilters(prev => ({
-                    ...prev,
-                    priceRange: [0, parseInt(e.target.value)]
-                  }))}
-                  className="w-full accent-orange-500"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>{currencySymbol} 0</span>
-                  <span>{currencySymbol} {filters.priceRange[1].toLocaleString()}</span>
-                </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>{currencySymbol} 0</span>
+                      <span>{currencySymbol} {filters.priceRange[1].toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Star Rating */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Hotel Stars</h3>
-                <div className="flex flex-wrap gap-2">
-                  {[5, 4, 3, 2, 1].map(star => (
-                    <button
-                      key={star}
-                      onClick={() => {
-                        if (filters.starRating.includes(star)) {
-                          setFilters(prev => ({
-                            ...prev,
-                            starRating: prev.starRating.filter(s => s !== star)
-                          }));
-                        } else {
-                          setFilters(prev => ({
-                            ...prev,
-                            starRating: [...prev.starRating, star]
-                          }));
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded border text-sm flex items-center gap-1 transition-colors ${
-                        filters.starRating.includes(star)
-                          ? 'bg-orange-500 border-orange-500 text-white'
-                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-300'
-                      }`}
-                    >
-                      {star} <StarIconSolid className="h-3 w-3" />
-                    </button>
-                  ))}
-                </div>
+              <div className="mb-4 border-b border-gray-200 pb-4">
+                <button
+                  onClick={() => toggleFilterSection('stars')}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
+                >
+                  <span>Hotel Stars {filters.starRating.length > 0 && <span className="text-orange-500 ml-1">({filters.starRating.length})</span>}</span>
+                  <svg className={`w-4 h-4 transition-transform ${expandedFilters.stars ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandedFilters.stars && (
+                  <div className="flex flex-wrap gap-2">
+                    {[5, 4, 3, 2, 1].map(star => (
+                      <button
+                        key={star}
+                        onClick={() => handleStarRatingToggle(star)}
+                        className={`px-3 py-1.5 rounded border text-sm flex items-center gap-1 transition-colors ${
+                          filters.starRating.includes(star)
+                            ? 'bg-orange-500 border-orange-500 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-orange-300'
+                        }`}
+                      >
+                        {star} <StarIconSolid className="h-3 w-3" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Facilities */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Facilities</h3>
-                <div className="space-y-2">
-                  {facilityOptions.slice(0, 6).map(facility => (
-                    <label key={facility.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.facilities.includes(facility.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFilters(prev => ({
-                              ...prev,
-                              facilities: [...prev.facilities, facility.id]
-                            }));
-                          } else {
-                            setFilters(prev => ({
-                              ...prev,
-                              facilities: prev.facilities.filter(f => f !== facility.id)
-                            }));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-700">{facility.label}</span>
-                    </label>
-                  ))}
-                </div>
+              <div className="mb-4 border-b border-gray-200 pb-4">
+                <button
+                  onClick={() => toggleFilterSection('facilities')}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
+                >
+                  <span>Facilities {filters.facilities.length > 0 && <span className="text-orange-500 ml-1">({filters.facilities.length})</span>}</span>
+                  <svg className={`w-4 h-4 transition-transform ${expandedFilters.facilities ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandedFilters.facilities && (
+                  <div className="space-y-2">
+                    {facilityOptions.slice(0, 6).map(facility => (
+                      <label key={facility.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.facilities.includes(facility.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFilters(prev => ({
+                                ...prev,
+                                facilities: [...prev.facilities, facility.id]
+                              }));
+                            } else {
+                              setFilters(prev => ({
+                                ...prev,
+                                facilities: prev.facilities.filter(f => f !== facility.id)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{facility.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Meal Plan Filter */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Meal Plan</h3>
-                <div className="space-y-2">
-                  {[
-                    { id: 'breakfast', label: 'Breakfast included' },
-                    { id: 'half_board', label: 'Half board' },
-                    { id: 'full_board', label: 'Full board' },
-                    { id: 'all_inclusive', label: 'All inclusive' }
-                  ].map(meal => (
-                    <label key={meal.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={filters.mealPlan.includes(meal.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFilters(prev => ({
-                              ...prev,
-                              mealPlan: [...prev.mealPlan, meal.id]
-                            }));
-                          } else {
-                            setFilters(prev => ({
-                              ...prev,
-                              mealPlan: prev.mealPlan.filter(m => m !== meal.id)
-                            }));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-700">{meal.label}</span>
-                    </label>
-                  ))}
-                </div>
+              <div className="mb-4 border-b border-gray-200 pb-4">
+                <button
+                  onClick={() => toggleFilterSection('mealPlan')}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
+                >
+                  <span>Meal Plan {filters.mealPlan.length > 0 && <span className="text-orange-500 ml-1">({filters.mealPlan.length})</span>}</span>
+                  <svg className={`w-4 h-4 transition-transform ${expandedFilters.mealPlan ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandedFilters.mealPlan && (
+                  <div className="space-y-2">
+                    {[
+                      { id: 'breakfast', label: 'Breakfast included' },
+                      { id: 'half_board', label: 'Half board' },
+                      { id: 'full_board', label: 'Full board' },
+                      { id: 'all_inclusive', label: 'All inclusive' }
+                    ].map(meal => (
+                      <label key={meal.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.mealPlan.includes(meal.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFilters(prev => ({
+                                ...prev,
+                                mealPlan: [...prev.mealPlan, meal.id]
+                              }));
+                            } else {
+                              setFilters(prev => ({
+                                ...prev,
+                                mealPlan: prev.mealPlan.filter(m => m !== meal.id)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{meal.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Cancellation Policy Filter */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Cancellation Policy</h3>
-                <div className="space-y-2">
-                  {[
-                    { id: 'any', label: 'Any' },
-                    { id: 'free_cancellation', label: 'Free cancellation' },
-                    { id: 'non_refundable', label: 'Non-refundable' }
-                  ].map(policy => (
-                    <label key={policy.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cancellationPolicy"
-                        checked={filters.cancellationPolicy === policy.id}
-                        onChange={() => setFilters(prev => ({ ...prev, cancellationPolicy: policy.id }))}
-                        className="border-gray-300 text-orange-500 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-700">{policy.label}</span>
-                    </label>
-                  ))}
-                </div>
+              <div className="mb-4 border-b border-gray-200 pb-4">
+                <button
+                  onClick={() => toggleFilterSection('cancellation')}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
+                >
+                  <span>Cancellation Policy {filters.cancellationPolicy !== 'any' && <span className="text-orange-500 ml-1">(1)</span>}</span>
+                  <svg className={`w-4 h-4 transition-transform ${expandedFilters.cancellation ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandedFilters.cancellation && (
+                  <div className="space-y-2">
+                    {[
+                      { id: 'any', label: 'Any' },
+                      { id: 'free_cancellation', label: 'Free cancellation' },
+                      { id: 'non_refundable', label: 'Non-refundable' }
+                    ].map(policy => (
+                      <label key={policy.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="cancellationPolicy"
+                          checked={filters.cancellationPolicy === policy.id}
+                          onChange={() => setFilters(prev => ({ ...prev, cancellationPolicy: policy.id }))}
+                          className="border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{policy.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Guest Rating Filter */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Guest Rating</h3>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { value: 0, label: 'Any' },
-                    { value: 7, label: '7+' },
-                    { value: 8, label: '8+' },
-                    { value: 9, label: '9+' }
-                  ].map(rating => (
-                    <button
-                      key={rating.value}
-                      onClick={() => setFilters(prev => ({ ...prev, guestRating: rating.value }))}
-                      className={`px-3 py-1.5 rounded border text-sm transition-colors ${
-                        filters.guestRating === rating.value
-                          ? 'bg-orange-500 border-orange-500 text-white'
-                          : 'bg-white border-gray-300 text-gray-700 hover:border-orange-300'
-                      }`}
-                    >
-                      {rating.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="mb-4">
+                <button
+                  onClick={() => toggleFilterSection('guestRating')}
+                  className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
+                >
+                  <span>Guest Rating {filters.guestRating > 0 && <span className="text-orange-500 ml-1">({filters.guestRating}+)</span>}</span>
+                  <svg className={`w-4 h-4 transition-transform ${expandedFilters.guestRating ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {expandedFilters.guestRating && (
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 0, label: 'Any' },
+                      { value: 7, label: '7+' },
+                      { value: 8, label: '8+' },
+                      { value: 9, label: '9+' }
+                    ].map(rating => (
+                      <button
+                        key={rating.value}
+                        onClick={() => setFilters(prev => ({ ...prev, guestRating: rating.value }))}
+                        className={`px-3 py-1.5 rounded border text-sm transition-colors ${
+                          filters.guestRating === rating.value
+                            ? 'bg-orange-500 border-orange-500 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-orange-300'
+                        }`}
+                      >
+                        {rating.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button
@@ -1654,7 +1707,7 @@ export const HotelSearchResults: React.FC = () => {
 
             {/* Hotel Cards */}
             {!loading && !error && (
-              <div className="space-y-4">
+              <div className="space-y-4" key={`hotels-${filters.starRating.join('-')}-${filters.facilities.join('-')}-${filters.guestRating}`}>
                 {filteredHotels.length === 0 ? (
                   <div className="bg-white rounded-lg shadow-sm p-12 text-center">
                     <BuildingOfficeIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -1665,9 +1718,9 @@ export const HotelSearchResults: React.FC = () => {
                   filteredHotels.map((hotel, index) => (
                     <motion.div
                       key={hotel.id}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={skipAnimations ? false : { opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: (index % 10) * 0.05 }}
+                      transition={skipAnimations ? { duration: 0 } : { duration: 0.3, delay: Math.min(index, 10) * 0.03 }}
                       className={`rounded-lg overflow-hidden transition-all duration-300 relative ${
                         (hotel as any).isSearchedHotel
                           ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
@@ -1769,12 +1822,16 @@ export const HotelSearchResults: React.FC = () => {
                                         Free cancellation
                                     </div>
                                 )}
-                                {((hotel as any).meal_included || (hotel as any).meal === 'breakfast' || (hotel as any).breakfast_included) && (
+                                {/* Meal type badge - ETG meal values: 'breakfast', 'halfboard', 'fullboard', 'allinclusive' */}
+                                {(hotel as any).meal && (hotel as any).meal !== 'nomeal' && (
                                     <div className="flex items-center gap-1 text-xs font-bold text-green-700">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                                         </svg>
-                                        Breakfast included
+                                        {(hotel as any).meal === 'breakfast' && 'Breakfast included'}
+                                        {(hotel as any).meal === 'halfboard' && 'Half board'}
+                                        {(hotel as any).meal === 'fullboard' && 'Full board'}
+                                        {(hotel as any).meal === 'allinclusive' && 'All inclusive'}
                                     </div>
                                 )}
                             </div>
@@ -1835,7 +1892,8 @@ export const HotelSearchResults: React.FC = () => {
 
                 {/* Infinite Scroll Loading Indicator */}
                 <div ref={loadMoreRef} className="py-4 relative" style={{ minHeight: '100px' }}>
-                  {hasMore && hotels.length > 0 && (
+                  {/* Only show skeletons if no filters are active - otherwise we're just filtering loaded hotels */}
+                  {hasMore && hotels.length > 0 && !hasActiveFilters && (
                     <div className="space-y-4 relative">
                       {/* Skeleton hotel cards - always show when more content available */}
                       {[1, 2, 3, 4, 5].map((i) => (
@@ -1872,6 +1930,27 @@ export const HotelSearchResults: React.FC = () => {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {/* Show message when filters are active and there are more hotels but filtered results are complete */}
+                  {hasMore && hotels.length > 0 && hasActiveFilters && filteredHotels.length < hotels.length && (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-gray-600 font-medium">
+                        Showing {filteredHotels.length} filtered results from {hotels.length} loaded hotels
+                      </p>
+                      <button
+                        onClick={() => setFilters(prev => ({
+                          ...prev,
+                          starRating: [],
+                          facilities: [],
+                          guestRating: 0,
+                          mealPlan: [],
+                          cancellationPolicy: 'any'
+                        }))}
+                        className="text-orange-500 hover:text-orange-600 text-sm mt-2 underline"
+                      >
+                        Clear filters to see all hotels
+                      </button>
                     </div>
                   )}
                   {!hasMore && hotels.length > 0 && (
@@ -1928,19 +2007,7 @@ export const HotelSearchResults: React.FC = () => {
                   {[5, 4, 3, 2, 1].map(star => (
                     <button
                       key={star}
-                      onClick={() => {
-                        if (filters.starRating.includes(star)) {
-                          setFilters(prev => ({
-                            ...prev,
-                            starRating: prev.starRating.filter(s => s !== star)
-                          }));
-                        } else {
-                          setFilters(prev => ({
-                            ...prev,
-                            starRating: [...prev.starRating, star]
-                          }));
-                        }
-                      }}
+                      onClick={() => handleStarRatingToggle(star)}
                       className={`px-3 py-1.5 rounded border text-sm flex items-center gap-1 ${
                         filters.starRating.includes(star)
                           ? 'bg-orange-500 border-orange-500 text-white'

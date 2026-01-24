@@ -18,6 +18,11 @@ interface SearchOptions {
     children?: number | string;
     currency?: string;
     language?: string;
+    starRating?: number[]; // Filter by star ratings (e.g., [2, 3, 4])
+    facilities?: string[]; // Filter by facilities (e.g., ['free_wifi', 'pool'])
+    mealPlan?: string[]; // Filter by meal plan (e.g., ['breakfast', 'half_board'])
+    cancellationPolicy?: string; // 'free_cancellation' or 'non_refundable'
+    guestRating?: number; // Minimum guest rating (7, 8, or 9)
 }
 
 const searchHotels = async (
@@ -52,6 +57,21 @@ const searchHotels = async (
         if (options?.children) params.append('children', options.children?.toString() || '');
         if (options?.currency) params.append('currency', options.currency);
         if (options?.language) params.append('language', options.language);
+        if (options?.starRating && options.starRating.length > 0) {
+            params.append('starRating', options.starRating.join(','));
+        }
+        if (options?.facilities && options.facilities.length > 0) {
+            params.append('facilities', options.facilities.join(','));
+        }
+        if (options?.mealPlan && options.mealPlan.length > 0) {
+            params.append('mealPlan', options.mealPlan.join(','));
+        }
+        if (options?.cancellationPolicy && options.cancellationPolicy !== 'any') {
+            params.append('cancellationPolicy', options.cancellationPolicy);
+        }
+        if (options?.guestRating && options.guestRating > 0) {
+            params.append('guestRating', options.guestRating.toString());
+        }
 
         const url = `${API_BASE_URL}/hotels/search?${params.toString()}`;
 
