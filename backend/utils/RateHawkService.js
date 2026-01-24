@@ -40,7 +40,8 @@ class RateHawkService {
     // Rate limiting and circuit breaker
     this.requestQueue = [];
     this.isProcessingQueue = false;
-    this.requestDelay = 200; // Minimum ms between requests (increased from 100ms)
+    // RateHawk limit: 10 requests per 60 seconds = 1 request per 6 seconds minimum
+    this.requestDelay = 6000; // 6 seconds between requests to stay under rate limit
     this.lastRequestTime = 0;
 
     // Circuit breaker pattern
@@ -644,9 +645,12 @@ class RateHawkService {
       facilitiesFilter = null // Array of facility filters ['free_wifi', 'parking', etc.]
     } = params;
 
-    // Generate cache key for this search (including filters for separate caching)
-    const filterKey = `${stars ? '_s' + stars.join('') : ''}${mealFilter ? '_m' + mealFilter.join('') : ''}${facilitiesFilter ? '_f' + facilitiesFilter.join('') : ''}`;
-    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency, page, limit }) + filterKey;
+    // Generate cache key for this search
+    // NOTE: Filters are NOT included in cache key because:
+    // 1. RateHawk SERP API doesn't support filtering
+    // 2. We filter post-API in hotels.js
+    // 3. This allows ONE API call to serve ALL filter variations → reduces rate limits
+    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency, page, limit });
     const now = Date.now();
 
     // Check fresh cache first
