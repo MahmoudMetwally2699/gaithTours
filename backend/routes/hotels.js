@@ -654,9 +654,18 @@ router.get('/search', async (req, res) => {
     if (allHotels.length > 0 && (facilitiesFilter.length > 0 || mealPlanFilter.length > 0 || cancellationPolicyFilter)) {
       const sampleHotel = allHotels[0];
       console.log(`   🔍 Filter debug - Sample hotel fields:`);
+      console.log(`      star_rating: ${sampleHotel.star_rating}, isEnriched: ${sampleHotel.isEnriched}`);
       console.log(`      meal: "${sampleHotel.meal}", free_cancellation: ${sampleHotel.free_cancellation}, no_prepayment: ${sampleHotel.no_prepayment}`);
       console.log(`      serp_filters: ${JSON.stringify(sampleHotel.serp_filters || [])}`);
       console.log(`      amenities: ${JSON.stringify((sampleHotel.amenities || []).slice(0, 5))}${(sampleHotel.amenities || []).length > 5 ? '...' : ''}`);
+
+      // Log star rating distribution for debugging
+      const starCounts = {};
+      allHotels.forEach(h => {
+        const sr = h.star_rating || 0;
+        starCounts[sr] = (starCounts[sr] || 0) + 1;
+      });
+      console.log(`      Star distribution: ${JSON.stringify(starCounts)}`);
     }
 
     // POST-API FILTERING: RateHawk SERP API does NOT support star_rating, meal, or facility filtering
