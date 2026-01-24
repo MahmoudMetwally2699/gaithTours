@@ -510,24 +510,17 @@ router.get('/search', async (req, res) => {
       maxResults: maxResultsForBatch // Fetch only 100 hotels (5 pages worth)
     });
 
-    // QUALITY FILTER: For city searches, filter out unrated hotels from API results
+    // Star rating filter: Only apply if user explicitly filtered by stars
+    // Otherwise show ALL hotels including unrated (apartments, hostels, etc.)
     const isCitySearch = hasRegions; // If we found/selected a region/city, it's a city search
-    if (isCitySearch && searchResults.hotels) {
+    if (isCitySearch && searchResults.hotels && starRatingFilter.length > 0) {
       const beforeFilter = searchResults.hotels.length;
       searchResults.hotels = searchResults.hotels.filter(hotel => {
         const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
-        // If star rating filter is set, only include matching hotels
-        if (starRatingFilter.length > 0) {
-          return starRatingFilter.includes(hotelStarRating);
-        }
-        return hotelStarRating > 0; // Only hotels with 1+ stars
+        return starRatingFilter.includes(hotelStarRating);
       });
       const afterFilter = searchResults.hotels.length;
-      if (starRatingFilter.length > 0) {
-        console.log(`   ⭐ API Filter: Filtered to ${starRatingFilter.join(',')} star hotels (${afterFilter} remaining)`);
-      } else {
-        console.log(`   ⭐ API Filter: Removed ${beforeFilter - afterFilter} unrated hotels from API (${afterFilter} rated remaining)`);
-      }
+      console.log(`   ⭐ API Filter: Filtered to ${starRatingFilter.join(',')} star hotels (${afterFilter} remaining)`);
     }
 
     // Step 3.5: Merge API results with DB hotels
@@ -589,10 +582,10 @@ router.get('/search', async (req, res) => {
       console.log(`   ⚡ Large city detected (${totalHotelsInDB} hotels) - Using API results only for speed`);
     }
 
-    // Skip DB merge for:
-    // 1. Large cities (>1000 hotels) for performance
-    // 2. Hotel-specific searches (not city searches) - the searched hotel is added separately later
-    const shouldFetchDbHotels = !isLargeCity && isCitySearch;
+    // Skip DB merge for city searches - only show hotels with available rates
+    // This makes search faster and provides better UX (no "Check availability" dead-ends)
+    // Hotel-specific searches will still show the hotel from DB if needed (handled later)
+    const shouldFetchDbHotels = false;
 
     if (shouldFetchDbHotels) {
       // Fetch DB-only hotels (those without rates from API) to add to the pool
@@ -674,12 +667,12 @@ router.get('/search', async (req, res) => {
       allHotels = allHotels.filter(hotel => {
         const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
 
-        // Star rating filter
+        // Star rating filter - only apply if user explicitly filtered by stars
+        // Otherwise show ALL hotels including unrated (apartments, hostels, etc.)
         if (starRatingFilter.length > 0) {
           if (!starRatingFilter.includes(hotelStarRating)) return false;
-        } else if (hotelStarRating <= 0) {
-          return false; // Only rated hotels for city searches
         }
+        // Note: We no longer filter out unrated hotels - they can be apartments, hostels, etc.
 
         // Guest rating filter (review score)
         if (guestRatingFilter > 0) {
