@@ -637,11 +637,16 @@ class RateHawkService {
       maxResults = 0, // NEW: Max hotels to return from API (0 = unlimited)
       refreshPrices = 0, // NEW: Number of top hotels to refresh prices from hotel details API
       page, // Pagination: Page number
-      limit // Pagination: Items per page
+      limit, // Pagination: Items per page
+      // API-LEVEL FILTERS (new)
+      stars = null, // Array of star ratings [1,2,3,4,5]
+      mealFilter = null, // Array of meal types ['breakfast', 'half_board', etc.]
+      facilitiesFilter = null // Array of facility filters ['free_wifi', 'parking', etc.]
     } = params;
 
-    // Generate cache key for this search
-    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency, page, limit });
+    // Generate cache key for this search (including filters for separate caching)
+    const filterKey = `${stars ? '_s' + stars.join('') : ''}${mealFilter ? '_m' + mealFilter.join('') : ''}${facilitiesFilter ? '_f' + facilitiesFilter.join('') : ''}`;
+    const cacheKey = this.generateSearchCacheKey(regionId, { checkin, checkout, adults, children, currency, page, limit }) + filterKey;
     const now = Date.now();
 
     // Check fresh cache first
@@ -679,7 +684,47 @@ class RateHawkService {
 
       // Add pagination to API payload if provided
       if (page) apiPayload.page = parseInt(page);
-      if (limit) apiPayload.limit = parseInt(limit); // RateHawk field might be 'rows' or 'page_size' - defaulting to limit/page for now based on assumption
+      if (limit) apiPayload.limit = parseInt(limit);
+
+      // API-LEVEL FILTERS: Add to payload for server-side filtering
+      // This makes results much more accurate and faster
+      if (stars && stars.length > 0) {
+        apiPayload.stars = stars;
+        console.log(`   🌟 API filter: stars = [${stars.join(', ')}]`);
+      }
+
+      // Map frontend meal filter values to RateHawk API format
+      if (mealFilter && mealFilter.length > 0) {
+        // RateHawk API uses: 'nomeal', 'breakfast', 'halfboard', 'fullboard', 'allinclusive'
+        const mealMapping = {
+          'breakfast': 'breakfast',
+          'half_board': 'halfboard',
+          'full_board': 'fullboard',
+          'all_inclusive': 'allinclusive'
+        };
+        const apiMeals = mealFilter.map(m => mealMapping[m] || m).filter(Boolean);
+        if (apiMeals.length > 0) {
+          apiPayload.meal = apiMeals;
+          console.log(`   🍽️ API filter: meal = [${apiMeals.join(', ')}]`);
+        }
+      }
+
+      // Map frontend facilities to RateHawk serp_filters
+      if (facilitiesFilter && facilitiesFilter.length > 0) {
+        // RateHawk uses: 'has_internet', 'has_parking', 'has_pool', 'has_spa', 'has_fitness'
+        const facilityMapping = {
+          'free_wifi': 'has_internet',
+          'parking': 'has_parking',
+          'pool': 'has_pool',
+          'spa': 'has_spa',
+          'gym': 'has_fitness'
+        };
+        const serpFilters = facilitiesFilter.map(f => facilityMapping[f]).filter(Boolean);
+        if (serpFilters.length > 0) {
+          apiPayload.serp_filters = serpFilters;
+          console.log(`   🏊 API filter: serp_filters = [${serpFilters.join(', ')}]`);
+        }
+      }
 
       const response = await this.makeRequest('/search/serp/region/', 'POST', apiPayload);
 

@@ -507,20 +507,19 @@ router.get('/search', async (req, res) => {
       language: finalLanguage,
       // Local DB enrichment - no limit needed (DB has no rate limits)
       enrichmentLimit: 0, // 0 = enrich all hotels
-      maxResults: maxResultsForBatch // Fetch only 100 hotels (5 pages worth)
+      maxResults: maxResultsForBatch, // Fetch only 100 hotels (5 pages worth)
+      // API-LEVEL FILTERS: Pass to RateHawk API for server-side filtering
+      stars: starRatingFilter.length > 0 ? starRatingFilter : null,
+      mealFilter: mealPlanFilter.length > 0 ? mealPlanFilter : null,
+      facilitiesFilter: facilitiesFilter.length > 0 ? facilitiesFilter : null
     });
 
-    // Star rating filter: Only apply if user explicitly filtered by stars
-    // Otherwise show ALL hotels including unrated (apartments, hostels, etc.)
+    // Note: Star rating, meal, and facility filters are now applied at API level
+    // See RateHawkService.searchByRegion for API-level filtering
+    // Post-filtering only needed for filters not supported by RateHawk API
     const isCitySearch = hasRegions; // If we found/selected a region/city, it's a city search
-    if (isCitySearch && searchResults.hotels && starRatingFilter.length > 0) {
-      const beforeFilter = searchResults.hotels.length;
-      searchResults.hotels = searchResults.hotels.filter(hotel => {
-        const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
-        return starRatingFilter.includes(hotelStarRating);
-      });
-      const afterFilter = searchResults.hotels.length;
-      console.log(`   ⭐ API Filter: Filtered to ${starRatingFilter.join(',')} star hotels (${afterFilter} remaining)`);
+    if (isCitySearch && searchResults.hotels) {
+      console.log(`   ✅ API returned ${searchResults.hotels.length} hotels (filters applied at API level)`);
     }
 
     // Step 3.5: Merge API results with DB hotels
@@ -660,122 +659,56 @@ router.get('/search', async (req, res) => {
       console.log(`      amenities: ${JSON.stringify((sampleHotel.amenities || []).slice(0, 5))}${(sampleHotel.amenities || []).length > 5 ? '...' : ''}`);
     }
 
-    // COMPREHENSIVE FILTER: Apply all filters to the combined results
+    // POST-API FILTERING: Only for filters NOT supported by RateHawk API
+    // Stars, meal, and basic facilities (wifi, parking, pool, spa, gym) are handled at API level
+    // We still need to handle: cancellation policy, guest rating, free_breakfast, no_prepayment
     if (isCitySearch) {
       const beforeFilter = allHotels.length;
+      const needsPostFilter = cancellationPolicyFilter || guestRatingFilter > 0 ||
+                               facilitiesFilter.includes('free_breakfast') ||
+                               facilitiesFilter.includes('free_cancellation') ||
+                               facilitiesFilter.includes('no_prepayment');
 
-      allHotels = allHotels.filter(hotel => {
-        const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
+      if (needsPostFilter) {
+        allHotels = allHotels.filter(hotel => {
+          // Guest rating filter (review score) - NOT supported by RateHawk API
+          if (guestRatingFilter > 0) {
+            const reviewScore = hotel.review_score || hotel.reviewScore || hotel.rating || 0;
+            if (reviewScore < guestRatingFilter) return false;
+          }
 
-        // Star rating filter - only apply if user explicitly filtered by stars
-        // Otherwise show ALL hotels including unrated (apartments, hostels, etc.)
-        if (starRatingFilter.length > 0) {
-          if (!starRatingFilter.includes(hotelStarRating)) return false;
-        }
-        // Note: We no longer filter out unrated hotels - they can be apartments, hostels, etc.
+          // Cancellation policy filter - NOT supported by RateHawk API
+          if (cancellationPolicyFilter === 'free_cancellation') {
+            if (hotel.free_cancellation !== true) return false;
+          } else if (cancellationPolicyFilter === 'non_refundable') {
+            if (hotel.free_cancellation === true) return false;
+          }
 
-        // Guest rating filter (review score)
-        if (guestRatingFilter > 0) {
-          const reviewScore = hotel.review_score || hotel.reviewScore || hotel.rating || 0;
-          if (reviewScore < guestRatingFilter) return false;
-        }
+          // Special facilities not supported by RateHawk API
+          if (facilitiesFilter.includes('free_breakfast')) {
+            const hotelMeal = (hotel.meal || '').toLowerCase();
+            const hasBreakfast = hotelMeal === 'breakfast' || hotelMeal === 'halfboard' ||
+                                 hotelMeal === 'fullboard' || hotelMeal === 'allinclusive';
+            if (!hasBreakfast) return false;
+          }
+          if (facilitiesFilter.includes('free_cancellation') && hotel.free_cancellation !== true) {
+            return false;
+          }
+          if (facilitiesFilter.includes('no_prepayment') && hotel.no_prepayment !== true) {
+            return false;
+          }
 
-        // Cancellation policy filter
-        // ETG API: free_cancellation is boolean set from free_cancellation_before being not null
-        if (cancellationPolicyFilter === 'free_cancellation') {
-          // Check the free_cancellation field which is set in RateHawkService
-          const hasFreeCancellation = hotel.free_cancellation === true;
-          if (!hasFreeCancellation) return false;
-        } else if (cancellationPolicyFilter === 'non_refundable') {
-          const hasFreeCancellation = hotel.free_cancellation === true;
-          if (hasFreeCancellation) return false;
-        }
+          return true;
+        });
 
-        // Meal plan filter
-        // ETG API meal values: 'nomeal', 'breakfast', 'halfboard', 'fullboard', 'allinclusive'
-        if (mealPlanFilter.length > 0) {
-          const hotelMeal = (hotel.meal || '').toLowerCase();
-          const hasMatchingMeal = mealPlanFilter.some(meal => {
-            switch (meal) {
-              case 'breakfast':
-                // ETG meal value is exactly 'breakfast'
-                return hotelMeal === 'breakfast';
-              case 'half_board':
-                // ETG meal value is 'halfboard' (no underscore)
-                return hotelMeal === 'halfboard' || hotelMeal === 'half_board';
-              case 'full_board':
-                // ETG meal value is 'fullboard' (no underscore)
-                return hotelMeal === 'fullboard' || hotelMeal === 'full_board';
-              case 'all_inclusive':
-                // ETG meal value is 'allinclusive' (no underscore)
-                return hotelMeal === 'allinclusive' || hotelMeal === 'all_inclusive';
-              default:
-                return false;
-            }
-          });
-          if (!hasMatchingMeal) return false;
-        }
-
-        // Facilities filter
-        // Check amenities from hotel content and serp_filters from API
-        if (facilitiesFilter.length > 0) {
-          const hotelAmenities = (hotel.amenities || []).concat(hotel.facilities || []);
-          const amenitiesLower = hotelAmenities.map(a => (a || '').toLowerCase());
-          // ETG serp_filters: 'has_bathroom', 'has_internet', 'has_parking', 'has_pool', etc.
-          const serpFilters = (hotel.serp_filters || []).map(f => (f || '').toLowerCase());
-
-          const hasAllFacilities = facilitiesFilter.every(facility => {
-            switch (facility) {
-              case 'free_breakfast':
-                // Check if meal includes breakfast (ETG meal value)
-                const hotelMealForBreakfast = (hotel.meal || '').toLowerCase();
-                return hotelMealForBreakfast === 'breakfast' ||
-                       hotelMealForBreakfast === 'halfboard' ||
-                       hotelMealForBreakfast === 'fullboard' ||
-                       hotelMealForBreakfast === 'allinclusive' ||
-                       amenitiesLower.some(a => a.includes('breakfast'));
-              case 'free_cancellation':
-                return hotel.free_cancellation === true;
-              case 'no_prepayment':
-                return hotel.no_prepayment === true;
-              case 'free_wifi':
-                // Check serp_filters for 'has_internet' or amenities
-                return serpFilters.includes('has_internet') ||
-                       amenitiesLower.some(a => a.includes('wifi') || a.includes('internet') || a.includes('wi-fi'));
-              case 'parking':
-                return serpFilters.includes('has_parking') ||
-                       amenitiesLower.some(a => a.includes('parking'));
-              case 'pool':
-                return serpFilters.includes('has_pool') ||
-                       amenitiesLower.some(a => a.includes('pool') || a.includes('swimming'));
-              case 'spa':
-                return serpFilters.includes('has_spa') ||
-                       amenitiesLower.some(a => a.includes('spa') || a.includes('wellness'));
-              case 'gym':
-                return serpFilters.includes('has_fitness') ||
-                       amenitiesLower.some(a => a.includes('gym') || a.includes('fitness'));
-              default:
-                return true;
-            }
-          });
-          if (!hasAllFacilities) return false;
-        }
-
-        return true;
-      });
-
-      const afterFilter = allHotels.length;
-      const filtersApplied = [];
-      if (starRatingFilter.length > 0) filtersApplied.push(`stars:${starRatingFilter.join(',')}`);
-      if (guestRatingFilter > 0) filtersApplied.push(`rating:${guestRatingFilter}+`);
-      if (cancellationPolicyFilter) filtersApplied.push(`cancel:${cancellationPolicyFilter}`);
-      if (mealPlanFilter.length > 0) filtersApplied.push(`meal:${mealPlanFilter.join(',')}`);
-      if (facilitiesFilter.length > 0) filtersApplied.push(`facilities:${facilitiesFilter.join(',')}`);
-
-      if (filtersApplied.length > 0) {
-        console.log(`   🔍 Filters applied: [${filtersApplied.join('] [')}] → ${afterFilter} hotels remaining`);
+        const afterFilter = allHotels.length;
+        const filtersApplied = [];
+        if (guestRatingFilter > 0) filtersApplied.push(`rating:${guestRatingFilter}+`);
+        if (cancellationPolicyFilter) filtersApplied.push(`cancel:${cancellationPolicyFilter}`);
+        if (facilitiesFilter.includes('free_breakfast')) filtersApplied.push('free_breakfast');
+        console.log(`   🔍 Post-API filters: [${filtersApplied.join('] [')}] → ${afterFilter}/${beforeFilter} hotels`);
       } else {
-        console.log(`   ⭐ City search: Filtered out ${beforeFilter - afterFilter} unrated hotels (${afterFilter} rated hotels remaining)`);
+        console.log(`   ✅ No post-API filtering needed (${allHotels.length} hotels)`);
       }
     } else {
       console.log(`   🏨 Hotel search: Showing all hotels including unrated`);
