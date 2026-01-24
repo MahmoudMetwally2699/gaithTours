@@ -60,9 +60,8 @@ class RateHawkService {
       console.warn('⚠️ RateHawk credentials not configured. Set RATEHAWK_KEY_ID and RATEHAWK_API_KEY in .env');
     }
 
-    // Price markup configuration (fallback for when margin rules don't match)
-    this.markupPercentage = parseFloat(process.env.HOTEL_MARKUP_PERCENTAGE || '15') / 100;
-    console.log(`💰 Default hotel price markup: ${this.markupPercentage * 100}% (can be overridden by margin rules)`);
+    // Margins are now ONLY controlled via dashboard margin rules
+    console.log('💰 Hotel margins controlled via dashboard margin rules (no env fallback)');
   }
 
   /**
@@ -197,13 +196,15 @@ class RateHawkService {
   }
 
   /**
-   * Apply markup to net price (simple, synchronous fallback)
-   * @param {number} netPrice - The net price from RateHawk (show_amount)
-   * @returns {number} - Price with markup applied
+   * Apply markup to net price (DEPRECATED - now uses dashboard margin rules only)
+   * Kept for backward compatibility with tax calculations
+   * @param {number} netPrice - The net price from RateHawk
+   * @returns {number} - Price unchanged (0% markup)
    */
   applyMarkup(netPrice) {
     if (!netPrice || netPrice <= 0) return netPrice;
-    return Math.round(netPrice * (1 + this.markupPercentage));
+    // No fallback markup - margins are controlled via dashboard only
+    return Math.round(netPrice);
   }
 
   /**
@@ -246,10 +247,11 @@ class RateHawkService {
         }
       };
     } catch (error) {
-      console.error('Error applying dynamic margin, using fallback:', error.message);
+      console.error('Error applying dynamic margin, using base price:', error.message);
+      // No fallback markup - return price unchanged
       return {
-        price: this.applyMarkup(netPrice),
-        marginInfo: { ruleName: 'Fallback', isDefault: true, marginValue: this.markupPercentage * 100 }
+        price: Math.round(netPrice),
+        marginInfo: { ruleName: 'None (Error)', isDefault: true, marginValue: 0 }
       };
     }
   }
