@@ -794,8 +794,10 @@ router.get('/search', async (req, res) => {
       console.log(`   🎯 Small search: Using max(DB=${totalHotelsInDB}, API=${allHotels.length}) = ${realisticTotal}`);
     }
 
-    // If searching for a specific hotel (not a region), prioritize it but show other hotels too
-    if (hasHotels && allHotels.length > 0) {
+    // If searching for a SPECIFIC HOTEL (not a city/region), prioritize it but show other hotels too
+    // IMPORTANT: Only do this for hotel-specific searches, NOT city searches
+    // Otherwise city searches would incorrectly highlight random hotels
+    if (hasHotels && !isCitySearch && allHotels.length > 0) {
       const searchedHotelId = suggestions.hotels[0].id;
       const searchedHotelHid = suggestions.hotels[0].hid;
       const searchedHotelName = suggestions.hotels[0].name || suggestions.hotels[0].label || '';
@@ -869,9 +871,9 @@ router.get('/search', async (req, res) => {
     }
 
 
-
-    // If searching for a specific hotel and it's not found in results, fetch hotel details from Booking API
-    if (hasHotels && suggestions.hotels[0].hid) {
+    // If searching for a specific hotel and it's not found in results, fetch hotel details from Local DB
+    // IMPORTANT: Only do this for hotel-specific searches, NOT city searches
+    if (hasHotels && !isCitySearch && suggestions.hotels[0].hid) {
       const searchedHotelId = suggestions.hotels[0].id;
       const searchedHotelHid = suggestions.hotels[0].hid;
 
