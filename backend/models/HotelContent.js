@@ -26,6 +26,11 @@ const HotelContentSchema = new mongoose.Schema({
   },
   address: String,
   city: String,
+  // Normalized city name for fast indexed lookups (auto-set via pre-save hook)
+  cityNormalized: {
+    type: String,
+    index: true
+  },
   country: String,
   countryCode: String,
 
@@ -112,8 +117,10 @@ HotelContentSchema.index({ countryCode: 1, city: 1 });
 HotelContentSchema.index({ city: 1 });
 // Compound index for city + starRating queries (10-20x faster for filtered city searches)
 HotelContentSchema.index({ city: 1, starRating: -1 });
+// Compound index for cityNormalized queries (avoids regex, uses direct index lookup)
+HotelContentSchema.index({ cityNormalized: 1, starRating: -1 });
 
-// Pre-save hook to generate search text
+// Pre-save hook to generate search text and cityNormalized
 HotelContentSchema.pre('save', function(next) {
   // Combine searchable fields into one text field
   this.searchText = [
@@ -123,6 +130,11 @@ HotelContentSchema.pre('save', function(next) {
     this.country,
     this.amenities?.join(' ')
   ].filter(Boolean).join(' ');
+
+  // Set normalized city for fast indexed lookups (avoids regex)
+  if (this.city) {
+    this.cityNormalized = this.city.toLowerCase().trim();
+  }
 
   next();
 });

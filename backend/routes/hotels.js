@@ -532,11 +532,20 @@ router.get('/search', async (req, res) => {
 
     // Step 3.5: Merge API results with DB hotels
     const cityName = destination;
+    const cityNormalized = cityName.toLowerCase().trim();
 
     const HotelContent = require('../models/HotelContent');
+    const CityStats = require('../models/CityStats');
 
     // For hotel-specific searches, skip slow DB count query (we'll use API results only)
     let totalHotelsInDB = 0;
+
+    // Create a Set of HIDs from API results for quick lookup
+    const apiHids = new Set(searchResults.hotels.map(h => h.hid).filter(Boolean));
+
+    // Variables for parallel queries
+    let dbOnlyHotels = [];
+    const shouldMergeDbHotels = isCitySearch;
 
     if (isCitySearch) {
       console.log(`📊 Merging API results with HotelContent for city: ${cityName}`);
@@ -544,28 +553,28 @@ router.get('/search', async (req, res) => {
       // Check cached city count first (1 hour TTL)
       // Include star filter in cache key
       const starFilterSuffix = starRatingFilter.length > 0 ? `_stars${starRatingFilter.sort().join('')}` : '';
-      const countCacheKey = `count_rated_${cityName}${starFilterSuffix}`;
+      const countCacheKey = `count_rated_${cityNormalized}${starFilterSuffix}`;
 
       const cachedCount = cityCountCache.get(countCacheKey);
       if (cachedCount && Date.now() - cachedCount.timestamp < CITY_COUNT_TTL) {
         totalHotelsInDB = cachedCount.count;
-        console.log(`   📦 Total ${totalHotelsInDB} rated hotels in HotelContent for "${cityName}" (cached)`);
+        console.log(`   📦 Total ${totalHotelsInDB} rated hotels from CityStats for "${cityName}" (cached)`);
       } else {
-        // Build query based on search type
-        const countQuery = {
-          city: { $regex: new RegExp(`^${cityName}$`, 'i') }
-        };
-
-        // Apply star rating filter or default to rated hotels only
-        if (starRatingFilter.length > 0) {
-          countQuery.starRating = { $in: starRatingFilter };
-        } else {
-          countQuery.starRating = { $gt: 0 }; // Only rated hotels for city searches
+        // OPTIMIZATION: Use CityStats for O(1) lookup instead of countDocuments
+        try {
+          totalHotelsInDB = await CityStats.getCount(cityNormalized, starRatingFilter);
+          console.log(`   ⚡ Total ${totalHotelsInDB} rated hotels from CityStats for "${cityName}" (instant lookup)`);
+        } catch (statsErr) {
+          // Fallback to countDocuments if CityStats not yet populated
+          console.log(`   ⚠️ CityStats fallback: ${statsErr.message}`);
+          const countQuery = {
+            cityNormalized: cityNormalized,
+            starRating: starRatingFilter.length > 0 ? { $in: starRatingFilter } : { $gt: 0 }
+          };
+          totalHotelsInDB = await HotelContent.countDocuments(countQuery);
+          console.log(`   📦 Total ${totalHotelsInDB} rated hotels from countDocuments for "${cityName}" (fallback)`);
         }
-
-        totalHotelsInDB = await HotelContent.countDocuments(countQuery);
         cityCountCache.set(countCacheKey, { count: totalHotelsInDB, timestamp: Date.now() });
-        console.log(`   📦 Total ${totalHotelsInDB} rated hotels in HotelContent for "${cityName}" (fresh count)`);
       }
     } else {
       console.log(`📊 Hotel-specific search: "${cityName}" - skipping DB count for speed`);
@@ -580,47 +589,42 @@ router.get('/search', async (req, res) => {
       console.log(`   ⚡ Large city detected (${totalHotelsInDB} hotels) - Using API results only for speed`);
     }
 
-    // Create a Set of HIDs from API results for quick lookup
-    const apiHids = new Set(searchResults.hotels.map(h => h.hid).filter(Boolean));
-
     // Skip DB merge for:
     // 1. Large cities (>1000 hotels) for performance
     // 2. Hotel-specific searches (not city searches) - the searched hotel is added separately later
-    const dbOnlyHotels = [];
-    const shouldMergeDbHotels = !isLargeCity && isCitySearch;
+    const shouldFetchDbHotels = !isLargeCity && isCitySearch;
 
-    if (shouldMergeDbHotels) {
+    if (shouldFetchDbHotels) {
       // Fetch DB-only hotels (those without rates from API) to add to the pool
       // We'll paginate the combined results later
       const maxDbHotels = 100; // Reduced to match API batch size (100 hotels)
 
-    // Build DB query
-    const dbQuery = {
-      city: { $regex: new RegExp(`^${cityName}$`, 'i') },
-      hid: { $nin: Array.from(apiHids) } // Exclude hotels already in API results
-    };
+      // OPTIMIZATION: Build DB query using cityNormalized (no regex needed)
+      const dbQuery = {
+        cityNormalized: cityNormalized,  // Direct index lookup instead of regex
+        hid: { $nin: Array.from(apiHids) } // Exclude hotels already in API results
+      };
 
-    // For city searches, only fetch rated hotels from DB
-    if (isCitySearch) {
-      dbQuery.starRating = { $gt: 0 }; // Only rated hotels
-    }
+      // For city searches, only fetch rated hotels from DB
+      if (starRatingFilter.length > 0) {
+        dbQuery.starRating = { $in: starRatingFilter };
+        console.log(`   ⭐ Filtering DB by star rating: ${starRatingFilter.join(', ')}`);
+      } else {
+        dbQuery.starRating = { $gt: 0 }; // Only rated hotels
+      }
 
-    // Apply star rating filter if provided
-    if (starRatingFilter.length > 0) {
-      dbQuery.starRating = { $in: starRatingFilter };
-      console.log(`   ⭐ Filtering DB by star rating: ${starRatingFilter.join(', ')}`);
-    }
+      // OPTIMIZATION: Use projection to fetch only needed fields (reduces data transfer by ~50%)
+      const localHotels = await HotelContent.find(dbQuery)
+        .select('hotelId hid name address city country starRating mainImage images latitude longitude')
+        .limit(maxDbHotels)
+        .lean();
 
-    const localHotels = await HotelContent.find(dbQuery)
-    .limit(maxDbHotels)
-    .lean();
+      // Map local hotels to the expected format
+      for (const hotel of localHotels) {
+        if (apiHids.has(hotel.hid)) continue; // Skip if already in API results
 
-    // Map local hotels to the expected format
-    for (const hotel of localHotels) {
-      if (apiHids.has(hotel.hid)) continue; // Skip if already in API results
-
-      const imageUrl = (hotel.images?.[0]?.url || hotel.mainImage)?.replace('{size}', '640x400');
-      dbOnlyHotels.push({
+        const imageUrl = (hotel.images?.[0]?.url || hotel.mainImage)?.replace('{size}', '640x400');
+        dbOnlyHotels.push({
           id: hotel.hotelId || `hid_${hotel.hid}`,
           hid: hotel.hid,
           hotelId: hotel.hotelId,
@@ -638,8 +642,8 @@ router.get('/search', async (req, res) => {
           noRatesAvailable: true,  // Flag for frontend to show "Check availability"
           currency: currency
         });
-    }
-  } // Close if (shouldMergeDbHotels) block
+      }
+    } // Close if (shouldFetchDbHotels) block
 
     if (dbOnlyHotels.length > 0) {
       console.log(`   ➕ Adding ${dbOnlyHotels.length} additional hotels from DB`);
