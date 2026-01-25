@@ -18,8 +18,55 @@ class MarginService {
     console.log('💰 Refreshing margin rules cache...');
     this.cachedRules = await MarginRule.find({ status: 'active' }).sort({ priority: -1 }).lean();
     this.cacheTimestamp = now;
+    // Build country index for O(1) lookups
+    this.rulesByCountry = this.buildRuleIndex(this.cachedRules);
     console.log(`✅ Cached ${this.cachedRules.length} active margin rules`);
     return this.cachedRules;
+  }
+
+  /**
+   * Build an index of rules by country for O(1) lookups
+   * @param {Array} rules - Array of margin rules
+   * @returns {Map} - Map of country -> rules that apply to it
+   */
+  static buildRuleIndex(rules) {
+    const index = new Map();
+    const globalRules = []; // Rules with no country condition
+
+    for (const rule of rules) {
+      if (rule.conditions?.countries && rule.conditions.countries.length > 0) {
+        // Index by each country
+        for (const country of rule.conditions.countries) {
+          if (!index.has(country)) {
+            index.set(country, []);
+          }
+          index.get(country).push(rule);
+        }
+      } else {
+        // No country condition = global rule
+        globalRules.push(rule);
+      }
+    }
+
+    // Store global rules under special key
+    index.set('__global__', globalRules);
+    console.log(`   📊 Indexed rules: ${index.size - 1} countries, ${globalRules.length} global rules`);
+    return index;
+  }
+
+  /**
+   * Get rules that might apply to a country (O(1) lookup)
+   * @param {string} country - Country name
+   * @returns {Array} - Candidate rules for this country
+   */
+  static getRulesForCountry(country) {
+    if (!this.rulesByCountry) return this.cachedRules || [];
+
+    const countryRules = this.rulesByCountry.get(country) || [];
+    const globalRules = this.rulesByCountry.get('__global__') || [];
+
+    // Merge and maintain priority order (both arrays already sorted by priority)
+    return [...countryRules, ...globalRules].sort((a, b) => b.priority - a.priority);
   }
 
   /**

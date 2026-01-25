@@ -489,7 +489,7 @@ export const HotelSearchResults: React.FC = () => {
           setCurrentPage(prev => prev + 1);
         }
       },
-      { threshold: 0, rootMargin: '1500px' } // Trigger 1500px before bottom for seamless infinite scroll
+      { threshold: 0, rootMargin: '600px' } // OPTIMIZED: Reduced from 1500px for less aggressive pre-loading
     );
 
     observer.observe(loadMoreRef.current);
@@ -508,10 +508,11 @@ export const HotelSearchResults: React.FC = () => {
     return Math.max(...prices, 5000);
   }, [hotels]);
 
-  // Budget histogram
+  // Budget histogram - OPTIMIZED: Only calculate when budget filter is expanded
   const budgetHistogram = useMemo(() => {
+    if (!expandedFilters.budget || hotels.length === 0) return [];
     return generateBudgetHistogram(hotels, maxPrice);
-  }, [hotels, maxPrice]);
+  }, [hotels, maxPrice, expandedFilters.budget]);
 
   // Update price filter when max price changes to ensure all hotels are visible
   useEffect(() => {

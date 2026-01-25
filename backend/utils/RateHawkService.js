@@ -865,8 +865,10 @@ class RateHawkService {
           for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
             try {
-              // Query Local DB
-              const localHotels = await HotelContent.find({ hid: { $in: batch } }).lean();
+              // Query Local DB - OPTIMIZED: Only fetch fields we actually use
+              const localHotels = await HotelContent.find({ hid: { $in: batch } })
+                .select('hid hotelId name address city country countryCode starRating mainImage images')
+                .lean();
               console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
 
               localHotels.forEach(hotel => {
@@ -995,7 +997,9 @@ class RateHawkService {
       // Skip rule matching if location data is missing (use default margin)
       let matchingRule = null;
       if (countryName && countryName !== 'undefined') {
-        matchingRule = MarginService.findMatchingRule(context, allRules);
+        // OPTIMIZATION: Use indexed lookup for O(1) country matching instead of O(n)
+        const candidateRules = MarginService.getRulesForCountry(countryName);
+        matchingRule = MarginService.findMatchingRule(context, candidateRules);
       }
 
       const marginInfo = matchingRule ? {
