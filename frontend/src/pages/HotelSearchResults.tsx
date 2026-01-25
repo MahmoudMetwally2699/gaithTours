@@ -399,9 +399,9 @@ export const HotelSearchResults: React.FC = () => {
       }
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    const debounceTimer = setTimeout(fetchSuggestions, 150);
     return () => clearTimeout(debounceTimer);
-  }, [editableDestination]);
+  }, [editableDestination, i18n.language]);
 
   // Close autocomplete when clicking outside
   useEffect(() => {

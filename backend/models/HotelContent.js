@@ -119,6 +119,101 @@ HotelContentSchema.index({ city: 1 });
 HotelContentSchema.index({ city: 1, starRating: -1 });
 // Compound index for cityNormalized queries (avoids regex, uses direct index lookup)
 HotelContentSchema.index({ cityNormalized: 1, starRating: -1 });
+// Name index for prefix-based autocomplete (fast "starts with" queries)
+HotelContentSchema.index({ name: 1 });
+
+// Static method for smart autocomplete search
+HotelContentSchema.statics.smartSearch = async function(query, limit = 10, language = 'en') {
+  const normalizedQuery = query.toLowerCase().trim();
+  const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 2);
+
+  if (words.length === 0) return { hotels: [], regions: [] };
+
+  // Build regex patterns for each word (prefix matching)
+  const regexPatterns = words.map(word => new RegExp(word, 'i'));
+
+  // Strategy 1: Fast prefix match on name (most relevant)
+  const prefixResults = await this.find({
+    name: { $regex: `^${words[0]}`, $options: 'i' }
+  })
+    .select('hid hotelId name city country starRating mainImage')
+    .limit(limit)
+    .lean();
+
+  // Strategy 2: Multi-word match (all words must appear)
+  let multiWordResults = [];
+  if (words.length > 1 || prefixResults.length < limit) {
+    const andConditions = regexPatterns.map(pattern => ({
+      $or: [
+        { name: pattern },
+        { city: pattern },
+        { country: pattern }
+      ]
+    }));
+
+    multiWordResults = await this.find({ $and: andConditions })
+      .select('hid hotelId name city country starRating mainImage')
+      .limit(limit)
+      .lean();
+  }
+
+  // Strategy 3: Text search fallback (catches partial matches)
+  let textResults = [];
+  if (prefixResults.length + multiWordResults.length < limit) {
+    try {
+      textResults = await this.find(
+        { $text: { $search: query } },
+        { score: { $meta: 'textScore' } }
+      )
+        .select('hid hotelId name city country starRating mainImage')
+        .sort({ score: { $meta: 'textScore' } })
+        .limit(limit)
+        .lean();
+    } catch (e) {
+      // Text search may fail if index doesn't exist, ignore
+    }
+  }
+
+  // Deduplicate and merge results (prefix matches first, then multi-word, then text)
+  const seen = new Set();
+  const allResults = [];
+
+  for (const hotel of [...prefixResults, ...multiWordResults, ...textResults]) {
+    if (!seen.has(hotel.hid)) {
+      seen.add(hotel.hid);
+      allResults.push({
+        id: hotel.hotelId || `hid_${hotel.hid}`,
+        hid: hotel.hid,
+        name: hotel.name,
+        type: 'hotel',
+        location: `${hotel.city || ''}, ${hotel.country || ''}`.replace(/^, |, $/g, ''),
+        city: hotel.city,
+        country: hotel.country,
+        starRating: hotel.starRating,
+        image: hotel.mainImage?.replace('{size}', '240x240')
+      });
+    }
+    if (allResults.length >= limit) break;
+  }
+
+  // Extract unique cities/regions from results for region suggestions
+  const citySet = new Map();
+  for (const hotel of allResults) {
+    if (hotel.city && !citySet.has(hotel.city.toLowerCase())) {
+      citySet.set(hotel.city.toLowerCase(), {
+        id: `city_${hotel.city.toLowerCase().replace(/\s+/g, '_')}`,
+        name: hotel.city,
+        type: 'city',
+        country_code: hotel.country
+      });
+    }
+  }
+
+  return {
+    hotels: allResults,
+    regions: Array.from(citySet.values()).slice(0, 5)
+  };
+};
 
 // Pre-save hook to generate search text and cityNormalized
 HotelContentSchema.pre('save', function(next) {

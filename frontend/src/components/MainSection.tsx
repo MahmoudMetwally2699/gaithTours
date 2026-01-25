@@ -182,9 +182,9 @@ export const MainSection: React.FC = () => {
       }
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    const debounceTimer = setTimeout(fetchSuggestions, 150);
     return () => clearTimeout(debounceTimer);
-  }, [destination]);
+  }, [destination, i18n.language]);
 
   // Close autocomplete when clicking outside
   useEffect(() => {

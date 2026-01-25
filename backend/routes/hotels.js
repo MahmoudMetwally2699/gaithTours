@@ -199,8 +199,18 @@ router.get('/suggested', async (req, res) => {
 /**
  * Suggest hotels and regions worldwide (autocomplete)
  * GET /api/hotels/suggest?query=ewaa
+ *
+ * Hybrid approach for speed + comprehensiveness:
+ * 1. Local DB search first (fast, ~50ms)
+ * 2. RateHawk API fallback (when local results insufficient)
  */
+
+// In-memory suggestion cache for ultra-fast repeat queries
+const suggestionResultCache = new Map();
+const SUGGESTION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 router.get('/suggest', async (req, res) => {
+  const startTime = Date.now();
   try {
     const { query, language = 'en' } = req.query;
 
@@ -209,35 +219,81 @@ router.get('/suggest', async (req, res) => {
     }
 
     // Smart detection: If query contains Arabic characters, use 'ar' regardless of requested language
-    // This fixes issues where frontend might send 'en' by default even for Arabic queries
     let finalLanguage = language;
     if (query && /[\u0600-\u06FF]/.test(query)) {
       finalLanguage = 'ar';
     }
 
-    console.log(`🔍 Worldwide hotel suggest for: "${query}" (Language: ${finalLanguage})`);
+    const normalizedQuery = query.toLowerCase().trim();
+    const cacheKey = `${normalizedQuery}_${finalLanguage}`;
 
-    // Use RateHawk multicomplete API for worldwide search
-    const results = await rateHawkService.suggest(query, finalLanguage);
-
-    // Debug: log raw region structure to understand the API response
-    if (results.regions && results.regions.length > 0) {
-      console.log('🔍 Raw region sample:', JSON.stringify(results.regions[0], null, 2));
+    // Check in-memory cache first (instant, <1ms)
+    const cached = suggestionResultCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < SUGGESTION_CACHE_TTL) {
+      console.log(`⚡ Suggest cache hit for "${query}" (${Date.now() - startTime}ms)`);
+      return successResponse(res, cached.data, 'Suggestions retrieved from cache');
     }
 
-    // Format hotels for frontend
-    const hotels = (results.hotels || []).map(hotel => ({
-      id: hotel.id,
-      hid: hotel.hid,
-      // Prioritize label, then name, then ID fallback
-      name: hotel.label || hotel.name || hotel.id.replace(/_/g, ' ').toUpperCase(),
-      type: hotel.type || 'hotel',
-      location: hotel.location,
-      coordinates: hotel.coordinates
-    }));
+    console.log(`🔍 Smart suggest for: "${query}" (Language: ${finalLanguage})`);
+
+    // STEP 1: Local DB search (fast, ~50ms)
+    const HotelContent = require('../models/HotelContent');
+    let localResults = { hotels: [], regions: [] };
+
+    try {
+      localResults = await HotelContent.smartSearch(query, 10, finalLanguage);
+      console.log(`   📦 Local DB: ${localResults.hotels.length} hotels, ${localResults.regions.length} regions (${Date.now() - startTime}ms)`);
+    } catch (dbError) {
+      console.log(`   ⚠️ Local DB search failed: ${dbError.message}`);
+    }
+
+    // STEP 2: RateHawk API (only if local results insufficient)
+    let apiResults = { hotels: [], regions: [] };
+    const needsApiCall = localResults.hotels.length < 5 || localResults.regions.length === 0;
+
+    if (needsApiCall) {
+      try {
+        apiResults = await rateHawkService.suggest(query, finalLanguage);
+        console.log(`   🌐 API: ${apiResults.hotels?.length || 0} hotels, ${apiResults.regions?.length || 0} regions (${Date.now() - startTime}ms)`);
+      } catch (apiError) {
+        console.log(`   ⚠️ API search failed: ${apiError.message}`);
+      }
+    } else {
+      console.log(`   ⏭️ Skipping API call - sufficient local results`);
+    }
+
+    // STEP 3: Merge results (local first for speed, then API for comprehensiveness)
+    const seenHids = new Set(localResults.hotels.map(h => h.hid).filter(Boolean));
+    const seenRegionIds = new Set(localResults.regions.map(r => r.id).filter(Boolean));
+
+    // Format API hotels
+    const apiHotels = (apiResults.hotels || [])
+      .filter(hotel => !seenHids.has(hotel.hid))
+      .map(hotel => ({
+        id: hotel.id,
+        hid: hotel.hid,
+        name: hotel.label || hotel.name || hotel.id?.replace(/_/g, ' ').toUpperCase(),
+        type: hotel.type || 'hotel',
+        location: hotel.location,
+        coordinates: hotel.coordinates
+      }));
+
+    // Format API regions
+    const apiRegions = (apiResults.regions || [])
+      .filter(region => !seenRegionIds.has(region.id))
+      .map(region => ({
+        id: region.id,
+        name: region.name || region.label || region.id,
+        type: region.type,
+        location: region.location,
+        country_code: region.country_code
+      }));
+
+    // Merge: local results first (already sorted by relevance)
+    const hotels = [...localResults.hotels, ...apiHotels].slice(0, 10);
+    const regions = [...apiRegions, ...localResults.regions].slice(0, 5); // API regions first (more accurate IDs)
 
     // Add ETG Test Hotel to suggestions if user types "test"
-    // This is for RateHawk certification - allows certifiers to find and book the test hotel
     if (query.toLowerCase().includes('test')) {
       hotels.unshift({
         id: 'test_hotel_do_not_book',
@@ -250,20 +306,17 @@ router.get('/suggest', async (req, res) => {
       });
     }
 
-    const regions = (results.regions || []).map(region => ({
-      id: region.id,
-      name: region.name || region.label || region.id,
-      type: region.type,
-      location: region.location,
-      country_code: region.country_code
-    }));
+    const response = { hotels, regions };
 
-    console.log(`✅ Found ${hotels.length} hotels and ${regions.length} regions worldwide`);
+    // Cache the merged result
+    suggestionResultCache.set(cacheKey, {
+      data: response,
+      timestamp: Date.now()
+    });
 
-    return successResponse(res, {
-      hotels,
-      regions
-    }, 'Suggestions retrieved successfully');
+    console.log(`✅ Total: ${hotels.length} hotels, ${regions.length} regions (${Date.now() - startTime}ms)`);
+
+    return successResponse(res, response, 'Suggestions retrieved successfully');
 
   } catch (error) {
     console.error('Error getting suggestions:', error);
