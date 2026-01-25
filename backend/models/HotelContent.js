@@ -244,7 +244,7 @@ HotelContentSchema.statics.bulkUpsertFromDump = async function(hotelsArray) {
   const operations = hotelsArray.map(hotel => ({
     updateOne: {
       filter: { hid: hotel.hid },
-      update: hotel,
+      update: { $set: hotel },  // Must use $set for updateOne to work properly!
       upsert: true
     }
   }));
