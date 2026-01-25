@@ -13,11 +13,17 @@ import {
   ClockIcon,
   MagnifyingGlassIcon,
   MinusIcon,
-  PlusIcon
+  PlusIcon,
+  WifiIcon,
+  SparklesIcon,
+  UserGroupIcon,
+  TruckIcon,
+  CheckIcon,
+  FireIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBed, faBedPulse } from '@fortawesome/free-solid-svg-icons';
+import { faBed, faBedPulse, faUtensils, faWifi, faPersonSwimming, faSquareParking, faDumbbell, faSpa, faSnowflake, faElevator, faBanSmoking, faPaw } from '@fortawesome/free-solid-svg-icons';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import "../components/DateRangePicker.css";
@@ -71,6 +77,51 @@ const getScoreText = (rating: number): string => {
   if (rating >= 7) return 'Good';
   if (rating >= 6) return 'Pleasant';
   return 'Fair';
+};
+
+// Helper function to get amenity icon
+const getAmenityIcon = (amenity: string): { icon: React.ReactNode; label: string } | null => {
+  const lower = amenity.toLowerCase();
+  const iconClass = "w-4 h-4";
+
+  if (lower.includes('wifi') || lower.includes('internet') || lower.includes('wi-fi')) {
+    return { icon: <FontAwesomeIcon icon={faWifi} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('pool') || lower.includes('swimming')) {
+    return { icon: <FontAwesomeIcon icon={faPersonSwimming} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('parking') || lower.includes('garage')) {
+    return { icon: <FontAwesomeIcon icon={faSquareParking} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('gym') || lower.includes('fitness') || lower.includes('sport')) {
+    return { icon: <FontAwesomeIcon icon={faDumbbell} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('spa') || lower.includes('wellness') || lower.includes('massage')) {
+    return { icon: <FontAwesomeIcon icon={faSpa} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('restaurant') || lower.includes('dining')) {
+    return { icon: <FontAwesomeIcon icon={faUtensils} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('air condition') || lower.includes('a/c') || lower.includes('ac') || lower.includes('climate')) {
+    return { icon: <FontAwesomeIcon icon={faSnowflake} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('elevator') || lower.includes('lift')) {
+    return { icon: <FontAwesomeIcon icon={faElevator} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('heating')) {
+    return { icon: <FireIcon className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('non-smoking') || lower.includes('smoke-free') || lower.includes('no smoking')) {
+    return { icon: <FontAwesomeIcon icon={faBanSmoking} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('pet') || lower.includes('dog') || lower.includes('animal')) {
+    return { icon: <FontAwesomeIcon icon={faPaw} className={iconClass} />, label: amenity };
+  }
+  if (lower.includes('family')) {
+    return { icon: <UserGroupIcon className={iconClass} />, label: amenity };
+  }
+  // Return null for amenities we don't have icons for
+  return null;
 };
 
 // Budget histogram data (mock - will be calculated from actual prices)
@@ -247,6 +298,7 @@ export const HotelSearchResults: React.FC = () => {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isTravelingForWork, setIsTravelingForWork] = useState(false);
   const [isBackgroundLoading, setIsBackgroundLoading] = useState(false);
+  const [showMobileDateModal, setShowMobileDateModal] = useState(false);
 
   // Sync state with URL if it changes externally
   useEffect(() => {
@@ -846,46 +898,23 @@ export const HotelSearchResults: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Dates Row */}
+                  {/* Dates Row - Click to open modal */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    {/* Check-in */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Check-in date
-                      </label>
-                      <DatePicker
-                        selected={checkInDate}
-                        onChange={(date: Date | null) => setCheckInDate(date)}
-                        selectsStart
-                        startDate={checkInDate}
-                        endDate={checkOutDate}
-                        minDate={new Date()}
-                        dateFormat="EEE, MMM d, yyyy"
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
-                        placeholderText="Select date"
-                        monthsShown={2}
-                      />
+                    <div onClick={() => setShowMobileDateModal(true)}>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Check-in date</label>
+                      <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-medium bg-gray-50 flex items-center">
+                         {checkInDate ? checkInDate.toLocaleDateString() : 'Select date'}
+                      </div>
                     </div>
-
-                    {/* Check-out */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Check-out date
-                      </label>
-                      <DatePicker
-                        selected={checkOutDate}
-                        onChange={(date: Date | null) => setCheckOutDate(date)}
-                        selectsEnd
-                        startDate={checkInDate}
-                        endDate={checkOutDate}
-                        minDate={checkInDate || new Date()}
-                        dateFormat="EEE, MMM d, yyyy"
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-0 text-gray-900 font-medium cursor-pointer"
-                        placeholderText="Select date"
-                        monthsShown={2}
-                      />
+                    <div onClick={() => setShowMobileDateModal(true)}>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Check-out date</label>
+                      <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-medium bg-gray-50 flex items-center">
+                         {checkOutDate ? checkOutDate.toLocaleDateString() : 'Select date'}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Mobile Date Selection Modal - Moved to root */}
 
                   {/* Guests Row */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
@@ -968,7 +997,7 @@ export const HotelSearchResults: React.FC = () => {
                             name="travelingForWork"
                             checked={isTravelingForWork === false}
                             onChange={() => setIsTravelingForWork(false)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            className="w-4 h-4 text-[#E67915] border-gray-300 focus:ring-orange-500"
                           />
                           <span className="ml-2 text-sm text-gray-700">No</span>
                         </label>
@@ -982,7 +1011,7 @@ export const HotelSearchResults: React.FC = () => {
                       handleUpdateSearch();
                       setIsSearchExpanded(false);
                     }}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg shadow-lg"
+                    className="w-full bg-[#E67915] hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg shadow-lg"
                   >
                     Search
                   </button>
@@ -1270,7 +1299,7 @@ export const HotelSearchResults: React.FC = () => {
               <div className="p-1">
                 <button
                   onClick={handleUpdateSearch}
-                  className="w-12 h-12 bg-white text-[#E67915] rounded-full flex items-center justify-center hover:bg-orange-50 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+                  className="w-12 h-12 bg-[#E67915] text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
                   title="Update Search"
                 >
                   <MagnifyingGlassIcon className="w-6 h-6 stroke-[2.5]" />
@@ -1293,15 +1322,7 @@ export const HotelSearchResults: React.FC = () => {
           {/* Mobile Action Buttons - Only show when search is compact on mobile */}
           {!isSearchExpanded && (
             <div className="md:hidden flex items-center justify-center gap-3 mb-4 max-w-md mx-auto">
-              <button
-                onClick={() => {/* Add sort logic */}}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                </svg>
-                <span className="text-sm font-medium text-gray-700">Sort</span>
-              </button>
+
 
               <button
                 onClick={() => setShowMobileFilters(true)}
@@ -1680,6 +1701,8 @@ export const HotelSearchResults: React.FC = () => {
           </div>
 
           {/* Mobile Filter Button */}
+          {/* Mobile Filter Button */}
+          {!showMobileDateModal && (
           <button
             onClick={() => setShowMobileFilters(true)}
             className="lg:hidden fixed bottom-4 left-4 right-4 bg-orange-500 text-white py-3 rounded-lg font-semibold shadow-xl z-40 flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-95 transition-all"
@@ -1687,6 +1710,7 @@ export const HotelSearchResults: React.FC = () => {
             <FunnelIcon className="h-5 w-5" />
             Filters ({filters.starRating.length + filters.facilities.length + (filters.guestRating > 0 ? 1 : 0)})
           </button>
+          )}
 
           {/* Hotel Results */}
           <div className="flex-1">
@@ -1741,7 +1765,7 @@ export const HotelSearchResults: React.FC = () => {
                       initial={skipAnimations ? false : { opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={skipAnimations ? { duration: 0 } : { duration: 0.3, delay: Math.min(index, 10) * 0.03 }}
-                      className={`rounded-lg overflow-hidden transition-all duration-300 relative ${
+                      className={`rounded-lg transition-all duration-300 relative ${
                         (hotel as any).isSearchedHotel
                           ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
                           : 'bg-white shadow-sm hover:shadow-md border border-gray-200'
@@ -1756,10 +1780,10 @@ export const HotelSearchResults: React.FC = () => {
                               src={hotel.image}
                               alt={hotel.name}
                               loading="lazy"
-                              className="w-full h-48 sm:h-full object-cover"
+                              className="w-full h-48 sm:h-full object-cover rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"
                             />
                           ) : (
-                            <div className="w-full h-48 sm:h-full bg-gray-100 flex items-center justify-center">
+                            <div className="w-full h-48 sm:h-full bg-gray-100 flex items-center justify-center rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none">
                               <BuildingOfficeIcon className="h-12 w-12 text-gray-400" />
                             </div>
                           )}
@@ -1840,7 +1864,16 @@ export const HotelSearchResults: React.FC = () => {
 
                                   return (
                                     <div className="flex items-center gap-2 text-xs text-gray-600">
-                                      <FontAwesomeIcon icon={faBed} className="w-4 h-4 text-gray-500" />
+                                      <div className="flex gap-0.5">
+                                        {bedTypes.some(b => b.type === 'twin' || b.label.toLowerCase().includes('twin')) ? (
+                                          <>
+                                            <FontAwesomeIcon icon={faBed} className="w-4 h-4 text-gray-500" />
+                                            <FontAwesomeIcon icon={faBed} className="w-4 h-4 text-gray-500" />
+                                          </>
+                                        ) : (
+                                          <FontAwesomeIcon icon={faBed} className="w-4 h-4 text-gray-500" />
+                                        )}
+                                      </div>
                                       <span>{bedTypes.map(b => b.label).join(' · ')}</span>
                                     </div>
                                   );
@@ -1851,7 +1884,7 @@ export const HotelSearchResults: React.FC = () => {
                             <div className="flex flex-wrap gap-2 mt-auto">
                                 {(hotel as any).free_cancellation && (
                                     <div className="flex items-center gap-1 text-xs font-bold text-green-700">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
                                         Free cancellation
@@ -1860,9 +1893,7 @@ export const HotelSearchResults: React.FC = () => {
                                 {/* Meal type badge - ETG meal values: 'breakfast', 'halfboard', 'fullboard', 'allinclusive' */}
                                 {(hotel as any).meal && (hotel as any).meal !== 'nomeal' && (
                                     <div className="flex items-center gap-1 text-xs font-bold text-green-700">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                        </svg>
+                                        <FontAwesomeIcon icon={faUtensils} className="w-3 h-3" />
                                         {(hotel as any).meal === 'breakfast' && 'Breakfast included'}
                                         {(hotel as any).meal === 'halfboard' && 'Half board'}
                                         {(hotel as any).meal === 'fullboard' && 'Full board'}
@@ -1870,6 +1901,64 @@ export const HotelSearchResults: React.FC = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Amenities Icons with Tooltips */}
+                            {(hotel as any).amenities && (hotel as any).amenities.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1 mt-2">
+                                  {((hotel as any).amenities as string[])
+                                    .map((amenity: string) => getAmenityIcon(amenity))
+                                    .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
+                                    .slice(0, 5)
+                                    .map((amenityData, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="group relative p-1.5 bg-gray-100 rounded-md text-gray-600 hover:bg-orange-100 hover:text-orange-600 transition-colors cursor-default"
+                                        title={amenityData.label}
+                                      >
+                                        {amenityData.icon}
+                                        {/* Tooltip */}
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                          {amenityData.label}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  {((hotel as any).amenities as string[])
+                                    .map((amenity: string) => getAmenityIcon(amenity))
+                                    .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
+                                    .length > 5 && (
+                                      <div className="group relative ml-1 cursor-pointer">
+                                          <span className="text-xs text-gray-500 font-medium hover:text-orange-600 transition-colors">
+                                            +{((hotel as any).amenities as string[])
+                                              .map((amenity: string) => getAmenityIcon(amenity))
+                                              .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
+                                              .length - 5} more
+                                          </span>
+                                          {/* Detailed Tooltip for extra amenities - Displayed ABOVE the text */}
+                                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-auto">
+                                            {/* Invisible bridge to prevent closing when moving to tooltip */}
+                                            <div className="absolute top-full left-0 w-full h-2 bg-transparent"></div>
+
+                                            {/* Arrow properly positioned at bottom of tooltip */}
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-800"></div>
+
+                                            <div className="font-semibold mb-1 border-b border-gray-600 pb-1">More amenities:</div>
+                                            <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                              {((hotel as any).amenities as string[])
+                                                .map((amenity: string) => getAmenityIcon(amenity))
+                                                .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
+                                                .slice(5)
+                                                .map((extra, i) => (
+                                                  <div key={i} className="truncate flex items-center gap-1">
+                                                    <span className="shrink-0">•</span>
+                                                    <span>{extra.label}</span>
+                                                  </div>
+                                                ))}
+                                            </div>
+                                          </div>
+                                      </div>
+                                    )}
+                                </div>
+                            )}
                           </div>
 
                           {/* Right: Price & Action */}
@@ -1892,7 +1981,13 @@ export const HotelSearchResults: React.FC = () => {
                             {/* Price Block */}
                             <div className="flex flex-col items-end gap-2 mt-4 order-2 sm:order-none w-full sm:w-auto">
                                 <div className="text-xs text-gray-500">
-                                    1 night, {searchQuery.adults} adults
+                                    {(() => {
+                                        const checkIn = new Date(searchQuery.checkIn);
+                                        const checkOut = new Date(searchQuery.checkOut);
+                                        const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        return `${diffDays} night${diffDays !== 1 ? 's' : ''}, ${searchQuery.adults} adults`;
+                                    })()}
                                 </div>
                                 {(hotel as any).noRatesAvailable ? (
                                     <div className="text-sm font-bold text-red-600">No rates data</div>
@@ -2055,6 +2150,123 @@ export const HotelSearchResults: React.FC = () => {
                 </div>
               </div>
 
+              {/* Facilities */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Facilities</h3>
+                <div className="space-y-3">
+                    {facilityOptions.slice(0, 6).map(facility => (
+                      <label key={facility.id} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.facilities.includes(facility.id)}
+                          onChange={(e) => {
+                             if (e.target.checked) {
+                               setFilters(prev => ({ ...prev, facilities: [...prev.facilities, facility.id] }));
+                             } else {
+                               setFilters(prev => ({ ...prev, facilities: prev.facilities.filter(f => f !== facility.id) }));
+                             }
+                          }}
+                          className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{facility.label}</span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+
+              {/* Meal Plan */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Meal Plan</h3>
+                <div className="space-y-3">
+                    {[
+                      { id: 'breakfast', label: 'Breakfast included' },
+                      { id: 'half_board', label: 'Half board' },
+                      { id: 'full_board', label: 'Full board' },
+                      { id: 'all_inclusive', label: 'All inclusive' }
+                    ].map(meal => (
+                      <label key={meal.id} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={filters.mealPlan.includes(meal.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFilters(prev => ({ ...prev, mealPlan: [...prev.mealPlan, meal.id] }));
+                            } else {
+                              setFilters(prev => ({ ...prev, mealPlan: prev.mealPlan.filter(m => m !== meal.id) }));
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{meal.label}</span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+
+              {/* Cancellation Policy */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Cancellation Policy</h3>
+                <div className="space-y-3">
+                    {[
+                      { id: 'any', label: 'Any' },
+                      { id: 'free_cancellation', label: 'Free cancellation' },
+                      { id: 'non_refundable', label: 'Non-refundable' }
+                    ].map(policy => (
+                      <label key={policy.id} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="mobileCancellationPolicy"
+                          checked={filters.cancellationPolicy === policy.id}
+                          onChange={() => setFilters(prev => ({ ...prev, cancellationPolicy: policy.id }))}
+                          className="w-5 h-5 border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{policy.label}</span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+
+              {/* Guest Rating */}
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Guest Rating</h3>
+                <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 0, label: 'Any' },
+                      { value: 7, label: '7+' },
+                      { value: 8, label: '8+' },
+                      { value: 9, label: '9+' }
+                    ].map(rating => (
+                      <button
+                        key={rating.value}
+                        onClick={() => setFilters(prev => ({ ...prev, guestRating: rating.value }))}
+                        className={`px-3 py-1.5 rounded border text-sm transition-colors ${
+                          filters.guestRating === rating.value
+                            ? 'bg-orange-500 border-orange-500 text-white'
+                            : 'bg-white border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        {rating.label}
+                      </button>
+                    ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setFilters({
+                  priceRange: [0, maxPrice],
+                  starRating: [],
+                  propertyTypes: [],
+                  facilities: [],
+                  sortBy: 'top_picks',
+                  mealPlan: [],
+                  cancellationPolicy: 'any',
+                  guestRating: 0
+                })}
+                className="w-full text-orange-500 hover:text-orange-600 text-sm font-medium py-2 mb-4"
+              >
+                Clear all filters
+              </button>
+
               <div className="fixed bottom-0 left-0 right-0 sm:relative p-4 bg-white border-t sm:border-t-0 shadow-lg sm:shadow-none">
                 <button
                   onClick={() => setShowMobileFilters(false)}
@@ -2102,7 +2314,7 @@ export const HotelSearchResults: React.FC = () => {
           {/* Split View: Hotels List + Map */}
           <div className="flex h-[calc(100vh-57px)]">
             {/* Hotels List - Left Side */}
-            <div className="w-80 lg:w-96 border-r overflow-y-auto bg-gray-50">
+            <div className="hidden md:block w-80 lg:w-96 border-r overflow-y-auto bg-gray-50">
               {filteredHotels.map((hotel) => (
                 <div
                   key={hotel.id}
@@ -2246,8 +2458,102 @@ export const HotelSearchResults: React.FC = () => {
                   );
                 })}
               </MapContainer>
+
+              {/* Mobile Hotel Carousel */}
+              <div className="md:hidden absolute bottom-4 left-0 right-0 z-[1000] flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory safe-area-bottom">
+                  {filteredHotels.map((hotel) => (
+                    <div
+                      key={hotel.id}
+                      onClick={() => {
+                        setSelectedHotel(hotel);
+                        // handleHotelClick(hotel); // Optional: go to details on click or just select? Standard map behavior is select first click, details second. Keeping simple select for now.
+                      }}
+                      className={`min-w-[85%] sm:min-w-[300px] bg-white rounded-xl shadow-xl snap-center flex overflow-hidden border transition-all ${
+                        selectedHotel?.id === hotel.id ? 'border-orange-500 ring-2 ring-orange-500 ring-opacity-50' : 'border-gray-200'
+                      }`}
+                    >
+                      <div className="w-24 bg-gray-200 shrink-0 relative">
+                         {hotel.image ? (
+                           <img src={hotel.image} className="w-full h-full object-cover" loading="lazy" alt={hotel.name} />
+                         ) : (
+                           <div className="w-full h-full flex items-center justify-center text-gray-400"><BuildingOfficeIcon className="w-8 h-8"/></div>
+                         )}
+                      </div>
+                      <div className="p-3 flex-1 min-w-0 flex flex-col justify-center relative">
+                         <h4 className="font-bold text-sm text-gray-900 truncate mb-1">{hotel.name}</h4>
+                         <div className="flex items-center gap-1 mb-1">
+                            <span className="bg-blue-900 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{Math.min(hotel.rating, 10).toFixed(1)}</span>
+                            <span className="text-xs text-gray-500 truncate">{getScoreText(hotel.rating)}</span>
+                         </div>
+                         <div className="flex items-center justify-between mt-auto">
+                            <div className="font-bold text-[#E67915] text-lg leading-none">
+                                {currencySymbol} {Math.round(hotel.price)}
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleHotelClick(hotel);
+                                }}
+                                className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-sm"
+                            >
+                                View
+                            </button>
+                         </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
+        </div>
+      )}
+      {/* Mobile Date Selection Modal - Root Level */}
+      {showMobileDateModal && (
+        <div className="fixed inset-0 z-[1000] bg-white flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-bold text-gray-900">Select Dates</h2>
+            <button
+                onClick={() => setShowMobileDateModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+                <XMarkIcon className="w-6 h-6 text-gray-500" />
+            </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center pt-8 bg-gray-50">
+            <DatePicker
+                selected={checkInDate}
+                onChange={(dates) => {
+                const [start, end] = dates as [Date | null, Date | null];
+                setCheckInDate(start);
+                setCheckOutDate(end);
+                }}
+                startDate={checkInDate}
+                endDate={checkOutDate}
+                selectsRange
+                inline
+                monthsShown={1}
+                minDate={new Date()}
+            />
+                <div className="mt-6 text-sm text-gray-500 text-center">
+                {checkInDate && checkOutDate ? (
+                    <span className="font-medium text-green-600">
+                        {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} nights selected
+                    </span>
+                ) : (
+                    "Select check-in and check-out dates"
+                )}
+                </div>
+            </div>
+
+            <div className="p-4 border-t bg-white safe-area-bottom">
+            <button
+                onClick={() => setShowMobileDateModal(false)}
+                className="w-full bg-[#E67915] text-white font-bold py-3.5 rounded-xl hover:bg-orange-600 active:scale-95 transition-all shadow-lg text-lg"
+            >
+                Done
+            </button>
+            </div>
         </div>
       )}
     </div>

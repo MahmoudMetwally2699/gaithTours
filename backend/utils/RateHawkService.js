@@ -724,9 +724,12 @@ class RateHawkService {
       // This ensures search results show the same "From" price as details page
       let lowestRate = hotel.rates?.[0];
       let lowestPrice = Infinity;
+      const availableMeals = new Set();
+
 
       if (hotel.rates && hotel.rates.length > 0) {
         for (const rate of hotel.rates) {
+          if (rate.meal) availableMeals.add(rate.meal);
           const pt = rate.payment_options?.payment_types?.[0];
           const showAmt = pt?.show_amount || pt?.amount || Infinity;
 
@@ -750,7 +753,9 @@ class RateHawkService {
 
       // Check for free cancellation and prepayment (using lowest rate)
       const paymentOptions = lowestRate?.payment_options;
-      const cancellationPenalties = lowestRate?.cancellation_penalties;
+      // BUGFIX: cancellation_penalties is inside payment_types[0], not at rate level
+      // The API returns: payment_options.payment_types[0].cancellation_penalties.free_cancellation_before
+      const cancellationPenalties = paymentType?.cancellation_penalties;
 
       const isFreeCancellation = this.checkFreeCancellation(cancellationPenalties);
       const isNoPrepayment = paymentOptions?.payment_types?.some(pt => pt.is_need_credit_card_data === false) ||
@@ -805,6 +810,7 @@ class RateHawkService {
         image: placeholderImage,
         match_hash: lowestRate?.match_hash,
         meal: lowestRate?.meal,
+        availableMeals: Array.from(availableMeals),
         room_name: lowestRate?.room_name,
         // Rate policies for filters
         free_cancellation: isFreeCancellation,
@@ -866,8 +872,9 @@ class RateHawkService {
             const batch = batches[i];
             try {
               // Query Local DB - OPTIMIZED: Only fetch fields we actually use
+              // Added 'amenities' field for displaying amenity icons on search cards
               const localHotels = await HotelContent.find({ hid: { $in: batch } })
-                .select('hid hotelId name address city country countryCode starRating mainImage images')
+                .select('hid hotelId name address city country countryCode starRating mainImage images amenities')
                 .lean();
               console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
 
@@ -890,7 +897,7 @@ class RateHawkService {
                   console.log(`   ⚠️  Hotel ${hotel.name} (HID: ${hotel.hid}) missing country data`);
                 }
 
-                // Add to content map
+                // Add to content map - include amenities for search card display
                 contentMap.set(hotel.hid, {
                   name: hotel.name,
                   address: hotel.address,
@@ -900,7 +907,8 @@ class RateHawkService {
                   images: imageUrl ? [imageUrl] : [],
                   star_rating: hotel.starRating,
                   kind: 'Hotel', // Default
-                  hid: hotel.hid
+                  hid: hotel.hid,
+                  amenities: hotel.amenities || [] // Include amenities for frontend display
                 });
 
                 // Update internal cache with proper data structure
@@ -914,7 +922,8 @@ class RateHawkService {
                     images: imageUrl ? [imageUrl] : [],
                     star_rating: hotel.starRating,
                     kind: 'Hotel',
-                    hid: hotel.hid
+                    hid: hotel.hid,
+                    amenities: hotel.amenities || [] // Include amenities for frontend display
                   },
                   timestamp: now
                 });

@@ -695,15 +695,21 @@ router.get('/search', async (req, res) => {
 
           // Meal plan filter - from rate data
           if (mealPlanFilter.length > 0) {
-            const hotelMeal = (hotel.meal || '').toLowerCase();
-            const hasMatchingMeal = mealPlanFilter.some(meal => {
-              switch (meal) {
-                case 'breakfast': return hotelMeal === 'breakfast';
-                case 'half_board': return hotelMeal === 'halfboard' || hotelMeal === 'half_board';
-                case 'full_board': return hotelMeal === 'fullboard' || hotelMeal === 'full_board';
-                case 'all_inclusive': return hotelMeal === 'allinclusive' || hotelMeal === 'all_inclusive';
-                default: return false;
-              }
+            // Check availableMeals from all rates (if available), otherwise fallback to single hotel.meal
+            const availableMeals = hotel.availableMeals || (hotel.meal ? [hotel.meal] : []);
+
+            const hasMatchingMeal = mealPlanFilter.some(filterMeal => {
+              return availableMeals.some(availMeal => {
+                const m = (availMeal || '').toLowerCase();
+                // Normalize filter values
+                switch (filterMeal) {
+                  case 'breakfast': return m === 'breakfast';
+                  case 'half_board': return m === 'halfboard' || m === 'half-board' || m === 'half_board';
+                  case 'full_board': return m === 'fullboard' || m === 'full-board' || m === 'full_board';
+                  case 'all_inclusive': return m === 'allinclusive' || m === 'all-inclusive' || m === 'all_inclusive';
+                  default: return m === filterMeal;
+                }
+              });
             });
             if (!hasMatchingMeal) return false;
           }
