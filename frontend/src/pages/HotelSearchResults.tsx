@@ -19,7 +19,8 @@ import {
   UserGroupIcon,
   TruckIcon,
   CheckIcon,
-  FireIcon
+  FireIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -267,6 +268,12 @@ export const HotelSearchResults: React.FC = () => {
 
   const toggleFilterSection = (section: string) => {
     setExpandedFilters(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'ar' : 'en';
+    i18n.changeLanguage(newLang);
+    document.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
   // Performance optimization: skip animations when many hotels need to render
@@ -713,8 +720,11 @@ export const HotelSearchResults: React.FC = () => {
                 <div className="hidden md:flex items-center gap-3 bg-white/15 backdrop-blur-md rounded-full px-4 py-2 border border-white/30 shadow-sm">
                    <CurrencySelector variant="light" />
                    <div className="w-px h-4 bg-white/40"></div>
-                   <div className="flex items-center gap-1 cursor-pointer hover:text-orange-100 transition-colors">
-                      <span className="text-sm font-semibold">EN</span>
+                   <div
+                     onClick={toggleLanguage}
+                     className="flex items-center gap-1 cursor-pointer hover:text-orange-100 transition-colors"
+                   >
+                      <span className="text-sm font-semibold">{i18n.language.toUpperCase()}</span>
                       <ChevronDownIcon className="w-3.5 h-3.5" />
                    </div>
                 </div>
@@ -769,6 +779,20 @@ export const HotelSearchResults: React.FC = () => {
 
           {/* Mobile Search Bar - Compact & Expandable (md and below) */}
           <div className="md:hidden">
+            {/* Mobile Currency & Language Row - Added for visibility */}
+            <div className="flex items-center justify-end gap-3 mb-3 px-1">
+               <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 border border-white/20 flex items-center gap-2">
+                 <CurrencySelector variant="light" />
+                 <div className="w-px h-3 bg-white/30"></div>
+                 <button
+                   onClick={toggleLanguage}
+                   className="flex items-center gap-1 text-white hover:text-orange-100 transition-colors"
+                 >
+                    <GlobeAltIcon className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold">{i18n.language.toUpperCase()}</span>
+                 </button>
+               </div>
+            </div>
             {!isSearchExpanded ? (
               /* Compact Search Summary */
               <div className="w-full max-w-5xl mx-auto">

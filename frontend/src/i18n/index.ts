@@ -19,8 +19,7 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        lng: 'en', // Set Arabic as default language
-        fallbackLng: 'en', // Set Arabic as fallback language
+        fallbackLng: 'en', // Set English as fallback language
 
         debug: process.env.NODE_ENV === 'development',
 
@@ -38,8 +37,29 @@ i18n
         },
     });
 
-// Set initial document direction based on default language
-document.dir = 'rtl';
-document.documentElement.lang = 'ar';
+// Set initial document direction based on detected language
+const updateDirection = (lang: string) => {
+    const dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.dir = dir;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dir;
+
+    // Add/remove font class for Arabic
+    if (lang === 'ar') {
+        document.body.classList.add('font-cairo');
+        document.body.classList.remove('font-sans');
+    } else {
+        document.body.classList.add('font-sans');
+        document.body.classList.remove('font-cairo');
+    }
+};
+
+// Initialize direction based on current language
+updateDirection(i18n.language || 'en');
+
+// Listen for language changes
+i18n.on('languageChanged', (lng) => {
+    updateDirection(lng);
+});
 
 export default i18n;
