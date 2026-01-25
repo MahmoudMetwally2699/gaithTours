@@ -122,83 +122,64 @@ HotelContentSchema.index({ cityNormalized: 1, starRating: -1 });
 // Name index for prefix-based autocomplete (fast "starts with" queries)
 HotelContentSchema.index({ name: 1 });
 
-// Static method for smart autocomplete search
+// Static method for FAST autocomplete search
+// Uses ONLY indexed queries - no slow regex on 4M records!
 HotelContentSchema.statics.smartSearch = async function(query, limit = 10, language = 'en') {
   const normalizedQuery = query.toLowerCase().trim();
-  const words = normalizedQuery.split(/\s+/).filter(w => w.length >= 2);
 
-  if (words.length === 0) return { hotels: [], regions: [] };
+  if (normalizedQuery.length < 2) return { hotels: [], regions: [] };
 
-  // Build regex patterns for each word (prefix matching)
-  const regexPatterns = words.map(word => new RegExp(word, 'i'));
+  const startTime = Date.now();
+  let results = [];
 
-  // Strategy 1: Fast prefix match on name (most relevant)
-  const prefixResults = await this.find({
-    name: { $regex: `^${words[0]}`, $options: 'i' }
-  })
-    .select('hid hotelId name city country starRating mainImage')
-    .limit(limit)
-    .lean();
-
-  // Strategy 2: Multi-word match (all words must appear)
-  let multiWordResults = [];
-  if (words.length > 1 || prefixResults.length < limit) {
-    const andConditions = regexPatterns.map(pattern => ({
-      $or: [
-        { name: pattern },
-        { city: pattern },
-        { country: pattern }
-      ]
-    }));
-
-    multiWordResults = await this.find({ $and: andConditions })
+  try {
+    // STRATEGY 1: Use MongoDB text search (uses text index, very fast)
+    // This is the ONLY strategy - text search is indexed and fast
+    results = await this.find(
+      { $text: { $search: normalizedQuery } },
+      { score: { $meta: 'textScore' } }
+    )
       .select('hid hotelId name city country starRating mainImage')
+      .sort({ score: { $meta: 'textScore' } })
       .limit(limit)
+      .maxTimeMS(500) // Timeout after 500ms - never block autocomplete
       .lean();
-  }
 
-  // Strategy 3: Text search fallback (catches partial matches)
-  let textResults = [];
-  if (prefixResults.length + multiWordResults.length < limit) {
+  } catch (textSearchError) {
+    // Text search failed (no index or timeout), try fast city lookup
+    console.log(`   ⚠️ Text search failed: ${textSearchError.message}`);
+
     try {
-      textResults = await this.find(
-        { $text: { $search: query } },
-        { score: { $meta: 'textScore' } }
-      )
+      // FALLBACK: Fast indexed city lookup (cityNormalized is indexed)
+      results = await this.find({ cityNormalized: normalizedQuery })
         .select('hid hotelId name city country starRating mainImage')
-        .sort({ score: { $meta: 'textScore' } })
         .limit(limit)
+        .maxTimeMS(500)
         .lean();
-    } catch (e) {
-      // Text search may fail if index doesn't exist, ignore
+    } catch (cityError) {
+      console.log(`   ⚠️ City lookup failed: ${cityError.message}`);
+      results = [];
     }
   }
 
-  // Deduplicate and merge results (prefix matches first, then multi-word, then text)
-  const seen = new Set();
-  const allResults = [];
+  console.log(`   ⚡ DB query took ${Date.now() - startTime}ms for "${normalizedQuery}"`);
 
-  for (const hotel of [...prefixResults, ...multiWordResults, ...textResults]) {
-    if (!seen.has(hotel.hid)) {
-      seen.add(hotel.hid);
-      allResults.push({
-        id: hotel.hotelId || `hid_${hotel.hid}`,
-        hid: hotel.hid,
-        name: hotel.name,
-        type: 'hotel',
-        location: `${hotel.city || ''}, ${hotel.country || ''}`.replace(/^, |, $/g, ''),
-        city: hotel.city,
-        country: hotel.country,
-        starRating: hotel.starRating,
-        image: hotel.mainImage?.replace('{size}', '240x240')
-      });
-    }
-    if (allResults.length >= limit) break;
-  }
+  // Format results
+  const hotels = results.map(hotel => ({
+    id: hotel.hotelId || `hid_${hotel.hid}`,
+    hid: hotel.hid,
+    name: hotel.name,
+    type: 'hotel',
+    location: `${hotel.city || ''}, ${hotel.country || ''}`.replace(/^, |, $/g, ''),
+    city: hotel.city,
+    country: hotel.country,
+    starRating: hotel.starRating,
+    image: hotel.mainImage?.replace('{size}', '240x240')
+  }));
 
-  // Extract unique cities/regions from results for region suggestions
+  // Extract unique cities for region suggestions
   const citySet = new Map();
-  for (const hotel of allResults) {
+  for (const hotel of hotels) {
     if (hotel.city && !citySet.has(hotel.city.toLowerCase())) {
       citySet.set(hotel.city.toLowerCase(), {
         id: `city_${hotel.city.toLowerCase().replace(/\s+/g, '_')}`,
@@ -210,7 +191,7 @@ HotelContentSchema.statics.smartSearch = async function(query, limit = 10, langu
   }
 
   return {
-    hotels: allResults,
+    hotels: hotels.slice(0, limit),
     regions: Array.from(citySet.values()).slice(0, 5)
   };
 };

@@ -368,108 +368,83 @@ router.get('/suggest', async (req, res) => {
 
     console.log(`🔍 Smart suggest for: "${query}" (Language: ${finalLanguage})`);
 
-    // STEP 1: Local DB search (fast, ~50ms) - search both original and translated
+    // NEW STRATEGY: API is PRIMARY (fast ~200ms), Local DB runs in parallel as bonus
+    // This ensures autocomplete is always fast even if local DB is slow
     const HotelContent = require('../models/HotelContent');
-    let localResults = { hotels: [], regions: [] };
 
-    try {
-      // Search with all query variants (original + translated)
-      const allLocalResults = await Promise.all(
-        searchQueries.map(q => HotelContent.smartSearch(q, 10, finalLanguage))
-      );
+    // Create timeout wrapper for local DB search (300ms max)
+    const localSearchWithTimeout = async (q) => {
+      return Promise.race([
+        HotelContent.smartSearch(q, 10, finalLanguage),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 300))
+      ]).catch(() => ({ hotels: [], regions: [] }));
+    };
 
-      // Merge results, deduplicating by hid
-      const seenHids = new Set();
-      const seenCities = new Set();
+    // Run API and local DB in PARALLEL
+    const [apiResultsRaw, localResultsRaw] = await Promise.all([
+      // Primary: RateHawk API (always runs)
+      Promise.all(
+        searchQueries.map(q => rateHawkService.suggest(q, finalLanguage).catch(() => ({ hotels: [], regions: [] })))
+      ),
+      // Bonus: Local DB with 300ms timeout
+      Promise.all(
+        searchQueries.map(q => localSearchWithTimeout(q))
+      )
+    ]);
 
-      for (const result of allLocalResults) {
-        for (const hotel of result.hotels || []) {
-          if (!seenHids.has(hotel.hid)) {
-            seenHids.add(hotel.hid);
-            localResults.hotels.push(hotel);
-          }
-        }
-        for (const region of result.regions || []) {
-          if (!seenCities.has(region.id)) {
-            seenCities.add(region.id);
-            localResults.regions.push(region);
-          }
-        }
-      }
-
-      console.log(`   📦 Local DB: ${localResults.hotels.length} hotels, ${localResults.regions.length} regions (${Date.now() - startTime}ms)`);
-    } catch (dbError) {
-      console.log(`   ⚠️ Local DB search failed: ${dbError.message}`);
-    }
-
-    // STEP 2: RateHawk API (only if local results insufficient) - search both variants
+    // Merge API results
     let apiResults = { hotels: [], regions: [] };
-    const needsApiCall = localResults.hotels.length < 5 || localResults.regions.length === 0;
+    const seenApiHids = new Set();
+    const seenApiRegions = new Set();
 
-    if (needsApiCall) {
-      try {
-        // Search API with all query variants
-        const allApiResults = await Promise.all(
-          searchQueries.map(q => rateHawkService.suggest(q, finalLanguage).catch(() => ({ hotels: [], regions: [] })))
-        );
-
-        // Merge API results
-        const seenApiHids = new Set();
-        const seenApiRegions = new Set();
-
-        for (const result of allApiResults) {
-          for (const hotel of result.hotels || []) {
-            if (!seenApiHids.has(hotel.hid)) {
-              seenApiHids.add(hotel.hid);
-              apiResults.hotels.push(hotel);
-            }
-          }
-          for (const region of result.regions || []) {
-            if (!seenApiRegions.has(region.id)) {
-              seenApiRegions.add(region.id);
-              apiResults.regions.push(region);
-            }
-          }
+    for (const result of apiResultsRaw) {
+      for (const hotel of result.hotels || []) {
+        if (!seenApiHids.has(hotel.hid)) {
+          seenApiHids.add(hotel.hid);
+          apiResults.hotels.push({
+            id: hotel.id,
+            hid: hotel.hid,
+            name: hotel.label || hotel.name || hotel.id?.replace(/_/g, ' ').toUpperCase(),
+            type: hotel.type || 'hotel',
+            location: hotel.location,
+            coordinates: hotel.coordinates
+          });
         }
-
-        console.log(`   🌐 API: ${apiResults.hotels?.length || 0} hotels, ${apiResults.regions?.length || 0} regions (${Date.now() - startTime}ms)`);
-      } catch (apiError) {
-        console.log(`   ⚠️ API search failed: ${apiError.message}`);
       }
-    } else {
-      console.log(`   ⏭️ Skipping API call - sufficient local results`);
+      for (const region of result.regions || []) {
+        if (!seenApiRegions.has(region.id)) {
+          seenApiRegions.add(region.id);
+          apiResults.regions.push({
+            id: region.id,
+            name: region.name || region.label || region.id,
+            type: region.type,
+            location: region.location,
+            country_code: region.country_code
+          });
+        }
+      }
     }
 
-    // STEP 3: Merge results (local first for speed, then API for comprehensiveness)
-    const seenHids = new Set(localResults.hotels.map(h => h.hid).filter(Boolean));
-    const seenRegionIds = new Set(localResults.regions.map(r => r.id).filter(Boolean));
+    // Merge local DB results (bonus, may be empty if timed out)
+    let localResults = { hotels: [], regions: [] };
+    const seenLocalHids = new Set();
 
-    // Format API hotels
-    const apiHotels = (apiResults.hotels || [])
-      .filter(hotel => !seenHids.has(hotel.hid))
-      .map(hotel => ({
-        id: hotel.id,
-        hid: hotel.hid,
-        name: hotel.label || hotel.name || hotel.id?.replace(/_/g, ' ').toUpperCase(),
-        type: hotel.type || 'hotel',
-        location: hotel.location,
-        coordinates: hotel.coordinates
-      }));
+    for (const result of localResultsRaw) {
+      for (const hotel of result.hotels || []) {
+        if (!seenLocalHids.has(hotel.hid) && !seenApiHids.has(hotel.hid)) {
+          seenLocalHids.add(hotel.hid);
+          localResults.hotels.push(hotel);
+        }
+      }
+    }
 
-    // Format API regions
-    const apiRegions = (apiResults.regions || [])
-      .filter(region => !seenRegionIds.has(region.id))
-      .map(region => ({
-        id: region.id,
-        name: region.name || region.label || region.id,
-        type: region.type,
-        location: region.location,
-        country_code: region.country_code
-      }));
+    console.log(`   🌐 API: ${apiResults.hotels.length} hotels, ${apiResults.regions.length} regions`);
+    console.log(`   📦 Local: ${localResults.hotels.length} bonus hotels`);
+    console.log(`   ⏱️ Total time: ${Date.now() - startTime}ms`);
 
-    // Merge: local results first (already sorted by relevance)
-    const hotels = [...localResults.hotels, ...apiHotels].slice(0, 10);
-    const regions = [...apiRegions, ...localResults.regions].slice(0, 5); // API regions first (more accurate IDs)
+    // Final merge: API first, then local bonus
+    const hotels = [...apiResults.hotels, ...localResults.hotels].slice(0, 10);
+    const regions = apiResults.regions.slice(0, 5);
 
     // Add ETG Test Hotel to suggestions if user types "test"
     if (query.toLowerCase().includes('test')) {
