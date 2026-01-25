@@ -209,6 +209,129 @@ router.get('/suggested', async (req, res) => {
 const suggestionResultCache = new Map();
 const SUGGESTION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Bilingual city name mapping (Arabic → English, English → Arabic)
+// This enables searching "القاهره" to find "Cairo" hotels and vice versa
+const CITY_TRANSLATIONS = {
+  // Egypt
+  'القاهره': 'cairo', 'القاهرة': 'cairo', 'cairo': 'القاهرة',
+  'الإسكندرية': 'alexandria', 'اسكندرية': 'alexandria', 'alexandria': 'الإسكندرية',
+  'الجيزة': 'giza', 'giza': 'الجيزة',
+  'شرم الشيخ': 'sharm el sheikh', 'sharm el sheikh': 'شرم الشيخ', 'sharm': 'شرم الشيخ',
+  'الغردقة': 'hurghada', 'hurghada': 'الغردقة',
+  'الأقصر': 'luxor', 'luxor': 'الأقصر',
+  'أسوان': 'aswan', 'aswan': 'أسوان',
+
+  // Saudi Arabia
+  'مكة': 'makkah', 'مكه': 'makkah', 'مكة المكرمة': 'makkah', 'makkah': 'مكة', 'mecca': 'مكة',
+  'المدينة': 'medina', 'المدينه': 'medina', 'المدينة المنورة': 'medina', 'medina': 'المدينة',
+  'الرياض': 'riyadh', 'riyadh': 'الرياض',
+  'جدة': 'jeddah', 'جده': 'jeddah', 'jeddah': 'جدة',
+  'الدمام': 'dammam', 'dammam': 'الدمام',
+  'الخبر': 'khobar', 'khobar': 'الخبر',
+  'الطائف': 'taif', 'taif': 'الطائف',
+  'ينبع': 'yanbu', 'yanbu': 'ينبع',
+  'أبها': 'abha', 'abha': 'أبها',
+
+  // UAE
+  'دبي': 'dubai', 'dubai': 'دبي',
+  'أبوظبي': 'abu dhabi', 'ابوظبي': 'abu dhabi', 'abu dhabi': 'أبوظبي',
+  'الشارقة': 'sharjah', 'sharjah': 'الشارقة',
+  'عجمان': 'ajman', 'ajman': 'عجمان',
+  'رأس الخيمة': 'ras al khaimah', 'ras al khaimah': 'رأس الخيمة',
+
+  // Other Gulf & Middle East
+  'الدوحة': 'doha', 'doha': 'الدوحة',
+  'المنامة': 'manama', 'manama': 'المنامة',
+  'الكويت': 'kuwait', 'kuwait': 'الكويت',
+  'مسقط': 'muscat', 'muscat': 'مسقط',
+  'عمان': 'amman', 'amman': 'عمان',
+  'بيروت': 'beirut', 'beirut': 'بيروت',
+  'دمشق': 'damascus', 'damascus': 'دمشق',
+  'القدس': 'jerusalem', 'jerusalem': 'القدس',
+  'اسطنبول': 'istanbul', 'istanbul': 'اسطنبول',
+
+  // North Africa
+  'الدار البيضاء': 'casablanca', 'casablanca': 'الدار البيضاء',
+  'مراكش': 'marrakech', 'marrakech': 'مراكش',
+  'تونس': 'tunis', 'tunis': 'تونس',
+  'طرابلس': 'tripoli', 'tripoli': 'طرابلس',
+  'الجزائر': 'algiers', 'algiers': 'الجزائر',
+
+  // Europe & International
+  'لندن': 'london', 'london': 'لندن',
+  'باريس': 'paris', 'paris': 'باريس',
+  'روما': 'rome', 'rome': 'روما',
+  'برشلونة': 'barcelona', 'barcelona': 'برشلونة',
+  'مدريد': 'madrid', 'madrid': 'مدريد',
+  'فيينا': 'vienna', 'vienna': 'فيينا',
+  'موسكو': 'moscow', 'moscow': 'موسكو',
+
+  // Asia
+  'بانكوك': 'bangkok', 'bangkok': 'بانكوك',
+  'طوكيو': 'tokyo', 'tokyo': 'طوكيو',
+  'سنغافورة': 'singapore', 'singapore': 'سنغافورة',
+  'كوالالمبور': 'kuala lumpur', 'kuala lumpur': 'كوالالمبور',
+  'جاكرتا': 'jakarta', 'jakarta': 'جاكرتا',
+  'مومباي': 'mumbai', 'mumbai': 'مومباي',
+  'دلهي': 'delhi', 'delhi': 'دلهي'
+};
+
+// Common Arabic hotel/travel terms
+const TERM_TRANSLATIONS = {
+  'فندق': 'hotel',
+  'فنادق': 'hotels',
+  'منتجع': 'resort',
+  'شقق': 'apartments',
+  'شقة': 'apartment',
+  'سوق': 'souq'
+};
+
+/**
+ * Smart query translation - translates Arabic queries to English equivalents
+ * @param {string} query - User search query
+ * @returns {Object} { originalQuery, translatedQuery, isTranslated, translationUsed }
+ */
+function translateQuery(query) {
+  const normalized = query.toLowerCase().trim();
+
+  // Check for exact city match first
+  if (CITY_TRANSLATIONS[normalized]) {
+    return {
+      originalQuery: query,
+      translatedQuery: CITY_TRANSLATIONS[normalized],
+      isTranslated: true,
+      translationType: 'city'
+    };
+  }
+
+  // Check if query contains a known city name (for multi-word queries like "فندق القاهرة")
+  let translated = normalized;
+  let wasTranslated = false;
+
+  // Replace city names
+  for (const [arabic, english] of Object.entries(CITY_TRANSLATIONS)) {
+    if (/[\u0600-\u06FF]/.test(arabic) && normalized.includes(arabic)) {
+      translated = translated.replace(arabic, english);
+      wasTranslated = true;
+    }
+  }
+
+  // Replace common terms
+  for (const [arabic, english] of Object.entries(TERM_TRANSLATIONS)) {
+    if (normalized.includes(arabic)) {
+      translated = translated.replace(arabic, english);
+      wasTranslated = true;
+    }
+  }
+
+  return {
+    originalQuery: query,
+    translatedQuery: wasTranslated ? translated.trim() : query,
+    isTranslated: wasTranslated,
+    translationType: wasTranslated ? 'partial' : 'none'
+  };
+}
+
 router.get('/suggest', async (req, res) => {
   const startTime = Date.now();
   try {
@@ -225,6 +348,15 @@ router.get('/suggest', async (req, res) => {
     }
 
     const normalizedQuery = query.toLowerCase().trim();
+
+    // SMART TRANSLATION: Translate Arabic queries to English for better matching
+    const translation = translateQuery(query);
+    const searchQueries = [query]; // Always search original
+    if (translation.isTranslated && translation.translatedQuery !== query.toLowerCase()) {
+      searchQueries.push(translation.translatedQuery);
+      console.log(`🌐 Translated: "${query}" → "${translation.translatedQuery}" (${translation.translationType})`);
+    }
+
     const cacheKey = `${normalizedQuery}_${finalLanguage}`;
 
     // Check in-memory cache first (instant, <1ms)
@@ -236,24 +368,70 @@ router.get('/suggest', async (req, res) => {
 
     console.log(`🔍 Smart suggest for: "${query}" (Language: ${finalLanguage})`);
 
-    // STEP 1: Local DB search (fast, ~50ms)
+    // STEP 1: Local DB search (fast, ~50ms) - search both original and translated
     const HotelContent = require('../models/HotelContent');
     let localResults = { hotels: [], regions: [] };
 
     try {
-      localResults = await HotelContent.smartSearch(query, 10, finalLanguage);
+      // Search with all query variants (original + translated)
+      const allLocalResults = await Promise.all(
+        searchQueries.map(q => HotelContent.smartSearch(q, 10, finalLanguage))
+      );
+
+      // Merge results, deduplicating by hid
+      const seenHids = new Set();
+      const seenCities = new Set();
+
+      for (const result of allLocalResults) {
+        for (const hotel of result.hotels || []) {
+          if (!seenHids.has(hotel.hid)) {
+            seenHids.add(hotel.hid);
+            localResults.hotels.push(hotel);
+          }
+        }
+        for (const region of result.regions || []) {
+          if (!seenCities.has(region.id)) {
+            seenCities.add(region.id);
+            localResults.regions.push(region);
+          }
+        }
+      }
+
       console.log(`   📦 Local DB: ${localResults.hotels.length} hotels, ${localResults.regions.length} regions (${Date.now() - startTime}ms)`);
     } catch (dbError) {
       console.log(`   ⚠️ Local DB search failed: ${dbError.message}`);
     }
 
-    // STEP 2: RateHawk API (only if local results insufficient)
+    // STEP 2: RateHawk API (only if local results insufficient) - search both variants
     let apiResults = { hotels: [], regions: [] };
     const needsApiCall = localResults.hotels.length < 5 || localResults.regions.length === 0;
 
     if (needsApiCall) {
       try {
-        apiResults = await rateHawkService.suggest(query, finalLanguage);
+        // Search API with all query variants
+        const allApiResults = await Promise.all(
+          searchQueries.map(q => rateHawkService.suggest(q, finalLanguage).catch(() => ({ hotels: [], regions: [] })))
+        );
+
+        // Merge API results
+        const seenApiHids = new Set();
+        const seenApiRegions = new Set();
+
+        for (const result of allApiResults) {
+          for (const hotel of result.hotels || []) {
+            if (!seenApiHids.has(hotel.hid)) {
+              seenApiHids.add(hotel.hid);
+              apiResults.hotels.push(hotel);
+            }
+          }
+          for (const region of result.regions || []) {
+            if (!seenApiRegions.has(region.id)) {
+              seenApiRegions.add(region.id);
+              apiResults.regions.push(region);
+            }
+          }
+        }
+
         console.log(`   🌐 API: ${apiResults.hotels?.length || 0} hotels, ${apiResults.regions?.length || 0} regions (${Date.now() - startTime}ms)`);
       } catch (apiError) {
         console.log(`   ⚠️ API search failed: ${apiError.message}`);
