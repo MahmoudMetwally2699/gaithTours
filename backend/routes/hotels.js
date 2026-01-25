@@ -324,48 +324,42 @@ router.get('/search', async (req, res) => {
     const limitNumber = parseInt(limit) || 20;
 
     // Generate cache key WITHOUT page number (cache all results together, paginate from cache)
-    // v9: Added all filters to cache key
+    // v11: Simplified - no batch logic since RateHawk API returns all results in one call
     const starFilterKey = starRatingFilter.length > 0 ? `_stars${starRatingFilter.sort().join('')}` : '';
     const facilitiesKey = facilitiesFilter.length > 0 ? `_fac${facilitiesFilter.sort().join('')}` : '';
     const mealKey = mealPlanFilter.length > 0 ? `_meal${mealPlanFilter.sort().join('')}` : '';
     const cancelKey = cancellationPolicyFilter ? `_cancel${cancellationPolicyFilter}` : '';
     const guestKey = guestRatingFilter > 0 ? `_guest${guestRatingFilter}` : '';
     const filterKey = `${starFilterKey}${facilitiesKey}${mealKey}${cancelKey}${guestKey}`;
-    const cacheKey = `v10_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}${filterKey}`;
+    const cacheKey = `v11_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}${filterKey}`;
 
-    // PROGRESSIVE LOADING: Determine which batch we need
-    // Batch 1 (pages 1-5): Hotels 0-99
-    // Batch 2 (pages 6-10): Hotels 100-199
-    // Batch 3 (pages 11-15): Hotels 200-299
-    const hotelsPerBatch = 100;
-    const batchNumber = Math.floor((pageNumber - 1) / 5) + 1; // Which batch does this page belong to?
-    const batchCacheKey = `${cacheKey}_batch${batchNumber}`;
+    console.log(`📄 Page ${pageNumber}, Limit ${limitNumber} for: ${destination}`);
 
-    console.log(`📄 Page ${pageNumber} → Batch ${batchNumber} (${(batchNumber - 1) * hotelsPerBatch}-${batchNumber * hotelsPerBatch - 1})`);
+    // Check cache first - if we have ALL results cached, paginate from cache
+    if (hotelSearchCache.has(cacheKey)) {
+      console.log(`📦 Returning from cache for: ${destination} (page ${pageNumber})`);
+      const cached = hotelSearchCache.get(cacheKey);
 
-    // Check cache first - if we have this batch cached, use it
-    if (hotelSearchCache.has(batchCacheKey)) {
-      console.log(`📦 Returning cached batch ${batchNumber} for: ${destination} (page ${pageNumber})`);
-      const cached = hotelSearchCache.get(batchCacheKey);
-
-      // Paginate within the batch
-      const batchStartIndex = (batchNumber - 1) * hotelsPerBatch;
-      const pageIndexInBatch = (pageNumber - 1) - (Math.floor((pageNumber - 1) / 5) * 5);
-      const startIndex = pageIndexInBatch * limitNumber;
+      // Paginate from cached results
+      const startIndex = (pageNumber - 1) * limitNumber;
       const endIndex = startIndex + limitNumber;
       const paginatedHotels = cached.hotels.slice(startIndex, endIndex);
       const totalResults = cached.total || cached.hotels.length || 0;
+      const totalPages = Math.ceil(totalResults / limitNumber);
+
+      // Check if there are more hotels to load
+      const hasMore = endIndex < cached.hotels.length;
 
       return successResponse(res, {
         hotels: paginatedHotels,
         total: totalResults,
         page: pageNumber,
         limit: limitNumber,
-        totalPages: Math.ceil(totalResults / limitNumber),
-        hasMore: pageNumber < Math.ceil(totalResults / limitNumber),
+        totalPages: totalPages,
+        hasMore: hasMore,
         fromCache: true,
-        batch: batchNumber
-      }, `Hotels retrieved from cache (batch ${batchNumber}, page ${pageNumber})`);
+        hotelsWithRates: cached.hotels.length // Show actual count of hotels with rates
+      }, `Hotels retrieved from cache (page ${pageNumber}/${totalPages})`);
     }
 
     // Use default dates if not provided (today, 1 night - same as homepage)
@@ -493,11 +487,10 @@ router.get('/search', async (req, res) => {
 
     const regionId = regionToSearch.region_id || regionToSearch.id;
 
-    // PROGRESSIVE LOADING: Only fetch hotels for the current batch
-    // Batch 1 (pages 1-5): Fetch 100 hotels
-    // Batch 2 (pages 6-10): Fetch next 100 hotels
-    // This makes initial load 2x faster!
-    const maxResultsForBatch = 100; // Fetch only 100 hotels per batch
+    // NOTE: RateHawk SERP API returns ALL hotels with rates in a single call
+    // There is NO pagination support (no offset/cursor), so we get everything at once
+    // The API typically returns 100-500 hotels depending on city availability
+    // We cache these results and paginate on our end for the frontend
 
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
@@ -507,7 +500,7 @@ router.get('/search', async (req, res) => {
       language: finalLanguage,
       // Local DB enrichment - no limit needed (DB has no rate limits)
       enrichmentLimit: 0, // 0 = enrich all hotels
-      maxResults: maxResultsForBatch, // Fetch only 100 hotels (5 pages worth)
+      maxResults: 0, // 0 = no limit - return ALL hotels with rates from API
       // API-LEVEL FILTERS: Pass to RateHawk API for server-side filtering
       stars: starRatingFilter.length > 0 ? starRatingFilter : null,
       mealFilter: mealPlanFilter.length > 0 ? mealPlanFilter : null,
@@ -930,43 +923,40 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    // Cache this batch (not all results)
-    hotelSearchCache.set(batchCacheKey, {
+    // Cache ALL results (not batches)
+    hotelSearchCache.set(cacheKey, {
       hotels: allHotels,
-      total: realisticTotal,
+      total: allHotels.length, // Use actual count of hotels with rates, not DB count
       timestamp: Date.now(),
-      region: regionToSearch,
-      batch: batchNumber
+      region: regionToSearch
     });
 
     // Auto-clear cache after 10 minutes
     setTimeout(() => {
-      hotelSearchCache.delete(batchCacheKey);
+      hotelSearchCache.delete(cacheKey);
     }, 10 * 60 * 1000);
 
-    // Now paginate the results for this specific page
-    const batchStartIndex = (batchNumber - 1) * hotelsPerBatch;
-    const pageIndexInBatch = (pageNumber - 1) - (Math.floor((pageNumber - 1) / 5) * 5);
-    const startIndex = pageIndexInBatch * limitNumber;
+    // Paginate the results for this specific page
+    const startIndex = (pageNumber - 1) * limitNumber;
     const endIndex = startIndex + limitNumber;
     const paginatedHotels = allHotels.slice(startIndex, endIndex);
-    const finalTotal = realisticTotal; // Use realistic total instead of raw DB count
-    const finalTotalPages = Math.ceil(finalTotal / limitNumber);
+    const totalHotelsWithRates = allHotels.length;
+    const finalTotalPages = Math.ceil(totalHotelsWithRates / limitNumber);
+    const hasMoreHotels = endIndex < allHotels.length;
 
-    console.log(`   📄 Returning batch ${batchNumber}, page ${pageNumber}: hotels ${startIndex + 1}-${Math.min(endIndex, allHotels.length)} of ${allHotels.length} in batch`);
-    console.log(`   📊 Total available: ${finalTotal} hotels, ${finalTotalPages} pages`);
+    console.log(`   📄 Returning page ${pageNumber}/${finalTotalPages}: hotels ${startIndex + 1}-${Math.min(endIndex, allHotels.length)} of ${allHotels.length} with rates`);
 
     successResponse(res, {
       hotels: paginatedHotels,
-      total: finalTotal,
+      total: totalHotelsWithRates, // Actual count of hotels with rates
       page: pageNumber,
       limit: limitNumber,
       totalPages: finalTotalPages,
-      hasMore: pageNumber < finalTotalPages,
-      batch: batchNumber, // Tell frontend which batch this is
+      hasMore: hasMoreHotels,
+      hotelsWithRates: totalHotelsWithRates, // Explicit count for frontend
       region: regionToSearch.name || regionToSearch.region_name || 'Unknown',
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
-    }, `Batch ${batchNumber}, Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} hotels`);
+    }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} of ${totalHotelsWithRates} hotels with rates`);
 
   } catch (error) {
     console.error('Hotel search error:', error);
