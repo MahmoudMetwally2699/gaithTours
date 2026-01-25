@@ -3,7 +3,7 @@ const path = require('path');
 const zlib = require('zlib');
 const fzstd = require('fzstd'); // You need this dependency installed
 const readline = require('readline');
-const ZstdDecompressStream = require('./utils/ZstdDecompressStream'); // Ensure this path is correct
+const ZstdDecompressStream = require('./utils/ZstdDecompressStream');
 
 async function checkDumpFile() {
   const dumpDir = path.join(__dirname, 'data/dumps');
@@ -26,18 +26,27 @@ async function checkDumpFile() {
       crlfDelay: Infinity
     });
 
+    let count = 0;
+    console.log('Searching for Makkah Clock Royal Tower (hid: 7821215)... this may take a moment.');
+
     for await (const line of rl) {
+      count++;
+      if (count % 10000 === 0) process.stdout.write('.');
+
       const hotel = JSON.parse(line);
-      console.log('--- FIRST RECORD IN DUMP ---');
-      console.log(`ID: ${hotel.id}`);
-      console.log(`Region in dump? ${hotel.region ? 'YES' : 'NO'}`);
-      if (hotel.region) console.log(JSON.stringify(hotel.region, null, 2));
+      if (hotel.id === 'fairmont_makkah_clock_royal_tower' || hotel.hid === 7821215) {
+        console.log('\n\n--- TARGET HOTEL FOUND IN DUMP ---');
+        console.log(`ID: ${hotel.id}`);
+        console.log(`Region in dump? ${hotel.region ? 'YES' : 'NO'}`);
+        if (hotel.region) console.log(JSON.stringify(hotel.region, null, 2));
 
-      console.log(`PolicyStruct in dump? ${hotel.policy_struct ? 'YES' : 'NO'}`);
+        console.log(`PolicyStruct in dump? ${hotel.policy_struct ? 'YES' : 'NO'}`);
 
-      console.log(`MetapolicyStruct in dump? ${hotel.metapolicy_struct ? 'YES' : 'NO'}`);
-      break; // Only check the first one
+        console.log(`MetapolicyStruct in dump? ${hotel.metapolicy_struct ? 'YES' : 'NO'}`);
+        return;
+      }
     }
+    console.log('\nHotel not found in dump');
   } catch (err) {
     console.error('Error reading dump:', err);
   }
