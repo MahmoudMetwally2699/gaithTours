@@ -56,6 +56,7 @@ import { RoomCard } from '../components/RoomCard';
 import { PriceBreakdownCard } from '../components/PriceBreakdownCard';
 import { CancellationPolicyCard } from '../components/CancellationPolicyCard';
 import { HotelPoliciesCard } from '../components/HotelPoliciesCard';
+import { HotelLocationBadge } from '../components/HotelLocationBadge';
 import { LazyImage } from '../components/LazyImage';
 import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -1041,14 +1042,45 @@ export const HotelDetails: React.FC = () => {
                  <div className="flex items-center mt-1 md:mt-0">{renderStars(hotel.rating)}</div>
               </div>
 
-              <div className="flex items-center text-sm text-gray-600 mb-4">
-                 <MapPinIcon className="h-4 w-4 mr-1 text-orange-500" />
-                 <span>{hotel.address}</span>
-                 <span className="mx-2">•</span>
-                 <span className="text-blue-600">{hotel.city}</span>
-                 <span className="mx-2">•</span>
-                 <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('hotels.showOnMap', 'Show on map')}</button>
-              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-2">
+                  <MapPinIcon className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                  <span>{hotel.address}</span>
+                  {hotel.city && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <span className="text-blue-600 font-medium">{hotel.city}</span>
+                    </>
+                  )}
+                  {(hotel as any).country && (
+                    <>
+                      <span className="mx-1">•</span>
+                      <span className="text-gray-500">{(hotel as any).country}</span>
+                    </>
+                  )}
+                  <span className="mx-1">•</span>
+                  <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('hotels.showOnMap', 'Show on map')}</button>
+               </div>
+
+               {/* Region Badges - Like Booking.com */}
+               {(hotel as any).region && (
+                 <div className="flex flex-wrap gap-2 mb-3">
+                   {(hotel as any).region.type && (hotel as any).region.type !== 'City' && (
+                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                       {(hotel as any).region.type}
+                     </span>
+                   )}
+                   {(hotel as any).region.iata && (
+                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-blue-500 text-white">
+                       {(hotel as any).region.iata}
+                     </span>
+                   )}
+                   {(hotel as any).countryCode && (
+                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                       {(hotel as any).countryCode}
+                     </span>
+                   )}
+                 </div>
+               )}
 
               <div className="flex items-center gap-4">
                  {/* Only show rating if there are actual reviews */}
@@ -1472,6 +1504,7 @@ export const HotelDetails: React.FC = () => {
             checkOutTime={hotel.checkOut || undefined}
             metapolicyInfo={(hotel as any).metapolicy_extra_info || undefined}
             metapolicyStruct={(hotel as any).metapolicy_struct || undefined}
+            policyStruct={(hotel as any).policy_struct || undefined}
           />
         </div>
 

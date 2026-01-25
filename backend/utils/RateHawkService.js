@@ -1716,8 +1716,11 @@ class RateHawkService {
       name: staticContent?.name || hotelData.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
       description: staticContent?.description_struct?.[0]?.paragraphs?.join('\n\n') || '',
       address: staticContent?.address || '',
-      city: staticContent?.region?.name || '',
-      // Country removed - Content API doesn't return correct country data
+      city: staticContent?.region?.name || staticContent?.city || '',
+      country: staticContent?.region?.country_name || staticContent?.country || '',
+      countryCode: staticContent?.region?.country_code || staticContent?.countryCode || '',
+      // Full region object for detailed location display (like Booking.com)
+      region: staticContent?.region || null,
       coordinates: {
         latitude: staticContent?.latitude || 0,
         longitude: staticContent?.longitude || 0
@@ -1732,6 +1735,7 @@ class RateHawkService {
       check_out_time: staticContent?.checkOutTime || staticContent?.check_out_time || '12:00',
       metapolicy_extra_info: staticContent?.metapolicyExtraInfo || staticContent?.metapolicy_extra_info || '',
       metapolicy_struct: staticContent?.metapolicyStruct || staticContent?.metapolicy_struct || null,
+      policy_struct: staticContent?.policyStruct || staticContent?.policy_struct || null,
       // Review data from hotel_reviews collection
       rating: reviewData?.overall_rating || null,
       reviewScore: reviewData?.overall_rating || null,

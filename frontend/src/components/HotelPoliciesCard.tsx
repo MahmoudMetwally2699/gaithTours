@@ -8,104 +8,169 @@ import {
   BanknotesIcon,
   TruckIcon,
   WifiIcon,
-  NoSymbolIcon
+  NoSymbolIcon,
+  TicketIcon,
+  GlobeAltIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBed, faUtensils, faDog, faCar, faBaby } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * HotelPoliciesCard Component - Displays hotel policies and rules
  *
  * FEATURES IMPLEMENTED FOR RATEHAWK CERTIFICATION:
  *
- * ✅ Point 4: metapolicy_struct and metapolicy_extra_info Display (Lines 152-445)
+ * ✅ Point 4: metapolicy_struct and metapolicy_extra_info Display
  *
- * Parses and displays metapolicy_extra_info:
- *    - Strips HTML tags from policy text
- *    - Displays as readable list with appropriate icons
- *
- * Parses and displays metapolicy_struct with sections for:
- *    - Deposit & Payment (accepted methods, deposit requirements)
- *    - Internet/WiFi (type, location, free/paid)
- *    - Parking (availability, type, cost, location)
- *    - Pets (allowed/not allowed, charges)
- *    - Children policy (age restrictions, policies)
- *    - Extra bed & Cot/Crib (availability, pricing, age ranges)
- *    - Shuttle service (availability, type, pricing)
- *    - No-show penalties
- *    - Additional fees breakdown
- *    - Check-in/Check-out times (from struct or simple fields)
- *
- * Each policy section displays with:
- *    - Appropriate icon (WiFi, Parking, Pets, etc.)
- *    - Color coding (green for included, orange for paid, red for restrictions)
- *    - Clear formatting in responsive grid layout
+ * Parses and displays metapolicy_struct with ALL sections from ETG API:
+ *    - add_fee: Additional fees (resort fees, tourism taxes, etc.)
+ *    - check_in_check_out: Check-in and check-out times
+ *    - children: Extra bed pricing by child age range
+ *    - children_meal: Meal pricing for children by age
+ *    - cot: Crib/cot availability and pricing
+ *    - deposit: Various deposit types (breakage, keys, pet, etc.)
+ *    - extra_bed: Extra bed availability and pricing
+ *    - internet: WiFi availability and pricing by area
+ *    - meal: Meal pricing for adults
+ *    - no_show: No-show penalty policy
+ *    - parking: Parking availability and pricing
+ *    - pets: Pet policy and pricing
+ *    - shuttle: Shuttle service availability and pricing
+ *    - visa: Visa support availability
  */
 
+// ETG API metapolicy_struct interfaces - matching actual API response format
+interface ChildrenPolicy {
+  age_start: number;
+  age_end: number;
+  extra_bed: string;
+  price: string;
+  currency: string;
+}
+
+interface ChildrenMealPolicy {
+  age_start: number;
+  age_end: number;
+  meal_type: string;
+  inclusion: string;
+  price: string;
+  currency: string;
+}
+
+interface CotPolicy {
+  amount: number;
+  inclusion: string;
+  price: string;
+  currency: string;
+  price_unit: string;
+}
+
+interface DepositPolicy {
+  availability: string;
+  deposit_type: string;
+  payment_type: string;
+  price: string;
+  currency: string;
+  price_unit: string;
+  pricing_method: string;
+}
+
+interface ExtraBedPolicy {
+  amount: number;
+  inclusion: string;
+  price: string;
+  currency: string;
+  price_unit: string;
+}
+
+interface InternetPolicy {
+  internet_type: string;
+  work_area: string;
+  inclusion: string;
+  price: string;
+  currency: string;
+  price_unit: string;
+}
+
+interface MealPolicy {
+  meal_type: string;
+  inclusion: string;
+  price: string;
+  currency: string;
+}
+
+interface NoShowPolicy {
+  availability: string;
+  day_period: string;
+  time: string;
+}
+
+interface ParkingPolicy {
+  inclusion: string;
+  territory_type: string;
+  price: string;
+  currency: string;
+  price_unit: string;
+}
+
+interface PetsPolicy {
+  inclusion: string;
+  pets_type: string;
+  price: string;
+  currency: string;
+  price_unit: string;
+}
+
+interface ShuttlePolicy {
+  shuttle_type: string;
+  destination_type: string;
+  inclusion: string;
+  price: string;
+  currency: string;
+}
+
+interface VisaPolicy {
+  visa_support: string;
+}
+
+interface AddFeePolicy {
+  fee_type: string;
+  amount: string;
+  currency: string;
+  frequency?: string;
+  price_unit?: string;
+  inclusion?: string;
+}
+
+interface CheckInCheckOutPolicy {
+  check_in_from?: string;
+  check_in_to?: string;
+  check_out_from?: string;
+  check_out_to?: string;
+}
+
 interface MetapolicyStruct {
-  deposit?: {
-    deposit?: string;
-    deposit_required?: boolean;
-    accepted_payment_methods?: string[];
-  };
-  internet?: {
-    internet_type?: string;
-    internet_where?: string;
-    is_paid?: boolean;
-  };
-  meal?: {
-    meal_type?: string;
-    meal_where?: string;
-  };
-  children_meal?: {
-    availability?: string;
-    price?: string;
-  };
-  extra_bed?: {
-    availability?: string;
-    price?: string;
-    age_range?: string;
-  };
-  cot?: {
-    availability?: string;
-    price?: string;
-  };
-  pets?: {
-    allowed?: boolean;
-    charge?: string;
-  };
-  shuttle?: {
-    availability?: string;
-    type?: string;
-    price?: string;
-  };
-  parking?: {
-    availability?: string;
-    type?: string;
-    cost?: string;
-    location?: string;
-  };
-  children?: {
-    age?: string;
-    policy?: string;
-  };
-  visa?: {
-    support?: boolean;
-    details?: string;
-  };
-  no_show?: {
-    penalty?: string;
-  };
-  add_fee?: Array<{
-    fee_type?: string;
-    amount?: string;
-    currency?: string;
-    frequency?: string;
-  }>;
-  check_in_check_out?: {
-    check_in_from?: string;
-    check_in_to?: string;
-    check_out_from?: string;
-    check_out_to?: string;
-  };
+  add_fee?: AddFeePolicy[];
+  check_in_check_out?: CheckInCheckOutPolicy[];
+  children?: ChildrenPolicy[];
+  children_meal?: ChildrenMealPolicy[];
+  cot?: CotPolicy[];
+  deposit?: DepositPolicy[];
+  extra_bed?: ExtraBedPolicy[];
+  internet?: InternetPolicy[];
+  meal?: MealPolicy[];
+  no_show?: NoShowPolicy;
+  parking?: ParkingPolicy[];
+  pets?: PetsPolicy[];
+  shuttle?: ShuttlePolicy[];
+  visa?: VisaPolicy;
+}
+
+// policy_struct is a different format from metapolicy_struct
+interface PolicyStructSection {
+  title: string;
+  paragraphs: string[];
 }
 
 interface HotelPoliciesCardProps {
@@ -113,30 +178,65 @@ interface HotelPoliciesCardProps {
   checkOutTime?: string;
   metapolicyInfo?: string;
   metapolicyStruct?: MetapolicyStruct;
+  policyStruct?: PolicyStructSection[];
 }
+
+// Helper function to format price unit
+const formatPriceUnit = (unit: string): string => {
+  const units: { [key: string]: string } = {
+    'per_room_per_night': 'per room/night',
+    'per_room_per_stay': 'per room/stay',
+    'per_guest_per_night': 'per guest/night',
+    'per_guest_per_stay': 'per guest/stay',
+    'per_car_per_night': 'per car/night',
+    'per_hour': 'per hour',
+    'unspecified': ''
+  };
+  return units[unit] || unit.replace(/_/g, ' ');
+};
+
+// Helper function to format inclusion status
+const formatInclusion = (inclusion: string): { text: string; isIncluded: boolean } => {
+  if (inclusion === 'included') {
+    return { text: 'Included', isIncluded: true };
+  }
+  return { text: 'Additional charge', isIncluded: false };
+};
+
+// Helper function to capitalize first letter
+const capitalize = (str: string): string => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ');
+};
+
+// Helper function to get currency with USD default
+const getCurrency = (currency: string | undefined): string => {
+  if (!currency || currency.trim() === '') return 'USD';
+  return currency;
+};
 
 export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
   checkInTime,
   checkOutTime,
   metapolicyInfo,
-  metapolicyStruct
+  metapolicyStruct,
+  policyStruct
 }) => {
   // Parse metapolicy info - strip HTML tags and convert to readable text
   const parsePolicies = (): string[] => {
     if (!metapolicyInfo) return [];
 
-    // Strip HTML tags and convert to plain text
     const stripHtml = (html: string): string => {
       return html
-        .replace(/<br\s*\/?>/gi, '\n')           // Convert <br> to newlines
-        .replace(/<\/li>/gi, '\n')               // Convert </li> to newlines
-        .replace(/<\/p>/gi, '\n')                // Convert </p> to newlines
-        .replace(/<[^>]*>/g, '')                 // Remove all other HTML tags
-        .replace(/&nbsp;/g, ' ')                 // Convert &nbsp; to spaces
-        .replace(/&amp;/g, '&')                  // Convert &amp; to &
-        .replace(/&lt;/g, '<')                   // Convert &lt; to <
-        .replace(/&gt;/g, '>')                   // Convert &gt; to >
-        .replace(/\n\s*\n/g, '\n')               // Remove empty lines
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\n\s*\n/g, '\n')
         .trim();
     };
 
@@ -146,7 +246,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
 
     lines.forEach(line => {
       const trimmed = line.trim();
-      if (trimmed && trimmed.length > 3) {       // Filter out very short lines
+      if (trimmed && trimmed.length > 3) {
         policies.push(trimmed);
       }
     });
@@ -180,21 +280,41 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
 
   // Check if we have structured policy data
   const hasStructuredPolicies = metapolicyStruct && Object.keys(metapolicyStruct).length > 0;
-  const hasPolicies = checkInTime || checkOutTime || policies.length > 0 || hasStructuredPolicies;
+  const hasPolicyStruct = policyStruct && policyStruct.length > 0;
+  const hasPolicies = checkInTime || checkOutTime || policies.length > 0 || hasStructuredPolicies || hasPolicyStruct;
 
   if (!hasPolicies) {
     return null;
   }
 
   // Render a structured policy section
-  const renderPolicyItem = (icon: React.ReactNode, title: string, content: string | React.ReactNode) => (
+  const renderPolicyItem = (icon: React.ReactNode, title: string, content: React.ReactNode) => (
     <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
       <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
         {icon}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900">{title}</p>
         <div className="text-sm text-gray-600 mt-0.5">{content}</div>
+      </div>
+    </div>
+  );
+
+  // Render multiple items in a list
+  const renderPolicyList = (icon: React.ReactNode, title: string, items: React.ReactNode[]) => (
+    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+      <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 mb-2">{title}</p>
+        <div className="space-y-1.5">
+          {items.map((item, idx) => (
+            <div key={idx} className="text-sm text-gray-600 pl-2 border-l-2 border-orange-200">
+              {item}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -210,9 +330,9 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
       </div>
 
       {/* Check-in/Check-out Times */}
-      {(checkInTime || checkOutTime || metapolicyStruct?.check_in_check_out) && (
+      {(checkInTime || checkOutTime || (metapolicyStruct?.check_in_check_out && metapolicyStruct.check_in_check_out.length > 0)) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(checkInTime || metapolicyStruct?.check_in_check_out?.check_in_from) && (
+          {(checkInTime || (metapolicyStruct?.check_in_check_out?.[0]?.check_in_from)) && (
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <ClockIcon className="h-5 w-5 text-orange-600" />
@@ -220,15 +340,15 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
               <div>
                 <p className="text-sm font-medium text-gray-900">Check-in</p>
                 <p className="text-sm text-gray-600 mt-0.5">
-                  {checkInTime || `From ${metapolicyStruct?.check_in_check_out?.check_in_from || '15:00'}`}
-                  {metapolicyStruct?.check_in_check_out?.check_in_to &&
-                    ` - Until ${metapolicyStruct.check_in_check_out.check_in_to}`}
+                  {checkInTime || `From ${metapolicyStruct?.check_in_check_out?.[0]?.check_in_from || '15:00'}`}
+                  {metapolicyStruct?.check_in_check_out?.[0]?.check_in_to &&
+                    ` - Until ${metapolicyStruct.check_in_check_out[0].check_in_to}`}
                 </p>
               </div>
             </div>
           )}
 
-          {(checkOutTime || metapolicyStruct?.check_in_check_out?.check_out_from) && (
+          {(checkOutTime || (metapolicyStruct?.check_in_check_out?.[0]?.check_out_to)) && (
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <ClockIcon className="h-5 w-5 text-orange-600" />
@@ -236,7 +356,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
               <div>
                 <p className="text-sm font-medium text-gray-900">Check-out</p>
                 <p className="text-sm text-gray-600 mt-0.5">
-                  {checkOutTime || `Until ${metapolicyStruct?.check_in_check_out?.check_out_to || '12:00'}`}
+                  {checkOutTime || `Until ${metapolicyStruct?.check_in_check_out?.[0]?.check_out_to || '12:00'}`}
                 </p>
               </div>
             </div>
@@ -246,169 +366,271 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
 
       {/* Structured Policy Sections */}
       {hasStructuredPolicies && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h4 className="text-sm font-semibold text-gray-900">Property Rules & Amenities</h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Deposit Policy */}
-            {metapolicyStruct?.deposit && (
-              renderPolicyItem(
-                <BanknotesIcon className="h-5 w-5 text-orange-600" />,
-                "Deposit & Payment",
-                <>
-                  {metapolicyStruct.deposit.deposit_required !== false && (
-                    <span>Deposit required. </span>
-                  )}
-                  {metapolicyStruct.deposit.accepted_payment_methods && metapolicyStruct.deposit.accepted_payment_methods.length > 0 && (
-                    <span>Accepts: {metapolicyStruct.deposit.accepted_payment_methods.join(', ')}</span>
-                  )}
-                  {metapolicyStruct.deposit.deposit && (
-                    <span>{metapolicyStruct.deposit.deposit}</span>
-                  )}
-                </>
-              )
-            )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
-            {/* Internet */}
-            {metapolicyStruct?.internet && (
-              renderPolicyItem(
-                <WifiIcon className="h-5 w-5 text-orange-600" />,
-                "Internet",
-                <>
-                  {metapolicyStruct.internet.internet_type && (
-                    <span className="capitalize">{metapolicyStruct.internet.internet_type}</span>
-                  )}
-                  {metapolicyStruct.internet.internet_where && (
-                    <span> ({metapolicyStruct.internet.internet_where})</span>
-                  )}
-                  {metapolicyStruct.internet.is_paid && (
-                    <span className="text-orange-600 font-medium"> - Charges apply</span>
-                  )}
-                  {!metapolicyStruct.internet.is_paid && (
-                    <span className="text-green-600 font-medium"> - Free</span>
-                  )}
-                </>
-              )
-            )}
-
-            {/* Parking */}
-            {metapolicyStruct?.parking && (
-              renderPolicyItem(
-                <TruckIcon className="h-5 w-5 text-orange-600" />,
-                "Parking",
-                <>
-                  {metapolicyStruct.parking.availability && (
-                    <span className="capitalize">{metapolicyStruct.parking.availability}</span>
-                  )}
-                  {metapolicyStruct.parking.type && (
-                    <span> - {metapolicyStruct.parking.type}</span>
-                  )}
-                  {metapolicyStruct.parking.cost && (
-                    <span> ({metapolicyStruct.parking.cost})</span>
-                  )}
-                  {metapolicyStruct.parking.location && (
-                    <span> - {metapolicyStruct.parking.location}</span>
-                  )}
-                </>
-              )
-            )}
-
-            {/* Pets */}
-            {metapolicyStruct?.pets && (
-              renderPolicyItem(
-                metapolicyStruct.pets.allowed
-                  ? <HomeIcon className="h-5 w-5 text-green-600" />
-                  : <NoSymbolIcon className="h-5 w-5 text-red-600" />,
-                "Pets",
-                <>
-                  {metapolicyStruct.pets.allowed ? (
-                    <span className="text-green-600">Pets allowed</span>
-                  ) : (
-                    <span className="text-red-600">No pets allowed</span>
-                  )}
-                  {metapolicyStruct.pets.charge && (
-                    <span> - {metapolicyStruct.pets.charge}</span>
-                  )}
-                </>
-              )
-            )}
-
-            {/* Children Policy */}
-            {metapolicyStruct?.children && (
-              renderPolicyItem(
+            {/* Children Policy (Extra Bed by Age) */}
+            {metapolicyStruct?.children && metapolicyStruct.children.length > 0 && (
+              renderPolicyList(
                 <UserGroupIcon className="h-5 w-5 text-orange-600" />,
-                "Children",
-                <>
-                  {metapolicyStruct.children.policy && (
-                    <span>{metapolicyStruct.children.policy}</span>
-                  )}
-                  {metapolicyStruct.children.age && (
-                    <span> (Age: {metapolicyStruct.children.age})</span>
-                  )}
-                </>
+                "Children & Extra Beds",
+                metapolicyStruct.children.map((child, idx) => (
+                  <div key={idx} className="flex flex-wrap gap-x-2">
+                    <span className="font-medium">Ages {child.age_start}-{child.age_end}:</span>
+                    <span>Extra bed {child.extra_bed === 'available' ? 'available' : 'not available'}</span>
+                    {child.price && child.price !== '0' && (
+                      <span className="text-orange-600">
+                        {getCurrency(child.currency)} {child.price}
+                      </span>
+                    )}
+                    {child.price === '0' && (
+                      <span className="text-green-600 font-medium">Free</span>
+                    )}
+                  </div>
+                ))
               )
             )}
 
-            {/* Extra Bed */}
-            {metapolicyStruct?.extra_bed && (
-              renderPolicyItem(
-                <HomeIcon className="h-5 w-5 text-orange-600" />,
-                "Extra Bed",
-                <>
-                  {metapolicyStruct.extra_bed.availability && (
-                    <span className="capitalize">{metapolicyStruct.extra_bed.availability}</span>
-                  )}
-                  {metapolicyStruct.extra_bed.price && (
-                    <span> - {metapolicyStruct.extra_bed.price}</span>
-                  )}
-                  {metapolicyStruct.extra_bed.age_range && (
-                    <span> (Ages: {metapolicyStruct.extra_bed.age_range})</span>
-                  )}
-                </>
+            {/* Children Meal Policy */}
+            {metapolicyStruct?.children_meal && metapolicyStruct.children_meal.length > 0 && (
+              renderPolicyList(
+                <FontAwesomeIcon icon={faUtensils} className="h-5 w-5 text-orange-600" />,
+                "Children's Meals",
+                metapolicyStruct.children_meal.map((meal, idx) => (
+                  <div key={idx} className="flex flex-wrap gap-x-2">
+                    <span className="font-medium">Ages {meal.age_start}-{meal.age_end}:</span>
+                    <span className="capitalize">{meal.meal_type}</span>
+                    {meal.inclusion === 'included' ? (
+                      <span className="text-green-600 font-medium">Included</span>
+                    ) : (
+                      <span className="text-orange-600">
+                        {getCurrency(meal.currency)} {meal.price}
+                      </span>
+                    )}
+                  </div>
+                ))
               )
             )}
 
             {/* Cot/Crib */}
-            {metapolicyStruct?.cot && (
-              renderPolicyItem(
-                <HomeIcon className="h-5 w-5 text-orange-600" />,
+            {metapolicyStruct?.cot && metapolicyStruct.cot.length > 0 && (
+              renderPolicyList(
+                <FontAwesomeIcon icon={faBaby} className="h-5 w-5 text-orange-600" />,
                 "Cot/Crib",
-                <>
-                  {metapolicyStruct.cot.availability && (
-                    <span className="capitalize">{metapolicyStruct.cot.availability}</span>
-                  )}
-                  {metapolicyStruct.cot.price && (
-                    <span> - {metapolicyStruct.cot.price}</span>
-                  )}
-                </>
+                metapolicyStruct.cot.map((cot, idx) => {
+                  const inclusion = formatInclusion(cot.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      <span>{cot.amount} available</span>
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Free</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(cot.currency)} {cot.price} {formatPriceUnit(cot.price_unit)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
               )
             )}
 
-            {/* Shuttle */}
-            {metapolicyStruct?.shuttle && (
-              renderPolicyItem(
+            {/* Deposit Policy */}
+            {metapolicyStruct?.deposit && metapolicyStruct.deposit.length > 0 && (
+              renderPolicyList(
+                <BanknotesIcon className="h-5 w-5 text-orange-600" />,
+                "Deposits",
+                metapolicyStruct.deposit.map((dep, idx) => (
+                  <div key={idx} className="flex flex-wrap gap-x-2">
+                    <span className="font-medium capitalize">{dep.deposit_type !== 'unspecified' ? dep.deposit_type : 'General'}:</span>
+                    {dep.pricing_method === 'percent' ? (
+                      <span className="text-orange-600">{dep.price}%</span>
+                    ) : (
+                      <span className="text-orange-600">
+                        {getCurrency(dep.currency)} {dep.price}
+                      </span>
+                    )}
+                    <span className="text-gray-500">{formatPriceUnit(dep.price_unit)}</span>
+                    {dep.payment_type !== 'unspecified' && (
+                      <span className="text-gray-500">({dep.payment_type})</span>
+                    )}
+                  </div>
+                ))
+              )
+            )}
+
+            {/* Extra Bed */}
+            {metapolicyStruct?.extra_bed && metapolicyStruct.extra_bed.length > 0 && (
+              renderPolicyList(
+                <FontAwesomeIcon icon={faBed} className="h-5 w-5 text-orange-600" />,
+                "Extra Bed",
+                metapolicyStruct.extra_bed.map((bed, idx) => {
+                  const inclusion = formatInclusion(bed.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      <span>{bed.amount} available</span>
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Included</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(bed.currency)} {bed.price} {formatPriceUnit(bed.price_unit)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )
+            )}
+
+            {/* Internet / WiFi */}
+            {metapolicyStruct?.internet && metapolicyStruct.internet.length > 0 && (
+              renderPolicyList(
+                <WifiIcon className="h-5 w-5 text-orange-600" />,
+                "Internet / WiFi",
+                metapolicyStruct.internet.map((net, idx) => {
+                  const inclusion = formatInclusion(net.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      <span className="capitalize">{net.work_area !== 'unspecified' ? net.work_area : 'Property'}</span>
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Free</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(net.currency)} {net.price} {formatPriceUnit(net.price_unit)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )
+            )}
+
+            {/* Meals */}
+            {metapolicyStruct?.meal && metapolicyStruct.meal.length > 0 && (
+              renderPolicyList(
+                <FontAwesomeIcon icon={faUtensils} className="h-5 w-5 text-orange-600" />,
+                "Meals",
+                metapolicyStruct.meal.map((meal, idx) => {
+                  const inclusion = formatInclusion(meal.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      <span className="font-medium capitalize">{meal.meal_type}:</span>
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Included</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(meal.currency)} {meal.price}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )
+            )}
+
+            {/* Parking */}
+            {metapolicyStruct?.parking && metapolicyStruct.parking.length > 0 && (
+              renderPolicyList(
+                <FontAwesomeIcon icon={faCar} className="h-5 w-5 text-orange-600" />,
+                "Parking",
+                metapolicyStruct.parking.map((park, idx) => {
+                  const inclusion = formatInclusion(park.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      {park.territory_type !== 'unspecified' && (
+                        <span className="capitalize">{park.territory_type}</span>
+                      )}
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Free</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(park.currency)} {park.price} {formatPriceUnit(park.price_unit)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )
+            )}
+
+            {/* Pets */}
+            {metapolicyStruct?.pets && metapolicyStruct.pets.length > 0 && (
+              renderPolicyList(
+                <FontAwesomeIcon icon={faDog} className="h-5 w-5 text-orange-600" />,
+                "Pets",
+                metapolicyStruct.pets.map((pet, idx) => {
+                  const inclusion = formatInclusion(pet.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      {pet.pets_type !== 'unspecified' && (
+                        <span className="capitalize">{pet.pets_type}</span>
+                      )}
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Allowed (Free)</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(pet.currency)} {pet.price} {formatPriceUnit(pet.price_unit)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )
+            )}
+
+            {/* Shuttle Service */}
+            {metapolicyStruct?.shuttle && metapolicyStruct.shuttle.length > 0 && (
+              renderPolicyList(
                 <TruckIcon className="h-5 w-5 text-orange-600" />,
                 "Shuttle Service",
-                <>
-                  {metapolicyStruct.shuttle.availability && (
-                    <span className="capitalize">{metapolicyStruct.shuttle.availability}</span>
-                  )}
-                  {metapolicyStruct.shuttle.type && (
-                    <span> - {metapolicyStruct.shuttle.type}</span>
-                  )}
-                  {metapolicyStruct.shuttle.price && (
-                    <span> ({metapolicyStruct.shuttle.price})</span>
-                  )}
-                </>
+                metapolicyStruct.shuttle.map((shuttle, idx) => {
+                  const inclusion = formatInclusion(shuttle.inclusion);
+                  return (
+                    <div key={idx} className="flex flex-wrap gap-x-2">
+                      <span className="capitalize">
+                        {shuttle.destination_type !== 'unspecified' ? capitalize(shuttle.destination_type) : 'Shuttle'}
+                      </span>
+                      {shuttle.shuttle_type !== 'unspecified' && (
+                        <span className="text-gray-500">({capitalize(shuttle.shuttle_type)})</span>
+                      )}
+                      {inclusion.isIncluded ? (
+                        <span className="text-green-600 font-medium">Free</span>
+                      ) : (
+                        <span className="text-orange-600">
+                          {getCurrency(shuttle.currency)} {shuttle.price}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
               )
             )}
 
-            {/* No Show */}
-            {metapolicyStruct?.no_show?.penalty && (
+            {/* Visa Support */}
+            {metapolicyStruct?.visa && (
               renderPolicyItem(
-                <InformationCircleIcon className="h-5 w-5 text-red-600" />,
+                <GlobeAltIcon className="h-5 w-5 text-orange-600" />,
+                "Visa Support",
+                <span className={metapolicyStruct.visa.visa_support === 'support_enable' ? 'text-green-600' : 'text-gray-600'}>
+                  {metapolicyStruct.visa.visa_support === 'support_enable' ? 'Visa support available' : 'No visa support'}
+                </span>
+              )
+            )}
+
+            {/* No-Show Policy */}
+            {metapolicyStruct?.no_show && (
+              renderPolicyItem(
+                <NoSymbolIcon className="h-5 w-5 text-red-600" />,
                 "No-Show Policy",
-                <span className="text-red-600">{metapolicyStruct.no_show.penalty}</span>
+                <span className="text-red-600">
+                  No-show charges apply
+                  {metapolicyStruct.no_show.time && ` after ${metapolicyStruct.no_show.time}`}
+                  {metapolicyStruct.no_show.day_period && metapolicyStruct.no_show.day_period !== 'unspecified' && (
+                    ` (${capitalize(metapolicyStruct.no_show.day_period)})`
+                  )}
+                </span>
               )
             )}
           </div>
@@ -421,10 +643,11 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
                 <div className="space-y-2">
                   {metapolicyStruct.add_fee.map((fee, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{fee.fee_type}</span>
+                      <span className="text-gray-700 capitalize">{fee.fee_type?.replace(/_/g, ' ') || 'Additional fee'}</span>
                       <span className="font-medium text-gray-900">
-                        {fee.amount} {fee.currency}
+                        {getCurrency(fee.currency)} {fee.amount}
                         {fee.frequency && <span className="text-gray-500"> / {fee.frequency}</span>}
+                        {fee.price_unit && <span className="text-gray-500"> {formatPriceUnit(fee.price_unit)}</span>}
                       </span>
                     </div>
                   ))}
@@ -438,7 +661,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
       {/* Legacy Policy List (from metapolicyInfo string) */}
       {policies.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-900">Property Rules</h4>
+          <h4 className="text-sm font-semibold text-gray-900">Additional Property Rules</h4>
 
           <div className="space-y-2">
             {policies.map((policy, index) => (
@@ -450,6 +673,31 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
                   {getPolicyIcon(policy)}
                 </div>
                 <p className="text-sm text-gray-700 flex-1">{policy}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Policy Struct - Titled Sections with Paragraphs */}
+      {hasPolicyStruct && (
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-gray-900">Detailed Hotel Policies</h4>
+
+          <div className="space-y-4">
+            {policyStruct!.map((section, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-4">
+                <h5 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  {getPolicyIcon(section.title)}
+                  <span>{section.title}</span>
+                </h5>
+                <div className="space-y-2 pl-7">
+                  {section.paragraphs.map((paragraph, pIdx) => (
+                    <p key={pIdx} className="text-sm text-gray-600 leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

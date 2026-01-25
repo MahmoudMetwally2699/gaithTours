@@ -34,6 +34,15 @@ const HotelContentSchema = new mongoose.Schema({
   country: String,
   countryCode: String,
 
+  // Region information (from ETG API)
+  region: {
+    country_code: String,
+    iata: String,           // Airport IATA code if applicable
+    id: String,             // Unique region ID
+    name: String,           // Region name
+    type: String            // Airport, Bus Station, City, Neighborhood, Point of Interest, etc.
+  },
+
   // Location
   latitude: Number,
   longitude: Number,
@@ -87,6 +96,12 @@ const HotelContentSchema = new mongoose.Schema({
   metapolicyExtraInfo: String,
   metapolicyStruct: {
     type: mongoose.Schema.Types.Mixed // Flexible structure for policy data
+  },
+  policyStruct: {
+    type: [{
+      title: String,
+      paragraphs: [String]
+    }]
   },
 
   // Additional facts

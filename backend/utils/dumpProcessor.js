@@ -185,6 +185,14 @@ class DumpProcessor {
       city: rawHotel.region?.name,
       country: rawHotel.region?.country_name,
       countryCode: rawHotel.region?.country_code,
+      // Full region object for detailed location display
+      region: rawHotel.region ? {
+        country_code: rawHotel.region.country_code,
+        iata: rawHotel.region.iata,
+        id: rawHotel.region.id,
+        name: rawHotel.region.name,
+        type: rawHotel.region.type
+      } : null,
       latitude: rawHotel.latitude,
       longitude: rawHotel.longitude,
       starRating: rawHotel.star_rating,
@@ -199,6 +207,7 @@ class DumpProcessor {
       checkOutTime: rawHotel.check_out_time,
       metapolicyExtraInfo: rawHotel.metapolicy_extra_info,
       metapolicyStruct: rawHotel.metapolicy_struct,
+      policyStruct: rawHotel.policy_struct,
       facts: rawHotel.facts,
       dumpDate: new Date(),
       lastUpdated: new Date()
