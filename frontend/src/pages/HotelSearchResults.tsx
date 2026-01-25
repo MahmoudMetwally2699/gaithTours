@@ -698,10 +698,10 @@ export const HotelSearchResults: React.FC = () => {
         <div className="absolute inset-0 z-0 overflow-hidden bg-[#E67915] h-full shadow-md"></div>
 
         {/* Main Content Container */}
-        <div className="relative z-10 flex flex-col px-3 sm:px-6 lg:px-16 py-2 sm:py-3 pb-4 sm:pb-6">
+        <div className="relative z-10 flex flex-col px-3 sm:px-6 lg:px-16 py-3 pb-6">
 
           {/* Top Bar: Logo & Auth */}
-          <header className="flex flex-row justify-between items-center w-full mb-3 sm:mb-4 relative z-[60]">
+          <header className="flex flex-row justify-between items-center w-full mb-4 relative z-[60]">
              {/* Logo */}
              <a href="/" className="flex-shrink-0 z-10">
                 <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-7 sm:h-10 md:h-12 w-auto drop-shadow-lg hover:scale-105 transition-transform" />
@@ -1022,12 +1022,12 @@ export const HotelSearchResults: React.FC = () => {
 
           {/* Desktop Search Bar - Inline (md and above) */}
           <div className="hidden md:block w-full max-w-5xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-md rounded-full p-1.5 border border-white/20 flex items-center relative z-50 gap-1 shadow-lg">
+            <div className="bg-white rounded-full p-2 shadow-xl flex items-center relative z-50 gap-0 border border-gray-100">
               {/* Destination */}
-              <div className="flex-[1.5] px-4 py-0 border-r border-white/20 flex items-center gap-3 relative z-50" ref={autocompleteRef}>
-                <MapPinIcon className="h-5 w-5 text-white/90 shrink-0" />
+              <div className="flex-[1.5] px-6 py-2 border-r border-gray-100 flex items-center gap-4 relative z-50 hover:bg-gray-50 rounded-full transition-colors cursor-pointer" ref={autocompleteRef}>
+                <MapPinIcon className="h-6 w-6 text-gray-400 shrink-0" />
                 <div className="flex flex-col w-full min-w-0">
-                  <span className="text-white/70 text-[10px] uppercase tracking-wide font-bold mb-0.5">{t('common.destination', 'Destination')}</span>
+                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('common.destination', 'Destination')}</span>
                   <input
                     type="text"
                     value={editableDestination}
@@ -1047,19 +1047,19 @@ export const HotelSearchResults: React.FC = () => {
                         handleUpdateSearch();
                       }
                     }}
-                    className="bg-transparent border-none p-0 text-white text-sm font-bold placeholder-white/50 focus:ring-0 w-full truncate focus:outline-none"
+                    className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium placeholder-gray-400 focus:ring-0 w-full truncate focus:outline-none"
                     placeholder="Where are you going?"
                   />
                 </div>
 
                 {/* Autocomplete Dropdown */}
                 {showAutocomplete && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 max-h-64 overflow-y-auto animate-fadeIn">
+                  <div className="absolute top-full left-0 right-0 mt-4 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto animate-fadeIn ring-1 ring-black ring-opacity-5">
                     <div className="p-2">
                       {/* Regions Section */}
                       {autocompleteResults.regions.length > 0 && (
                         <>
-                          <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
+                          <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                             Cities & Regions
                           </div>
                           {autocompleteResults.regions.map((region) => (
@@ -1070,14 +1070,14 @@ export const HotelSearchResults: React.FC = () => {
                                 handleSelectSuggestion(region);
                                 setShowAutocomplete(false);
                               }}
-                              className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                              className="w-full flex items-center space-x-4 px-4 py-3 hover:bg-orange-50 rounded-xl transition-all text-left group"
                             >
-                              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                                <MapPinIcon className="w-4 h-4 text-orange-600 group-hover:text-orange-700 transition-colors" />
+                              <div className="w-10 h-10 rounded-full bg-orange-100/50 flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors">
+                                <MapPinIcon className="w-5 h-5 text-orange-500 group-hover:text-orange-600 transition-colors" />
                               </div>
                               <div>
-                                <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{region.name}</p>
-                                <p className="text-[10px] text-gray-500">{region.country_code || 'Region'}</p>
+                                <p className="text-gray-900 font-bold text-sm group-hover:text-orange-700 transition-colors">{region.name}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{region.country_code || 'Region'}</p>
                               </div>
                             </button>
                           ))}
@@ -1088,7 +1088,7 @@ export const HotelSearchResults: React.FC = () => {
                       {autocompleteResults.hotels.length > 0 && (
                         <>
                           {autocompleteResults.regions.length > 0 && <div className="my-2 border-t border-gray-100" />}
-                          <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
+                          <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                             Hotels
                           </div>
                           {autocompleteResults.hotels.slice(0, 5).map((hotel) => (
@@ -1099,14 +1099,14 @@ export const HotelSearchResults: React.FC = () => {
                                 handleSelectSuggestion(hotel);
                                 setShowAutocomplete(false);
                               }}
-                              className="w-full flex items-center space-x-3 px-3 py-2.5 hover:bg-orange-50 rounded-lg transition text-left group"
+                              className="w-full flex items-center space-x-4 px-4 py-3 hover:bg-blue-50 rounded-xl transition-all text-left group"
                             >
-                              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                <BuildingOffice2Icon className="w-4 h-4 text-blue-500 group-hover:text-orange-500 transition-colors" />
+                              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                                <BuildingOffice2Icon className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
                               </div>
                               <div>
-                                <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
-                                <p className="text-[10px] text-gray-500">Hotel</p>
+                                <p className="text-gray-900 font-bold text-sm group-hover:text-blue-700 transition-colors">{hotel.name}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Hotel</p>
                               </div>
                             </button>
                           ))}
@@ -1118,11 +1118,11 @@ export const HotelSearchResults: React.FC = () => {
               </div>
 
               {/* Dates - Unified Range */}
-              <div className="flex-[2] px-4 py-0 border-r border-white/20 flex items-center gap-3">
-                <ClockIcon className="h-5 w-5 text-white/90 shrink-0" />
-                <div className="flex flex-col w-full">
-                  <span className="text-white/70 text-[10px] uppercase tracking-wide font-bold mb-0.5">Check-in - Check-out</span>
-                  <div className="w-full">
+              <div className="flex-[2] px-6 py-2 border-r border-gray-100 flex items-center gap-4 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
+                <ClockIcon className="h-6 w-6 text-gray-400 shrink-0" />
+                <div className="flex flex-col w-full pointer-events-none"> {/* Disable pointer events to let datepicker handle clicks properly via custom input */}
+                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">Check-in - Check-out</span>
+                  <div className="w-full pointer-events-auto">
                     <DatePicker
                       selected={checkInDate}
                       onChange={(dates: [Date | null, Date | null]) => {
@@ -1134,7 +1134,7 @@ export const HotelSearchResults: React.FC = () => {
                       endDate={checkOutDate}
                       selectsRange
                       minDate={new Date()}
-                      className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50"
+                      className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400"
                       dateFormat="dd MMM"
                       placeholderText="Add dates"
                       monthsShown={2}
@@ -1146,8 +1146,8 @@ export const HotelSearchResults: React.FC = () => {
                               : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : '')
                           }
                           readOnly
-                          placeholder="Add your dates"
-                          className="bg-transparent border-none p-0 text-white text-sm font-bold w-full focus:ring-0 cursor-pointer placeholder-white/50 focus:outline-none"
+                          placeholder="Add dates"
+                          className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400 focus:outline-none"
                         />
                       }
                     />
@@ -1158,13 +1158,13 @@ export const HotelSearchResults: React.FC = () => {
               {/* Guests */}
               <div className="flex-[1.5] relative">
                 <button
-                  className="w-full px-4 py-0 flex items-center gap-3 text-left"
+                  className="w-full px-6 py-2 flex items-center gap-4 text-left hover:bg-gray-50 rounded-full transition-colors"
                   onClick={() => setShowGuestPopover(!showGuestPopover)}
                 >
-                  <UserIcon className="h-5 w-5 text-white/90 shrink-0" />
+                  <UserIcon className="h-6 w-6 text-gray-400 shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-white/70 text-[10px] uppercase tracking-wide font-bold mb-0.5">{t('common.guests', 'Guests')}</span>
-                    <span className="text-white text-sm font-bold truncate">
+                    <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('common.guests', 'Guests')}</span>
+                    <span className="text-gray-600 text-sm font-medium truncate">
                       {guestCounts.adults + guestCounts.children} Guests · {guestCounts.rooms} Room{guestCounts.rooms > 1 ? 's' : ''}
                     </span>
                   </div>
@@ -1174,94 +1174,96 @@ export const HotelSearchResults: React.FC = () => {
                 {showGuestPopover && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowGuestPopover(false)}></div>
-                    <div className="absolute top-full right-0 mt-3 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-5 z-50 text-gray-800 animate-fadeIn cursor-default">
+                    <div className="absolute top-full right-0 mt-4 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-50 text-gray-800 animate-fadeIn cursor-default ring-1 ring-black ring-opacity-5">
                       {/* Rooms */}
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="flex justify-between items-center mb-6">
                         <div className="flex flex-col">
-                          <span className="font-bold text-sm text-gray-800">Rooms</span>
-                          <span className="text-xs text-gray-500">Number of rooms</span>
+                          <span className="font-bold text-gray-900">Rooms</span>
+                          <span className="text-xs text-gray-500 mt-0.5">Number of rooms</span>
                         </div>
-                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-3">
                           <button
                             onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.max(1, prev.rooms - 1)}))}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
                             disabled={guestCounts.rooms <= 1}
                           >
-                            <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                            <MinusIcon className="w-4 h-4 stroke-2" />
                           </button>
-                          <span className="w-4 text-center font-bold text-sm">{guestCounts.rooms}</span>
+                          <span className="w-6 text-center font-bold text-gray-900">{guestCounts.rooms}</span>
                           <button
                             onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.min(10, prev.rooms + 1)}))}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500 transition-colors"
                           >
-                            <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                            <PlusIcon className="w-4 h-4 stroke-2" />
                           </button>
                         </div>
                       </div>
+
                       {/* Adults */}
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="flex justify-between items-center mb-6">
                         <div className="flex flex-col">
-                          <span className="font-bold text-sm text-gray-800">Adults</span>
-                          <span className="text-xs text-gray-500">Ages 18 or above</span>
+                          <span className="font-bold text-gray-900">Adults</span>
+                          <span className="text-xs text-gray-500 mt-0.5">Ages 18 or above</span>
                         </div>
-                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                        <div className="flex items-center gap-3">
                           <button
                             onClick={() => setGuestCounts(prev => ({...prev, adults: Math.max(1, prev.adults - 1)}))}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
                             disabled={guestCounts.adults <= 1}
                           >
-                            <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                            <MinusIcon className="w-4 h-4 stroke-2" />
                           </button>
-                          <span className="w-4 text-center font-bold text-sm">{guestCounts.adults}</span>
+                          <span className="w-6 text-center font-bold text-gray-900">{guestCounts.adults}</span>
                           <button
                             onClick={() => setGuestCounts(prev => ({...prev, adults: Math.min(30, prev.adults + 1)}))}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500 transition-colors"
                           >
-                            <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                            <PlusIcon className="w-4 h-4 stroke-2" />
                           </button>
                         </div>
                       </div>
+
                       {/* Children */}
                       <div className="mb-6">
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center mb-4">
                           <div className="flex flex-col">
-                            <span className="font-bold text-sm text-gray-800">Children</span>
-                            <span className="text-xs text-gray-500">Ages 0-17</span>
+                            <span className="font-bold text-gray-900">Children</span>
+                            <span className="text-xs text-gray-500 mt-0.5">Ages 0-17</span>
                           </div>
-                          <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1">
+                          <div className="flex items-center gap-3">
                             <button
                               onClick={() => setGuestCounts(prev => ({
                                 ...prev,
                                 children: Math.max(0, prev.children - 1),
                                 childrenAges: (prev.childrenAges || []).slice(0, -1)
                               }))}
-                              className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600 disabled:opacity-50"
+                              className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:text-gray-600 transition-colors"
                               disabled={guestCounts.children <= 0}
                             >
-                              <MinusIcon className="w-3 h-3 stroke-[2.5]" />
+                              <MinusIcon className="w-4 h-4 stroke-2" />
                             </button>
-                            <span className="w-4 text-center font-bold text-sm">{guestCounts.children}</span>
+                            <span className="w-6 text-center font-bold text-gray-900">{guestCounts.children}</span>
                             <button
                               onClick={() => setGuestCounts(prev => ({
                                 ...prev,
                                 children: Math.min(10, prev.children + 1),
                                 childrenAges: [...(prev.childrenAges || []), 5]
                               }))}
-                              className="w-7 h-7 flex items-center justify-center rounded-md bg-white shadow-sm text-gray-600 hover:text-orange-600"
+                              className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500 transition-colors"
                             >
-                              <PlusIcon className="w-3 h-3 stroke-[2.5]" />
+                              <PlusIcon className="w-4 h-4 stroke-2" />
                             </button>
                           </div>
                         </div>
 
                         {/* Child Age Selectors */}
                         {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
-                          <div className="mt-4 pt-3 border-t border-gray-100">
-                            <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
-                            <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+                          <div className="mt-4 pt-4 border-t border-gray-100 animate-fadeIn">
+                            <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Age at check-in</p>
+                            <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                               {guestCounts.childrenAges.map((age, index) => (
-                                <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                                  <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                <div key={index} className="flex flex-col gap-1">
+                                  <span className="text-xs text-gray-500">Child {index + 1}</span>
                                   <select
                                     value={age}
                                     onChange={(e) => {
@@ -1269,11 +1271,11 @@ export const HotelSearchResults: React.FC = () => {
                                       newAges[index] = parseInt(e.target.value);
                                       setGuestCounts(prev => ({ ...prev, childrenAges: newAges }));
                                     }}
-                                    className="flex-1 min-w-0 px-2 py-1 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 cursor-pointer"
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer transition-shadow"
                                   >
                                     {[...Array(18)].map((_, i) => (
                                       <option key={i} value={i}>
-                                        {i} {i === 1 ? 'yr' : 'yrs'}
+                                        {i} {i === 1 ? 'year' : 'years'}
                                       </option>
                                     ))}
                                   </select>
@@ -1285,10 +1287,10 @@ export const HotelSearchResults: React.FC = () => {
                       </div>
 
                       <button
-                        className="w-full bg-[#E67915] text-white text-sm font-bold py-2.5 rounded-lg hover:bg-orange-600 transition-colors shadow-md"
+                        className="w-full bg-[#E67915] text-white text-sm font-bold py-3 rounded-xl hover:bg-orange-600 transition-colors shadow-lg hover:shadow-orange-500/30"
                         onClick={() => setShowGuestPopover(false)}
                       >
-                        Done
+                        Apply
                       </button>
                     </div>
                   </>
@@ -1296,13 +1298,13 @@ export const HotelSearchResults: React.FC = () => {
               </div>
 
               {/* Search Button */}
-              <div className="p-1">
+              <div className="p-1.5 pl-0">
                 <button
                   onClick={handleUpdateSearch}
-                  className="w-12 h-12 bg-[#E67915] text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
-                  title="Update Search"
+                  className="w-14 h-14 bg-[#E67915] text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-500/40 hover:scale-105 active:scale-95"
+                  title="Search"
                 >
-                  <MagnifyingGlassIcon className="w-6 h-6 stroke-[2.5]" />
+                  <MagnifyingGlassIcon className="w-6 h-6 stroke-[3]" />
                 </button>
               </div>
             </div>
