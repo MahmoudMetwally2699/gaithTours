@@ -35,12 +35,13 @@ const HotelContentSchema = new mongoose.Schema({
   countryCode: String,
 
   // Region information (from ETG API)
+  // NOTE: Must use explicit {type: X} syntax because 'type' is a Mongoose reserved keyword
   region: {
-    country_code: String,
-    iata: String,           // Airport IATA code if applicable
-    id: String,             // Unique region ID
-    name: String,           // Region name
-    type: String            // Airport, Bus Station, City, Neighborhood, Point of Interest, etc.
+    country_code: { type: String },
+    iata: { type: String },
+    id: { type: Number },
+    name: { type: String },
+    type: { type: String }  // The region type field (City, Airport, etc.)
   },
 
   // Location
