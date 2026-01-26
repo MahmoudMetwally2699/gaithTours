@@ -120,6 +120,68 @@ export const BookingPage: React.FC = () => {
     });
   };
 
+  // Auto-populate form with user data if logged in
+  useEffect(() => {
+    if (user) {
+      // Split name into firstName and lastName
+      const nameParts = user.name?.trim().split(' ') || [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Map nationality to country code
+      const nationalityToCountryCode: { [key: string]: string } = {
+        'egypt': 'EG',
+        'egyptian': 'EG',
+        'united states': 'US',
+        'american': 'US',
+        'usa': 'US',
+        'united kingdom': 'GB',
+        'british': 'GB',
+        'uk': 'GB',
+        'saudi arabia': 'SA',
+        'saudi': 'SA',
+        'united arab emirates': 'AE',
+        'emirati': 'AE',
+        'uae': 'AE',
+        'germany': 'DE',
+        'german': 'DE',
+        'france': 'FR',
+        'french': 'FR',
+        'italy': 'IT',
+        'italian': 'IT',
+        'spain': 'ES',
+        'spanish': 'ES',
+      };
+
+      const countryCodeFromNationality = user.nationality
+        ? nationalityToCountryCode[user.nationality.toLowerCase()] || 'EG'
+        : 'EG';
+
+      // Extract phone code and number from user's phone
+      const phoneCodes = ['+966', '+971', '+20', '+1', '+44', '+49', '+33', '+39', '+34'];
+      let phoneCode = '+20';
+      let phoneNumber = user.phone || '';
+
+      for (const code of phoneCodes) {
+        if (phoneNumber.startsWith(code)) {
+          phoneCode = code;
+          phoneNumber = phoneNumber.slice(code.length);
+          break;
+        }
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        firstName,
+        lastName,
+        email: user.email || '',
+        country: countryCodeFromNationality,
+        phoneCode,
+        phone: phoneNumber,
+      }));
+    }
+  }, [user]);
+
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);

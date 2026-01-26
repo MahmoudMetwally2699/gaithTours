@@ -80,13 +80,19 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
     } finally {
       if (!keepLoading) {
         setLoading(false);
-        // Notify parent that content is loaded
-        if (onLoaded) {
-          onLoaded();
-        }
       }
     }
   };
+
+  // Notify parent when hotels are actually loaded and ready to display
+  useEffect(() => {
+    if (!loading && hotels.length > 0 && onLoaded) {
+      // Small delay to ensure React has finished rendering
+      requestAnimationFrame(() => {
+        onLoaded();
+      });
+    }
+  }, [loading, hotels.length, onLoaded]);
 
   // Default city to show immediately (no waiting for geolocation)
   const DEFAULT_CITY = 'Makkah';
@@ -106,13 +112,13 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       console.log('🌍 Attempting to get user location...');
       setLoading(true);
 
-      // Set a timeout - if location not detected in 3 seconds, show Makkah
+      // Set a timeout - if location not detected in 1.2 seconds, show Makkah
       const fallbackTimer = setTimeout(() => {
         if (!locationDetectedRef.current) {
           console.log(`⏱️ Location timeout - showing ${DEFAULT_CITY} as fallback...`);
           fetchSuggestions(DEFAULT_CITY, false);
         }
-      }, 3000);
+      }, 1200);
 
       getUserLocationBackground(fallbackTimer);
     }
@@ -173,7 +179,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       },
       {
         enableHighAccuracy: false,
-        timeout: 5000,
+        timeout: 2000,
         maximumAge: 300000
       }
     );

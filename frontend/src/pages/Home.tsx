@@ -19,7 +19,7 @@ export const Home: React.FC = () => {
 
   return (
     <>
-      <Preloader isLoading={!isContentLoaded} minDisplayTime={1800} />
+      <Preloader isLoading={!isContentLoaded} minDisplayTime={800} />
       <div className="flex flex-col min-h-screen overflow-x-clip">
         <MainSection />
         <ForNewUsers />
