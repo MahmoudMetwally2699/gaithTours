@@ -36,6 +36,7 @@ import { useDirection } from '../hooks/useDirection';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { useAuth } from '../contexts/AuthContext';
+import { CompareHotels, CompareBar } from '../components/CompareHotels';
 import { Link } from 'react-router-dom';
 
 // Fix for default marker icons in Leaflet with React
@@ -244,6 +245,25 @@ export const HotelSearchResults: React.FC = () => {
   const [fullscreenMap, setFullscreenMap] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [editableDestination, setEditableDestination] = useState(searchQuery.destination);
+
+  // Comparison State
+  const [comparedHotels, setComparedHotels] = useState<Hotel[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+
+  const handleToggleCompare = (hotel: Hotel) => {
+    setComparedHotels(prev => {
+      const exists = prev.some(h => (h.id || h.hid) === (hotel.id || hotel.hid));
+      if (exists) {
+        return prev.filter(h => (h.id || h.hid) !== (hotel.id || hotel.hid));
+      } else {
+        if (prev.length >= 3) {
+           // Optional: Toast message
+           return prev;
+        }
+        return [...prev, hotel];
+      }
+    });
+  };
 
   const [filters, setFilters] = useState<SearchFilters>({
     priceRange: [0, 5000],
@@ -2027,6 +2047,18 @@ export const HotelSearchResults: React.FC = () => {
                                         </div>
                                     </>
                                 )}
+                                {/* Compare Checkbox */}
+                                <div className="w-full flex justify-end mb-2">
+                                  <label className="flex items-center gap-2 cursor-pointer select-none group">
+                                    <input
+                                      type="checkbox"
+                                      className="rounded border-gray-300 text-orange-500 focus:ring-orange-500 transition-colors"
+                                      checked={comparedHotels.some(h => (h.id || h.hid) === (hotel.id || hotel.hid))}
+                                      onChange={() => handleToggleCompare(hotel)}
+                                    />
+                                    <span className="text-sm font-medium text-gray-600 group-hover:text-orange-600 transition-colors">Compare</span>
+                                  </label>
+                                </div>
 
                                 <button
                                     onClick={() => handleHotelClick(hotel)}
@@ -2581,6 +2613,25 @@ export const HotelSearchResults: React.FC = () => {
             </button>
             </div>
         </div>
+      )}
+      {/* Comparison UI */}
+      <CompareBar
+        count={comparedHotels.length}
+        onCompare={() => setShowCompare(true)}
+        onClear={() => setComparedHotels([])}
+      />
+
+      {showCompare && (
+        <CompareHotels
+          hotels={comparedHotels}
+          onClose={() => setShowCompare(false)}
+          onRemove={(hotelId) => setComparedHotels(prev => prev.filter(h => (h.id || String(h.hid)) !== hotelId))}
+          currencySymbol={currencySymbol}
+          checkIn={searchQuery.checkIn}
+          checkOut={searchQuery.checkOut}
+          adults={searchQuery.adults}
+          children={searchQuery.children}
+        />
       )}
     </div>
   );

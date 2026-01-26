@@ -60,7 +60,7 @@ export const PopularCities: React.FC = () => {
     },
     {
       id: 8,
-      name: 'AlUla',
+      name: 'Al Ula',
       count: 67,
       image: '/مدن السعودية/مدينة العلا.jpg'
     },

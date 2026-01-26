@@ -7,7 +7,8 @@ import {
   NoSymbolIcon,
   CheckIcon,
   InformationCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { UserIcon } from '@heroicons/react/24/solid';
 import { LazyImage } from './LazyImage';
@@ -90,6 +91,8 @@ interface RoomCardProps {
   nights?: number; // Number of nights for the stay
   adults?: number; // Number of adults for occupancy validation
   children?: number; // Number of children for occupancy validation
+  onToggleCompare?: (rate: RoomRate) => void;
+  comparedRates?: Set<string>; // Set of match_hashes
 }
 
 export const RoomCard: React.FC<RoomCardProps> = ({
@@ -99,7 +102,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   selectedRates,
   nights = 1,
   adults = 2,
-  children = 0
+  children = 0,
+  onToggleCompare,
+  comparedRates
 }) => {
   const { t } = useTranslation();
   const { currencySymbol } = useCurrency();
@@ -121,6 +126,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       prepayment: rate.requires_prepayment,
     });
   };
+// ...
 
   // Helper to get meal label and icon
   const getMealInfo = (meal?: string) => {
@@ -455,7 +461,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                   </div>
 
                   {/* Sleeps Column */}
-                  <div className="col-span-6 md:col-span-2 p-4 flex flex-col items-center justify-center border-r border-gray-100">
+                  <div className="col-span-6 md:col-span-2 p-4 flex flex-col items-center justify-end md:justify-center border-r border-gray-100 pb-7 md:pb-4">
                      <div className="flex text-gray-700 mb-1">
                         {[...Array(Math.min(rate.max_occupancy || 2, 4))].map((_, i) => (
                            <UserIcon key={i} className="w-5 h-5" />
@@ -587,32 +593,54 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 mt-4 w-full justify-end">
-                        <select
-                           className="border border-gray-300 rounded px-2 py-2 text-sm focus:outline-none focus:border-orange-500"
-                           value={isSelected}
-                           onChange={(e) => onSelectResult(rate, parseInt(e.target.value))}
-                        >
-                           {[0, 1, 2, 3, 4, 5].map(num => (
-                              <option key={num} value={num}>
-                                 {num > 0 ? `${num} room${num > 1 ? 's' : ''}` : `${num} rooms`}
-                                 {/* Using simple spacing for visually selecting 0 */}
-                                  {num === 0 && ''}
-                              </option>
-                           ))}
-                        </select>
+                      <div className="flex flex-col lg:flex-row lg:items-center gap-2 mt-4 w-full items-end justify-end">
+                        <div className="relative">
+                          <select
+                             className="appearance-none border border-gray-300 rounded px-3 py-2 pr-8 text-sm focus:outline-none focus:border-orange-500 bg-white cursor-pointer"
+                             style={{
+                               WebkitAppearance: 'none',
+                               MozAppearance: 'none',
+                               appearance: 'none',
+                               backgroundImage: 'none'
+                             }}
+                             value={isSelected}
+                             onChange={(e) => onSelectResult(rate, parseInt(e.target.value))}
+                          >
+                             {[0, 1, 2, 3, 4, 5].map(num => (
+                                <option key={num} value={num}>
+                                   {num > 0 ? `${num} ${t('hotels.rooms', 'rooms')}` : `${num} ${t('hotels.rooms', 'rooms')}`}
+                                </option>
+                             ))}
+                          </select>
+                          <ChevronDownIcon className="w-4 h-4 text-gray-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+
+                        {/* Compare Checkbox */}
+                        {onToggleCompare && (
+                          <div className="flex items-center justify-end mb-2 gap-2">
+                            <label className="flex items-center cursor-pointer text-sm text-gray-600 hover:text-orange-600 select-none">
+                              <input
+                                type="checkbox"
+                                className="form-checkbox h-4 w-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500 mr-2 transition-colors"
+                                checked={comparedRates?.has(rate.match_hash) || false}
+                                onChange={() => onToggleCompare(rate)}
+                              />
+                              {t('hotels.compare', 'Compare')}
+                            </label>
+                          </div>
+                        )}
 
                         {isSelected > 0 ? (
                            <button
                               onClick={() => { /* Navigation handled by parent state check or explicit button elsewhere */ }}
-                              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors"
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors w-full"
                            >
                               {t('common.selected', 'Selected')}
                            </button>
                         ) : (
                            <button
                               onClick={() => onSelectResult(rate, 1)}
-                              className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded text-sm transition-colors shadow-sm"
+                              className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded text-sm transition-colors shadow-sm w-full"
                            >
                               {t('common.reserve', 'Reserve')}
                            </button>

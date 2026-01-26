@@ -12,6 +12,7 @@ export interface Hotel {
     total_taxes?: number; // Total taxes amount (displayed separately)
     taxes_currency?: string; // Currency for taxes
     rating: number;
+    star_rating?: number; // Explicit star rating from API
     image: string | null;
     images?: string[]; // Array of image URLs
     description: string;
@@ -22,6 +23,7 @@ export interface Hotel {
     propertyClass: number;
     reviewScoreWord: string | null;
     isPreferred: boolean;
+    isEnriched?: boolean; // Flag for enriched content
     checkIn: string | null;
     checkOut: string | null;
     coordinates: {

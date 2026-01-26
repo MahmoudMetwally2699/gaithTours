@@ -62,6 +62,9 @@ import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { GuestReviews } from '../components/GuestReviews';
+import { SimilarHotels } from '../components/SimilarHotels';
+import { ShareSaveActions, isFavorited, toggleFavorite } from '../components/ShareSaveActions';
+import { CompareRooms } from '../components/CompareRooms';
 
 interface HotelDetailsParams {
   hotelId: string;
@@ -157,6 +160,25 @@ export const HotelDetails: React.FC = () => {
   // Mobile Date Modal State
   const [showMobileDateModal, setShowMobileDateModal] = useState(false);
 
+  // Room Comparison State
+  const [comparedRooms, setComparedRooms] = useState<Map<string, RoomRate>>(new Map());
+  const [showCompareRooms, setShowCompareRooms] = useState(false);
+
+  const handleToggleCompare = (rate: RoomRate) => {
+    setComparedRooms(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(rate.match_hash)) {
+        newMap.delete(rate.match_hash);
+      } else {
+        if (newMap.size >= 3) {
+           // Optional: Show toast
+        }
+        newMap.set(rate.match_hash, rate);
+      }
+      return newMap;
+    });
+  };
+
   const toggleLanguage = () => {
     const newLang = i18n.language === 'en' ? 'ar' : 'en';
     i18n.changeLanguage(newLang);
@@ -248,7 +270,7 @@ export const HotelDetails: React.FC = () => {
   const [error, setError] = useState('');
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => hotelId ? isFavorited(hotelId) : false);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
   const [selectedRates, setSelectedRates] = useState<Map<string, number>>(new Map()); // match_hash -> count
@@ -1087,17 +1109,20 @@ export const HotelDetails: React.FC = () => {
                      <div className="h-4 w-px bg-gray-300 mx-2"></div>
                    </>
                  )}
-                 <button className="flex items-center text-gray-500 hover:text-gray-700">
-                    <ShareIcon className="h-4 w-4 mr-1" />
-                    {t('common.share', 'Share')}
-                 </button>
-                 <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className={`flex items-center ${isFavorite ? 'text-red-500' : 'text-gray-500'} hover:text-red-500`}
-                 >
-                    {isFavorite ? <HeartIconSolid className="h-4 w-4 mr-1" /> : <HeartIcon className="h-4 w-4 mr-1" />}
-                    {t('common.save', 'Save')}
-                 </button>
+              </div>
+
+              {/* Share & Save Actions */}
+              <div className="mt-3">
+                <ShareSaveActions
+                  hotelId={hotelId || ''}
+                  hotelName={hotel.name}
+                  hotelImage={hotel.images?.[0]}
+                  isFavorite={isFavorite}
+                  onToggleFavorite={() => {
+                    const newState = toggleFavorite(hotelId || '');
+                    setIsFavorite(newState);
+                  }}
+                />
               </div>
            </div>
 
@@ -1442,6 +1467,8 @@ export const HotelDetails: React.FC = () => {
                        nights={numberOfNights}
                        adults={guestCounts.adults}
                        children={guestCounts.children}
+                       onToggleCompare={handleToggleCompare}
+                       comparedRates={new Set(comparedRooms.keys())}
                     />
                  ))}
               </div>
@@ -1494,6 +1521,18 @@ export const HotelDetails: React.FC = () => {
             metapolicyInfo={(hotel as any).metapolicy_extra_info || undefined}
             metapolicyStruct={(hotel as any).metapolicy_struct || undefined}
             policyStruct={(hotel as any).policy_struct || undefined}
+          />
+        </div>
+
+        {/* Similar Hotels Section */}
+        <div className="mb-12">
+          <SimilarHotels
+            city={hotel.city || bookingParams.destination}
+            currentHotelId={hotelId || ''}
+            checkIn={bookingParams.checkIn}
+            checkOut={bookingParams.checkOut}
+            adults={bookingParams.adults}
+            children={bookingParams.children}
           />
         </div>
 
@@ -1623,6 +1662,43 @@ export const HotelDetails: React.FC = () => {
             </button>
             </div>
         </div>
+      )}
+
+      {/* Comparison Floating Button */}
+      {comparedRooms.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 animate-in slide-in-from-bottom duration-200">
+            <span className="font-medium">
+              {comparedRooms.size} {t('compare.roomsSelected', 'rooms selected')}
+            </span>
+            <div className="h-4 w-px bg-gray-600"></div>
+            <button
+              onClick={() => setShowCompareRooms(true)}
+              disabled={comparedRooms.size < 2}
+              className={`font-bold ${comparedRooms.size >= 2 ? 'text-orange-400 hover:text-orange-300' : 'text-gray-500 cursor-not-allowed'}`}
+            >
+              {t('compare.compare', 'Compare')}
+            </button>
+            <button
+              onClick={() => setComparedRooms(new Map())}
+              className="text-gray-400 hover:text-white"
+            >
+              {t('compare.clear', 'Clear')}
+            </button>
+        </div>
+      )}
+
+      {/* Comparison Modal */}
+      {showCompareRooms && (
+        <CompareRooms
+            rooms={Array.from(comparedRooms.values())}
+            onClose={() => setShowCompareRooms(false)}
+            onSelect={(room) => {
+              handleRateSelect(room, 1);
+              setShowCompareRooms(false);
+              // Scroll to room card?
+            }}
+            currencySymbol={currencySymbol}
+        />
       )}
     </div>
   );

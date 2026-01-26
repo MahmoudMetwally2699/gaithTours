@@ -182,7 +182,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   const hotelImage = hotel.image || hotel.images?.[0] || '/placeholder-hotel.jpg';
 
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden sticky top-4">
+    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Hotel Image */}
       <div className="relative h-48 w-full">
         <img
