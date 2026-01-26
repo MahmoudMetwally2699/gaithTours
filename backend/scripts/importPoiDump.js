@@ -1,28 +1,37 @@
 /**
- * POI Dump Import Script
+ * POI Dump Import Script - STREAMING VERSION
  *
- * Downloads and imports hotel POI (Points of Interest) data from ETG/RateHawk API
- * This enables the "Hotel area info" section showing nearby attractions, restaurants, transit, etc.
+ * Downloads and imports hotel POI data using streaming to avoid memory issues
  *
- * Usage: node scripts/importPoiDump.js [--language=en]
+ * Usage: node scripts/importPoiDump.js [--language=en] [--limit=5000]
  */
 
 require('dotenv').config();
 const mongoose = require('mongoose');
 const axios = require('axios');
-const fzstd = require('fzstd');
+const { spawn } = require('child_process');
 const readline = require('readline');
-const { Readable } = require('stream');
+const fs = require('fs');
+const path = require('path');
 const HotelPOI = require('../models/HotelPOI');
 const rateHawkService = require('../utils/RateHawkService');
 
 // Configuration
-const BATCH_SIZE = 1000;
-const MAX_RECORDS = process.env.POI_IMPORT_LIMIT ? parseInt(process.env.POI_IMPORT_LIMIT) : null;
+const BATCH_SIZE = 500;
+const TEMP_DIR = path.join(__dirname, '../temp');
 
-async function importPoiDump(language = 'en') {
-  console.log('🚀 Starting POI dump import...');
+async function importPoiDump(language = 'en', limit = null) {
+  console.log('🚀 Starting POI dump import (STREAMING VERSION)...');
   console.log(`📍 Language: ${language}`);
+  if (limit) console.log(`📊 Limit: ${limit} records`);
+
+  // Ensure temp directory exists
+  if (!fs.existsSync(TEMP_DIR)) {
+    fs.mkdirSync(TEMP_DIR, { recursive: true });
+  }
+
+  const tempZstFile = path.join(TEMP_DIR, 'poi_dump.json.zst');
+  const tempJsonFile = path.join(TEMP_DIR, 'poi_dump.json');
 
   try {
     // Connect to MongoDB
@@ -31,45 +40,78 @@ async function importPoiDump(language = 'en') {
     console.log('✅ Connected to MongoDB');
 
     // Get dump URL from API
-    console.log('📥 Fetching POI dump URL from RateHawk API...');
+    console.log('📥 Fetching POI dump URL...');
     const dumpInfo = await rateHawkService.getPoiDump(language);
 
     if (!dumpInfo.success) {
-      console.error('❌ Failed to get POI dump:', dumpInfo.message);
+      console.error('❌ Failed:', dumpInfo.message);
       process.exit(1);
     }
 
-    console.log(`📍 POI dump URL: ${dumpInfo.url}`);
-    console.log(`📅 Last updated: ${dumpInfo.last_update}`);
+    console.log(`📍 URL: ${dumpInfo.url}`);
 
-    // Download the dump file
-    console.log('⬇️  Downloading POI dump (this may take a while)...');
+    // Download file to disk instead of memory
+    console.log('⬇️  Downloading POI dump to disk...');
+    const writer = fs.createWriteStream(tempZstFile);
+
     const response = await axios({
       method: 'get',
       url: dumpInfo.url,
-      responseType: 'arraybuffer',
-      timeout: 600000 // 10 minutes timeout for large files
+      responseType: 'stream',
+      timeout: 600000
     });
 
-    console.log(`📦 Downloaded ${(response.data.byteLength / 1024 / 1024).toFixed(2)} MB`);
+    let downloadedBytes = 0;
+    response.data.on('data', (chunk) => {
+      downloadedBytes += chunk.length;
+      process.stdout.write(`\r   Downloaded: ${(downloadedBytes / 1024 / 1024).toFixed(1)} MB`);
+    });
 
-    // Check if the file is zstd compressed
-    const isZstd = dumpInfo.url.endsWith('.zst') || dumpInfo.url.includes('.json.zst');
+    response.data.pipe(writer);
 
-    let jsonData;
-    if (isZstd) {
-      console.log('🔓 Decompressing zstd file...');
-      const compressedData = new Uint8Array(response.data);
-      const decompressedData = fzstd.decompress(compressedData);
-      jsonData = new TextDecoder().decode(decompressedData);
-      console.log(`📦 Decompressed to ${(jsonData.length / 1024 / 1024).toFixed(2)} MB`);
-    } else {
-      jsonData = response.data.toString('utf8');
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+
+    console.log(`\n✅ Downloaded ${(downloadedBytes / 1024 / 1024).toFixed(2)} MB`);
+
+    // Decompress using zstd command line tool (if available) or use streaming
+    console.log('🔓 Decompressing with zstd...');
+
+    try {
+      // Try using system zstd first (more memory efficient)
+      await new Promise((resolve, reject) => {
+        const zstd = spawn('zstd', ['-d', tempZstFile, '-o', tempJsonFile, '-f']);
+        zstd.on('close', (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(`zstd exited with code ${code}`));
+        });
+        zstd.on('error', reject);
+      });
+      console.log('✅ Decompressed with system zstd');
+    } catch (zstdError) {
+      console.log('⚠️  System zstd not available, using Node.js decompression...');
+
+      // Fallback: Use fzstd with streaming
+      const fzstd = require('fzstd');
+      const compressedData = fs.readFileSync(tempZstFile);
+      const decompressed = fzstd.decompress(new Uint8Array(compressedData));
+      fs.writeFileSync(tempJsonFile, Buffer.from(decompressed));
+      console.log('✅ Decompressed with fzstd');
     }
 
-    // Split into lines (JSONL format)
-    const lines = jsonData.split('\n').filter(line => line.trim());
-    console.log(`📊 Found ${lines.length} records to process`);
+    // Clean up compressed file
+    fs.unlinkSync(tempZstFile);
+
+    // Process JSON file line by line (streaming)
+    console.log('📊 Processing POI records...');
+
+    const fileStream = fs.createReadStream(tempJsonFile, { encoding: 'utf8' });
+    const rl = readline.createInterface({
+      input: fileStream,
+      crlfDelay: Infinity
+    });
 
     let batch = [];
     let totalProcessed = 0;
@@ -77,23 +119,16 @@ async function importPoiDump(language = 'en') {
     let totalSkipped = 0;
     let totalErrors = 0;
 
-    console.log('📊 Processing POI records...');
-
-    for (const line of lines) {
+    for await (const line of rl) {
       if (!line.trim()) continue;
+      if (limit && totalProcessed >= limit) break;
 
       try {
         const record = JSON.parse(line);
 
-        // Extract HID (prefer numeric hid, fallback to parsing id)
         let hid = record.hid;
         if (!hid && record.id) {
-          // Try to extract numeric ID from string
-          if (Array.isArray(record.id)) {
-            hid = parseInt(record.id[0]);
-          } else {
-            hid = parseInt(record.id);
-          }
+          hid = parseInt(Array.isArray(record.id) ? record.id[0] : record.id);
         }
 
         if (!hid || isNaN(hid)) {
@@ -101,8 +136,7 @@ async function importPoiDump(language = 'en') {
           continue;
         }
 
-        // Transform POI data
-        const poiData = {
+        batch.push({
           hid,
           hotelId: Array.isArray(record.id) ? record.id[0] : record.id,
           poi: (record.poi || []).map(p => ({
@@ -114,35 +148,23 @@ async function importPoiDump(language = 'en') {
           language,
           dumpDate: dumpInfo.last_update,
           lastUpdated: new Date()
-        };
+        });
 
-        batch.push(poiData);
         totalProcessed++;
 
-        // Process batch when full
         if (batch.length >= BATCH_SIZE) {
           try {
             const result = await HotelPOI.bulkUpsertFromDump(batch);
             totalImported += result.upsertedCount + result.modifiedCount;
-            console.log(`   📊 Processed ${totalProcessed} records (${totalImported} imported)`);
-          } catch (batchError) {
-            console.error(`   ❌ Batch error: ${batchError.message}`);
+            process.stdout.write(`\r   Processed: ${totalProcessed} | Imported: ${totalImported}`);
+          } catch (e) {
             totalErrors += batch.length;
           }
           batch = [];
         }
 
-        // Check if we've hit the limit
-        if (MAX_RECORDS && totalProcessed >= MAX_RECORDS) {
-          console.log(`⚠️  Reached import limit of ${MAX_RECORDS} records`);
-          break;
-        }
-
       } catch (parseError) {
         totalErrors++;
-        if (totalErrors < 10) {
-          console.error(`   ⚠️ Parse error: ${parseError.message}`);
-        }
       }
     }
 
@@ -151,13 +173,15 @@ async function importPoiDump(language = 'en') {
       try {
         const result = await HotelPOI.bulkUpsertFromDump(batch);
         totalImported += result.upsertedCount + result.modifiedCount;
-      } catch (batchError) {
-        console.error(`   ❌ Final batch error: ${batchError.message}`);
+      } catch (e) {
         totalErrors += batch.length;
       }
     }
 
-    console.log('\n========================================');
+    // Clean up JSON file
+    fs.unlinkSync(tempJsonFile);
+
+    console.log('\n\n========================================');
     console.log('📊 POI Import Summary');
     console.log('========================================');
     console.log(`   Total processed: ${totalProcessed}`);
@@ -166,29 +190,21 @@ async function importPoiDump(language = 'en') {
     console.log(`   Total errors:    ${totalErrors}`);
     console.log('========================================\n');
 
-    // Show sample of imported data
     const sampleCount = await HotelPOI.countDocuments();
     console.log(`📦 Total POI records in database: ${sampleCount}`);
-
-    const sample = await HotelPOI.findOne().lean();
-    if (sample) {
-      console.log(`\n📍 Sample POI record (HID: ${sample.hid}):`);
-      console.log(`   POI count: ${sample.poi?.length || 0}`);
-      if (sample.poi && sample.poi.length > 0) {
-        console.log('   First 3 POIs:');
-        sample.poi.slice(0, 3).forEach(p => {
-          console.log(`     - ${p.name} (${p.type}/${p.sub_type}) - ${p.distance}m`);
-        });
-      }
-    }
 
     console.log('\n✅ POI import completed successfully!');
 
   } catch (error) {
-    console.error('❌ Import failed:', error.message);
+    console.error('\n❌ Import failed:', error.message);
     console.error(error.stack);
-    process.exit(1);
   } finally {
+    // Cleanup temp files
+    try {
+      if (fs.existsSync(tempZstFile)) fs.unlinkSync(tempZstFile);
+      if (fs.existsSync(tempJsonFile)) fs.unlinkSync(tempJsonFile);
+    } catch (e) {}
+
     await mongoose.disconnect();
     console.log('📦 Disconnected from MongoDB');
   }
@@ -197,12 +213,15 @@ async function importPoiDump(language = 'en') {
 // Parse command line arguments
 const args = process.argv.slice(2);
 let language = 'en';
+let limit = null;
 
 for (const arg of args) {
   if (arg.startsWith('--language=')) {
     language = arg.split('=')[1];
   }
+  if (arg.startsWith('--limit=')) {
+    limit = parseInt(arg.split('=')[1]);
+  }
 }
 
-// Run the import
-importPoiDump(language);
+importPoiDump(language, limit);
