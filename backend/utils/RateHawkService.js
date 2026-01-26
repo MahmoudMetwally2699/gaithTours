@@ -2180,6 +2180,54 @@ class RateHawkService {
 
   /**
    * ========================================
+   * POINTS OF INTEREST (POI) API METHODS
+   * ========================================
+   */
+
+  /**
+   * Get POI dump URL and metadata
+   * Retrieves a dump with hotel POI data (nearby attractions, transit, etc.)
+   *
+   * @param {string} language - ISO 639-1 language code (e.g., 'en', 'ar')
+   * @returns {Promise<Object>} - { url: string, last_update: Date }
+   */
+  async getPoiDump(language = 'en') {
+    try {
+      console.log(`📍 Requesting POI dump for language: ${language}`);
+
+      const response = await this.makeRequest('/hotel/poi/dump/', 'POST', {
+        language
+      });
+
+      if (response.error) {
+        if (response.error === 'dump_not_ready') {
+          console.warn('⚠️ POI dump is still processing. Try again later.');
+          return {
+            success: false,
+            error: 'dump_not_ready',
+            message: 'The dump is in processing. Try to send the request later.'
+          };
+        }
+        throw new Error(response.error);
+      }
+
+      console.log(`✅ POI dump URL retrieved: ${response.data.url}`);
+      console.log(`📅 Last updated: ${response.data.last_update}`);
+
+      return {
+        success: true,
+        url: response.data.url,
+        last_update: new Date(response.data.last_update),
+        language
+      };
+    } catch (error) {
+      console.error('❌ Error getting POI dump:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * ========================================
    * HOTEL REVIEWS API METHODS
    * ========================================
    */

@@ -34,16 +34,6 @@ const HotelContentSchema = new mongoose.Schema({
   country: String,
   countryCode: String,
 
-  // Region information (from ETG API)
-  // NOTE: Must use explicit {type: X} syntax because 'type' is a Mongoose reserved keyword
-  region: {
-    country_code: { type: String },
-    iata: { type: String },
-    id: { type: Number },
-    name: { type: String },
-    type: { type: String }  // The region type field (City, Airport, etc.)
-  },
-
   // Location
   latitude: Number,
   longitude: Number,
@@ -97,12 +87,6 @@ const HotelContentSchema = new mongoose.Schema({
   metapolicyExtraInfo: String,
   metapolicyStruct: {
     type: mongoose.Schema.Types.Mixed // Flexible structure for policy data
-  },
-  policyStruct: {
-    type: [{
-      title: String,
-      paragraphs: [String]
-    }]
   },
 
   // Additional facts
@@ -245,7 +229,7 @@ HotelContentSchema.statics.bulkUpsertFromDump = async function(hotelsArray) {
   const operations = hotelsArray.map(hotel => ({
     updateOne: {
       filter: { hid: hotel.hid },
-      update: { $set: hotel },  // Must use $set for updateOne to work properly!
+      update: hotel,
       upsert: true
     }
   }));

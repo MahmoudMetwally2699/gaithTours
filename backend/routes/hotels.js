@@ -1315,6 +1315,7 @@ router.get('/details/:hid', async (req, res) => {
           check_in_time: localHotel.checkInTime || null,
           check_out_time: localHotel.checkOutTime || null,
           metapolicy_extra_info: localHotel.metapolicyExtraInfo || null,
+          metapolicy_struct: localHotel.metapolicyStruct || null,
           noRatesAvailable: true,
           message: 'No rates available for selected dates. Try different dates or contact us for availability.'
         };
@@ -1344,6 +1345,18 @@ router.get('/details/:hid', async (req, res) => {
       }
     }
 
+    // Fetch POI data for the hotel
+    let poiData = null;
+    try {
+      const HotelPOI = require('../models/HotelPOI');
+      poiData = await HotelPOI.getGroupedPOI(hotelId);
+      if (poiData) {
+        console.log(`📍 POI data found for hotel ${hotelId}`);
+      }
+    } catch (poiError) {
+      console.error('Error fetching POI data:', poiError.message);
+    }
+
     // Format response to match frontend expectations
     const formattedHotel = {
       id: hotelDetails.id,
@@ -1369,7 +1382,8 @@ router.get('/details/:hid', async (req, res) => {
       check_in_time: hotelDetails.check_in_time,
       check_out_time: hotelDetails.check_out_time,
       metapolicy_extra_info: hotelDetails.metapolicy_extra_info,
-      metapolicy_struct: hotelDetails.metapolicy_struct
+      metapolicy_struct: hotelDetails.metapolicy_struct,
+      poi_data: poiData
     };
 
     successResponse(res, { hotel: formattedHotel }, 'Hotel details retrieved successfully');

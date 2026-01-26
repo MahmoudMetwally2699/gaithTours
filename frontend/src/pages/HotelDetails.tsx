@@ -56,7 +56,7 @@ import { RoomCard } from '../components/RoomCard';
 import { PriceBreakdownCard } from '../components/PriceBreakdownCard';
 import { CancellationPolicyCard } from '../components/CancellationPolicyCard';
 import { HotelPoliciesCard } from '../components/HotelPoliciesCard';
-import { HotelLocationBadge } from '../components/HotelLocationBadge';
+import { HotelAreaInfo } from '../components/HotelAreaInfo';
 import { LazyImage } from '../components/LazyImage';
 import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -393,10 +393,11 @@ export const HotelDetails: React.FC = () => {
           rates: hotelData.rates || [],
           metapolicy_extra_info: hotelData.metapolicy_extra_info || '',
           metapolicy_struct: hotelData.metapolicy_struct || null,
+          poi_data: hotelData.poi_data || null,
           // Review data from hotel_reviews collection
           detailed_ratings: hotelData.detailed_ratings || null,
           reviews: hotelData.reviews || []
-        } as Hotel & { detailed_ratings?: any; reviews?: any[] };
+        } as Hotel & { detailed_ratings?: any; reviews?: any[]; poi_data?: any };
 
         setHotel(transformedHotel);
 
@@ -1061,27 +1062,6 @@ export const HotelDetails: React.FC = () => {
                   <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('hotels.showOnMap', 'Show on map')}</button>
                </div>
 
-               {/* Region Badges - Like Booking.com */}
-               {(hotel as any).region && (
-                 <div className="flex flex-wrap gap-2 mb-3">
-                   {(hotel as any).region.type && (hotel as any).region.type !== 'City' && (
-                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                       {(hotel as any).region.type}
-                     </span>
-                   )}
-                   {(hotel as any).region.iata && (
-                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-blue-500 text-white">
-                       {(hotel as any).region.iata}
-                     </span>
-                   )}
-                   {(hotel as any).countryCode && (
-                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
-                       {(hotel as any).countryCode}
-                     </span>
-                   )}
-                 </div>
-               )}
-
               <div className="flex items-center gap-4">
                  {/* Only show rating if there are actual reviews */}
                  {(hotel.reviewScore || hotel.rating) && (
@@ -1291,9 +1271,18 @@ export const HotelDetails: React.FC = () => {
                       ))}
                    </div>
                 </div>
-             </div>
-          </div>
+              </div>
+           </div>
         )}
+
+        {/* Hotel Area Info - Nearby POI */}
+        {(hotel as any).poi_data && (
+          <HotelAreaInfo
+            poiData={(hotel as any).poi_data}
+            neighborhoodDescription={t('hotels.neighborhoodInfo', 'Guests loved walking around the neighborhood!')}
+          />
+        )}
+
         {/* Active Search Bar for Availability (Updates content in place) */}
         <div className="mb-8 border-2 border-orange-400 rounded-lg p-1 flex flex-col md:flex-row bg-white">
            {/* Date Picker Section */}
