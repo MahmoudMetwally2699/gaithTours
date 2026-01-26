@@ -1427,4 +1427,18 @@ router.post('/clear-cache', (req, res) => {
   }, `Cleared ${cacheSize} search cache entries and ${countCacheSize} count cache entries`);
 });
 
+/**
+ * Clear hotel search cache (exported for use by margin rules)
+ * Call this when margin rules are updated to ensure fresh prices
+ */
+function clearHotelSearchCache() {
+  const cacheSize = hotelSearchCache.size;
+  const countCacheSize = cityCountCache.size;
+  hotelSearchCache.clear();
+  cityCountCache.clear();
+  console.log(`🗑️  Cleared hotel search cache: ${cacheSize} search entries, ${countCacheSize} count entries`);
+  return { searchCacheCleared: cacheSize, countCacheCleared: countCacheSize };
+}
+
 module.exports = router;
+module.exports.clearHotelSearchCache = clearHotelSearchCache;

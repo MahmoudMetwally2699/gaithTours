@@ -8,6 +8,15 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 
 const router = express.Router();
 
+// Import hotel search cache clearing function
+let clearHotelSearchCache;
+try {
+  clearHotelSearchCache = require('./hotels').clearHotelSearchCache;
+} catch (err) {
+  console.warn('Could not import clearHotelSearchCache:', err.message);
+  clearHotelSearchCache = () => {};
+}
+
 // Country code to name mapping
 const countryCodeMap = {
   'SA': 'Saudi Arabia',
@@ -229,11 +238,12 @@ router.post('/', protect, admin, [
 
     await rule.save();
 
-    // Clear search cache so new margins are applied immediately
+    // Clear ALL caches so new margins are applied immediately
     try {
       const RateHawkService = require('../utils/RateHawkService');
       RateHawkService.clearSearchCache();
-      MarginService.invalidateCache(); // Also invalidate rule cache
+      MarginService.invalidateCache(); // Invalidate margin rule cache
+      clearHotelSearchCache(); // Clear hotel search results cache
     } catch (err) {
       console.error('Error clearing cache:', err.message);
     }
@@ -277,11 +287,12 @@ router.put('/:id', protect, admin, [
     rule.updatedBy = req.user._id;
     await rule.save();
 
-    // Clear search cache so new margins are applied immediately
+    // Clear ALL caches so new margins are applied immediately
     try {
       const RateHawkService = require('../utils/RateHawkService');
       RateHawkService.clearSearchCache();
-      MarginService.invalidateCache(); // Also invalidate rule cache
+      MarginService.invalidateCache(); // Invalidate margin rule cache
+      clearHotelSearchCache(); // Clear hotel search results cache
     } catch (err) {
       console.error('Error clearing cache:', err.message);
     }
@@ -306,11 +317,12 @@ router.delete('/:id', protect, admin, async (req, res) => {
 
     await MarginRule.findByIdAndDelete(req.params.id);
 
-    // Clear search cache so margins are recalculated
+    // Clear ALL caches so margins are recalculated
     try {
       const RateHawkService = require('../utils/RateHawkService');
       RateHawkService.clearSearchCache();
-      MarginService.invalidateCache(); // Also invalidate rule cache
+      MarginService.invalidateCache(); // Invalidate margin rule cache
+      clearHotelSearchCache(); // Clear hotel search results cache
     } catch (err) {
       console.error('Error clearing cache:', err.message);
     }
@@ -334,11 +346,12 @@ router.patch('/:id/toggle', protect, admin, async (req, res) => {
     rule.updatedBy = req.user._id;
     await rule.save();
 
-    // Clear search cache so status change takes effect immediately
+    // Clear ALL caches so status change takes effect immediately
     try {
       const RateHawkService = require('../utils/RateHawkService');
       RateHawkService.clearSearchCache();
-      MarginService.invalidateCache(); // Also invalidate rule cache
+      MarginService.invalidateCache(); // Invalidate margin rule cache
+      clearHotelSearchCache(); // Clear hotel search results cache
     } catch (err) {
       console.error('Error clearing cache:', err.message);
     }
