@@ -139,10 +139,11 @@ async function importPoiDump(language = 'en', limit = null) {
         batch.push({
           hid,
           hotelId: Array.isArray(record.id) ? record.id[0] : record.id,
-          poi: (record.poi || []).map(p => ({
-            type: p.type || 'Unspecified',
-            sub_type: p.sub_type || 'unspecified',
-            name: p.name || '',
+
+          poi: (record.pois || []).map(p => ({
+            type: p.poi_type || 'Unspecified',
+            sub_type: p.poi_subtype || 'unspecified',
+            name: p.poi_name || p.poi_name_en || '',
             distance: p.distance || 0
           })),
           language,
