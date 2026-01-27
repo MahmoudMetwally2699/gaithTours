@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 
 const FACEBOOK_APP_ID = process.env.REACT_APP_FACEBOOK_APP_ID || '';
-const FACEBOOK_CONFIG_ID = process.env.REACT_APP_FACEBOOK_CONFIG_ID || '';
 
 interface FacebookAuthResponse {
     accessToken: string;
@@ -94,8 +93,7 @@ export const useFacebookSDK = () => {
                     reject(new Error('Facebook login was cancelled or failed'));
                 }
             }, {
-                scope: 'email,public_profile',
-                config_id: FACEBOOK_CONFIG_ID || undefined
+                scope: 'email,public_profile'
             });
         });
     }, []);
