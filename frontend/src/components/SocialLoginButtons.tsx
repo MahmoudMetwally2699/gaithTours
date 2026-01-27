@@ -131,32 +131,23 @@ export const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
   const { t } = useTranslation();
   const [facebookLoading, setFacebookLoading] = useState(false);
 
-  // Initialize Facebook SDK
-  const isFacebookReady = useFacebookSDK();
+  // Initialize Facebook SDK and get login function
+  const { isReady: isFacebookReady, login: facebookLogin } = useFacebookSDK();
 
-  // Facebook Login handler
-  const handleFacebookLogin = () => {
+  // Facebook Login handler using the hook's login function
+  const handleFacebookLogin = async () => {
+    if (!isFacebookReady) {
+      console.error('Facebook SDK not ready');
+      return;
+    }
+
     setFacebookLoading(true);
-
-    if (window.FB) {
-      window.FB.login((response: any) => {
-        if (response.authResponse) {
-          const { accessToken } = response.authResponse;
-          window.FB.api('/me', { fields: 'name,email,picture' }, async (userInfo: any) => {
-            try {
-              await onFacebookSuccess(accessToken, userInfo);
-            } catch (error) {
-              console.error('Facebook login error:', error);
-            } finally {
-              setFacebookLoading(false);
-            }
-          });
-        } else {
-          setFacebookLoading(false);
-        }
-      }, { scope: 'email,public_profile' });
-    } else {
-      console.error('Facebook SDK not loaded');
+    try {
+      const { accessToken, userInfo } = await facebookLogin();
+      await onFacebookSuccess(accessToken, userInfo);
+    } catch (error) {
+      console.error('Facebook login error:', error);
+    } finally {
       setFacebookLoading(false);
     }
   };
@@ -207,13 +198,5 @@ export const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
     </div>
   );
 };
-
-// TypeScript declaration for Facebook SDK
-declare global {
-  interface Window {
-    FB: any;
-    fbAsyncInit: () => void;
-  }
-}
 
 export default SocialLoginButtons;

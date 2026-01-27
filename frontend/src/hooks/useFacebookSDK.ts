@@ -1,13 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 const FACEBOOK_APP_ID = process.env.REACT_APP_FACEBOOK_APP_ID || '';
+const FACEBOOK_CONFIG_ID = process.env.REACT_APP_FACEBOOK_CONFIG_ID || '';
+
+interface FacebookAuthResponse {
+    accessToken: string;
+    expiresIn: number;
+    signedRequest: string;
+    userID: string;
+}
+
+interface FacebookLoginStatus {
+    status: 'connected' | 'not_authorized' | 'unknown';
+    authResponse?: FacebookAuthResponse;
+}
 
 /**
  * Hook to initialize Facebook SDK
- * Returns true when SDK is ready to use
+ * Returns SDK ready state and login function
  */
-export const useFacebookSDK = (): boolean => {
+export const useFacebookSDK = () => {
     const [isReady, setIsReady] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         // Skip if no App ID configured
@@ -30,6 +44,8 @@ export const useFacebookSDK = (): boolean => {
                 xfbml: true,
                 version: 'v18.0'
             });
+
+            window.FB.AppEvents.logPageView();
             setIsReady(true);
         };
 
@@ -50,7 +66,60 @@ export const useFacebookSDK = (): boolean => {
         loadFacebookSDK();
     }, []);
 
-    return isReady;
+    // Login function using FB.login()
+    const login = useCallback((): Promise<{ accessToken: string; userInfo: any }> => {
+        return new Promise((resolve, reject) => {
+            if (!window.FB) {
+                reject(new Error('Facebook SDK not loaded'));
+                return;
+            }
+
+            setIsLoading(true);
+
+            window.FB.login((response: FacebookLoginStatus) => {
+                if (response.status === 'connected' && response.authResponse) {
+                    const { accessToken } = response.authResponse;
+
+                    // Get user info
+                    window.FB.api('/me', { fields: 'name,email,picture.type(large)' }, (userInfo: any) => {
+                        setIsLoading(false);
+                        if (userInfo.error) {
+                            reject(new Error(userInfo.error.message));
+                        } else {
+                            resolve({ accessToken, userInfo });
+                        }
+                    });
+                } else {
+                    setIsLoading(false);
+                    reject(new Error('Facebook login was cancelled or failed'));
+                }
+            }, {
+                scope: 'email,public_profile',
+                config_id: FACEBOOK_CONFIG_ID || undefined
+            });
+        });
+    }, []);
+
+    // Check current login status
+    const getLoginStatus = useCallback((): Promise<FacebookLoginStatus> => {
+        return new Promise((resolve, reject) => {
+            if (!window.FB) {
+                reject(new Error('Facebook SDK not loaded'));
+                return;
+            }
+
+            window.FB.getLoginStatus((response: FacebookLoginStatus) => {
+                resolve(response);
+            });
+        });
+    }, []);
+
+    return {
+        isReady,
+        isLoading,
+        login,
+        getLoginStatus
+    };
 };
 
 /**
@@ -59,5 +128,22 @@ export const useFacebookSDK = (): boolean => {
 export const isFacebookConfigured = (): boolean => {
     return !!FACEBOOK_APP_ID;
 };
+
+// TypeScript declaration for Facebook SDK
+declare global {
+    interface Window {
+        FB: {
+            init: (params: any) => void;
+            login: (callback: (response: any) => void, options?: any) => void;
+            logout: (callback?: (response: any) => void) => void;
+            getLoginStatus: (callback: (response: any) => void) => void;
+            api: (path: string, params: any, callback: (response: any) => void) => void;
+            AppEvents: {
+                logPageView: () => void;
+            };
+        };
+        fbAsyncInit: () => void;
+    }
+}
 
 export default useFacebookSDK;
