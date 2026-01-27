@@ -8,6 +8,7 @@ import {
   EnvelopeIcon,
   LockClosedIcon,
   ArrowRightIcon,
+  ArrowLeftIcon,
   SparklesIcon,
   ShieldCheckIcon,
   GlobeAltIcon,
@@ -266,6 +267,23 @@ export const Login: React.FC = () => {
                 <GlobeAltIcon className="h-9 w-9 text-white" />
               </div>
             </motion.div>
+
+            {/* Back to Home Button */}
+            <div className="absolute top-6 right-6 z-20">
+              <Link
+                to="/"
+                className="group flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full shadow-sm hover:shadow-md hover:bg-white transition-all duration-300"
+              >
+                {isRTL ? (
+                  <ArrowRightIcon className="w-4 h-4 text-gray-600 group-hover:text-orange-500 transition-colors" />
+                ) : (
+                  <ArrowLeftIcon className="w-4 h-4 text-gray-600 group-hover:text-orange-500 transition-colors" />
+                )}
+                <span className="text-sm font-medium text-gray-600 group-hover:text-orange-500 transition-colors">
+                  {t('nav.home', 'Home')}
+                </span>
+              </Link>
+            </div>
 
             {/* Header */}
             <motion.div

@@ -41,9 +41,15 @@ const AppContent = () => {
   const isHotelDetails = location.pathname.startsWith('/hotels/details/');
   const isBookingPage = location.pathname.startsWith('/hotels/booking/');
 
+  const isLogin = location.pathname === '/login';
+  const isRegister = location.pathname === '/register';
+  const isForgotPassword = location.pathname === '/forgot-password';
+  const isResetPassword = location.pathname === '/reset-password';
+  const isEmailVerification = location.pathname.startsWith('/verify-email/');
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!isAdminDashboard && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && <Navbar />}
+      {!isAdminDashboard && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && !isLogin && !isRegister && !isForgotPassword && !isResetPassword && !isEmailVerification && <Navbar />}
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />
