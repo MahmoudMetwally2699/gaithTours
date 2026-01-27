@@ -228,16 +228,16 @@ export const authAPI = {
         provider: 'google' | 'facebook';
         accessToken: string;
         userInfo: any;
-    }): Promise<ApiResponse<{ user: User; token: string }>> => {
+    }): Promise<ApiResponse<{ user: User; token: string; isNewUser?: boolean }>> => {
         try {
             const response = await api.post('/auth/social-login', data);
-            const { user, token } = response.data.data;
+            const { user, token, isNewUser } = response.data.data;
 
             // Store token and user in localStorage
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
 
-            return response.data;
+            return { ...response.data, data: { user, token, isNewUser } };
         } catch (error: any) {
             const errorData = error.response?.data;
             let message = 'Social login failed';
@@ -247,6 +247,30 @@ export const authAPI = {
             }
 
             toast.error(message);
+            throw new Error(message);
+        }
+    },
+
+    updatePhone: async (phone: string): Promise<ApiResponse<{ user: User }>> => {
+        try {
+            const response = await api.put('/auth/update-phone', { phone });
+            const { user } = response.data.data;
+
+            // Update stored user data
+            localStorage.setItem('user', JSON.stringify(user));
+
+            toast.success('Phone number saved successfully!');
+            return response.data;
+        } catch (error: any) {
+            const errorData = error.response?.data;
+            let message = 'Failed to update phone number';
+
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                message = errorData.errors[0].msg || errorData.errors[0].message || message;
+            } else if (errorData?.message) {
+                message = errorData.message;
+            }
+
             throw new Error(message);
         }
     },

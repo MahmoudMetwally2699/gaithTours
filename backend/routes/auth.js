@@ -500,4 +500,108 @@ router.post('/social-login', async (req, res) => {
   }
 });
 
+// Country code to nationality mapping
+const countryCodeToNationality = {
+  '+966': 'Saudi Arabian',
+  '+971': 'Emirati',
+  '+20': 'Egyptian',
+  '+962': 'Jordanian',
+  '+965': 'Kuwaiti',
+  '+974': 'Qatari',
+  '+973': 'Bahraini',
+  '+968': 'Omani',
+  '+1': 'American',
+  '+44': 'British',
+  '+91': 'Indian',
+  '+92': 'Pakistani',
+  '+63': 'Filipino',
+  '+90': 'Turkish',
+  '+49': 'German',
+  '+33': 'French',
+  '+39': 'Italian',
+  '+34': 'Spanish',
+  '+61': 'Australian',
+  '+81': 'Japanese',
+  '+82': 'South Korean',
+  '+86': 'Chinese',
+  '+7': 'Russian',
+  '+55': 'Brazilian',
+  '+52': 'Mexican',
+  '+27': 'South African',
+  '+234': 'Nigerian',
+  '+254': 'Kenyan',
+  '+212': 'Moroccan',
+  '+216': 'Tunisian',
+  '+213': 'Algerian',
+  '+961': 'Lebanese',
+  '+963': 'Syrian',
+  '+964': 'Iraqi',
+  '+98': 'Iranian',
+  '+60': 'Malaysian',
+  '+65': 'Singaporean',
+  '+66': 'Thai',
+  '+62': 'Indonesian',
+  '+84': 'Vietnamese',
+};
+
+// Function to get nationality from phone number
+const getNationalityFromPhone = (phone) => {
+  if (!phone) return null;
+
+  // Sort by length (longer codes first) to match most specific code
+  const sortedCodes = Object.keys(countryCodeToNationality).sort((a, b) => b.length - a.length);
+
+  for (const code of sortedCodes) {
+    if (phone.startsWith(code)) {
+      return countryCodeToNationality[code];
+    }
+  }
+  return null;
+};
+
+// Update phone number (for social login users)
+router.put('/update-phone', protect, [
+  body('phone').isMobilePhone().withMessage('Please enter a valid phone number')
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { phone } = req.body;
+    const sanitizedPhone = sanitizeInput(phone);
+
+    // Auto-detect nationality from phone country code
+    const detectedNationality = getNationalityFromPhone(sanitizedPhone);
+
+    // Build update object
+    const updateData = { phone: sanitizedPhone };
+
+    // Only set nationality if detected and user doesn't already have one
+    const currentUser = await User.findById(req.user.id);
+    if (detectedNationality && (!currentUser.nationality || currentUser.nationality === '')) {
+      updateData.nationality = detectedNationality;
+    }
+
+    // Update user's phone number (and nationality if detected)
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    successResponse(res, { user }, 'Phone number updated successfully');
+
+  } catch (error) {
+    console.error('Update phone error:', error);
+    errorResponse(res, 'Failed to update phone number', 500);
+  }
+});
+
 module.exports = router;
