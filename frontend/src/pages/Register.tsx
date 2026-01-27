@@ -10,7 +10,6 @@ import {
   EnvelopeIcon,
   LockClosedIcon,
   PhoneIcon,
-  GlobeAltIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
   SparklesIcon,
@@ -252,8 +251,8 @@ export const Register: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
             className="mb-8"
           >
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl border border-white/30">
-              <SparklesIcon className="h-12 w-12 text-white" />
+            <div className="w-40 h-40 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl border border-white/30 p-6">
+              <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
             </div>
           </motion.div>
 
@@ -320,8 +319,8 @@ export const Register: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="lg:hidden flex justify-center mb-6"
             >
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg">
-                <GlobeAltIcon className="h-8 w-8 text-white" />
+              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg p-4">
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
               </div>
             </motion.div>
 
@@ -350,7 +349,7 @@ export const Register: React.FC = () => {
               className="text-center mb-6"
             >
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                {t('auth.register.title', 'Create Account')} ✨
+                {t('auth.register.title', 'Create Account')}
               </h1>
               <p className="text-gray-600">
                 {t('auth.register.subtitle', 'Join thousands of happy travelers')}

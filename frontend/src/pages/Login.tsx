@@ -11,7 +11,6 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
   ShieldCheckIcon,
-  GlobeAltIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
@@ -157,8 +156,8 @@ export const Login: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
             className="mb-8"
           >
-            <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl border border-white/30">
-              <GlobeAltIcon className="h-14 w-14 text-white" />
+            <div className="w-40 h-40 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl border border-white/30 p-6">
+              <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
             </div>
           </motion.div>
 
@@ -263,8 +262,8 @@ export const Login: React.FC = () => {
               transition={{ duration: 0.6 }}
               className="lg:hidden flex justify-center mb-8"
             >
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-xl">
-                <GlobeAltIcon className="h-9 w-9 text-white" />
+              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-xl p-4">
+                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
               </div>
             </motion.div>
 
