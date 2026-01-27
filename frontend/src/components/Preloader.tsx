@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface PreloaderProps {
   isLoading: boolean;
   minDisplayTime?: number;
+  maxDisplayTime?: number;
 }
 
 // Fix for Framer Motion v4 with React 18 types
@@ -11,10 +12,12 @@ const AnimatePresenceWithChildren = AnimatePresence as React.FC<React.PropsWithC
 
 export const Preloader: React.FC<PreloaderProps> = ({
   isLoading,
-  minDisplayTime = 1500
+  minDisplayTime = 1500,
+  maxDisplayTime = 8000 // Maximum time to show preloader (failsafe)
 }) => {
   const [showPreloader, setShowPreloader] = useState(true);
   const [hasMinTimePassed, setHasMinTimePassed] = useState(false);
+  const [forceHide, setForceHide] = useState(false);
 
   // Ensure minimum display time for smooth UX
   useEffect(() => {
@@ -25,16 +28,26 @@ export const Preloader: React.FC<PreloaderProps> = ({
     return () => clearTimeout(timer);
   }, [minDisplayTime]);
 
-  // Hide preloader when both loading is done AND minimum time has passed
+  // Maximum display time failsafe - force hide after maxDisplayTime
   useEffect(() => {
-    if (!isLoading && hasMinTimePassed) {
+    const maxTimer = setTimeout(() => {
+      console.warn('Preloader reached maximum display time, forcing hide');
+      setForceHide(true);
+    }, maxDisplayTime);
+
+    return () => clearTimeout(maxTimer);
+  }, [maxDisplayTime]);
+
+  // Hide preloader when: (loading is done AND min time passed) OR force hide triggered
+  useEffect(() => {
+    if (forceHide || (!isLoading && hasMinTimePassed)) {
       // Small delay for exit animation
       const hideTimer = setTimeout(() => {
         setShowPreloader(false);
       }, 300);
       return () => clearTimeout(hideTimer);
     }
-  }, [isLoading, hasMinTimePassed]);
+  }, [isLoading, hasMinTimePassed, forceHide]);
 
   return (
     <AnimatePresenceWithChildren>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Switch, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -27,6 +28,9 @@ import { AcceptInvitation } from './pages/AcceptInvitation';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import './i18n';
+
+// Google OAuth Client ID - Replace with your actual client ID from Google Cloud Console
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 const AppContent = () => {
   const location = useLocation();
@@ -91,7 +95,7 @@ const AppContent = () => {
 };
 
 function App() {
-  return (
+  const appContent = (
     <AuthProvider>
       <CurrencyProvider>
         <SocketProvider>
@@ -102,6 +106,17 @@ function App() {
       </CurrencyProvider>
     </AuthProvider>
   );
+
+  // Only wrap with GoogleOAuthProvider if client ID is configured
+  if (GOOGLE_CLIENT_ID) {
+    return (
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        {appContent}
+      </GoogleOAuthProvider>
+    );
+  }
+
+  return appContent;
 }
 
 export default App;

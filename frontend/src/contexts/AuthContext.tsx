@@ -6,7 +6,9 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;  register: (userData: {
+  login: (email: string, password: string) => Promise<void>;
+  socialLogin: (provider: 'google' | 'facebook', accessToken: string, userInfo: any) => Promise<void>;
+  register: (userData: {
     name: string;
     email: string;
     password: string;
@@ -103,6 +105,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const socialLogin = async (provider: 'google' | 'facebook', accessToken: string, userInfo: any) => {
+    try {
+      setIsLoading(true);
+      const response = await authAPI.socialLogin({ provider, accessToken, userInfo });
+      if (response.data?.user) {
+        setUser(response.data.user);
+        toast.success(`Welcome${response.data.user.name ? `, ${response.data.user.name}` : ''}!`);
+      }
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     authAPI.logout();
@@ -122,6 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     isLoading,
     login,
+    socialLogin,
     register,
     logout,
     updateUser,

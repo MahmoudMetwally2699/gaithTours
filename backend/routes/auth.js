@@ -440,4 +440,64 @@ router.post('/resend-verification', [
   }
 });
 
+// Social Login (Google/Facebook)
+router.post('/social-login', async (req, res) => {
+  try {
+    const { provider, accessToken, userInfo } = req.body;
+
+    if (!provider || !accessToken || !userInfo) {
+      return errorResponse(res, 'Missing required fields', 400);
+    }
+
+    if (!['google', 'facebook'].includes(provider)) {
+      return errorResponse(res, 'Invalid provider', 400);
+    }
+
+    const email = userInfo.email;
+    const name = userInfo.name || userInfo.given_name || 'User';
+    const socialId = userInfo.sub || userInfo.id;
+    const profilePicture = userInfo.picture?.data?.url || userInfo.picture;
+
+    if (!email) {
+      return errorResponse(res, 'Email not provided by social provider', 400);
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Update social provider info if not set
+      if (!user.socialProvider) {
+        user.socialProvider = provider;
+        user.socialId = socialId;
+        if (profilePicture) user.profilePicture = profilePicture;
+        await user.save();
+      }
+    } else {
+      // Create new user with social auth
+      user = await User.create({
+        name,
+        email,
+        socialProvider: provider,
+        socialId,
+        profilePicture,
+        isEmailVerified: true // Social auth emails are pre-verified
+      });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    successResponse(res, {
+      user,
+      token,
+      isNewUser: !user.phone || user.phone === '+0000000000'
+    }, 'Social login successful');
+
+  } catch (error) {
+    console.error('Social login error:', error);
+    errorResponse(res, 'Social login failed', 500);
+  }
+});
+
 module.exports = router;

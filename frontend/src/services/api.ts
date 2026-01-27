@@ -223,6 +223,33 @@ export const authAPI = {
             throw new Error(message);
         }
     },
+
+    socialLogin: async (data: {
+        provider: 'google' | 'facebook';
+        accessToken: string;
+        userInfo: any;
+    }): Promise<ApiResponse<{ user: User; token: string }>> => {
+        try {
+            const response = await api.post('/auth/social-login', data);
+            const { user, token } = response.data.data;
+
+            // Store token and user in localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+
+            return response.data;
+        } catch (error: any) {
+            const errorData = error.response?.data;
+            let message = 'Social login failed';
+
+            if (errorData?.message) {
+                message = errorData.message;
+            }
+
+            toast.error(message);
+            throw new Error(message);
+        }
+    },
 };
 
 // Hotels API

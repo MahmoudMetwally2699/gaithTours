@@ -18,21 +18,39 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: [function() { return !this.socialProvider; }, 'Password is required'],
     minlength: [8, 'Password must be at least 8 characters long'],
     validate: {
       validator: function(password) {
+        // Skip validation for social auth users (no password)
+        if (!password && this.socialProvider) return true;
         // At least one uppercase, one lowercase, one number, one special character
         return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(password);
       },
       message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-    }
+    },
+    select: false
+  },
+  socialProvider: {
+    type: String,
+    enum: ['google', 'facebook', null],
+    default: null
+  },
+  socialId: {
+    type: String,
+    sparse: true
+  },
+  profilePicture: {
+    type: String
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required'],
+    required: [function() { return !this.socialProvider; }, 'Phone number is required'],
     validate: {
       validator: function(phone) {
+        // Skip validation for social auth users without phone
+        if (!phone && this.socialProvider) return true;
+        if (!phone) return false;
         // Basic international phone number validation
         return /^\+?[1-9]\d{1,14}$/.test(phone.replace(/[\s-]/g, ''));
       },
@@ -41,7 +59,7 @@ const userSchema = new mongoose.Schema({
   },
   nationality: {
     type: String,
-    required: [true, 'Nationality is required'],
+    required: [function() { return !this.socialProvider; }, 'Nationality is required'],
     minlength: [2, 'Nationality must be at least 2 characters long']
   },
   lastSearchDestination: {
