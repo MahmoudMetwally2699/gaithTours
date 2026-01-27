@@ -29,6 +29,8 @@ export const useFacebookSDK = () => {
             return;
         }
 
+        console.log('Initializing Facebook SDK with App ID:', FACEBOOK_APP_ID);
+
         // Skip if already loaded
         if (window.FB) {
             setIsReady(true);
