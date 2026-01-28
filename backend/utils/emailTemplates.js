@@ -157,7 +157,7 @@ const getBookingConfirmationTemplate = (data) => {
                                 <td style="padding-left: 20px;" valign="top" class="column-stack mobile-padding">
                                     <div style="margin-bottom: 8px;">
                                         <span style="background-color: #F97316; color: #fff; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Upcoming Stay</span>
-                                        <span style="color: #6B7280; font-size: 12px; margin-left: 8px;">Reservation ID: #${reservation._id.toString().slice(-8).toUpperCase()}</span>
+                                        <span style="color: #6B7280; font-size: 12px; margin-left: 8px;">Reservation ID: #${reservation && reservation._id ? reservation._id.toString().slice(-8).toUpperCase() : 'N/A'}</span>
                                     </div>
                                     <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #111827;">${hotel.name}</h3>
                                     <p style="margin: 0 0 8px 0; color: #6B7280; font-size: 13px; display: flex; align-items: center;">
@@ -168,7 +168,7 @@ const getBookingConfirmationTemplate = (data) => {
                                     </p>
                                 </td>
                                 <td align="center" valign="bottom" class="column-stack" style="padding-top: 20px;">
-                                    <a href="${process.env.FRONTEND_URL}/bookings/${reservation._id}" style="background-color: #F97316; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; white-space: nowrap;">Manage Booking</a>
+                                    <a href="${process.env.FRONTEND_URL}/bookings/${reservation && reservation._id ? reservation._id : ''}" style="background-color: #F97316; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; white-space: nowrap;">Manage Booking</a>
                                 </td>
                             </tr>
                         </table>
@@ -255,7 +255,7 @@ const getBookingConfirmationTemplate = (data) => {
                                     </tr>
                                 </table>
                                 <div style="background-color: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; padding: 8px 12px; display: inline-flex; align-items: center;">
-                                    <span style="color: #059669; font-size: 12px; font-weight: 700; text-transform: uppercase;">✓ PAID WITH ${paymentMethod.toUpperCase()}</span>
+                                    <span style="color: #059669; font-size: 12px; font-weight: 700; text-transform: uppercase;">✓ PAID WITH ${paymentMethod ? paymentMethod.toUpperCase() : 'CARD'}</span>
                                 </div>
                             </td>
 
