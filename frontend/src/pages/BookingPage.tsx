@@ -316,8 +316,13 @@ export const BookingPage: React.FC = () => {
         throw new Error(prebookResponse.message || t('booking.errors.rateUnavailable', 'Rate is no longer available'));
       }
 
-      const { bookHash, payment } = prebookResponse.data;
+      const { bookHash, payment, prebookData } = prebookResponse.data;
       console.log('✅ Prebook success. Payment details:', payment);
+
+      // Extract show_amount from prebook for accurate currency conversion
+      // show_amount is the SAR price that corresponds to the USD payment.amount
+      const prebookShowAmount = prebookData?.hotels?.[0]?.rates?.[0]?.payment_options?.payment_types?.[0]?.show_amount;
+      console.log('   Prebook show_amount (SAR):', prebookShowAmount);
 
       // IMPORTANT: Calculate the TOTAL amount to charge including margin and room count
       const checkInDate = new Date(checkIn);
@@ -393,6 +398,7 @@ export const BookingPage: React.FC = () => {
           bookHash: bookHash,
           prebookPaymentAmount: payment?.amount,
           prebookPaymentCurrency: payment?.currency,
+          prebookShowAmount: prebookShowAmount, // SAR amount for accurate conversion
           roomName: selectedRate.room_name,
           meal: selectedRate.meal || 'nomeal',
           price: selectedRate.price,

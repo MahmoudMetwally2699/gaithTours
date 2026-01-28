@@ -634,7 +634,7 @@ export const bookingsAPI = {
         hotelId: string;
         checkIn: string;
         checkOut: string;
-    }): Promise<ApiResponse<{ bookHash: string; payment: { amount: string; currency: string } }>> => {
+    }): Promise<ApiResponse<{ bookHash: string; payment: { amount: string; currency: string }; prebookData?: any }>> => {
         try {
             const token = localStorage.getItem('token');
             const response = await api.post('/bookings/prebook-rate', data, {

@@ -905,12 +905,40 @@ router.post('/kashier/create-session', async (req, res) => {
     }
 
     // Create Kashier payment session
+    // Determine the correct amount to charge based on Kashier's currency
+    const kashierCurrency = process.env.KASHIER_FORCE_TEST_CURRENCY || process.env.KASHIER_CURRENCY || 'USD';
+    let kashierAmount = parseFloat(totalPrice);
+    let displayCurrency = currency || 'SAR';
+
+    // If Kashier is set to USD but frontend sent SAR, convert using prebook data
+    // The prebook provides both show_amount (SAR) and amount (USD)
+    // prebookPaymentAmount is the USD amount for 1 room base price
+    if (kashierCurrency === 'USD' && displayCurrency !== 'USD' && selectedRate.prebookPaymentAmount) {
+      const prebookUSD = parseFloat(selectedRate.prebookPaymentAmount);
+      // Use prebookShowAmount (actual SAR from prebook) instead of selectedRate.price (which may have taxes extracted)
+      const prebookSAR = parseFloat(selectedRate.prebookShowAmount) || parseFloat(selectedRate.price);
+
+      if (prebookUSD > 0 && prebookSAR > 0) {
+        // Calculate conversion rate from prebook data
+        const sarToUsdRate = prebookUSD / prebookSAR;
+
+        // Convert total price from SAR to USD
+        kashierAmount = parseFloat((parseFloat(totalPrice) * sarToUsdRate).toFixed(2));
+
+        console.log('💱 Currency conversion for Kashier:');
+        console.log(`   Display Price: ${totalPrice} ${displayCurrency}`);
+        console.log(`   Prebook show_amount: ${prebookSAR} SAR → ${prebookUSD} USD`);
+        console.log(`   Conversion Rate: 1 SAR = ${sarToUsdRate.toFixed(6)} USD`);
+        console.log(`   Kashier Amount: ${kashierAmount} USD`);
+      }
+    }
+
     let paymentSession;
     try {
       paymentSession = await kashierService.createPaymentSession({
         orderId,
-        amount: parseFloat(totalPrice),
-        currency: currency || 'EGP',
+        amount: kashierAmount,
+        currency: kashierCurrency, // Use Kashier's configured currency
         customerEmail: guestEmail,
         customerReference: guestPhone,
         customerName: guestName, // Pass guest name for correct validation
@@ -921,7 +949,9 @@ router.post('/kashier/create-session', async (req, res) => {
           hotelName,
           checkIn: checkInDate,
           checkOut: checkOutDate,
-          matchHash: selectedRate.matchHash
+          matchHash: selectedRate.matchHash,
+          originalAmount: totalPrice,
+          originalCurrency: displayCurrency
         }
       });
     } catch (paymentError) {
