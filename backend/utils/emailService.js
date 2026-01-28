@@ -809,7 +809,8 @@ const sendPaymentConfirmationEmail = async (paymentData) => {
       checkOutDate: booking ? booking.checkOutDate : null,
       notes: booking ? booking.notes : '',
       totalAmount: invoice.amount || invoice.total,
-      taxes: 0
+      taxes: 0,
+      currency: invoice.currency || booking?.currency || 'USD'
     };
 
     const htmlContent = getBookingConfirmationTemplate(templateData);

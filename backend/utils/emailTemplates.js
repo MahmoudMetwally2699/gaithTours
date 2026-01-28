@@ -16,7 +16,8 @@ const getBookingConfirmationTemplate = (data) => {
     checkOutDate,
     notes,
     totalAmount, // Assuming this might be passed or calculated
-    taxes // Assuming this might be passed
+    taxes, // Assuming this might be passed
+    currency // Currency code (e.g., USD, SAR, EGP)
   } = data;
 
   // Helper date formatter
@@ -261,7 +262,7 @@ const getBookingConfirmationTemplate = (data) => {
                                 <table width="100%" role="presentation" style="margin-bottom: 20px;">
                                     <tr>
                                         <td style="padding: 12px 0; color: #111827; font-weight: 700; font-size: 15px;">Total Amount Paid</td>
-                                        <td align="right" style="color: #F97316; font-weight: 800; font-size: 16px;">USD ${grandTotal.toLocaleString()}</td>
+                                        <td align="right" style="color: #F97316; font-weight: 800; font-size: 16px;">${currency || 'USD'} ${grandTotal.toLocaleString()}</td>
                                     </tr>
                                 </table>
                                 <div style="background-color: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; padding: 8px 12px; display: inline-flex; align-items: center;">
