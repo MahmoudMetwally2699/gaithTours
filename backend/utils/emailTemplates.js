@@ -163,11 +163,8 @@ const getBookingConfirmationTemplate = (data) => {
                                         <span style="color: #6B7280; font-size: 12px; margin-left: 8px;">Reservation ID: #${reservation && reservation._id ? reservation._id.toString().slice(-8).toUpperCase() : 'N/A'}</span>
                                     </div>
                                     <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #111827;">${hotel.name}</h3>
-                                    <p style="margin: 0 0 8px 0; color: #6B7280; font-size: 13px; display: flex; align-items: center;">
+                                    <p style="margin: 0; color: #6B7280; font-size: 13px; display: flex; align-items: center;">
                                         📍 ${hotel.address}
-                                    </p>
-                                    <p style="margin: 0; color: #6B7280; font-size: 13px;">
-                                        🏷️ Conf. Code: <strong>GP-X${Math.floor(Math.random() * 1000)}-2025</strong>
                                     </p>
                                 </td>
                                 <td align="center" valign="bottom" class="column-stack" style="padding-top: 20px;">
