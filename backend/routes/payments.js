@@ -161,7 +161,8 @@ async function createRateHawkBooking(reservationParam, orderId) {
             email: reservation.email,
             name: reservation.touristName,
             invoice: { hotelName: reservation.hotel.name, total: reservation.totalPrice },
-            payment: { status: 'completed' }
+            payment: { status: 'completed' },
+            booking: reservation
           });
         } catch (emailError) {
           console.error('Email error:', emailError.message);
@@ -250,7 +251,8 @@ async function createRateHawkBooking(reservationParam, orderId) {
             total: reservation.totalPrice,
             currency: reservation.currency
           },
-          payment: { status: 'completed' }
+          payment: { status: 'completed' },
+          booking: reservation
         });
       } catch (emailError) {
         console.error('Email error:', emailError.message);
@@ -404,7 +406,7 @@ router.post('/webhook', async (req, res) => {
             const Reservation = require('../models/Reservation');
 
             // Get the reservation to access book_hash
-            const reservation = await Reservation.findById(result.reservation._id);
+            const reservation = await Reservation.findById(result.invoice.reservation);
 
             if (reservation && reservation.hotel.rateHawkBookHash) {
               const bookingResult = await rateHawkService.createBooking(
@@ -435,11 +437,15 @@ router.post('/webhook', async (req, res) => {
 
           // Send payment confirmation email
           try {
+            // Get full reservation details for email
+            const fullReservation = await Reservation.findById(result.invoice.reservation);
+
             await sendPaymentConfirmationEmail({
               email: result.invoice.clientEmail,
               name: result.invoice.clientName,
               invoice: result.invoice,
-              payment: result.payment
+              payment: result.payment,
+              booking: fullReservation
             });
           } catch (emailError) {
           }
@@ -1227,7 +1233,8 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
               total: reservation.totalPrice,
               currency: reservation.currency
             },
-            payment: { status: 'completed' }
+            payment: { status: 'completed' },
+            booking: reservation
           });
         } catch (emailError) {
           console.error('Email error:', emailError.message);

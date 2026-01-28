@@ -746,148 +746,83 @@ const sendBookingConfirmationEmail = async (confirmationData) => {
     const transporter = createTransporter();
     const { email, name, booking, invoice } = confirmationData;
 
+    // Map the booking/invoice data to the template structure
+    const templateData = {
+      reservation: booking,
+      touristName: name,
+      email: email,
+      phone: booking.phone,
+      nationality: booking.nationality,
+      expectedCheckInTime: booking.expectedCheckInTime,
+      roomType: booking.roomType,
+      stayType: booking.stayType,
+      paymentMethod: booking.paymentMethod,
+      numberOfGuests: booking.numberOfGuests,
+      guests: booking.guests,
+      hotel: booking.hotel,
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate,
+      notes: booking.notes,
+      totalAmount: invoice.amount,
+      taxes: 0 // Optional, or calculate if data available
+    };
+
+    const htmlContent = getBookingConfirmationTemplate(templateData);
+
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
-      subject: '🎉 Booking Confirmed - Gaith Tours',
-      html: `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Booking Confirmed</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-            * { box-sizing: border-box; }
-          </style>
-        </head>
-        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); font-family: 'Plus Jakarta Sans', sans-serif;">
-          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
-            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 45px 30px; text-align: center;">
-              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
-              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
-                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">🎉 Booking Confirmed!</p>
-              </div>
-            </div>
-
-            <div style="padding: 40px 30px;">
-              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Congratulations ${name}!</h2>
-              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
-                Your payment has been successfully processed and your booking is now confirmed!
-              </p>
-
-              <div style="background: #f0fdf4; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #10b981;">
-                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Booking Details</h3>
-                <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${booking.hotel.name}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Address:</strong> ${booking.hotel.address}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Amount Paid:</strong> ${invoice.amount} ${invoice.currency}</p>
-              </div>
-
-              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 25px 0;">
-                You will receive your booking confirmation details soon. Have a wonderful trip!
-              </p>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.FRONTEND_URL}/profile" style="background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);">
-                  View Booking
-                </a>
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
+      subject: '🎉 Payment Confirmed - Your Stay is Booked! - Gaith Tours',
+      html: htmlContent
     };
 
     const info = await transporter.sendMail(mailOptions);
-    return true;
+    return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Failed to send booking confirmation email:', error);
     throw error;
   }
 };
 
+
 // Send payment confirmation email
 const sendPaymentConfirmationEmail = async (paymentData) => {
   try {
     const transporter = createTransporter();
-    const { email, name, invoice, payment } = paymentData;
+    const { email, name, invoice, payment, booking } = paymentData;
+
+    // Use booking data if available, otherwise construct minimal data
+    const templateData = {
+      reservation: booking || {},
+      touristName: name,
+      email: email,
+      phone: booking ? booking.phone : (invoice.clientPhone || ''),
+      nationality: booking ? booking.nationality : (invoice.clientNationality || ''),
+      expectedCheckInTime: booking ? booking.expectedCheckInTime : '',
+      roomType: booking ? booking.roomType : 'Standard Room',
+      stayType: booking ? booking.stayType : '',
+      paymentMethod: payment ? payment.paymentMethod : 'Credit Card',
+      numberOfGuests: booking ? booking.numberOfGuests : 1,
+      guests: booking ? booking.guests : [],
+      hotel: booking ? booking.hotel : { name: invoice.hotelName, address: invoice.hotelAddress },
+      checkInDate: booking ? booking.checkInDate : null,
+      checkOutDate: booking ? booking.checkOutDate : null,
+      notes: booking ? booking.notes : '',
+      totalAmount: invoice.amount || invoice.total,
+      taxes: 0
+    };
+
+    const htmlContent = getBookingConfirmationTemplate(templateData);
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: email,
-      subject: `💳 Payment Confirmed - Invoice #${invoice.invoiceId} - Gaith Tours`,
-      html: `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Payment Confirmation</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-            * { box-sizing: border-box; }
-          </style>
-        </head>
-        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-family: 'Plus Jakarta Sans', sans-serif;">
-          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
-            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 45px 30px; text-align: center;">
-              <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0;">✈️ Gaith Tours</h1>
-              <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px;">
-                <p style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0;">💳 Payment Confirmed</p>
-              </div>
-            </div>
-
-            <div style="padding: 40px 30px;">
-              <h2 style="color: #1f2937; font-size: 24px; font-weight: 700; margin: 0 0 20px 0;">Hello ${name}!</h2>
-
-              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
-                Great news! Your payment has been successfully processed and your booking is now confirmed!
-              </p>
-
-              <div style="background: #f0fdf4; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #10b981;">
-                <h3 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Payment Details</h3>
-                <p style="margin: 8px 0; color: #374151;"><strong>Invoice ID:</strong> ${invoice.invoiceId}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Hotel:</strong> ${invoice.hotelName}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Amount Paid:</strong> ${invoice.amount} ${invoice.currency}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Payment Date:</strong> ${new Date(payment.processedAt).toLocaleDateString()}</p>
-                <p style="margin: 8px 0; color: #374151;"><strong>Transaction ID:</strong> ${payment.transactionId}</p>
-              </div>
-
-              <div style="background: #fef3c7; border-radius: 16px; padding: 25px; margin: 25px 0; border-left: 4px solid #f59e0b;">
-                <h3 style="color: #92400e; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">Next Steps</h3>
-                <ul style="color: #92400e; margin: 0; padding-left: 20px;">
-                  <li>You will receive your booking confirmation details within 24 hours</li>
-                  <li>Our team will contact you for any additional arrangements</li>
-                  <li>Please keep this payment confirmation for your records</li>
-                  <li>Check your email for booking vouchers and travel documents</li>
-                </ul>
-              </div>
-
-              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 25px 0;">
-                Thank you for choosing Gaith Tours. We can't wait to make your travel experience unforgettable!
-              </p>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.FRONTEND_URL}/profile" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; display: inline-block; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);">
-                  View My Bookings
-                </a>
-              </div>
-
-              <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 30px 0 0 0;">
-                Need help? Contact us at ${process.env.EMAIL_FROM || process.env.EMAIL_USER}
-              </p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
+      subject: `🎉 Payment Confirmed - Your Stay is Booked! - Gaith Tours`,
+      html: htmlContent
     };
 
     const info = await transporter.sendMail(mailOptions);
-    return true;
+    return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Failed to send payment confirmation email:', error);
     throw error;
