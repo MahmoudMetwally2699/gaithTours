@@ -42,7 +42,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
   onChange,
   errors
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'booking']);
 
   const handleCountryChange = (countryCode: string) => {
     const country = countries.find(c => c.code === countryCode);
@@ -57,12 +57,12 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
       {/* Guest Information Section */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
-          {t('booking.guestInformation', 'Guest Information')}
+          {t('booking:guestInformation', 'Guest Information')}
         </h2>
 
         <div className="bg-orange-50 border border-orange-200 rounded p-4 mb-6">
           <p className="text-sm text-orange-800 font-medium">
-            {t('booking.almostDone', 'Almost done! Just fill in the required info')}
+            {t('booking:almostDone', 'Almost done! Just fill in the required info')}
           </p>
         </div>
 
@@ -70,7 +70,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('booking.firstName', 'First Name')} <span className="text-red-500">*</span>
+              {t('booking:firstName', 'First Name')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -79,7 +79,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                 errors.firstName ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder={t('booking.firstNamePlaceholder', 'Enter first name')}
+              placeholder={t('booking:firstNamePlaceholder', 'Enter first name')}
             />
             {errors.firstName && (
               <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
@@ -89,7 +89,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('booking.lastName', 'Last Name')} <span className="text-red-500">*</span>
+              {t('booking:lastName', 'Last Name')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -98,7 +98,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                 errors.lastName ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder={t('booking.lastNamePlaceholder', 'Enter last name')}
+              placeholder={t('booking:lastNamePlaceholder', 'Enter last name')}
             />
             {errors.lastName && (
               <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
@@ -109,7 +109,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
         {/* Email */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('booking.email', 'Email Address')} <span className="text-red-500">*</span>
+            {t('booking:email', 'Email Address')} <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
@@ -124,14 +124,14 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
             <p className="text-red-500 text-xs mt-1">{errors.email}</p>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            {t('booking.confirmationEmail', 'Confirmation email will be sent to this address')}
+            {t('booking:confirmationEmail', 'Confirmation email will be sent to this address')}
           </p>
         </div>
 
         {/* Country/Region */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('booking.country', 'Country/Region')}
+            {t('booking:country', 'Country/Region')}
           </label>
           <select
             value={formData.country}
@@ -140,7 +140,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           >
             {countries.map((country) => (
               <option key={country.code} value={country.code}>
-                {country.name}
+                {t('booking:countries.' + country.code, country.name)}
               </option>
             ))}
           </select>
@@ -149,7 +149,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
         {/* Phone Number */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('booking.phone', 'Phone Number')}
+            {t('booking:phone', 'Phone Number')}
           </label>
           <div className="flex gap-2">
             <select
@@ -177,7 +177,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
             <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            {t('booking.phoneHelp', 'Needed by the property to validate your booking')}
+            {t('booking:phoneHelp', 'Needed by the property to validate your booking')}
           </p>
         </div>
       </div>
@@ -185,7 +185,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
       {/* Who are you booking for? */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {t('booking.whoBookingFor', 'Who are you booking for?')}
+          {t('booking:whoBookingFor', 'Who are you booking for?')}
         </h3>
 
         <div className="space-y-3">
@@ -200,7 +200,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
             />
             <div>
               <div className="font-medium text-gray-900">
-                {t('booking.imMainGuest', "I'm the main guest")}
+                {t('booking:imMainGuest', "I'm the main guest")}
               </div>
             </div>
           </label>
@@ -216,7 +216,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
             />
             <div>
               <div className="font-medium text-gray-900">
-                {t('booking.bookingForSomeone', "I'm booking for someone else")}
+                {t('booking:bookingForSomeone', "I'm booking for someone else")}
               </div>
             </div>
           </label>
@@ -226,10 +226,10 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
       {/* Special Requests */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          {t('booking.specialRequests', 'Special Requests')}
+          {t('booking:specialRequests', 'Special Requests')}
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          {t('booking.specialRequestsNote', 'Special requests cannot be guaranteed – but the property will do its best to meet your needs.')}
+          {t('booking:specialRequestsNote', 'Special requests cannot be guaranteed – but the property will do its best to meet your needs.')}
         </p>
 
         <textarea
@@ -237,7 +237,7 @@ export const GuestInformationForm: React.FC<GuestInformationFormProps> = ({
           onChange={(e) => onChange({ specialRequests: e.target.value })}
           rows={4}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          placeholder={t('booking.specialRequestsPlaceholder', 'Please write your requests in English or Arabic (optional)')}
+          placeholder={t('booking:specialRequestsPlaceholder', 'Please write your requests in English or Arabic (optional)')}
         />
       </div>
     </div>

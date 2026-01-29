@@ -21,14 +21,16 @@ interface HotelCardProps {
 }
 
 export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currency: globalCurrency } = useCurrency();
+  const isRTL = i18n.language === 'ar';
 
-  // Helper to format currency - use hotel currency if available, else global
+  // Helper to format currency - use Arabic locale when in Arabic mode
   const formatPrice = (price?: number, currency?: string) => {
     if (!price || price <= 0) return null;
     const currencyToUse = currency || globalCurrency || 'USD';
-    return new Intl.NumberFormat('en-US', {
+    const locale = isRTL ? 'ar-EG' : 'en-US';
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currencyToUse,
       minimumFractionDigits: 0,
@@ -36,13 +38,13 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
     }).format(price);
   };
 
-  // Helper for score word
+  // Helper for score word - translated
   const getScoreWord = (rating?: number) => {
     if (!rating) return '';
-    if (rating >= 9) return 'Wonderful';
-    if (rating >= 8) return 'Very Good';
-    if (rating >= 7) return 'Good';
-    return 'Pleasant';
+    if (rating >= 9) return t('hotels.wonderful', 'Wonderful');
+    if (rating >= 8) return t('hotels.veryGood', 'Very Good');
+    if (rating >= 7) return t('hotels.good', 'Good');
+    return t('hotels.pleasant', 'Pleasant');
   };
 
   return (
@@ -79,14 +81,19 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
       <div className="pt-5 md:pt-6 pb-3 md:pb-4 px-3 md:px-4 flex flex-col flex-grow">
         <div className="flex justify-between items-start mb-1 md:mb-2">
           <div className="flex-1 min-w-0">
+             {/* Review info - positioned for LTR always to stay near rating badge */}
              <div className="flex justify-end mb-1">
-                <div className="text-right text-[10px] sm:text-xs text-gray-500 w-full flex flex-col items-end mr-0.5 md:mr-1">
-                    {hotel.reviewCount && <span className="truncate">{hotel.reviewCount} reviews</span>}
+                <div className="text-[10px] sm:text-xs text-gray-500 flex flex-col items-end ltr:mr-0.5 ltr:md:mr-1 rtl:ml-0.5 rtl:md:ml-1" style={{ direction: 'ltr', textAlign: 'right' }}>
+                    {hotel.reviewCount && <span className="truncate">{t('hotels.reviewCount', '{{count}} reviews', { count: hotel.reviewCount })}</span>}
                     <span className="font-medium truncate">{getScoreWord(hotel.rating)}</span>
                  </div>
              </div>
 
-            <h3 className="text-sm sm:text-base font-bold text-[#FF8C00] truncate pr-1 md:pr-2">
+            {/* Hotel name - fix RTL truncation */}
+            <h3
+              className="text-sm sm:text-base font-bold text-[#FF8C00] truncate pr-1 md:pr-2"
+              style={{ direction: 'ltr', textAlign: 'start' }}
+            >
               {hotel.name}
             </h3>
 
@@ -118,7 +125,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
              </>
            ) : (hotel.price && hotel.price > 0 && formatPrice(hotel.price, hotel.currency)) ? (
              <>
-               <span className="text-gray-400 text-[10px] sm:text-xs mr-0.5 md:mr-1">{t('hotels.from', 'From')}</span>
+               <span className="text-gray-400 text-[10px] sm:text-xs ltr:mr-1 ltr:md:mr-1.5 rtl:ml-1 rtl:md:ml-1.5">{t('hotels.from', 'From')}</span>
                <span className="text-base sm:text-lg font-bold text-gray-800">
                  {formatPrice(hotel.price, hotel.currency)}
                </span>

@@ -60,7 +60,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   children = 0,
   rooms = 1
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation(['common', 'booking']);
   const { currencySymbol } = useCurrency();
   const totalGuests = guests + children;
 
@@ -171,7 +171,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Select Date';
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
@@ -219,7 +219,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
           <div className="flex items-center justify-between mb-3">
             <div className="flex-1">
               <div className="text-xs text-gray-500 mb-1">
-                {t('booking.checkIn', 'Check-in')}
+                {t('booking:checkIn', 'Check-in')}
               </div>
               <div className="text-sm font-medium">{formatDate(checkIn)}</div>
               <div className="text-xs text-gray-500">11:00 AM</div>
@@ -231,7 +231,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
 
             <div className="flex-1 text-right">
               <div className="text-xs text-gray-500 mb-1">
-                {t('booking.checkOut', 'Check-out')}
+                {t('booking:checkOut', 'Check-out')}
               </div>
               <div className="text-sm font-medium">{formatDate(checkOut)}</div>
               <div className="text-xs text-gray-500">12:00 PM</div>
@@ -241,10 +241,10 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
           {/* Duration */}
           <div className="bg-gray-50 rounded p-3 mb-3">
             <div className="text-sm font-medium text-gray-900">
-              {t('booking.totalStay', 'Total length of stay:')}
+              {t('booking:totalStay', 'Total length of stay:')}
             </div>
             <div className="text-sm text-gray-600">
-              {nights} {nights === 1 ? t('booking.night', 'night') : t('booking.nights', 'nights')}
+              {nights} {nights === 1 ? t('booking:night', 'night') : t('booking:nights', 'nights')}
             </div>
           </div>
 
@@ -252,12 +252,12 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
           <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
             <div className="flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-2" />
-              <span>{totalGuests} {totalGuests === 1 ? t('booking.guest', 'Guest') : t('hero.guests', 'Guests')}</span>
+              <span>{totalGuests} {totalGuests === 1 ? t('booking:guest', 'Guest') : t('booking:guests', 'Guests')}</span>
             </div>
             <div className="flex items-center">
               <HomeModernIcon className="h-4 w-4 mr-2 text-orange-500" />
               <span className="font-medium text-orange-600">
-                {totalRooms} {totalRooms === 1 ? t('booking.room', 'room') : t('booking.rooms', 'rooms')}
+                {totalRooms} {totalRooms === 1 ? t('booking:room', 'room') : t('booking:rooms', 'rooms')}
               </span>
             </div>
           </div>
@@ -266,7 +266,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
         {/* Room Types */}
         <div className="border-t border-gray-200 pt-4 mb-4">
           <h4 className="font-semibold text-gray-900 mb-2">
-            {t('booking.yourBooking', 'Your booking')}
+            {t('booking:yourBooking', 'Your booking')}
           </h4>
 
           {/* Show all selected rooms if multiroom */}
@@ -319,7 +319,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
         {/* Price Breakdown */}
         <div className="border-t border-gray-200 pt-4">
           <h4 className="font-semibold text-gray-900 mb-3">
-            {t('booking.priceBreakdown', 'Price breakdown')}
+            {t('booking:priceBreakdown', 'Price breakdown')}
           </h4>
 
           <div className="space-y-2 mb-3">
@@ -349,7 +349,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
 
             <div className="flex justify-between text-sm text-green-700">
               <span>
-                ✓ {t('booking.taxesAtBooking', 'Taxes (paid at booking)')}{taxPercentage ? ` (${taxPercentage})` : ''}
+                ✓ {t('booking:taxesAtBooking', 'Taxes (paid at booking)')}{taxPercentage ? ` (${taxPercentage})` : ''}
               </span>
               <span className="font-medium">
                 {currencySymbol} {taxes.toFixed(2)}
@@ -360,7 +360,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
             {payAtHotelTaxes > 0 && (
               <div className="flex justify-between text-sm text-orange-600">
                 <span>
-                  🏨 {t('booking.dueAtHotel', 'Due at hotel')}
+                  🏨 {t('booking:dueAtHotel', 'Due at hotel')}
                 </span>
                 <span className="font-medium">
                   {payAtHotelCurrency} {payAtHotelTaxes.toFixed(2)}
@@ -373,14 +373,14 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
           <div className="border-t border-gray-200 pt-3">
             <div className="flex justify-between items-center">
               <span className="text-lg font-bold text-gray-900">
-                {t('booking.totalNow', 'Total to pay now')}
+                {t('booking:totalNow', 'Total to pay now')}
               </span>
               <span className="text-2xl font-bold text-orange-600">
                 {currencySymbol} {(totalPrice + taxes).toFixed(2)}
               </span>
             </div>
             <div className="text-xs text-gray-500 text-right mt-1">
-              {t('booking.includesTaxes', 'Includes taxes and fees')}
+              {t('booking:includesTaxes', 'Includes taxes and fees')}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface PromotionalBanner {
@@ -9,6 +10,7 @@ interface PromotionalBanner {
 }
 
 export const ForNewUsers: React.FC = () => {
+  const { t } = useTranslation('home');
   const [banners, setBanners] = useState<PromotionalBanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,7 +58,7 @@ export const ForNewUsers: React.FC = () => {
   return (
     <section className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 md:pt-20 pb-6 md:pb-8">
       <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4 px-1">
-        Special offers
+        {t('specialOffers.title')}
       </h3>
 
       <div className="relative group">

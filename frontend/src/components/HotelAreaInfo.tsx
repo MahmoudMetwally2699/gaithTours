@@ -43,58 +43,68 @@ interface HotelAreaInfoProps {
 }
 
 // Format distance for display
-const formatDistance = (distanceMeters: number): string => {
+const formatDistance = (distanceMeters: number, t: any): string => {
   if (!distanceMeters) return '';
   if (distanceMeters < 1000) {
-    return `${distanceMeters} m`;
+    return `${distanceMeters} ${t('common:hotels.units.m', 'm')}`;
   }
-  return `${(distanceMeters / 1000).toFixed(1)} km`;
+  return `${(distanceMeters / 1000).toFixed(1)} ${t('common:hotels.units.km', 'km')}`;
 };
+
+
 
 // Get icon and color for each category
 const getCategoryConfig = (category: string) => {
-  const configs: { [key: string]: { icon: any; label: string; color: string } } = {
+  const configs: { [key: string]: { icon: any; key: string; defaultLabel: string; color: string } } = {
     attractions: {
       icon: faLandmark,
-      label: 'Top attractions',
+      key: 'attractions',
+      defaultLabel: 'Top attractions',
       color: 'text-purple-600'
     },
     restaurants: {
       icon: faUtensils,
-      label: 'Restaurants & cafes',
+      key: 'restaurants',
+      defaultLabel: 'Restaurants & cafes',
       color: 'text-orange-600'
     },
     transit: {
       icon: faTrain,
-      label: 'Public transit',
+      key: 'transit',
+      defaultLabel: 'Public transit',
       color: 'text-blue-600'
     },
     naturalBeauty: {
       icon: faTree,
-      label: 'Natural Beauty',
+      key: 'naturalBeauty',
+      defaultLabel: 'Natural Beauty',
       color: 'text-green-600'
     },
     airports: {
       icon: faPlane,
-      label: 'Closest Airports',
+      key: 'airports',
+      defaultLabel: 'Closest Airports',
       color: 'text-sky-600'
     },
     shopping: {
       icon: faShoppingBag,
-      label: 'Shopping',
+      key: 'shopping',
+      defaultLabel: 'Shopping',
       color: 'text-pink-600'
     },
     entertainment: {
       icon: faTheaterMasks,
-      label: 'Entertainment',
+      key: 'entertainment',
+      defaultLabel: 'Entertainment',
       color: 'text-red-600'
     }
   };
-  return configs[category] || { icon: faMapMarkerAlt, label: category, color: 'text-gray-600' };
+  return configs[category] || { icon: faMapMarkerAlt, key: category, defaultLabel: category, color: 'text-gray-600' };
 };
 
 // POI Category Column Component
 const POICategory: React.FC<{ category: string; items: POIItem[] }> = ({ category, items }) => {
+  const { t } = useTranslation();
   const config = getCategoryConfig(category);
 
   if (!items || items.length === 0) return null;
@@ -104,26 +114,26 @@ const POICategory: React.FC<{ category: string; items: POIItem[] }> = ({ categor
       {/* Category Header */}
       <div className="flex items-center gap-2 mb-3">
         <FontAwesomeIcon icon={config.icon} className={`w-4 h-4 ${config.color}`} />
-        <h4 className="text-sm font-semibold text-gray-900">{config.label}</h4>
+        <h4 className="text-sm font-semibold text-gray-900">{t(`common:hotels.area.${config.key}`, config.defaultLabel)}</h4>
       </div>
 
       {/* POI Items */}
       <div className="space-y-2">
         {items.map((item, idx) => (
-          <div key={idx} className="flex items-start justify-between text-sm">
-            <div className="flex-1 min-w-0 pr-2">
+          <div key={idx} className="flex items-start justify-between text-sm gap-3">
+            <div className="flex-1 min-w-0">
               {/* Type badge for transit/airports */}
               {(category === 'transit' || category === 'airports') && item.type && (
                 <span className="text-xs text-gray-500 block">
                   {item.type.replace('(Entrace)', '').trim()}
                 </span>
               )}
-              <span className="text-gray-700 hover:text-blue-600 cursor-pointer truncate block">
+              <span className="text-gray-700 hover:text-blue-600 cursor-pointer truncate block" dir="auto">
                 {item.name}
               </span>
             </div>
-            <span className="text-gray-400 text-xs whitespace-nowrap">
-              {formatDistance(item.distance)}
+            <span className="text-gray-400 text-xs whitespace-nowrap" dir="ltr">
+              {formatDistance(item.distance, t)}
             </span>
           </div>
         ))}
@@ -156,7 +166,7 @@ export const HotelAreaInfo: React.FC<HotelAreaInfoProps> = ({
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-xl font-bold text-gray-900">
-            {t('hotels.areaInfo', 'Hotel area info')}
+            {t('common:hotels.areaInfo', 'Hotel area info')}
           </h3>
           {neighborhoodDescription && (
             <p className="text-sm text-gray-600 mt-1">
@@ -166,7 +176,7 @@ export const HotelAreaInfo: React.FC<HotelAreaInfoProps> = ({
         </div>
 
         <button className="text-blue-600 text-sm font-medium hover:underline flex items-center gap-1">
-          <span>{t('hotels.showMap', 'Show map')}</span>
+          <span>{t('common:hotels.showMap', 'Show map')}</span>
         </button>
       </div>
 

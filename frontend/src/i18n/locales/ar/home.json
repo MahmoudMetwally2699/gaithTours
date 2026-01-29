@@ -1,0 +1,104 @@
+{
+  "mainSection": {
+    "tagline": "من غيث إلى أي مكان",
+    "subtitle": "ستجد أفضل الأسعار أينما ذهبت",
+    "searchPlaceholder": "أين تريد الإقامة؟",
+    "searchButton": "بحث",
+    "accommodation": "الإقامة",
+    "flights": "طيران",
+    "comingSoon": "قريباً",
+    "checkIn": "تسجيل الوصول",
+    "checkOut": "تسجيل المغادرة",
+    "guests": "الضيوف",
+    "adults": "البالغين",
+    "children": "الأطفال",
+    "rooms": "الغرف",
+    "night": "ليلة",
+    "nights": "ليالي",
+    "addRoom": "إضافة غرفة",
+    "done": "تم",
+    "selectDates": "اختر التواريخ",
+    "whereTo": "إلى أين؟",
+    "searchHotels": "ابحث عن الفنادق أو المدن أو المعالم...",
+    "hotel": "فندق",
+    "region": "منطقة",
+    "noResults": "لا توجد نتائج",
+    "workTravel": "عمل",
+    "selectAge": "حدد العمر عند تسجيل الوصول",
+    "childAge": "الطفل {{index}}",
+    "ageYear": "سنة",
+    "ageYears": "سنوات",
+    "guestSummary": "{{rooms}} غرفة، {{adults}} بالغين",
+    "guestSummaryWithChildren": "{{rooms}} غرفة، {{adults}} بالغين، {{children}} طفل",
+    "guestSummaryWithChildrenPlural": "{{rooms}} غرفة، {{adults}} بالغين، {{children}} أطفال"
+  },
+  "specialOffers": {
+    "title": "عروض خاصة",
+    "joinNow": "انضم الآن",
+    "exclusivePrices": "أسعار حصرية لأعضاء غيث تورز"
+  },
+  "offers": {
+    "title": "العروض",
+    "joinNow": "انضم الآن",
+    "exclusivePrices": "أسعار حصرية لأعضاء غيث تورز"
+  },
+  "suggestedHotels": {
+    "title": "مقترح لك",
+    "historyTitle": "لأنك شاهدت {{destination}}",
+    "locationTitle": "الأكثر شعبية بالقرب منك في {{destination}}",
+    "fallbackTitle": "أماكن إقامة شائعة",
+    "useMyLocation": "استخدم موقعي",
+    "location": "الموقع",
+    "discoverTopRated": "اكتشف أفضل أماكن الإقامة",
+    "pickUpWhereLeft": "تابع من حيث توقفت",
+    "tomorrowAvailability": "عرض التوافر لغداً"
+  },
+  "popularProperties": {
+    "title": "أشهر الفنادق 5 نجوم في السعودية",
+    "loadingProperties": "جاري تحميل الفنادق الشائعة...",
+    "checkingTomorrow": "البحث عن فنادق الغد"
+  },
+  "popularCities": {
+    "title": "مدن شائعة في السعودية",
+    "hotels": "فنادق",
+    "cities": {
+      "jeddah": "جدة",
+      "riyadh": "الرياض",
+      "alKhobar": "الخبر",
+      "makkah": "مكة المكرمة",
+      "madinah": "المدينة المنورة",
+      "dammam": "الدمام",
+      "taif": "الطائف",
+      "alUla": "العلا",
+      "abha": "أبها",
+      "tabuk": "تبوك",
+      "hail": "حائل",
+      "jazan": "جازان",
+      "jubail": "الجبيل",
+      "buraydah": "بريدة",
+      "khamisMushait": "خميس مشيط",
+      "najran": "نجران",
+      "yanbu": "ينبع"
+    }
+  },
+  "popularCitiesWorldwide": {
+    "title": "مدن شائعة حول العالم",
+    "hotels": "فنادق",
+    "cities": {
+      "dubai": "دبي",
+      "paris": "باريس",
+      "london": "لندن",
+      "newYork": "نيويورك",
+      "tokyo": "طوكيو",
+      "istanbul": "اسطنبول"
+    }
+  },
+  "paymentMethods": {
+    "securePayments": "دفع آمن 100%",
+    "title": "ادفع بطريقتك",
+    "subtitle": "اختر من بين طرق دفع موثوقة متعددة لتجربة دفع سلسة",
+    "ssl": "تشفير SSL 256-bit",
+    "pciCompliant": "متوافق مع PCI DSS",
+    "fraudProtection": "حماية من الاحتيال"
+  }
+}

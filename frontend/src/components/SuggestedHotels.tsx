@@ -32,7 +32,7 @@ interface SuggestedHotelsProps {
 }
 
 export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation('home');
   const { isAuthenticated } = useAuth();
   const { currency } = useCurrency();
   const history = useHistory();
@@ -56,7 +56,8 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       }
 
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-      let url = `${API_URL}/hotels/suggested?currency=${currency}`;
+      // Pass current language to get localized hotel names
+      let url = `${API_URL}/hotels/suggested?currency=${currency}&language=${i18n.language}`;
       if (locationQuery) {
         url += `&location=${encodeURIComponent(locationQuery)}`;
         setLastLocationQuery(locationQuery);
@@ -124,12 +125,13 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
     }
   }, [isAuthenticated]);
 
-  // Re-fetch with same location when currency changes
+  // Re-fetch with same location when currency or language changes
   useEffect(() => {
     if (!loading && (hotels.length > 0 || lastLocationQuery)) {
       fetchSuggestions(lastLocationQuery || DEFAULT_CITY, false);
     }
-  }, [currency]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency, i18n.language]);
 
   // Background location detection
   const getUserLocationBackground = (fallbackTimer?: NodeJS.Timeout) => {
@@ -188,7 +190,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   if (loading) {
     return (
       <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 md:py-12">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 px-1">{t('hotels.suggestedForYou', 'Suggested for You')}</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 px-1">{t('suggestedHotels.title')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl md:rounded-[1.5rem] overflow-hidden shadow-sm h-[280px] sm:h-[300px] md:h-[320px] animate-pulse border border-gray-100 flex flex-col">
@@ -241,17 +243,17 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
               <span className="font-semibold text-sm md:text-base">
-                {t('suggestions.tomorrowAvailability', 'Showing availability for tomorrow')}
+                {t('suggestedHotels.tomorrowAvailability')}
               </span>
             </div>
           )}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-3 md:mb-4">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 text-center">
               {source === 'history'
-                ? t('suggestions.historyTitle', `Because you viewed ${destinationName}`)
+                ? t('suggestedHotels.historyTitle', { destination: destinationName })
                 : source === 'location'
-                ? t('suggestions.locationTitle', `Popular near you in ${destinationName}`)
-                : t('suggestions.fallbackTitle', 'Popular Accommodations')
+                ? t('suggestedHotels.locationTitle', { destination: destinationName })
+                : t('suggestedHotels.fallbackTitle')
               }
             </h2>
             {source === 'fallback' && (
@@ -267,15 +269,15 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span className="hidden sm:inline">Use my location</span>
-                <span className="sm:hidden">Location</span>
+                <span className="hidden sm:inline">{t('suggestedHotels.useMyLocation')}</span>
+                <span className="sm:hidden">{t('suggestedHotels.location')}</span>
               </button>
             )}
           </div>
           <p className="text-gray-600 text-sm md:text-base">
             {source === 'history'
-              ? 'Pick up where you left off'
-              : 'Discover top rated stays'}
+              ? t('suggestedHotels.pickUpWhereLeft')
+              : t('suggestedHotels.discoverTopRated')}
           </p>
         </div>
 

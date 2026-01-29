@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShieldCheckIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 
 export const PaymentMethods: React.FC = () => {
+  const { t } = useTranslation('home');
   const paymentLogos = [
     { name: 'Visa', src: '/Visa_Inc.-Logo.wine.png', alt: 'Visa' },
     { name: 'Mastercard', src: '/Mastercard-logo.svg', alt: 'Mastercard' },
@@ -17,13 +19,13 @@ export const PaymentMethods: React.FC = () => {
         <div className="text-center mb-12 md:mb-16">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 px-5 py-2 rounded-full text-sm font-semibold mb-6 shadow-sm">
             <ShieldCheckIcon className="w-5 h-5" />
-            <span>100% Secure Payments</span>
+            <span>{t('paymentMethods.securePayments')}</span>
           </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Pay Your Way
+            {t('paymentMethods.title')}
           </h2>
           <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto">
-            Choose from multiple trusted payment methods for a seamless checkout experience
+            {t('paymentMethods.subtitle')}
           </p>
         </div>
 
@@ -60,15 +62,15 @@ export const PaymentMethods: React.FC = () => {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-medium">256-bit SSL</span>
+            <span className="text-sm font-medium">{t('paymentMethods.ssl')}</span>
           </div>
           <div className="flex items-center gap-2">
             <CreditCardIcon className="w-5 h-5" />
-            <span className="text-sm font-medium">PCI DSS Compliant</span>
+            <span className="text-sm font-medium">{t('paymentMethods.pciCompliant')}</span>
           </div>
           <div className="flex items-center gap-2">
             <ShieldCheckIcon className="w-5 h-5" />
-            <span className="text-sm font-medium">Fraud Protection</span>
+            <span className="text-sm font-medium">{t('paymentMethods.fraudProtection')}</span>
           </div>
         </div>
 

@@ -106,10 +106,24 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   onToggleCompare,
   comparedRates
 }) => {
-  const { t } = useTranslation();
-  const { currencySymbol } = useCurrency();
+  const { t, i18n } = useTranslation();
+  const { currency, currencySymbol } = useCurrency();
   const [showDetailsModal, setShowDetailsModal] = React.useState(false);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
+
+  // Helper to format price with correct locale and currency
+  const formatPrice = (price: number, fractionDigits = 0) => {
+    try {
+      return new Intl.NumberFormat(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+        style: 'currency',
+        currency: currency || 'USD',
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      }).format(price);
+    } catch (e) {
+      return `${currencySymbol} ${price.toFixed(fractionDigits)}`;
+    }
+  };
 
   // Calculate total guests for occupancy validation
   const totalGuests = adults + children;
@@ -131,7 +145,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   // Helper to get meal label and icon
   const getMealInfo = (meal?: string) => {
     if (!meal || meal === 'nomeal') {
-      return { label: t('hotels.roomOnly', 'Room only'), icon: '⊘', color: 'text-gray-500' };
+      return { label: t('common:hotels.roomOnly', 'Room only'), icon: '⊘', color: 'text-gray-500' };
     }
     switch (meal.toLowerCase()) {
       case 'breakfast':
@@ -161,7 +175,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       return {
         fits: true,
         message: null,
-        badge: { text: t('hotels.fitsYourGroup', 'Fits your group'), color: 'bg-green-100 text-green-700' },
+        badge: { text: t('common:hotels.fitsYourGroup', 'Fits your group'), color: 'bg-green-100 text-green-700' },
         roomsNeeded: 1
       };
     } else if (selectedCount >= roomsNeededForAdults) {
@@ -260,7 +274,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               </div>
             )}
             <button className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded hover:bg-black/80 transition-colors">
-              {baseRate.room_images?.length || 0} {t('common.photos', 'photos')}
+              {baseRate.room_images?.length || 0} {t('common:common.photos', 'photos')}
             </button>
           </div>
 
@@ -345,7 +359,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                      </div>
 
                      <div className="p-6">
-                        <h4 className="font-bold text-gray-800 mb-4 text-lg border-b pb-2">{t('hotels.roomAmenities', 'Room Amenities')}</h4>
+                        <h4 className="font-bold text-gray-800 mb-4 text-lg border-b pb-2">{t('common:hotels.roomAmenities', 'Room Amenities')}</h4>
                         <div className="grid grid-cols-2 gap-4">
                            {baseRate.room_amenities?.map((amenity, idx) => (
                              <div key={idx} className="flex items-center text-gray-600 text-sm">
@@ -360,7 +374,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                               onClick={() => setShowDetailsModal(false)}
                               className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors"
                            >
-                              {t('common.close', 'Close')}
+                              {t('common:common.close', 'Close')}
                            </button>
                         </div>
                      </div>
@@ -373,7 +387,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
               className="text-orange-500 text-sm font-medium hover:underline mt-4 flex items-center"
             >
               <InformationCircleIcon className="w-4 h-4 mr-1" />
-              {t('hotels.roomDetails', 'Room Details')}
+              {t('common:hotels.roomDetails', 'Room Details')}
             </button>
           </div>
         </div>
@@ -383,12 +397,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
           <div className="w-full">
             {/* Table Header */}
             <div className="grid grid-cols-12 bg-orange-500 text-white py-3 px-4 font-semibold text-sm">
-              <div className="col-span-12 md:col-span-5">{t('hotels.yourChoices', 'Your choices')}</div>
-              <div className="col-span-6 md:col-span-2 text-center">{t('hotels.sleeps', 'Sleeps')}</div>
+              <div className="col-span-12 md:col-span-5">{t('common:hotels.yourChoices', 'Your choices')}</div>
+              <div className="col-span-6 md:col-span-2 text-center">{t('common:hotels.sleeps', 'Sleeps')}</div>
               <div className="col-span-6 md:col-span-5 text-right">
                 {nights > 1
                   ? t('hotels.totalForNights', 'Total for {{nights}} nights', { nights })
-                  : t('hotels.pricePerNight', 'Price for 1 night')}
+                  : t('common:hotels.pricePerNight', 'Price for 1 night')}
               </div>
             </div>
 
@@ -441,20 +455,20 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                       ) : (
                         <div className="flex items-center text-gray-600 text-sm">
                            <InformationCircleIcon className="w-4 h-4 mr-2" />
-                           {t('hotels.nonRefundable', 'Non-refundable')}
+                           {t('common:hotels.nonRefundable', 'Non-refundable')}
                         </div>
                       )}
 
                       {!rate.requires_prepayment && (
                          <div className="flex items-center text-green-700 text-sm">
                            <CheckIcon className="w-4 h-4 mr-2" />
-                           {t('hotels.payAtProperty', 'Pay at property')}
+                           {t('common:hotels.payAtProperty', 'Pay at property')}
                          </div>
                       )}
                       {rate.requires_prepayment && (
                          <div className="flex items-center text-gray-600 text-sm">
                            <InformationCircleIcon className="w-4 h-4 mr-2" />
-                           {t('hotels.payOnline', 'Pay online')}
+                           {t('common:hotels.payOnline', 'Pay online')}
                          </div>
                       )}
                     </div>
@@ -479,7 +493,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                     {/* Best Price Badge */}
                     {isBestPrice && (
                        <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded-bl-lg shadow-sm">
-                          {t('hotels.bestPrice', 'Best price!')}
+                          {t('common:hotels.bestPrice', 'Best price!')}
                        </div>
                     )}
 
@@ -487,16 +501,16 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                       <div className="text-right mt-2">
                         {rate.original_price && Number(rate.price) < Number(rate.original_price) && (
                            <div className="text-xs text-red-500 line-through mb-1">
-                              {currencySymbol} {Number(rate.original_price).toFixed(0)}
+                              {formatPrice(Number(rate.original_price))}
                            </div>
                         )}
                         <div className="text-2xl font-bold text-gray-900 leading-none">
-                           {currencySymbol} {Number(rate.price).toFixed(0)}
+                           {formatPrice(Number(rate.price))}
                         </div>
                         {/* Per-night price if multiple nights */}
                         {nights > 1 && (
                           <div className="text-xs text-gray-600 mt-0.5">
-                            ({currencySymbol} {Math.round(Number(rate.price) / nights)}/night)
+                            ({formatPrice(Math.round(Number(rate.price) / nights))}/night)
                           </div>
                         )}
                         {/* Tax display - Detailed breakdown with Pay at Booking vs Pay at Hotel */}
@@ -514,15 +528,15 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                               return (
                                 <>
                                   <span className="border-b border-dotted border-gray-400">
-                                    +{currencySymbol} {Math.round(rate.total_taxes || 0)} {t('hotels.taxesAndFees', 'taxes and fees')}
+                                    +{currencySymbol} {Math.round(rate.total_taxes || 0)} {t('common:hotels.taxesAndFees', 'taxes and fees')}
                                   </span>
 
                                   {/* Tax Breakdown Tooltip */}
                                   <div className="absolute bottom-full right-0 mb-2 w-80 bg-white shadow-2xl rounded-lg p-4 text-xs z-[9999] invisible group-hover:visible border border-gray-200 text-left">
-                                    <h5 className="font-bold text-gray-800 mb-3 border-b pb-2 text-sm">{t('hotels.priceBreakdown', 'Price Breakdown')}</h5>
+                                    <h5 className="font-bold text-gray-800 mb-3 border-b pb-2 text-sm">{t('common:hotels.priceBreakdown', 'Price Breakdown')}</h5>
 
                                     <div className="flex justify-between mb-2 text-gray-700">
-                                      <span>{t('hotels.basePrice', 'Base Price')}:</span>
+                                      <span>{t('common:hotels.basePrice', 'Base Price')}:</span>
                                       <span className="font-medium">{currencySymbol} {Number(rate.price).toFixed(2)}</span>
                                     </div>
 
@@ -530,7 +544,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                     {paidAtBookingTaxes.length > 0 && (
                                       <div className="mb-3">
                                         <div className="text-green-700 font-semibold mb-1 flex items-center">
-                                          <span className="mr-1">✓</span> {t('hotels.paidAtBooking', 'Paid at Booking')}:
+                                          <span className="mr-1">✓</span> {t('common:hotels.paidAtBooking', 'Paid at Booking')}:
                                         </div>
                                         {paidAtBookingTaxes.map((tax: TaxItem, idx: number) => (
                                           <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
@@ -539,7 +553,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                           </div>
                                         ))}
                                         <div className="flex justify-between ml-4 text-green-700 font-medium border-t border-gray-100 pt-1 mt-1">
-                                          <span>{t('hotels.subtotal', 'Subtotal')}:</span>
+                                          <span>{t('common:hotels.subtotal', 'Subtotal')}:</span>
                                           <span>+{currencySymbol} {paidAtBookingTotal.toFixed(2)}</span>
                                         </div>
                                       </div>
@@ -549,7 +563,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                     {payAtHotelTaxes.length > 0 && (
                                       <div className="mb-3">
                                         <div className="text-orange-600 font-semibold mb-1 flex items-center">
-                                          <span className="mr-1">🏨</span> {t('hotels.payAtHotel', 'Pay at Hotel')}:
+                                          <span className="mr-1">🏨</span> {t('common:hotels.payAtHotel', 'Pay at Hotel')}:
                                         </div>
                                         {payAtHotelTaxes.map((tax: TaxItem, idx: number) => (
                                           <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
@@ -558,7 +572,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                           </div>
                                         ))}
                                         <div className="flex justify-between ml-4 text-orange-600 font-medium border-t border-gray-100 pt-1 mt-1">
-                                          <span>{t('hotels.subtotal', 'Subtotal')}:</span>
+                                          <span>{t('common:hotels.subtotal', 'Subtotal')}:</span>
                                           <span>+{payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency || currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
                                         </div>
                                       </div>
@@ -567,12 +581,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                     {/* Total Section */}
                                     <div className="border-t-2 border-gray-300 pt-2 mt-2">
                                       <div className="flex justify-between font-bold text-gray-900">
-                                        <span>{t('hotels.totalAtBooking', 'Total at Booking')}:</span>
+                                        <span>{t('common:hotels.totalAtBooking', 'Total at Booking')}:</span>
                                         <span>{currencySymbol} {(Number(rate.price) + paidAtBookingTotal).toFixed(2)}</span>
                                       </div>
                                       {payAtHotelTotal > 0 && (
                                         <div className="flex justify-between text-orange-600 mt-1 text-[11px]">
-                                          <span>{t('hotels.dueAtHotel', 'Due at Hotel')}:</span>
+                                          <span>{t('common:hotels.dueAtHotel', 'Due at Hotel')}:</span>
                                           <span>+{payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency || currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
                                         </div>
                                       )}
@@ -584,11 +598,11 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                           </div>
                         ) : rate.total_taxes && rate.total_taxes > 0 ? (
                           <div className="text-xs text-gray-500 mt-1">
-                            +{currencySymbol} {rate.total_taxes} {t('hotels.taxesAndFees', 'taxes and fees')}
+                            +{formatPrice(rate.total_taxes || 0)} {t('common:hotels.taxesAndFees', 'taxes and fees')}
                           </div>
                         ) : (
                           <div className="text-xs text-gray-500 mt-1">
-                            {t('hotels.taxesIncluded', 'Taxes included')}
+                            {t('common:hotels.taxesIncluded', 'Taxes included')}
                           </div>
                         )}
                       </div>
@@ -608,7 +622,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                           >
                              {[0, 1, 2, 3, 4, 5].map(num => (
                                 <option key={num} value={num}>
-                                   {num > 0 ? `${num} ${t('hotels.rooms', 'rooms')}` : `${num} ${t('hotels.rooms', 'rooms')}`}
+                                   {num > 0 ? `${num} ${t('common:hotels.rooms', 'rooms')}` : `${num} ${t('common:hotels.rooms', 'rooms')}`}
                                 </option>
                              ))}
                           </select>
@@ -625,7 +639,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                 checked={comparedRates?.has(rate.match_hash) || false}
                                 onChange={() => onToggleCompare(rate)}
                               />
-                              {t('hotels.compare', 'Compare')}
+                              {t('common:hotels.compare', 'Compare')}
                             </label>
                           </div>
                         )}
@@ -635,14 +649,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                               onClick={() => { /* Navigation handled by parent state check or explicit button elsewhere */ }}
                               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors w-full"
                            >
-                              {t('common.selected', 'Selected')}
+                              {t('common:common.selected', 'Selected')}
                            </button>
                         ) : (
                            <button
                               onClick={() => onSelectResult(rate, 1)}
                               className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded text-sm transition-colors shadow-sm w-full"
                            >
-                              {t('common.reserve', 'Reserve')}
+                              {t('common:common.reserve', 'Reserve')}
                            </button>
                         )}
                       </div>

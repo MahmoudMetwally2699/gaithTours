@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faUtensils, faDog, faCar, faBaby } from '@fortawesome/free-solid-svg-icons';
+import { useTranslation } from 'react-i18next';
 
 /**
  * HotelPoliciesCard Component - Displays hotel policies and rules
@@ -181,40 +182,6 @@ interface HotelPoliciesCardProps {
   policyStruct?: PolicyStructSection[];
 }
 
-// Helper function to format price unit
-const formatPriceUnit = (unit: string): string => {
-  const units: { [key: string]: string } = {
-    'per_room_per_night': 'per room/night',
-    'per_room_per_stay': 'per room/stay',
-    'per_guest_per_night': 'per guest/night',
-    'per_guest_per_stay': 'per guest/stay',
-    'per_car_per_night': 'per car/night',
-    'per_hour': 'per hour',
-    'unspecified': ''
-  };
-  return units[unit] || unit.replace(/_/g, ' ');
-};
-
-// Helper function to format inclusion status
-const formatInclusion = (inclusion: string): { text: string; isIncluded: boolean } => {
-  if (inclusion === 'included') {
-    return { text: 'Included', isIncluded: true };
-  }
-  return { text: 'Additional charge', isIncluded: false };
-};
-
-// Helper function to capitalize first letter
-const capitalize = (str: string): string => {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ');
-};
-
-// Helper function to get currency with USD default
-const getCurrency = (currency: string | undefined): string => {
-  if (!currency || currency.trim() === '') return 'USD';
-  return currency;
-};
-
 export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
   checkInTime,
   checkOutTime,
@@ -222,6 +189,41 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
   metapolicyStruct,
   policyStruct
 }) => {
+  const { t } = useTranslation('hotelDetails');
+
+  // Helper function to format price unit
+  const formatPriceUnit = (unit: string): string => {
+    const units: { [key: string]: string } = {
+      'per_room_per_night': t('policies.units.per_room_per_night'),
+      'per_room_per_stay': t('policies.units.per_room_per_stay'),
+      'per_guest_per_night': t('policies.units.per_guest_per_night'),
+      'per_guest_per_stay': t('policies.units.per_guest_per_stay'),
+      'per_car_per_night': t('policies.units.per_car_per_night'),
+      'per_hour': t('policies.units.per_hour'),
+      'unspecified': ''
+    };
+    return units[unit] || unit.replace(/_/g, ' ');
+  };
+
+  // Helper function to format inclusion status
+  const formatInclusion = (inclusion: string): { text: string; isIncluded: boolean } => {
+    if (inclusion === 'included') {
+      return { text: t('policies.included'), isIncluded: true };
+    }
+    return { text: t('policies.additionalCharge'), isIncluded: false };
+  };
+
+  // Helper function to capitalize first letter
+  const capitalize = (str: string): string => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ');
+  };
+
+  // Helper function to get currency with USD default
+  const getCurrency = (currency: string | undefined): string => {
+    if (!currency || currency.trim() === '') return 'USD';
+    return currency;
+  };
   // Parse metapolicy info - strip HTML tags and convert to readable text
   const parsePolicies = (): string[] => {
     if (!metapolicyInfo) return [];
@@ -323,9 +325,9 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Hotel Policies</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t('policies.title')}</h3>
         <p className="text-sm text-gray-500 mt-1">
-          Important information about this property
+          {t('policies.subtitle')}
         </p>
       </div>
 
@@ -338,11 +340,11 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
                 <ClockIcon className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Check-in</p>
+                <p className="text-sm font-medium text-gray-900">{t('policies.checkIn')}</p>
                 <p className="text-sm text-gray-600 mt-0.5">
-                  {checkInTime || `From ${metapolicyStruct?.check_in_check_out?.[0]?.check_in_from || '15:00'}`}
+                  {checkInTime || `${t('policies.from')} ${metapolicyStruct?.check_in_check_out?.[0]?.check_in_from || '15:00'}`}
                   {metapolicyStruct?.check_in_check_out?.[0]?.check_in_to &&
-                    ` - Until ${metapolicyStruct.check_in_check_out[0].check_in_to}`}
+                    ` - ${t('policies.until')} ${metapolicyStruct.check_in_check_out[0].check_in_to}`}
                 </p>
               </div>
             </div>
@@ -354,9 +356,9 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
                 <ClockIcon className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Check-out</p>
+                <p className="text-sm font-medium text-gray-900">{t('policies.checkOut')}</p>
                 <p className="text-sm text-gray-600 mt-0.5">
-                  {checkOutTime || `Until ${metapolicyStruct?.check_in_check_out?.[0]?.check_out_to || '12:00'}`}
+                  {checkOutTime || `${t('policies.until')} ${metapolicyStruct?.check_in_check_out?.[0]?.check_out_to || '12:00'}`}
                 </p>
               </div>
             </div>
@@ -367,7 +369,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
       {/* Structured Policy Sections */}
       {hasStructuredPolicies && (
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-900">Property Rules & Amenities</h4>
+          <h4 className="text-sm font-semibold text-gray-900">{t('policies.propertyRules')}</h4>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
@@ -375,18 +377,18 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.children && metapolicyStruct.children.length > 0 && (
               renderPolicyList(
                 <UserGroupIcon className="h-5 w-5 text-orange-600" />,
-                "Children & Extra Beds",
+                t('policies.childrenAndExtraBeds'),
                 metapolicyStruct.children.map((child, idx) => (
                   <div key={idx} className="flex flex-wrap gap-x-2">
-                    <span className="font-medium">Ages {child.age_start}-{child.age_end}:</span>
-                    <span>Extra bed {child.extra_bed === 'available' ? 'available' : 'not available'}</span>
+                    <span className="font-medium">{t('policies.ages')} {child.age_start}-{child.age_end}:</span>
+                    <span>{t('policies.extraBed')} {child.extra_bed === 'available' ? t('policies.available') : t('policies.notAvailable')}</span>
                     {child.price && child.price !== '0' && (
                       <span className="text-orange-600">
                         {getCurrency(child.currency)} {child.price}
                       </span>
                     )}
                     {child.price === '0' && (
-                      <span className="text-green-600 font-medium">Free</span>
+                      <span className="text-green-600 font-medium">{t('policies.free')}</span>
                     )}
                   </div>
                 ))
@@ -397,13 +399,13 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.children_meal && metapolicyStruct.children_meal.length > 0 && (
               renderPolicyList(
                 <FontAwesomeIcon icon={faUtensils} className="h-5 w-5 text-orange-600" />,
-                "Children's Meals",
+                t('policies.childrensMeals'),
                 metapolicyStruct.children_meal.map((meal, idx) => (
                   <div key={idx} className="flex flex-wrap gap-x-2">
-                    <span className="font-medium">Ages {meal.age_start}-{meal.age_end}:</span>
+                    <span className="font-medium">{t('policies.ages')} {meal.age_start}-{meal.age_end}:</span>
                     <span className="capitalize">{meal.meal_type}</span>
                     {meal.inclusion === 'included' ? (
-                      <span className="text-green-600 font-medium">Included</span>
+                      <span className="text-green-600 font-medium">{t('policies.included')}</span>
                     ) : (
                       <span className="text-orange-600">
                         {getCurrency(meal.currency)} {meal.price}
@@ -418,14 +420,14 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.cot && metapolicyStruct.cot.length > 0 && (
               renderPolicyList(
                 <FontAwesomeIcon icon={faBaby} className="h-5 w-5 text-orange-600" />,
-                "Cot/Crib",
+                t('policies.cotCrib'),
                 metapolicyStruct.cot.map((cot, idx) => {
                   const inclusion = formatInclusion(cot.inclusion);
                   return (
                     <div key={idx} className="flex flex-wrap gap-x-2">
-                      <span>{cot.amount} available</span>
+                      <span>{cot.amount} {t('policies.available')}</span>
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Free</span>
+                        <span className="text-green-600 font-medium">{t('policies.free')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(cot.currency)} {cot.price} {formatPriceUnit(cot.price_unit)}
@@ -441,10 +443,10 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.deposit && metapolicyStruct.deposit.length > 0 && (
               renderPolicyList(
                 <BanknotesIcon className="h-5 w-5 text-orange-600" />,
-                "Deposits",
+                t('policies.deposits'),
                 metapolicyStruct.deposit.map((dep, idx) => (
                   <div key={idx} className="flex flex-wrap gap-x-2">
-                    <span className="font-medium capitalize">{dep.deposit_type !== 'unspecified' ? dep.deposit_type : 'General'}:</span>
+                    <span className="font-medium capitalize">{dep.deposit_type !== 'unspecified' ? dep.deposit_type : t('policies.general')}:</span>
                     {dep.pricing_method === 'percent' ? (
                       <span className="text-orange-600">{dep.price}%</span>
                     ) : (
@@ -465,14 +467,14 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.extra_bed && metapolicyStruct.extra_bed.length > 0 && (
               renderPolicyList(
                 <FontAwesomeIcon icon={faBed} className="h-5 w-5 text-orange-600" />,
-                "Extra Bed",
+                t('policies.extraBed'),
                 metapolicyStruct.extra_bed.map((bed, idx) => {
                   const inclusion = formatInclusion(bed.inclusion);
                   return (
                     <div key={idx} className="flex flex-wrap gap-x-2">
-                      <span>{bed.amount} available</span>
+                      <span>{bed.amount} {t('policies.available')}</span>
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Included</span>
+                        <span className="text-green-600 font-medium">{t('policies.included')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(bed.currency)} {bed.price} {formatPriceUnit(bed.price_unit)}
@@ -488,14 +490,14 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.internet && metapolicyStruct.internet.length > 0 && (
               renderPolicyList(
                 <WifiIcon className="h-5 w-5 text-orange-600" />,
-                "Internet / WiFi",
+                t('policies.internetWifi'),
                 metapolicyStruct.internet.map((net, idx) => {
                   const inclusion = formatInclusion(net.inclusion);
                   return (
                     <div key={idx} className="flex flex-wrap gap-x-2">
-                      <span className="capitalize">{net.work_area !== 'unspecified' ? net.work_area : 'Property'}</span>
+                      <span className="capitalize">{net.work_area !== 'unspecified' ? net.work_area : t('policies.property')}</span>
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Free</span>
+                        <span className="text-green-600 font-medium">{t('policies.free')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(net.currency)} {net.price} {formatPriceUnit(net.price_unit)}
@@ -511,14 +513,14 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.meal && metapolicyStruct.meal.length > 0 && (
               renderPolicyList(
                 <FontAwesomeIcon icon={faUtensils} className="h-5 w-5 text-orange-600" />,
-                "Meals",
+                t('policies.meals'),
                 metapolicyStruct.meal.map((meal, idx) => {
                   const inclusion = formatInclusion(meal.inclusion);
                   return (
                     <div key={idx} className="flex flex-wrap gap-x-2">
                       <span className="font-medium capitalize">{meal.meal_type}:</span>
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Included</span>
+                        <span className="text-green-600 font-medium">{t('policies.included')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(meal.currency)} {meal.price}
@@ -534,7 +536,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.parking && metapolicyStruct.parking.length > 0 && (
               renderPolicyList(
                 <FontAwesomeIcon icon={faCar} className="h-5 w-5 text-orange-600" />,
-                "Parking",
+                t('policies.parking'),
                 metapolicyStruct.parking.map((park, idx) => {
                   const inclusion = formatInclusion(park.inclusion);
                   return (
@@ -543,7 +545,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
                         <span className="capitalize">{park.territory_type}</span>
                       )}
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Free</span>
+                        <span className="text-green-600 font-medium">{t('policies.free')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(park.currency)} {park.price} {formatPriceUnit(park.price_unit)}
@@ -559,7 +561,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.pets && metapolicyStruct.pets.length > 0 && (
               renderPolicyList(
                 <FontAwesomeIcon icon={faDog} className="h-5 w-5 text-orange-600" />,
-                "Pets",
+                t('policies.pets'),
                 metapolicyStruct.pets.map((pet, idx) => {
                   const inclusion = formatInclusion(pet.inclusion);
                   return (
@@ -568,7 +570,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
                         <span className="capitalize">{pet.pets_type}</span>
                       )}
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Allowed (Free)</span>
+                        <span className="text-green-600 font-medium">{t('policies.petsAllowedFree')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(pet.currency)} {pet.price} {formatPriceUnit(pet.price_unit)}
@@ -584,19 +586,19 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.shuttle && metapolicyStruct.shuttle.length > 0 && (
               renderPolicyList(
                 <TruckIcon className="h-5 w-5 text-orange-600" />,
-                "Shuttle Service",
+                t('policies.shuttleService'),
                 metapolicyStruct.shuttle.map((shuttle, idx) => {
                   const inclusion = formatInclusion(shuttle.inclusion);
                   return (
                     <div key={idx} className="flex flex-wrap gap-x-2">
                       <span className="capitalize">
-                        {shuttle.destination_type !== 'unspecified' ? capitalize(shuttle.destination_type) : 'Shuttle'}
+                        {shuttle.destination_type !== 'unspecified' ? capitalize(shuttle.destination_type) : t('policies.shuttle')}
                       </span>
                       {shuttle.shuttle_type !== 'unspecified' && (
                         <span className="text-gray-500">({capitalize(shuttle.shuttle_type)})</span>
                       )}
                       {inclusion.isIncluded ? (
-                        <span className="text-green-600 font-medium">Free</span>
+                        <span className="text-green-600 font-medium">{t('policies.free')}</span>
                       ) : (
                         <span className="text-orange-600">
                           {getCurrency(shuttle.currency)} {shuttle.price}
@@ -612,9 +614,9 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.visa && (
               renderPolicyItem(
                 <GlobeAltIcon className="h-5 w-5 text-orange-600" />,
-                "Visa Support",
+                t('policies.visaSupport'),
                 <span className={metapolicyStruct.visa.visa_support === 'support_enable' ? 'text-green-600' : 'text-gray-600'}>
-                  {metapolicyStruct.visa.visa_support === 'support_enable' ? 'Visa support available' : 'No visa support'}
+                  {metapolicyStruct.visa.visa_support === 'support_enable' ? t('policies.visaSupportAvailable') : t('policies.noVisaSupport')}
                 </span>
               )
             )}
@@ -623,10 +625,10 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
             {metapolicyStruct?.no_show && (
               renderPolicyItem(
                 <NoSymbolIcon className="h-5 w-5 text-red-600" />,
-                "No-Show Policy",
+                t('policies.noShowPolicy'),
                 <span className="text-red-600">
-                  No-show charges apply
-                  {metapolicyStruct.no_show.time && ` after ${metapolicyStruct.no_show.time}`}
+                  {t('policies.noShowChargesApply')}
+                  {metapolicyStruct.no_show.time && ` ${t('policies.after')} ${metapolicyStruct.no_show.time}`}
                   {metapolicyStruct.no_show.day_period && metapolicyStruct.no_show.day_period !== 'unspecified' && (
                     ` (${capitalize(metapolicyStruct.no_show.day_period)})`
                   )}
@@ -638,12 +640,12 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
           {/* Additional Fees */}
           {metapolicyStruct?.add_fee && metapolicyStruct.add_fee.length > 0 && (
             <div className="mt-4">
-              <h5 className="text-sm font-medium text-gray-900 mb-2">Additional Fees</h5>
+              <h5 className="text-sm font-medium text-gray-900 mb-2">{t('policies.additionalFees')}</h5>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <div className="space-y-2">
                   {metapolicyStruct.add_fee.map((fee, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700 capitalize">{fee.fee_type?.replace(/_/g, ' ') || 'Additional fee'}</span>
+                      <span className="text-gray-700 capitalize">{fee.fee_type?.replace(/_/g, ' ') || t('policies.additionalFee')}</span>
                       <span className="font-medium text-gray-900">
                         {getCurrency(fee.currency)} {fee.amount}
                         {fee.frequency && <span className="text-gray-500"> / {fee.frequency}</span>}
@@ -661,7 +663,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
       {/* Legacy Policy List (from metapolicyInfo string) */}
       {policies.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-900">Additional Property Rules</h4>
+          <h4 className="text-sm font-semibold text-gray-900">{t('policies.additionalPropertyRules')}</h4>
 
           <div className="space-y-2">
             {policies.map((policy, index) => (
@@ -682,7 +684,7 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
       {/* Policy Struct - Titled Sections with Paragraphs */}
       {hasPolicyStruct && (
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-gray-900">Detailed Hotel Policies</h4>
+          <h4 className="text-sm font-semibold text-gray-900">{t('policies.detailedHotelPolicies')}</h4>
 
           <div className="space-y-4">
             {policyStruct!.map((section, index) => (
@@ -709,9 +711,9 @@ export const HotelPoliciesCard: React.FC<HotelPoliciesCardProps> = ({
         <div className="flex items-start gap-2">
           <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-blue-900">Important</p>
+            <p className="text-sm font-medium text-blue-900">{t('policies.important')}</p>
             <p className="text-xs text-blue-700 mt-1">
-              Please review all hotel policies before booking. Additional policies may apply at the property.
+              {t('policies.importantNotice')}
             </p>
           </div>
         </div>

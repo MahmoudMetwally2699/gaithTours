@@ -1,16 +1,35 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import { en } from './en';
-import { ar } from './ar';
 
-// Translation resources
+// Import translation files
+import enCommon from './locales/en/common.json';
+import enHome from './locales/en/home.json';
+
+import arCommon from './locales/ar/common.json';
+import arHome from './locales/ar/home.json';
+import enSearchResults from './locales/en/searchResults.json';
+import arSearchResults from './locales/ar/searchResults.json';
+import enHotelDetails from './locales/en/hotelDetails.json';
+import arHotelDetails from './locales/ar/hotelDetails.json';
+import enBooking from './locales/en/booking.json';
+import arBooking from './locales/ar/booking.json';
+
+// Translation resources with namespaces
 const resources = {
     en: {
-        translation: en
+        common: enCommon,
+        home: enHome,
+        searchResults: enSearchResults,
+        hotelDetails: enHotelDetails,
+        booking: enBooking
     },
     ar: {
-        translation: ar
+        common: arCommon,
+        home: arHome,
+        searchResults: arSearchResults,
+        hotelDetails: arHotelDetails,
+        booking: arBooking
     }
 };
 
@@ -19,7 +38,9 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        fallbackLng: 'en', // Set English as fallback language
+        fallbackLng: 'en',
+        defaultNS: 'common',
+        ns: ['common', 'home', 'searchResults', 'hotelDetails', 'booking'],
 
         debug: process.env.NODE_ENV === 'development',
 

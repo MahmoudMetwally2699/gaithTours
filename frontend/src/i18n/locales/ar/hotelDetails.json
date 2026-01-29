@@ -1,0 +1,123 @@
+{
+  "loading": "جاري التحميل...",
+  "error": {
+    "notFound": "الفندق غير موجود",
+    "idRequired": "معرف الفندق مطلوب",
+    "loadFailed": "فشل تحميل تفاصيل الفندق",
+    "selectRoomFirst": "يرجى اختيار غرفة أولاً"
+  },
+  "location": {
+    "destination": "الوجهة",
+    "regions": "المناطق",
+    "hotels": "الفنادق",
+    "saudiArabia": "المملكة العربية السعودية",
+    "addressUnavailable": "العنوان غير متوفر"
+  },
+  "dates": {
+    "checkInCheckOut": "تسجيل الوصول - المغادرة",
+    "selectDates": "اختر التواريخ",
+    "selectCheckout": "اختر تاريخ المغادرة",
+    "nightsSelected": "ليالٍ محددة",
+    "selectCheckInCheckOut": "اختر تواريخ الوصول والمغادرة"
+  },
+  "guests": {
+    "label": "الضيوف",
+    "rooms": "غرف",
+    "adults": "بالغين",
+    "children": "أطفال",
+    "ages": "ادخل أعمار الأطفال (0-17)",
+    "agePlaceholder": "العمر",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين",
+    "yearAbbr": "سنة",
+    "yearsAbbr": "سنوات"
+  },
+  "hotel": {
+    "nameUnavailable": "اسم الفندق غير متوفر",
+    "reviews": "تقييمات",
+    "night": "ليلة",
+    "stars": "نجوم",
+    "share": "مشاركة",
+    "save": "حفظ",
+    "saved": "محفوظ"
+  },
+  "hotels": {
+      "exclusivePrices": "أسعار حصرية لأعضاء غيث تورز",
+      "propertyDescription": "وصف العقار",
+      "neighborhoodInfo": "أحب الضيوف المشي في الحي!"
+  },
+  "booking": {
+    "selectRoom": "اختر الغرفة",
+    "bookNow": "احجز الآن",
+    "totalPrice": "السعر الإجمالي",
+    "taxAndFees": "شامل الضرائب والرسوم",
+    "reserve": "حجز",
+    "confirm": "تأكيد"
+  },
+  "amenities": {
+    "wifi": "واي فاي مجاني",
+    "parking": "موقف سيارات",
+    "pool": "مسبح",
+    "gym": "مركز لياقة بدنية",
+    "restaurant": "مطعم",
+    "spa": "سبا وعافية",
+    "ac": "تكييف",
+    "view": "إطلالة",
+    "kitchen": "مطبخ",
+    "tv": "تلفزيون",
+    "desk": "مكتب عمل",
+    "balcony": "شرفة"
+  },
+  "search": {
+    "update": "تحديث البحث"
+  },
+  "policies": {
+    "title": "سياسات الفندق",
+    "subtitle": "معلومات هامة حول مكان الإقامة",
+    "checkIn": "تسجيل الوصول",
+    "checkOut": "تسجيل المغادرة",
+    "propertyRules": "قواعد ومرافق العقار",
+    "childrenAndExtraBeds": "الأطفال والأسرّة الإضافية",
+    "ages": "الأعمار",
+    "extraBed": "سرير إضافي",
+    "available": "متوفر",
+    "notAvailable": "غير متوفر",
+    "free": "مجاناً",
+    "childrensMeals": "وجبات الأطفال",
+    "included": "مشمول",
+    "cotCrib": "مهد/سرير أطفال",
+    "deposits": "الودائع",
+    "general": "عام",
+    "internetWifi": "الإنترنت / واي فاي",
+    "property": "العقار",
+    "meals": "الوجبات",
+    "parking": "موقف سيارات",
+    "pets": "الحيوانات الأليفة",
+    "petsAllowedFree": "مسموح (مجاناً)",
+    "shuttleService": "خدمة النقل",
+    "shuttle": "شاتل",
+    "visaSupport": "دعم التأشيرة",
+    "visaSupportAvailable": "دعم التأشيرة متوفر",
+    "noVisaSupport": "لا يوجد دعم للتأشيرة",
+    "noShowPolicy": "سياسة عدم الحضور",
+    "noShowChargesApply": "تطبق رسوم عدم الحضور",
+    "after": "بعد",
+    "additionalFees": "رسوم إضافية",
+    "additionalFee": "رسوم إضافية",
+    "additionalPropertyRules": "قواعد إضافية للعقار",
+    "detailedHotelPolicies": "سياسات الفندق التفصيلية",
+    "important": "هام",
+    "importantNotice": "يرجى مراجعة جميع سياسات الفندق قبل الحجز. قد تطبق سياسات إضافية في مكان الإقامة.",
+    "from": "من",
+    "until": "حتى",
+    "units": {
+      "per_room_per_night": "لكل غرفة/ليلة",
+      "per_room_per_stay": "لكل غرفة/إقامة",
+      "per_guest_per_night": "لكل ضيف/ليلة",
+      "per_guest_per_stay": "لكل ضيف/إقامة",
+      "per_car_per_night": "لكل سيارة/ليلة",
+      "per_hour": "في الساعة"
+    },
+    "additionalCharge": "رسوم إضافية"
+  }
+}

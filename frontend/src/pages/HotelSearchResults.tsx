@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 import { motion } from 'framer-motion';
 import {
   FunnelIcon,
@@ -73,54 +74,54 @@ interface AutocompleteResults {
 }
 
 // Helper function to get review score text
-const getScoreText = (rating: number): string => {
-  if (rating >= 9) return 'Wonderful';
-  if (rating >= 8) return 'Very good';
-  if (rating >= 7) return 'Good';
-  if (rating >= 6) return 'Pleasant';
-  return 'Fair';
+const getScoreText = (rating: number, t: TFunction): string => {
+  if (rating >= 9) return t('searchResults:reviews.wonderful', 'Wonderful');
+  if (rating >= 8) return t('searchResults:reviews.veryGood', 'Very good');
+  if (rating >= 7) return t('searchResults:reviews.good', 'Good');
+  if (rating >= 6) return t('searchResults:reviews.pleasant', 'Pleasant');
+  return t('searchResults:reviews.fair', 'Fair');
 };
 
 // Helper function to get amenity icon
-const getAmenityIcon = (amenity: string): { icon: React.ReactNode; label: string } | null => {
+const getAmenityIcon = (amenity: string, t: TFunction): { icon: React.ReactNode; label: string } | null => {
   const lower = amenity.toLowerCase();
   const iconClass = "w-4 h-4";
 
   if (lower.includes('wifi') || lower.includes('internet') || lower.includes('wi-fi')) {
-    return { icon: <FontAwesomeIcon icon={faWifi} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faWifi} className={iconClass} />, label: t('searchResults:amenities.wifi', amenity) };
   }
   if (lower.includes('pool') || lower.includes('swimming')) {
-    return { icon: <FontAwesomeIcon icon={faPersonSwimming} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faPersonSwimming} className={iconClass} />, label: t('searchResults:amenities.pool', amenity) };
   }
   if (lower.includes('parking') || lower.includes('garage')) {
-    return { icon: <FontAwesomeIcon icon={faSquareParking} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faSquareParking} className={iconClass} />, label: t('searchResults:amenities.parking', amenity) };
   }
   if (lower.includes('gym') || lower.includes('fitness') || lower.includes('sport')) {
-    return { icon: <FontAwesomeIcon icon={faDumbbell} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faDumbbell} className={iconClass} />, label: t('searchResults:amenities.gym', amenity) };
   }
   if (lower.includes('spa') || lower.includes('wellness') || lower.includes('massage')) {
-    return { icon: <FontAwesomeIcon icon={faSpa} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faSpa} className={iconClass} />, label: t('searchResults:amenities.spa', amenity) };
   }
   if (lower.includes('restaurant') || lower.includes('dining')) {
-    return { icon: <FontAwesomeIcon icon={faUtensils} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faUtensils} className={iconClass} />, label: t('searchResults:amenities.restaurant', amenity) };
   }
   if (lower.includes('air condition') || lower.includes('a/c') || lower.includes('ac') || lower.includes('climate')) {
-    return { icon: <FontAwesomeIcon icon={faSnowflake} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faSnowflake} className={iconClass} />, label: t('searchResults:amenities.ac', amenity) };
   }
   if (lower.includes('elevator') || lower.includes('lift')) {
-    return { icon: <FontAwesomeIcon icon={faElevator} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faElevator} className={iconClass} />, label: t('searchResults:amenities.elevator', amenity) };
   }
   if (lower.includes('heating')) {
-    return { icon: <FireIcon className={iconClass} />, label: amenity };
+    return { icon: <FireIcon className={iconClass} />, label: t('searchResults:amenities.heating', amenity) };
   }
   if (lower.includes('non-smoking') || lower.includes('smoke-free') || lower.includes('no smoking')) {
-    return { icon: <FontAwesomeIcon icon={faBanSmoking} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faBanSmoking} className={iconClass} />, label: t('searchResults:amenities.nonSmoking', amenity) };
   }
   if (lower.includes('pet') || lower.includes('dog') || lower.includes('animal')) {
-    return { icon: <FontAwesomeIcon icon={faPaw} className={iconClass} />, label: amenity };
+    return { icon: <FontAwesomeIcon icon={faPaw} className={iconClass} />, label: t('searchResults:amenities.pet', amenity) };
   }
   if (lower.includes('family')) {
-    return { icon: <UserGroupIcon className={iconClass} />, label: amenity };
+    return { icon: <UserGroupIcon className={iconClass} />, label: t('searchResults:amenities.family', amenity) };
   }
   // Return null for amenities we don't have icons for
   return null;
@@ -207,7 +208,7 @@ const getCityCoordinates = (destination: string): [number, number] => {
 };
 
 export const HotelSearchResults: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['searchResults', 'common']);
   const { direction } = useDirection();
   const history = useHistory();
   const location = useLocation();
@@ -215,6 +216,16 @@ export const HotelSearchResults: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isRTL = direction === 'rtl';
   const { currency, currencySymbol } = useCurrency();
+
+  // Helper to format currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', {
+      style: 'currency',
+      currency: currency || 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   // Parse URL parameters
   const searchParams = new URLSearchParams(location.search);
@@ -756,15 +767,15 @@ export const HotelSearchResults: React.FC = () => {
                         to="/login"
                         className="hidden sm:inline-flex items-center text-sm font-semibold hover:text-orange-100 transition-colors px-3 py-1.5 rounded-full hover:bg-white/10"
                       >
-                        Sign in
+                        {t('common:nav.login', 'Sign in')}
                       </Link>
                       {/* Register Button - Modern Style */}
                       <Link
                         to="/register"
                         className="inline-flex items-center bg-white text-[#E67915] text-xs sm:text-sm font-bold px-3 py-2 sm:px-5 sm:py-2.5 rounded-full hover:bg-orange-50 active:scale-95 transition-all shadow-lg hover:shadow-xl"
                       >
-                        <span className="hidden sm:inline">Register</span>
-                        <span className="sm:hidden">Join</span>
+                        <span className="hidden sm:inline">{t('common:nav.register', 'Register')}</span>
+                        <span className="sm:hidden">{t('common:nav.register', 'Join')}</span>
                       </Link>
                    </>
                 ) : (
@@ -790,7 +801,7 @@ export const HotelSearchResults: React.FC = () => {
                         <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        <span className="hidden sm:inline text-sm font-medium">Logout</span>
+                        <span className="hidden sm:inline text-sm font-medium">{t('common:nav.logout', 'Logout')}</span>
                       </button>
                    </div>
                 )}
@@ -826,8 +837,8 @@ export const HotelSearchResults: React.FC = () => {
                       <div className="font-bold text-gray-900 truncate">{editableDestination || 'Where to?'}</div>
                       <div className="text-sm text-gray-600">
                         {checkInDate && checkOutDate ? (
-                          `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} night${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) > 1 ? 's' : ''}) • ${guestCounts.adults} adult${guestCounts.adults > 1 ? 's' : ''}`
-                        ) : 'Add dates and guests'}
+                          `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} ${t('searchResults:hotelCard.perNight', 'night').replace('/', '').trim()}${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) > 1 ? 's' : ''}) • ${guestCounts.adults} ${t('searchResults:searchBar.adults', 'adult')}${guestCounts.adults > 1 ? 's' : ''}`
+                        ) : t('searchResults:searchBar.addDates', 'Add dates and guests')}
                       </div>
                     </div>
                   </div>
@@ -848,7 +859,7 @@ export const HotelSearchResults: React.FC = () => {
                   {/* Destination Input */}
                   <div className="mb-4" ref={autocompleteRef}>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Destination
+                      {t('searchResults:searchBar.destination', 'Destination')}
                     </label>
                     <div className="relative">
                       <input
@@ -953,7 +964,7 @@ export const HotelSearchResults: React.FC = () => {
                     <div onClick={() => setShowMobileDateModal(true)}>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Check-out date</label>
                       <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 font-medium bg-gray-50 flex items-center">
-                         {checkOutDate ? checkOutDate.toLocaleDateString() : 'Select date'}
+                         {checkOutDate ? checkOutDate.toLocaleDateString() : t('searchResults:searchBar.selectDate', 'Select date')}
                       </div>
                     </div>
                   </div>
@@ -965,7 +976,7 @@ export const HotelSearchResults: React.FC = () => {
                     {/* Adults */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Adults
+                        {t('searchResults:searchBar.adults', 'Adults')}
                       </label>
                       <select
                         value={guestCounts.adults}
@@ -981,7 +992,7 @@ export const HotelSearchResults: React.FC = () => {
                     {/* Children */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Children
+                        {t('searchResults:searchBar.children', 'Children')}
                       </label>
                       <select
                         value={guestCounts.children}
@@ -1004,7 +1015,7 @@ export const HotelSearchResults: React.FC = () => {
                     {/* Rooms */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Rooms
+                        {t('searchResults:searchBar.rooms', 'Rooms')}
                       </label>
                       <select
                         value={guestCounts.rooms}
@@ -1022,7 +1033,7 @@ export const HotelSearchResults: React.FC = () => {
                   <div className="mb-6">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-semibold text-gray-700">
-                        Are you traveling for work?
+                        {t('searchResults:searchBar.travelingForWork', 'Are you traveling for work?')}
                       </label>
                       <div className="flex items-center gap-4">
                         <label className="flex items-center cursor-pointer">
@@ -1033,7 +1044,7 @@ export const HotelSearchResults: React.FC = () => {
                             onChange={() => setIsTravelingForWork(true)}
                             className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                           />
-                          <span className="ml-2 text-sm text-gray-700">Yes</span>
+                          <span className="ml-2 text-sm text-gray-700">{t('common:yes', 'Yes')}</span>
                         </label>
                         <label className="flex items-center cursor-pointer">
                           <input
@@ -1043,7 +1054,7 @@ export const HotelSearchResults: React.FC = () => {
                             onChange={() => setIsTravelingForWork(false)}
                             className="w-4 h-4 text-[#E67915] border-gray-300 focus:ring-orange-500"
                           />
-                          <span className="ml-2 text-sm text-gray-700">No</span>
+                          <span className="ml-2 text-sm text-gray-700">{t('common:no', 'No')}</span>
                         </label>
                       </div>
                     </div>
@@ -1057,7 +1068,7 @@ export const HotelSearchResults: React.FC = () => {
                     }}
                     className="w-full bg-[#E67915] hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg shadow-lg"
                   >
-                    Search
+                    {t('searchResults:searchBar.search', 'Search')}
                   </button>
                 </div>
               </div>
@@ -1071,7 +1082,7 @@ export const HotelSearchResults: React.FC = () => {
               <div className="flex-[1.5] px-6 py-2 border-r border-gray-100 flex items-center gap-4 relative z-50 hover:bg-gray-50 rounded-full transition-colors cursor-pointer" ref={autocompleteRef}>
                 <MapPinIcon className="h-6 w-6 text-gray-400 shrink-0" />
                 <div className="flex flex-col w-full min-w-0">
-                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('common.destination', 'Destination')}</span>
+                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('searchResults:searchBar.destination', 'Destination')}</span>
                   <input
                     type="text"
                     value={editableDestination}
@@ -1165,36 +1176,43 @@ export const HotelSearchResults: React.FC = () => {
               <div className="flex-[2] px-6 py-2 border-r border-gray-100 flex items-center gap-4 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
                 <ClockIcon className="h-6 w-6 text-gray-400 shrink-0" />
                 <div className="flex flex-col w-full pointer-events-none"> {/* Disable pointer events to let datepicker handle clicks properly via custom input */}
-                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">Check-in - Check-out</span>
+                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('searchResults:searchBar.checkInCheckOut', 'Check-in - Check-out')}</span>
                   <div className="w-full pointer-events-auto">
-                    <DatePicker
-                      selected={checkInDate}
-                      onChange={(dates: [Date | null, Date | null]) => {
-                        const [start, end] = dates;
-                        setCheckInDate(start);
-                        setCheckOutDate(end);
-                      }}
-                      startDate={checkInDate}
-                      endDate={checkOutDate}
-                      selectsRange
-                      minDate={new Date()}
-                      className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400"
-                      dateFormat="dd MMM"
-                      placeholderText="Add dates"
-                      monthsShown={2}
-                      customInput={
-                        <input
-                          value={
-                            checkInDate && checkOutDate
-                              ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
-                              : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : '')
-                          }
-                          readOnly
-                          placeholder="Add dates"
-                          className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400 focus:outline-none"
-                        />
-                      }
-                    />
+                    <div dir="ltr">
+                      <DatePicker
+                        selected={checkInDate}
+                        onChange={(dates: [Date | null, Date | null]) => {
+                          const [start, end] = dates;
+                          setCheckInDate(start);
+                          setCheckOutDate(end);
+                        }}
+                        startDate={checkInDate}
+                        endDate={checkOutDate}
+                        selectsRange
+                        minDate={new Date()}
+                        className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400"
+                        dateFormat="dd MMM"
+                        placeholderText="Add dates"
+                        monthsShown={2}
+                        calendarContainer={(props: any) => (
+                          <div className={`${props.className} font-sans`} dir="ltr">
+                            {props.children}
+                          </div>
+                        )}
+                        customInput={
+                          <input
+                            value={
+                              checkInDate && checkOutDate
+                                ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${t('searchResults:searchBar.selectCheckout', 'Select checkout')}` : '')
+                            }
+                            readOnly
+                            placeholder={t('searchResults:searchBar.addDates', 'Add dates')}
+                            className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400 focus:outline-none"
+                          />
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1207,9 +1225,14 @@ export const HotelSearchResults: React.FC = () => {
                 >
                   <UserIcon className="h-6 w-6 text-gray-400 shrink-0" />
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('common.guests', 'Guests')}</span>
+                    <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('searchResults:searchBar.guests', 'Guests')}</span>
                     <span className="text-gray-600 text-sm font-medium truncate">
-                      {guestCounts.adults + guestCounts.children} Guests · {guestCounts.rooms} Room{guestCounts.rooms > 1 ? 's' : ''}
+                      {t('searchResults:searchBar.guestsLabel', {
+                        rooms: guestCounts.rooms,
+                        adults: guestCounts.adults + guestCounts.children,
+                        interpolation: { escapeValue: false }
+                      }).replace(guestCounts.rooms.toString(), guestCounts.rooms.toString()).replace((guestCounts.adults + guestCounts.children).toString(), (guestCounts.adults + guestCounts.children).toString())}
+
                     </span>
                   </div>
                 </button>
@@ -1222,8 +1245,8 @@ export const HotelSearchResults: React.FC = () => {
                       {/* Rooms */}
                       <div className="flex justify-between items-center mb-6">
                         <div className="flex flex-col">
-                          <span className="font-bold text-gray-900">Rooms</span>
-                          <span className="text-xs text-gray-500 mt-0.5">Number of rooms</span>
+                          <span className="font-bold text-gray-900">{t('searchResults:searchBar.rooms', 'Rooms')}</span>
+                          <span className="text-xs text-gray-500 mt-0.5">{t('searchResults:searchBar.numberOfRooms', 'Number of rooms')}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <button
@@ -1246,8 +1269,8 @@ export const HotelSearchResults: React.FC = () => {
                       {/* Adults */}
                       <div className="flex justify-between items-center mb-6">
                         <div className="flex flex-col">
-                          <span className="font-bold text-gray-900">Adults</span>
-                          <span className="text-xs text-gray-500 mt-0.5">Ages 18 or above</span>
+                          <span className="font-bold text-gray-900">{t('searchResults:searchBar.adults', 'Adults')}</span>
+                          <span className="text-xs text-gray-500 mt-0.5">{t('searchResults:searchBar.adultsAge', 'Ages 18 or above')}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <button
@@ -1271,8 +1294,8 @@ export const HotelSearchResults: React.FC = () => {
                       <div className="mb-6">
                         <div className="flex justify-between items-center mb-4">
                           <div className="flex flex-col">
-                            <span className="font-bold text-gray-900">Children</span>
-                            <span className="text-xs text-gray-500 mt-0.5">Ages 0-17</span>
+                            <span className="font-bold text-gray-900">{t('searchResults:searchBar.children', 'Children')}</span>
+                            <span className="text-xs text-gray-500 mt-0.5">{t('searchResults:searchBar.childrenAge', 'Ages 0-17')}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <button
@@ -1303,11 +1326,11 @@ export const HotelSearchResults: React.FC = () => {
                         {/* Child Age Selectors */}
                         {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-gray-100 animate-fadeIn">
-                            <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Age at check-in</p>
+                            <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">{t('searchResults:searchBar.ageNeeded', 'Age at check-in')}</p>
                             <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                               {guestCounts.childrenAges.map((age, index) => (
                                 <div key={index} className="flex flex-col gap-1">
-                                  <span className="text-xs text-gray-500">Child {index + 1}</span>
+                                  <span className="text-xs text-gray-500">{t('searchResults:searchBar.children', 'Child')} {index + 1}</span>
                                   <select
                                     value={age}
                                     onChange={(e) => {
@@ -1334,7 +1357,7 @@ export const HotelSearchResults: React.FC = () => {
                         className="w-full bg-[#E67915] text-white text-sm font-bold py-3 rounded-xl hover:bg-orange-600 transition-colors shadow-lg hover:shadow-orange-500/30"
                         onClick={() => setShowGuestPopover(false)}
                       >
-                        Apply
+                        {t('common.apply', 'Apply')}
                       </button>
                     </div>
                   </>
@@ -1355,9 +1378,9 @@ export const HotelSearchResults: React.FC = () => {
           </div>
 
           {/* Travelling for work checkbox */}
-          <div className="hidden sm:flex items-center space-x-2 mt-2">
-            <input type="checkbox" id="business" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-white/30" />
-            <label htmlFor="business" className="text-white text-xs sm:text-sm">I'm travelling for work</label>
+          <div className="hidden sm:flex items-center gap-3 mt-2">
+            <input type="checkbox" id="business" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-white/30 focus:ring-offset-0 focus:ring-transparent bg-transparent" />
+            <label htmlFor="business" className="text-white text-xs sm:text-sm cursor-pointer hover:text-orange-100 transition-colors">{t('searchResults:searchBar.travelingForWork', "I'm travelling for work")}</label>
           </div>
         </div>
       </div>
@@ -1368,14 +1391,12 @@ export const HotelSearchResults: React.FC = () => {
           {/* Mobile Action Buttons - Only show when search is compact on mobile */}
           {!isSearchExpanded && (
             <div className="md:hidden flex items-center justify-center gap-3 mb-4 max-w-md mx-auto">
-
-
               <button
                 onClick={() => setShowMobileFilters(true)}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <FunnelIcon className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Filter</span>
+                <span className="text-sm font-medium text-gray-700">{t('common:common.filter', 'Filter')}</span>
               </button>
 
               <button
@@ -1383,7 +1404,7 @@ export const HotelSearchResults: React.FC = () => {
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <MapIcon className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Map</span>
+                <span className="text-sm font-medium text-gray-700">{t('searchResults:map.map', 'Map')}</span>
               </button>
             </div>
           )}
@@ -1391,24 +1412,24 @@ export const HotelSearchResults: React.FC = () => {
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
-                {searchQuery.destination}: {totalHotels.toLocaleString()} properties found
+                 {t('searchResults:hotelCard.propertiesFoundIn', { count: totalHotels, destination: searchQuery.destination })}
                 {hotels.length > 0 && (
-                  <span className="ml-2 text-xs sm:text-sm font-normal text-gray-600">
-                    (Showing {filteredHotels.length} of {hotels.length} loaded)
+                  <span className="ms-2 text-xs sm:text-sm font-normal text-gray-600">
+                     ({t('searchResults:pagination.showingResults', { start: filteredHotels.length, end: hotels.length, total: totalHotels }).replace(totalHotels.toString(), '')})
                   </span>
                 )}
               </h1>
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">Sort by:</span>
+                <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">{t('searchResults:sort.sortBy', 'Sort by')}:</span>
                 <select
                   value={filters.sortBy}
                   onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
                   className="border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 flex-1 sm:flex-none"
                 >
-                  <option value="top_picks">Top picks</option>
-                  <option value="price_low">Price (lowest first)</option>
-                  <option value="price_high">Price (highest first)</option>
-                  <option value="rating">Best reviewed</option>
+                  <option value="top_picks">{t('searchResults:sort.top_picks', 'Top picks')}</option>
+                  <option value="price_low">{t('searchResults:sort.price_low', 'Price (lowest first)')}</option>
+                  <option value="price_high">{t('searchResults:sort.price_high', 'Price (highest first)')}</option>
+                  <option value="rating">{t('searchResults:sort.rating', 'Best reviewed')}</option>
                 </select>
               </div>
             </div>
@@ -1450,7 +1471,7 @@ export const HotelSearchResults: React.FC = () => {
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                   <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors pointer-events-none">
                     <MapIcon className="h-4 w-4" />
-                    Show on map
+                    {t('searchResults:map.showMap', 'Show on map')}
                   </button>
                 </div>
               </div>
@@ -1501,7 +1522,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => toggleFilterSection('budget')}
                   className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
                 >
-                  <span>Your budget (per night)</span>
+                  <span>{t('searchResults:filters.budget', 'Your budget (per night)')}</span>
                   <svg className={`w-4 h-4 transition-transform ${expandedFilters.budget ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1533,8 +1554,8 @@ export const HotelSearchResults: React.FC = () => {
                       className="w-full accent-orange-500"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>{currencySymbol} 0</span>
-                      <span>{currencySymbol} {filters.priceRange[1].toLocaleString()}</span>
+                      <span>{formatPrice(0)}</span>
+                      <span>{formatPrice(filters.priceRange[1])}</span>
                     </div>
                   </>
                 )}
@@ -1546,7 +1567,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => toggleFilterSection('stars')}
                   className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
                 >
-                  <span>Hotel Stars {filters.starRating.length > 0 && <span className="text-orange-500 ml-1">({filters.starRating.length})</span>}</span>
+                  <span>{t('searchResults:filters.starRating', 'Hotel Stars')} {filters.starRating.length > 0 && <span className="text-orange-500 ml-1">({filters.starRating.length})</span>}</span>
                   <svg className={`w-4 h-4 transition-transform ${expandedFilters.stars ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1577,7 +1598,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => toggleFilterSection('facilities')}
                   className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
                 >
-                  <span>Facilities {filters.facilities.length > 0 && <span className="text-orange-500 ml-1">({filters.facilities.length})</span>}</span>
+                  <span>{t('searchResults:filters.facilities', 'Facilities')} {filters.facilities.length > 0 && <span className="text-orange-500 ml-1">({filters.facilities.length})</span>}</span>
                   <svg className={`w-4 h-4 transition-transform ${expandedFilters.facilities ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1605,7 +1626,7 @@ export const HotelSearchResults: React.FC = () => {
                           }}
                           className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                         />
-                        <span className="text-sm text-gray-700">{facility.label}</span>
+                        <span className="text-sm text-gray-700">{t(`searchResults:filters.options.${facility.id}`, facility.label)}</span>
                       </label>
                     ))}
                   </div>
@@ -1618,7 +1639,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => toggleFilterSection('mealPlan')}
                   className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
                 >
-                  <span>Meal Plan {filters.mealPlan.length > 0 && <span className="text-orange-500 ml-1">({filters.mealPlan.length})</span>}</span>
+                  <span>{t('searchResults:filters.mealPlan', 'Meal Plan')} {filters.mealPlan.length > 0 && <span className="text-orange-500 ml-1">({filters.mealPlan.length})</span>}</span>
                   <svg className={`w-4 h-4 transition-transform ${expandedFilters.mealPlan ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1651,7 +1672,7 @@ export const HotelSearchResults: React.FC = () => {
                           }}
                           className="rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                         />
-                        <span className="text-sm text-gray-700">{meal.label}</span>
+                        <span className="text-sm text-gray-700">{t(`searchResults:filters.options.${meal.id}`, meal.label)}</span>
                       </label>
                     ))}
                   </div>
@@ -1664,7 +1685,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => toggleFilterSection('cancellation')}
                   className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
                 >
-                  <span>Cancellation Policy {filters.cancellationPolicy !== 'any' && <span className="text-orange-500 ml-1">(1)</span>}</span>
+                  <span>{t('searchResults:filters.cancellationPolicy', 'Cancellation Policy')} {filters.cancellationPolicy !== 'any' && <span className="text-orange-500 ml-1">(1)</span>}</span>
                   <svg className={`w-4 h-4 transition-transform ${expandedFilters.cancellation ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1685,7 +1706,7 @@ export const HotelSearchResults: React.FC = () => {
                           onChange={() => setFilters(prev => ({ ...prev, cancellationPolicy: policy.id }))}
                           className="border-gray-300 text-orange-500 focus:ring-orange-500"
                         />
-                        <span className="text-sm text-gray-700">{policy.label}</span>
+                        <span className="text-sm text-gray-700">{t(`searchResults:filters.options.${policy.id}`, policy.label)}</span>
                       </label>
                     ))}
                   </div>
@@ -1698,7 +1719,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => toggleFilterSection('guestRating')}
                   className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 mb-2 hover:text-orange-600 transition-colors"
                 >
-                  <span>Guest Rating {filters.guestRating > 0 && <span className="text-orange-500 ml-1">({filters.guestRating}+)</span>}</span>
+                  <span>{t('searchResults:filters.guestRating', 'Guest Rating')} {filters.guestRating > 0 && <span className="text-orange-500 ml-1">({filters.guestRating}+)</span>}</span>
                   <svg className={`w-4 h-4 transition-transform ${expandedFilters.guestRating ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1707,7 +1728,7 @@ export const HotelSearchResults: React.FC = () => {
                 {expandedFilters.guestRating && (
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { value: 0, label: 'Any' },
+                      { value: 0, label: t('searchResults:filters.options.any', 'Any') },
                       { value: 7, label: '7+' },
                       { value: 8, label: '8+' },
                       { value: 9, label: '9+' }
@@ -1741,7 +1762,7 @@ export const HotelSearchResults: React.FC = () => {
                 })}
                 className="w-full text-orange-500 hover:text-orange-600 text-sm font-medium py-2"
               >
-                Clear all filters
+                {t('searchResults:filters.clearAll', 'Clear all filters')}
               </button>
             </div>
           </div>
@@ -1754,7 +1775,7 @@ export const HotelSearchResults: React.FC = () => {
             className="lg:hidden fixed bottom-4 left-4 right-4 bg-orange-500 text-white py-3 rounded-lg font-semibold shadow-xl z-40 flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-95 transition-all"
           >
             <FunnelIcon className="h-5 w-5" />
-            Filters ({filters.starRating.length + filters.facilities.length + (filters.guestRating > 0 ? 1 : 0)})
+            {t('common.filter', 'Filter')} ({filters.starRating.length + filters.facilities.length + (filters.guestRating > 0 ? 1 : 0)})
           </button>
           )}
 
@@ -1790,7 +1811,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => window.location.reload()}
                   className="mt-4 text-orange-500 hover:text-orange-600 font-medium"
                 >
-                  Try Again
+                  {t('searchResults:error.tryAgain', 'Try Again')}
                 </button>
               </div>
             )}
@@ -1801,8 +1822,8 @@ export const HotelSearchResults: React.FC = () => {
                 {filteredHotels.length === 0 ? (
                   <div className="bg-white rounded-lg shadow-sm p-12 text-center">
                     <BuildingOfficeIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No hotels found</h3>
-                    <p className="text-gray-600">Try adjusting your filters</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">{t('searchResults:pagination.noMoreHotels', 'No hotels found')}</h3>
+                    <p className="text-gray-600">{t('searchResults:pagination.tryAdjusting', 'Try adjusting your filters')}</p>
                   </div>
                 ) : (
                   filteredHotels.map((hotel, index) => (
@@ -1865,7 +1886,7 @@ export const HotelSearchResults: React.FC = () => {
                                             {hotel.city || searchQuery.destination}
                                         </span>
                                         <span className="text-[#003B95] cursor-pointer" onClick={() => setFullscreenMap(true)}>
-                                            Show on map
+                                            {t('searchResults:map.showMap', 'Show on map')}
                                         </span>
                                         {hotel.address && (
                                             <span className="text-gray-600 hidden sm:inline">· {hotel.address}</span>
@@ -1933,7 +1954,7 @@ export const HotelSearchResults: React.FC = () => {
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        Free cancellation
+                                        {t('searchResults:filters.options.free_cancellation', 'Free cancellation')}
                                     </div>
                                 )}
                                 {/* Meal type badge - ETG meal values: 'breakfast', 'halfboard', 'fullboard', 'allinclusive' */}
@@ -1952,7 +1973,7 @@ export const HotelSearchResults: React.FC = () => {
                             {(hotel as any).amenities && (hotel as any).amenities.length > 0 && (
                                 <div className="flex flex-wrap items-center gap-1 mt-2">
                                   {((hotel as any).amenities as string[])
-                                    .map((amenity: string) => getAmenityIcon(amenity))
+                                    .map((amenity: string) => getAmenityIcon(amenity, t))
                                     .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
                                     .slice(0, 5)
                                     .map((amenityData, idx) => (
@@ -1969,15 +1990,15 @@ export const HotelSearchResults: React.FC = () => {
                                       </div>
                                     ))}
                                   {((hotel as any).amenities as string[])
-                                    .map((amenity: string) => getAmenityIcon(amenity))
+                                    .map((amenity: string) => getAmenityIcon(amenity, t))
                                     .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
                                     .length > 5 && (
                                       <div className="group relative ml-1 cursor-pointer">
                                           <span className="text-xs text-gray-500 font-medium hover:text-orange-600 transition-colors">
                                             +{((hotel as any).amenities as string[])
-                                              .map((amenity: string) => getAmenityIcon(amenity))
+                                              .map((amenity: string) => getAmenityIcon(amenity, t))
                                               .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
-                                              .length - 5} more
+                                              .length - 5} {t('searchResults:amenities.more', 'more')}
                                           </span>
                                           {/* Detailed Tooltip for extra amenities - Displayed ABOVE the text */}
                                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-auto">
@@ -1987,10 +2008,10 @@ export const HotelSearchResults: React.FC = () => {
                                             {/* Arrow properly positioned at bottom of tooltip */}
                                             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-800"></div>
 
-                                            <div className="font-semibold mb-1 border-b border-gray-600 pb-1">More amenities:</div>
+                                            <div className="font-semibold mb-1 border-b border-gray-600 pb-1">{t('searchResults:amenities.moreAmenities', 'More amenities')}:</div>
                                             <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                                               {((hotel as any).amenities as string[])
-                                                .map((amenity: string) => getAmenityIcon(amenity))
+                                                .map((amenity: string) => getAmenityIcon(amenity, t))
                                                 .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
                                                 .slice(5)
                                                 .map((extra, i) => (
@@ -2013,10 +2034,10 @@ export const HotelSearchResults: React.FC = () => {
                             <div className="flex items-center gap-2 mb-auto order-1 sm:order-none">
                                 <div className="text-right hidden sm:block">
                                     <div className="text-sm font-medium text-gray-900 leading-tight">
-                                        {getScoreText(hotel.rating)}
+                                        {getScoreText(hotel.rating, t)}
                                     </div>
                                     <div className="text-xs text-gray-500">
-                                        {hotel.reviewCount?.toLocaleString()} reviews
+                                        {hotel.reviewCount?.toLocaleString()} {t('searchResults:hotelCard.reviews', 'reviews')}
                                     </div>
                                 </div>
                                 <div className="bg-[#003580] text-white p-1.5 rounded-t-lg rounded-br-lg text-sm font-bold min-w-[2rem] text-center" style={{ backgroundColor: '#F7871D' }}>
@@ -2032,18 +2053,18 @@ export const HotelSearchResults: React.FC = () => {
                                         const checkOut = new Date(searchQuery.checkOut);
                                         const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
                                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                        return `${diffDays} night${diffDays !== 1 ? 's' : ''}, ${searchQuery.adults} adults`;
+                                        return `${diffDays} ${t('searchResults:hotelCard.perNight', 'night').replace('/', '').trim()}${diffDays !== 1 ? 's' : ''}, ${searchQuery.adults} ${t('searchResults:searchBar.adults', 'adults')}`;
                                     })()}
                                 </div>
                                 {(hotel as any).noRatesAvailable ? (
-                                    <div className="text-sm font-bold text-red-600">No rates data</div>
+                                    <div className="text-sm font-bold text-red-600">{t('searchResults:hotelCard.noRates', 'No rates data')}</div>
                                 ) : (
                                     <>
                                         <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-none">
-                                            {currencySymbol} {Math.round(hotel.price).toLocaleString()}
+                                            {formatPrice(hotel.price)}
                                         </div>
                                         <div className="text-[10px] text-gray-500 font-medium mb-1">
-                                            Total (incl. taxes & fees): {currencySymbol}{Math.round(hotel.price + ((hotel as any).booking_taxes || 0)).toLocaleString()}
+                                            {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).booking_taxes || 0)))}
                                         </div>
                                     </>
                                 )}
@@ -2056,7 +2077,7 @@ export const HotelSearchResults: React.FC = () => {
                                       checked={comparedHotels.some(h => (h.id || h.hid) === (hotel.id || hotel.hid))}
                                       onChange={() => handleToggleCompare(hotel)}
                                     />
-                                    <span className="text-sm font-medium text-gray-600 group-hover:text-orange-600 transition-colors">Compare</span>
+                                    <span className="text-sm font-medium text-gray-600 group-hover:text-orange-600 transition-colors">{t('common:common.compare', 'Compare')}</span>
                                   </label>
                                 </div>
 
@@ -2064,7 +2085,7 @@ export const HotelSearchResults: React.FC = () => {
                                     onClick={() => handleHotelClick(hotel)}
                                     className="w-full sm:w-auto bg-[#F7871D] hover:bg-[#c5650f] text-white px-4 py-2 rounded-md font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
                                 >
-                                    See availability
+                                    {t('searchResults:hotelCard.seeAvailability', 'See availability')}
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                     </svg>
@@ -2137,16 +2158,16 @@ export const HotelSearchResults: React.FC = () => {
                         }))}
                         className="text-orange-500 hover:text-orange-600 text-sm mt-2 underline"
                       >
-                        Clear filters to see all hotels
+                        {t('searchResults:filters.clearMore', 'Clear filters to see all hotels')}
                       </button>
                     </div>
                   )}
                   {!hasMore && hotels.length > 0 && (
                     <div className="text-center py-6">
                       <p className="text-sm text-gray-600 font-medium">
-                        ✓ All {totalHotels.toLocaleString()} properties loaded
+                        ✓ {t('searchResults:pagination.allLoaded', { count: totalHotels, interpolation: { escapeValue: false } }).replace('{{count}}', totalHotels.toLocaleString())}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">You've reached the end of the results</p>
+                      <p className="text-xs text-gray-500 mt-1">{t('searchResults:pagination.endOfResults', "You've reached the end of the results")}</p>
                     </div>
                   )}
                 </div>
@@ -2163,7 +2184,7 @@ export const HotelSearchResults: React.FC = () => {
           <div className="absolute inset-y-0 left-0 right-0 sm:right-auto sm:w-80 bg-white shadow-xl overflow-y-auto">
             <div className="p-4 pb-24">
               <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-3 border-b z-10">
-                <h2 className="text-lg font-semibold">Filters</h2>
+                <h2 className="text-lg font-semibold">{t('common.filter', 'Filters')}</h2>
                 <button onClick={() => setShowMobileFilters(false)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -2171,7 +2192,7 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Same filter content as desktop */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Your budget (per night)</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('searchResults:filters.budget', 'Your budget (per night)')}</h3>
                 <input
                   type="range"
                   min="0"
@@ -2184,13 +2205,13 @@ export const HotelSearchResults: React.FC = () => {
                   className="w-full accent-orange-500"
                 />
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>{currencySymbol} 0</span>
-                  <span>{currencySymbol} {filters.priceRange[1].toLocaleString()}</span>
+                  <span>{formatPrice(0)}</span>
+                  <span>{formatPrice(filters.priceRange[1])}</span>
                 </div>
               </div>
 
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Hotel Stars</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('searchResults:filters.starRating', 'Hotel Stars')}</h3>
                 <div className="flex flex-wrap gap-2">
                   {[5, 4, 3, 2, 1].map(star => (
                     <button
@@ -2210,7 +2231,7 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Facilities */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Facilities</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">{t('searchResults:filters.facilities', 'Facilities')}</h3>
                 <div className="space-y-3">
                     {facilityOptions.slice(0, 6).map(facility => (
                       <label key={facility.id} className="flex items-center gap-3 cursor-pointer">
@@ -2234,7 +2255,7 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Meal Plan */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Meal Plan</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">{t('searchResults:filters.mealPlan', 'Meal Plan')}</h3>
                 <div className="space-y-3">
                     {[
                       { id: 'breakfast', label: 'Breakfast included' },
@@ -2263,7 +2284,7 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Cancellation Policy */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Cancellation Policy</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">{t('searchResults:filters.cancellationPolicy', 'Cancellation Policy')}</h3>
                 <div className="space-y-3">
                     {[
                       { id: 'any', label: 'Any' },
@@ -2286,7 +2307,7 @@ export const HotelSearchResults: React.FC = () => {
 
               {/* Guest Rating */}
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">Guest Rating</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 block">{t('searchResults:filters.guestRating', 'Guest Rating')}</h3>
                 <div className="flex flex-wrap gap-2">
                     {[
                       { value: 0, label: 'Any' },
@@ -2322,7 +2343,7 @@ export const HotelSearchResults: React.FC = () => {
                 })}
                 className="w-full text-orange-500 hover:text-orange-600 text-sm font-medium py-2 mb-4"
               >
-                Clear all filters
+                {t('searchResults:filters.clearAll', 'Clear all filters')}
               </button>
 
               <div className="fixed bottom-0 left-0 right-0 sm:relative p-4 bg-white border-t sm:border-t-0 shadow-lg sm:shadow-none">
@@ -2330,7 +2351,7 @@ export const HotelSearchResults: React.FC = () => {
                   onClick={() => setShowMobileFilters(false)}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition-colors"
                 >
-                  Show {filteredHotels.length} results
+                  {t('searchResults:filters.showResults', { count: filteredHotels.length, interpolation: { escapeValue: false } }).replace('{{count}}', filteredHotels.length.toString())}
                 </button>
               </div>
             </div>
@@ -2349,10 +2370,10 @@ export const HotelSearchResults: React.FC = () => {
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
               >
                 <XMarkIcon className="h-5 w-5" />
-                <span>Close map</span>
+                <span>{t('searchResults:map.closeMap', 'Close map')}</span>
               </button>
               <div className="text-sm text-gray-600">
-                {filteredHotels.length} properties
+                {filteredHotels.length} {t('common.properties', 'properties')}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -2414,13 +2435,13 @@ export const HotelSearchResults: React.FC = () => {
                           {Math.min(hotel.rating, 10).toFixed(1)}
                         </span>
                         <span className="text-xs text-gray-600">
-                          {getScoreText(hotel.rating)}
+                          {getScoreText(hotel.rating, t)}
                         </span>
                       </div>
                       {hotel.price && hotel.price > 0 && (
                         <div className="mt-1.5">
                           <span className="font-bold text-gray-900">
-                            {currencySymbol} {Math.round(hotel.price)}
+                            {formatPrice(hotel.price)}
                           </span>
                           <span className="text-xs text-gray-500 ml-1">per night</span>
                         </div>
@@ -2496,11 +2517,11 @@ export const HotelSearchResults: React.FC = () => {
                               <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
                                 {Math.min(hotel.rating, 10).toFixed(1)}
                               </span>
-                              <span className="text-xs text-gray-600">{getScoreText(hotel.rating)}</span>
+                              <span className="text-xs text-gray-600">{getScoreText(hotel.rating, t)}</span>
                             </div>
                             {hotel.price && hotel.price > 0 && (
                               <div className="mt-2 font-bold">
-                                {currencySymbol} {Math.round(hotel.price)} <span className="text-xs font-normal text-gray-500">per night</span>
+                                {formatPrice(hotel.price)} <span className="text-xs font-normal text-gray-500">per night</span>
                               </div>
                             )}
                             <button
@@ -2541,11 +2562,11 @@ export const HotelSearchResults: React.FC = () => {
                          <h4 className="font-bold text-sm text-gray-900 truncate mb-1">{hotel.name}</h4>
                          <div className="flex items-center gap-1 mb-1">
                             <span className="bg-blue-900 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{Math.min(hotel.rating, 10).toFixed(1)}</span>
-                            <span className="text-xs text-gray-500 truncate">{getScoreText(hotel.rating)}</span>
+                            <span className="text-xs text-gray-500 truncate">{getScoreText(hotel.rating, t)}</span>
                          </div>
                          <div className="flex items-center justify-between mt-auto">
                             <div className="font-bold text-[#E67915] text-lg leading-none">
-                                {currencySymbol} {Math.round(hotel.price)}
+                                {formatPrice(hotel.price)}
                             </div>
                             <button
                                 onClick={(e) => {
@@ -2579,10 +2600,11 @@ export const HotelSearchResults: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center pt-8 bg-gray-50">
-            <DatePicker
+            <div dir="ltr" className="w-full flex justify-center">
+              <DatePicker
                 selected={checkInDate}
                 onChange={(dates) => {
-                const [start, end] = dates as [Date | null, Date | null];
+                  const [start, end] = dates as [Date | null, Date | null];
                 setCheckInDate(start);
                 setCheckOutDate(end);
                 }}
@@ -2593,6 +2615,7 @@ export const HotelSearchResults: React.FC = () => {
                 monthsShown={1}
                 minDate={new Date()}
             />
+            </div>
                 <div className="mt-6 text-sm text-gray-500 text-center">
                 {checkInDate && checkOutDate ? (
                     <span className="font-medium text-green-600">

@@ -33,7 +33,7 @@ interface AutocompleteResults {
 }
 
 export const MainSection: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation('home');
   const { user, logout } = useAuth();
   const { isRTL } = useDirection();
   const history = useHistory();
@@ -229,7 +229,7 @@ export const MainSection: React.FC = () => {
     if (checkInDate && checkOutDate) {
       return `${dayjs(checkInDate).format('MMM DD')} - ${dayjs(checkOutDate).format('MMM DD')}`;
     }
-    return 'Select date - Select date';
+    return `${t('mainSection.selectDates')} - ${t('mainSection.selectDates')}`;
   };
 
   const calculateNights = () => {
@@ -326,13 +326,13 @@ export const MainSection: React.FC = () => {
             {!user ? (
               <>
                 <Link to="/login" className="text-white font-medium hover:text-orange-200 transition text-sm sm:text-base md:text-lg">
-                  {t('nav.login', 'Sign in')}
+                  {t('nav.login', { ns: 'common', defaultValue: 'Sign in' })}
                 </Link>
                 <Link
                   to="/register"
                   className="bg-[#F7871D] hover:bg-orange-600 text-white px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 rounded-lg font-medium transition shadow-md text-sm sm:text-base"
                 >
-                  {t('nav.register', 'Register')}
+                  {t('nav.register', { ns: 'common', defaultValue: 'Register' })}
                 </Link>
               </>
             ) : (
@@ -341,7 +341,7 @@ export const MainSection: React.FC = () => {
                   {user.name}
                 </Link>
                 <button onClick={logout} className="text-xs sm:text-sm opacity-80 hover:opacity-100">
-                  {t('nav.logout', 'Logout')}
+                  {t('nav.logout', { ns: 'common', defaultValue: 'Logout' })}
                 </button>
               </div>
             )}
@@ -369,9 +369,9 @@ export const MainSection: React.FC = () => {
              animate={{ opacity: 1, y: 0 }}
               className="mb-2 md:mb-3 text-center md:text-left rtl:text-right"
             >
-               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white leading-tight drop-shadow-md px-2 md:px-0">
-                Wherever you are...<br />
-                <span className="font-medium">enjoy the best prices</span>
+               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white drop-shadow-md px-2 md:px-0 flex flex-col gap-3 md:gap-5">
+                <span>{t('mainSection.tagline')}</span>
+                <span className="font-medium">{t('mainSection.subtitle')}</span>
               </h1>
            </motion.div>
 
@@ -382,12 +382,12 @@ export const MainSection: React.FC = () => {
                  <svg className="w-5 h-5 sm:w-6 sm:h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                  </svg>
-                 <span className="text-base sm:text-lg font-medium">Flights</span>
+                 <span className="text-base sm:text-lg font-medium">{t('mainSection.flights')}</span>
                </button>
                {/* Coming Soon Tooltip - positioned on left */}
                <div className="absolute top-1/2 -translate-y-1/2 right-full mr-2 opacity-0 group-hover/flights:opacity-100 transition-all duration-300 pointer-events-none z-[200]">
                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
-                   ✈️ Coming soon!
+                   ✈️ {t('mainSection.comingSoon')}
                  </div>
                  <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-orange-600 rotate-45"></div>
                </div>
@@ -395,7 +395,7 @@ export const MainSection: React.FC = () => {
 
              <button className="flex items-center space-x-1.5 sm:space-x-2 rtl:space-x-reverse text-white border-b-2 border-[#F7871D] px-2 sm:px-4 py-1.5 sm:py-2">
                 <HomeIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                <span className="text-base sm:text-lg font-medium">Stays</span>
+                <span className="text-base sm:text-lg font-medium">{t('mainSection.accommodation')}</span>
              </button>
            </div>
 
@@ -426,7 +426,7 @@ export const MainSection: React.FC = () => {
                               setShowAutocomplete(true);
                             }
                           }}
-                          placeholder={isDetectingLocation ? "Detecting..." : "where to ?"}
+                          placeholder={isDetectingLocation ? t('loading', { ns: 'common' }) : t('mainSection.searchPlaceholder')}
                           className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 focus:ring-0 text-base md:text-lg truncate"
                           required
                           disabled={isDetectingLocation}
@@ -506,13 +506,13 @@ export const MainSection: React.FC = () => {
                     >
                        <span className="text-sm md:text-sm font-bold text-gray-800 truncate">{formatDateDisplay()}</span>
                        <div className="flex items-center space-x-2 text-xs text-gray-400">
-                          <span className="truncate">Check-in - Check-out</span>
+                          <span className="truncate">{t('mainSection.checkIn')} - {t('mainSection.checkOut')}</span>
                        </div>
                     </div>
                     {/* Nights tag */}
                     {calculateNights() > 0 && (
                       <div className="hidden sm:block bg-orange-100 text-orange-600 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-                         {calculateNights()} nights
+                         {calculateNights()} {calculateNights() === 1 ? t('mainSection.night') : t('mainSection.nights')}
                       </div>
                     )}
 
@@ -533,7 +533,7 @@ export const MainSection: React.FC = () => {
                               onClick={() => setShowDatePicker(false)}
                               className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium"
                             >
-                              Done
+                              {t('mainSection.done')}
                             </button>
                           </div>
                         </div>
@@ -549,7 +549,12 @@ export const MainSection: React.FC = () => {
                     >
                        <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-gray-700 flex-shrink-0" />
                        <span className="text-gray-700 text-sm md:text-base lg:text-lg truncate">
-                          {guests.rooms} room, {guests.adults} adults{guests.children > 0 ? `, ${guests.children} child${guests.children > 1 ? 'ren' : ''}` : ''}
+                          {guests.children > 0
+                            ? guests.children > 1
+                              ? t('mainSection.guestSummaryWithChildrenPlural', { rooms: guests.rooms, adults: guests.adults, children: guests.children })
+                              : t('mainSection.guestSummaryWithChildren', { rooms: guests.rooms, adults: guests.adults, children: guests.children })
+                            : t('mainSection.guestSummary', { rooms: guests.rooms, adults: guests.adults })
+                          }
                        </span>
                     </div>
 
@@ -564,7 +569,7 @@ export const MainSection: React.FC = () => {
                         {/* Rooms */}
                         <div className="flex items-center justify-between py-3 border-b border-gray-200">
                           <div>
-                            <p className="font-medium text-gray-800">Rooms</p>
+                            <p className="font-medium text-gray-800">{t('mainSection.rooms')}</p>
                           </div>
                           <div className="flex items-center space-x-3">
                             <button
@@ -589,7 +594,7 @@ export const MainSection: React.FC = () => {
                         {/* Adults */}
                         <div className="flex items-center justify-between py-3 border-b border-gray-200">
                           <div>
-                            <p className="font-medium text-gray-800">Adults</p>
+                            <p className="font-medium text-gray-800">{t('mainSection.adults')}</p>
                             <p className="text-xs text-gray-500">18+yrs</p>
                           </div>
                           <div className="flex items-center space-x-3">
@@ -616,7 +621,7 @@ export const MainSection: React.FC = () => {
                         <div className="py-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-gray-800">Children</p>
+                              <p className="font-medium text-gray-800">{t('mainSection.children')}</p>
                               <p className="text-xs text-gray-500">0-17yrs</p>
                             </div>
                             <div className="flex items-center space-x-3">
@@ -650,11 +655,11 @@ export const MainSection: React.FC = () => {
                           {/* Child Age Selectors */}
                           {guests.childrenAges.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-100">
-                              <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
+                              <p className="text-xs text-gray-500 mb-2">{t('mainSection.selectAge')}:</p>
                               <div className={`grid ${guests.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
                                 {guests.childrenAges.map((age, index) => (
                                   <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                                    <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                    <span className="text-xs text-gray-500 whitespace-nowrap">{t('mainSection.childAge', { index: index + 1 })}</span>
                                     <select
                                       value={age}
                                       onChange={(e) => {
@@ -666,7 +671,7 @@ export const MainSection: React.FC = () => {
                                     >
                                       {[...Array(18)].map((_, i) => (
                                         <option key={i} value={i}>
-                                          {i} {i === 1 ? 'yr' : 'yrs'}
+                                          {i} {i === 1 ? t('mainSection.ageYear') : t('mainSection.ageYears')}
                                         </option>
                                       ))}
                                     </select>
@@ -685,7 +690,7 @@ export const MainSection: React.FC = () => {
                             onClick={() => setShowGuestPicker(false)}
                             className="w-full bg-orange-500 text-white py-3 md:py-3 rounded-lg font-medium hover:bg-orange-600 transition text-base md:text-base"
                           >
-                            Done
+                            {t('mainSection.done')}
                           </button>
                         </div>
                       </div>
@@ -700,7 +705,7 @@ export const MainSection: React.FC = () => {
                       onChange={(e) => setIsWorkTravel(e.target.checked)}
                       className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
                     />
-                    <span className="text-gray-700 text-sm font-bold whitespace-nowrap">Work</span>
+                    <span className="text-gray-700 text-sm font-bold whitespace-nowrap">{t('mainSection.workTravel')}</span>
                  </div>
 
                  {/* Search Button */}
@@ -710,7 +715,7 @@ export const MainSection: React.FC = () => {
                       className="w-full md:w-auto bg-[#F7871D] hover:bg-orange-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-[1.5rem] flex items-center justify-center space-x-2 transition shadow-lg active:scale-95"
                     >
                        <MagnifyingGlassIcon className="w-5 h-5 md:w-6 md:h-6" />
-                       <span className="text-lg md:text-xl font-medium">Search</span>
+                       <span className="text-lg md:text-xl font-medium">{t('mainSection.searchButton')}</span>
                     </button>
                  </div>
               </form>

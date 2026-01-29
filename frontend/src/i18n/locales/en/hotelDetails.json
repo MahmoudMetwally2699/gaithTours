@@ -1,0 +1,123 @@
+{
+  "loading": "Loading...",
+  "error": {
+    "notFound": "Hotel not found",
+    "idRequired": "Hotel ID is required",
+    "loadFailed": "Failed to load hotel details",
+    "selectRoomFirst": "Please select a room first"
+  },
+  "location": {
+    "destination": "Destination",
+    "regions": "Regions",
+    "hotels": "Hotels",
+    "saudiArabia": "Saudi Arabia",
+    "addressUnavailable": "Address not available"
+  },
+  "dates": {
+    "checkInCheckOut": "Check-in - Check-out",
+    "selectDates": "Select dates",
+    "selectCheckout": "Select checkout",
+    "nightsSelected": "nights selected",
+    "selectCheckInCheckOut": "Select check-in and check-out dates"
+  },
+  "guests": {
+    "label": "Guests",
+    "rooms": "Rooms",
+    "adults": "Adults",
+    "children": "Children",
+    "ages": "Key in children ages (0-17)",
+    "agePlaceholder": "Age",
+    "apply": "Apply",
+    "reset": "Reset",
+    "yearAbbr": "yr",
+    "yearsAbbr": "yrs"
+  },
+  "hotel": {
+    "nameUnavailable": "Hotel Name Not Available",
+    "reviews": "reviews",
+    "night": "night",
+    "stars": "Stars",
+    "share": "Share",
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "hotels": {
+      "exclusivePrices": "Exclusive prices for Gaith Tours members",
+      "propertyDescription": "Property Description",
+      "neighborhoodInfo": "Guests loved walking around the neighborhood!"
+  },
+  "booking": {
+    "selectRoom": "Select Room",
+    "bookNow": "Book Now",
+    "totalPrice": "Total Price",
+    "taxAndFees": "Taxes and fees included",
+    "reserve": "Reserve",
+    "confirm": "Confirm"
+  },
+  "amenities": {
+    "wifi": "Free WiFi",
+    "parking": "Parking",
+    "pool": "Swimming Pool",
+    "gym": "Fitness Center",
+    "restaurant": "Restaurant",
+    "spa": "Spa & Wellness",
+    "ac": "Air Conditioning",
+    "view": "View",
+    "kitchen": "Kitchen",
+    "tv": "TV",
+    "desk": "Work Desk",
+    "balcony": "Balcony"
+  },
+   "search": {
+    "update": "Update Search"
+  },
+  "policies": {
+    "title": "Hotel Policies",
+    "subtitle": "Important information about this property",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "propertyRules": "Property Rules & Amenities",
+    "childrenAndExtraBeds": "Children & Extra Beds",
+    "ages": "Ages",
+    "extraBed": "Extra bed",
+    "available": "available",
+    "notAvailable": "not available",
+    "free": "Free",
+    "childrensMeals": "Children's Meals",
+    "included": "Included",
+    "cotCrib": "Cot/Crib",
+    "deposits": "Deposits",
+    "general": "General",
+    "internetWifi": "Internet / WiFi",
+    "property": "Property",
+    "meals": "Meals",
+    "parking": "Parking",
+    "pets": "Pets",
+    "petsAllowedFree": "Allowed (Free)",
+    "shuttleService": "Shuttle Service",
+    "shuttle": "Shuttle",
+    "visaSupport": "Visa Support",
+    "visaSupportAvailable": "Visa support available",
+    "noVisaSupport": "No visa support",
+    "noShowPolicy": "No-Show Policy",
+    "noShowChargesApply": "No-show charges apply",
+    "after": "after",
+    "additionalFees": "Additional Fees",
+    "additionalFee": "Additional fee",
+    "additionalPropertyRules": "Additional Property Rules",
+    "detailedHotelPolicies": "Detailed Hotel Policies",
+    "important": "Important",
+    "importantNotice": "Please review all hotel policies before booking. Additional policies may apply at the property.",
+    "from": "From",
+    "until": "Until",
+    "units": {
+      "per_room_per_night": "per room/night",
+      "per_room_per_stay": "per room/stay",
+      "per_guest_per_night": "per guest/night",
+      "per_guest_per_stay": "per guest/stay",
+      "per_car_per_night": "per car/night",
+      "per_hour": "per hour"
+    },
+    "additionalCharge": "Additional charge"
+  }
+}

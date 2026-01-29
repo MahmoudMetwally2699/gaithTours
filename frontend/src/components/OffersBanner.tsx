@@ -4,12 +4,12 @@ import { useHistory } from 'react-router-dom';
 
 
 export const OffersBanner: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('home');
   const history = useHistory();
 
   return (
     <section className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
-       <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4 px-1">Offers</h3>
+       <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4 px-1">{t('offers.title')}</h3>
 
       {/* Wrapper for positioning the illustration outside the clipped banner */}
       <div className="relative">
@@ -35,11 +35,11 @@ export const OffersBanner: React.FC = () => {
               onClick={() => history.push('/register')}
               className="bg-[#FF385C] text-white font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-md hover:bg-[#ff1f48] transition-colors whitespace-nowrap text-xs sm:text-base flex-shrink-0"
             >
-              Join now
+              {t('offers.joinNow')}
             </button>
 
             <span className="text-white text-xs sm:text-base md:text-lg lg:text-xl font-bold leading-snug">
-              Exclusive prices for Gaith Tours members
+              {t('offers.exclusivePrices')}
             </span>
           </div>
         </div>

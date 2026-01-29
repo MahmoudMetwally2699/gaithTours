@@ -1,0 +1,104 @@
+{
+  "searchBar": {
+    "destination": "الوجهة",
+    "checkInCheckOut": "الوصول - المغادرة",
+    "guests": "الضيوف",
+    "search": "بحث",
+    "travelingForWork": "أنا مسافر للعمل",
+    "guestsLabel": "{{rooms}} غرفة، {{adults}} ضيوف",
+    "addDates": "أضف تواريخ",
+    "selectCheckout": "اختر المغادرة",
+    "rooms": "الغرف",
+    "numberOfRooms": "عدد الغرف",
+    "adults": "البالغين",
+    "adultsAge": "18 سنة أو أكثر",
+    "children": "الأطفال",
+    "childrenAge": "من 0 إلى 17 سنة",
+    "ageNeeded": "العمر عند تسجيل الوصول"
+  },
+  "filters": {
+    "budget": "ميزانيتك (في الليلة)",
+    "starRating": "تصنيف النجوم",
+    "facilities": "المرافق",
+    "mealPlan": "خطة الوجبات",
+    "cancellationPolicy": "سياسة الإلغاء",
+    "guestRating": "تقييم الضيوف",
+    "clearAll": "مسح الكل",
+    "clearMore": "مسح الفلاتر لعرض جميع الفنادق",
+    "showResults": "عرض {{count}} نتائج",
+    "options": {
+      "wifi": "واي فاي مجاني",
+      "pool": "مسبح",
+      "parking": "موقف سيارات",
+      "restaurant": "مطعم",
+      "gym": "مركز لياقة بدنية",
+      "spa": "سبا وعافية",
+      "breakfast": "شامل الإفطار",
+      "half_board": "نصف إقامة",
+      "full_board": "إقامة كاملة",
+      "all_inclusive": "شامل كلياً",
+      "free_cancellation": "إلغاء مجاني",
+      "non_refundable": "غير قابل للاسترداد",
+      "any": "الكل",
+      "ac": "تكييف",
+      "pets": "يسمح بالحيوانات الأليفة",
+      "family_rooms": "غرف عائلية",
+      "free_breakfast": "إفطار مجاني",
+      "no_prepayment": "لا يشترط دفعة مسبقة",
+      "free_wifi": "واي فاي مجاني"
+    }
+  },
+  "sort": {
+    "sortBy": "ترتيب حسب",
+    "top_picks": "الأفضل لك",
+    "price_low": "السعر (الأقل أولاً)",
+    "price_high": "السعر (الأعلى أولاً)",
+    "rating": "الأعلى تقييماً"
+  },
+  "map": {
+    "map": "الخريط",
+    "showMap": "عرض على الخريطة",
+    "closeMap": "إغلاق الخريطة"
+  },
+  "hotelCard": {
+    "perNight": "/ ليلة",
+    "reviews": "تقييم",
+    "seeAvailability": "عرض التوافر",
+    "propertiesFoundIn": "وجدنا {{count}} مكان إقامة في {{destination}}",
+    "noRates": "لا توجد أسعار متاحة",
+    "totalWithTaxes": "إجمالي (شامل الضرائب والرسوم)"
+  },
+  "reviews": {
+    "wonderful": "رائع",
+    "veryGood": "جيد جداً",
+    "good": "جيد",
+    "pleasant": "مقبول",
+    "fair": "متوسط"
+  },
+  "amenities": {
+    "wifi": "واي فاي مجاني",
+    "pool": "مسبح",
+    "parking": "موقف سيارات",
+    "gym": "مركز لياقة بدنية",
+    "spa": "سبا وعافية",
+    "restaurant": "مطعم",
+    "ac": "تكييف",
+    "elevator": "مصعد",
+    "heating": "تدفئة",
+    "nonSmoking": "غرف لغير المدخنين",
+    "pet": "يسمح بالحيوانات الأليفة",
+    "family": "غرف عائلية",
+    "more": "أخرى",
+    "moreAmenities": "المزيد من المرافق"
+  },
+  "error": {
+    "tryAgain": "حاول مرة أخرى"
+  },
+  "pagination": {
+    "showingResults": "عرض {{start}} من {{end}} نتيجة محملة",
+    "noMoreHotels": "لا توجد فنادق مطابقة",
+    "tryAdjusting": "جرب تعديل الفلاتر",
+    "allLoaded": "✓ تم تحميل جميع العقارات ({{count}})",
+    "endOfResults": "وصلت إلى نهاية النتائج"
+  }
+}

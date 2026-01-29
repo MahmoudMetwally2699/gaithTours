@@ -18,7 +18,7 @@ interface ExtendedHotel extends Hotel {
 }
 
 export const PopularProperties: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation('home');
   const history = useHistory();
   const { currency } = useCurrency();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,7 +37,7 @@ export const PopularProperties: React.FC = () => {
 
         const cityPromises = cities.map(async (city) => {
           try {
-            const response = await fetch(`${API_URL}/hotels/suggested?location=${city}&currency=${currency}`);
+            const response = await fetch(`${API_URL}/hotels/suggested?location=${city}&currency=${currency}&language=${i18n.language}`);
             const data = await response.json();
             return data.success && data.data.hotels ? data.data.hotels : [];
           } catch (error) {
@@ -91,7 +91,8 @@ export const PopularProperties: React.FC = () => {
     };
 
     fetchPopularHotels();
-  }, [currency]); // Re-fetch when currency changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency, i18n.language]); // Re-fetch when currency or language changes
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -106,7 +107,7 @@ export const PopularProperties: React.FC = () => {
   if (loading) {
     return (
       <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 px-1">Popular 5-star hotels in Saudi Arabia</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 px-1">{t('popularProperties.title')}</h2>
         <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="min-w-[160px] sm:min-w-[200px] md:min-w-[240px] lg:min-w-[280px] bg-white rounded-2xl md:rounded-[1.5rem] overflow-hidden shadow-sm h-[280px] sm:h-[300px] md:h-[320px] animate-pulse border border-gray-100 flex flex-col flex-shrink-0">
@@ -141,8 +142,8 @@ export const PopularProperties: React.FC = () => {
   if (hotels.length === 0 && !loading) {
     return (
       <section className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-12">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 md:mb-8 px-1">Popular 5-star hotels in Saudi Arabia</h2>
-        <p className="text-gray-500 text-center py-8">Loading popular properties...</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 md:mb-8 px-1">{t('popularProperties.title')}</h2>
+        <p className="text-gray-500 text-center py-8">{t('popularProperties.loadingProperties')}</p>
       </section>
     );
   }
@@ -173,12 +174,12 @@ export const PopularProperties: React.FC = () => {
             <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
-            <span className="font-semibold text-sm md:text-base">Checking hotels for tomorrow</span>
+            <span className="font-semibold text-sm md:text-base">{t('popularProperties.checkingTomorrow')}</span>
           </div>
         )}
       </div>
       <div className="flex items-center justify-between mb-4 md:mb-6 px-3 sm:px-4 md:px-6 lg:px-8">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">Popular 5-star hotels in Saudi Arabia</h2>
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">{t('popularProperties.title')}</h2>
         <div className="hidden sm:flex gap-2">
            <button
             onClick={() => scroll('left')}

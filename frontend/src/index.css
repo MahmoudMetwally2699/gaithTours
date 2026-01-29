@@ -774,3 +774,23 @@ input[type="date"]:focus {
 .text-shadow-sm {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
+
+/* Force react-datepicker to always be LTR */
+.react-datepicker,
+.react-datepicker__month-container,
+.react-datepicker__header,
+.react-datepicker__day-names,
+.react-datepicker__week,
+.react-datepicker__month {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+.react-datepicker__day-name,
+.react-datepicker__day {
+  direction: ltr !important;
+}
+
+.react-datepicker-popper {
+  direction: ltr !important;
+}

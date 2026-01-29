@@ -1,0 +1,104 @@
+{
+  "mainSection": {
+    "tagline": "From Gaith to anywhere",
+    "subtitle": "Find the Best Rates Wherever You Go",
+    "searchPlaceholder": "Where do you want to stay?",
+    "searchButton": "Search",
+    "accommodation": "Accommodation",
+    "flights": "Flights",
+    "comingSoon": "Coming Soon",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests",
+    "adults": "Adults",
+    "children": "Children",
+    "rooms": "Rooms",
+    "night": "night",
+    "nights": "nights",
+    "addRoom": "Add Room",
+    "done": "Done",
+    "selectDates": "Select dates",
+    "whereTo": "Where to?",
+    "searchHotels": "Search hotels, cities, or landmarks...",
+    "hotel": "Hotel",
+    "region": "Region",
+    "noResults": "No results found",
+    "workTravel": "Work",
+    "selectAge": "Select age at check-in",
+    "childAge": "Child {{index}}",
+    "ageYear": "yr",
+    "ageYears": "yrs",
+    "guestSummary": "{{rooms}} room, {{adults}} adults",
+    "guestSummaryWithChildren": "{{rooms}} room, {{adults}} adults, {{children}} child",
+    "guestSummaryWithChildrenPlural": "{{rooms}} room, {{adults}} adults, {{children}} children"
+  },
+  "specialOffers": {
+    "title": "Special offers",
+    "joinNow": "Join now",
+    "exclusivePrices": "Exclusive prices for Gaith Tours members"
+  },
+  "offers": {
+    "title": "Offers",
+    "joinNow": "Join now",
+    "exclusivePrices": "Exclusive prices for Gaith Tours members"
+  },
+  "suggestedHotels": {
+    "title": "Suggested for You",
+    "historyTitle": "Because you viewed {{destination}}",
+    "locationTitle": "Popular near you in {{destination}}",
+    "fallbackTitle": "Popular Accommodations",
+    "useMyLocation": "Use my location",
+    "location": "Location",
+    "discoverTopRated": "Discover top rated stays",
+    "pickUpWhereLeft": "Pick up where you left off",
+    "tomorrowAvailability": "Showing availability for tomorrow"
+  },
+  "popularProperties": {
+    "title": "Popular 5-star hotels in Saudi Arabia",
+    "loadingProperties": "Loading popular properties...",
+    "checkingTomorrow": "Checking hotels for tomorrow"
+  },
+  "popularCities": {
+    "title": "Popular Cities in Saudi Arabia",
+    "hotels": "hotels",
+    "cities": {
+      "jeddah": "Jeddah",
+      "riyadh": "Riyadh",
+      "alKhobar": "Al Khobar",
+      "makkah": "Makkah",
+      "madinah": "Madinah",
+      "dammam": "Dammam",
+      "taif": "Taif",
+      "alUla": "Al Ula",
+      "abha": "Abha",
+      "tabuk": "Tabuk",
+      "hail": "Hail",
+      "jazan": "Jazan",
+      "jubail": "Jubail",
+      "buraydah": "Buraydah",
+      "khamisMushait": "Khamis Mushait",
+      "najran": "Najran",
+      "yanbu": "Yanbu"
+    }
+  },
+  "popularCitiesWorldwide": {
+    "title": "Popular Cities Worldwide",
+    "hotels": "hotels",
+    "cities": {
+      "dubai": "Dubai",
+      "paris": "Paris",
+      "london": "London",
+      "newYork": "New York",
+      "tokyo": "Tokyo",
+      "istanbul": "Istanbul"
+    }
+  },
+  "paymentMethods": {
+    "securePayments": "100% Secure Payments",
+    "title": "Pay Your Way",
+    "subtitle": "Choose from multiple trusted payment methods for a seamless checkout experience",
+    "ssl": "256-bit SSL",
+    "pciCompliant": "PCI DSS Compliant",
+    "fraudProtection": "Fraud Protection"
+  }
+}

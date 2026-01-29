@@ -1,0 +1,104 @@
+{
+  "searchBar": {
+    "destination": "Destination",
+    "checkInCheckOut": "Check-in - Check-out",
+    "guests": "Guests",
+    "search": "Search",
+    "travelingForWork": "I'm travelling for work",
+    "guestsLabel": "{{rooms}} Room, {{adults}} Guests",
+    "addDates": "Add dates",
+    "selectCheckout": "Select checkout",
+    "rooms": "Rooms",
+    "numberOfRooms": "Number of rooms",
+    "adults": "Adults",
+    "adultsAge": "Ages 18 or above",
+    "children": "Children",
+    "childrenAge": "Ages 0-17",
+    "ageNeeded": "Age at check-in"
+  },
+  "filters": {
+    "budget": "Your budget (per night)",
+    "starRating": "Hotel Stars",
+    "facilities": "Facilities",
+    "mealPlan": "Meal Plan",
+    "cancellationPolicy": "Cancellation Policy",
+    "guestRating": "Guest Rating",
+    "clearAll": "Clear all filters",
+    "clearMore": "Clear filters to see all hotels",
+    "showResults": "Show {{count}} results",
+    "options": {
+      "wifi": "Free WiFi",
+      "pool": "Swimming Pool",
+      "parking": "Parking",
+      "restaurant": "Restaurant",
+      "gym": "Fitness Center",
+      "spa": "Spa and wellness centre",
+      "breakfast": "Breakfast included",
+      "half_board": "Half board",
+      "full_board": "Full board",
+      "all_inclusive": "All inclusive",
+      "free_cancellation": "Free cancellation",
+      "non_refundable": "Non-refundable",
+      "any": "Any",
+      "ac": "Air conditioning",
+      "pets": "Pets allowed",
+      "family_rooms": "Family rooms",
+      "free_breakfast": "Free breakfast",
+      "no_prepayment": "No prepayment",
+      "free_wifi": "Free WiFi"
+    }
+  },
+  "sort": {
+    "sortBy": "Sort by",
+    "top_picks": "Top picks",
+    "price_low": "Price (lowest first)",
+    "price_high": "Price (highest first)",
+    "rating": "Best reviewed"
+  },
+  "map": {
+    "map": "Map",
+    "showMap": "Show on map",
+    "closeMap": "Close map"
+  },
+  "hotelCard": {
+    "perNight": "/ night",
+    "reviews": "reviews",
+    "seeAvailability": "See availability",
+    "propertiesFoundIn": "{{destination}}: {{count}} properties found",
+    "noRates": "No rates data",
+    "totalWithTaxes": "Total (incl. taxes & fees)"
+  },
+  "reviews": {
+    "wonderful": "Wonderful",
+    "veryGood": "Very good",
+    "good": "Good",
+    "pleasant": "Pleasant",
+    "fair": "Fair"
+  },
+  "amenities": {
+    "wifi": "Free WiFi",
+    "pool": "Swimming Pool",
+    "parking": "Parking",
+    "gym": "Fitness Center",
+    "spa": "Spa & Wellness",
+    "restaurant": "Restaurant",
+    "ac": "Air Conditioning",
+    "elevator": "Elevator",
+    "heating": "Heating",
+    "nonSmoking": "Non-smoking",
+    "pet": "Pet friendly",
+    "family": "Family rooms",
+    "more": "more",
+    "moreAmenities": "More amenities"
+  },
+  "error": {
+    "tryAgain": "Try Again"
+  },
+  "pagination": {
+    "showingResults": "Showing {{start}} of {{end}} loaded",
+    "noMoreHotels": "No hotels found",
+    "tryAdjusting": "Try adjusting your filters",
+    "allLoaded": "✓ All {{count}} properties loaded",
+    "endOfResults": "You've reached the end of the results"
+  }
+}

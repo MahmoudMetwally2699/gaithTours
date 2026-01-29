@@ -50,6 +50,12 @@ import {
 import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import { registerLocale } from "react-datepicker";
+import { format } from "date-fns";
+import ar from 'date-fns/locale/ar-SA';
+import en from 'date-fns/locale/en-US';
+
+
 import { Hotel } from '../types/hotel';
 import { getHotelDetails } from '../services/hotelService';
 import { RoomCard } from '../components/RoomCard';
@@ -65,6 +71,9 @@ import { GuestReviews } from '../components/GuestReviews';
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavorite } from '../components/ShareSaveActions';
 import { CompareRooms } from '../components/CompareRooms';
+
+registerLocale('ar', ar);
+registerLocale('en', en);
 
 interface HotelDetailsParams {
   hotelId: string;
@@ -102,7 +111,7 @@ const getResizedImageUrl = (url: string, size: string = '1024x768') => {
 };
 
 export const HotelDetails: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['hotelDetails', 'common']);
   const { hotelId } = useParams<HotelDetailsParams>();
   const history = useHistory();
   const location = useLocation();
@@ -371,7 +380,7 @@ export const HotelDetails: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       if (!hotelId) {
-        setError('Hotel ID is required');
+        setError(t('hotelDetails:error.idRequired', 'Hotel ID is required'));
         setLoading(false);
         return;
       }
@@ -392,10 +401,10 @@ export const HotelDetails: React.FC = () => {
         // Transform the API response to match our Hotel interface
         const transformedHotel: Hotel = {
           id: hotelData.id || hotelId,
-          name: hotelData.name || 'Hotel Name Not Available',
-          address: hotelData.address || 'Address not available',
+          name: hotelData.name || t('hotelDetails:hotel.nameUnavailable', 'Hotel Name Not Available'),
+          address: hotelData.address || t('hotelDetails:location.addressUnavailable', 'Address not available'),
           city: hotelData.city || bookingParams.destination || '',
-          country: hotelData.country || 'Saudi Arabia',
+          country: hotelData.country || t('hotelDetails:location.saudiArabia', 'Saudi Arabia'),
           price: 0,
           currency: currency,
           rating: hotelData.rating || hotelData.reviewScore || null,
@@ -448,7 +457,7 @@ export const HotelDetails: React.FC = () => {
         }
       } catch (err: any) {
         console.error('Failed to fetch hotel details:', err);
-        setError(err.message || 'Failed to load hotel details');
+        setError(err.message || t('hotelDetails:error.loadFailed', 'Failed to load hotel details'));
       } finally {
         setLoading(false);
       }
@@ -511,7 +520,7 @@ export const HotelDetails: React.FC = () => {
   const handleBookNow = () => {
     const selectedHashes = Array.from(selectedRates.keys());
     if (selectedHashes.length === 0) {
-       alert(t('hotels.selectRoomFirst', 'Please select a room first'));
+       alert(t('hotelDetails:error.selectRoomFirst', 'Please select a room first'));
        return;
     }
 
@@ -626,11 +635,11 @@ export const HotelDetails: React.FC = () => {
   }
 
   if (error || !hotel) {
-     return <div className="text-center py-20 text-red-500">{error || 'Hotel not found'}</div>;
+     return <div className="text-center py-20 text-red-500">{error || t('hotelDetails:error.notFound', 'Hotel not found')}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-white pb-20 font-sans">
+    <div className="min-h-screen bg-white pb-20 font-sans overflow-x-hidden">
       {/* Header Section - Same as Search Results */}
       {/* Compact Header Section */}
       <div className="relative w-full bg-[#E67915] shadow-md z-40">
@@ -651,7 +660,7 @@ export const HotelDetails: React.FC = () => {
                  </div>
                  <div className="h-4 w-px bg-white/20"></div>
                  {!user ? (
-                   <Link to="/login" className="text-sm font-bold text-white hover:text-orange-100">Sign In</Link>
+                   <Link to="/login" className="text-sm font-bold text-white hover:text-orange-100">{t('common:nav.login', 'Sign In')}</Link>
                  ) : (
                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs ring-2 ring-white/10">
                       {user.name.charAt(0).toUpperCase()}
@@ -662,12 +671,12 @@ export const HotelDetails: React.FC = () => {
 
             {/* Compact Search Bar - Editable (Desktop) */}
             <div className="flex-1 max-w-3xl w-full hidden md:block">
-               <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20 flex items-center relative gap-1">
+               <div className="bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20 flex items-center rtl:flex-row-reverse relative gap-1">
                   {/* Destination - Editable with Autocomplete */}
-                  <div className="flex-[1.5] px-4 border-r border-white/20 flex items-center gap-2 min-w-0 relative" ref={autocompleteRef}>
+                  <div className="flex-[1.5] px-4 border-r rtl:border-r-0 border-white/20 flex items-center gap-2 min-w-0 relative" ref={autocompleteRef}>
                      <MapPinIcon className="h-4 w-4 text-white/80 shrink-0" />
                      <div className="flex flex-col min-w-0 overflow-visible w-full">
-                        <span className="text-white text-xs font-medium opacity-70 truncate">{t('common.destination', 'Destination')}</span>
+                        <span className="text-white text-xs font-medium opacity-70 text-start">{t('hotelDetails:location.destination', 'Destination')}</span>
                         <input
                            type="text"
                            value={editableDestination}
@@ -680,7 +689,7 @@ export const HotelDetails: React.FC = () => {
                                setShowAutocomplete(true);
                              }
                            }}
-                           placeholder={loading ? "Loading..." : "Destination"}
+                           placeholder={loading ? t('hotelDetails:loading', "Loading...") : t('hotelDetails:location.destination', "Destination")}
                            className="bg-transparent border-none p-0 text-white text-sm font-semibold placeholder-white/50 focus:ring-0 w-full truncate focus:outline-none"
                         />
 
@@ -690,7 +699,7 @@ export const HotelDetails: React.FC = () => {
                                 <div className="p-2">
                                   {autocompleteResults.regions.length > 0 && (
                                     <>
-                                      <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase">Regions</div>
+                                      <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase">{t('hotelDetails:location.regions', 'Regions')}</div>
                                       {autocompleteResults.regions.map(r => (
                                         <button key={r.id} onClick={() => handleSelectSuggestion(r)} className="w-full text-left px-3 py-2 hover:bg-orange-50 rounded-lg text-gray-800 text-sm font-medium flex items-center gap-2">
                                           <MapPinIcon className="w-4 h-4 text-orange-500" /> {r.name}
@@ -700,7 +709,7 @@ export const HotelDetails: React.FC = () => {
                                   )}
                                   {autocompleteResults.hotels.length > 0 && (
                                     <>
-                                      <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase mt-2">Hotels</div>
+                                      <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase mt-2">{t('hotelDetails:location.hotels', 'Hotels')}</div>
                                       {autocompleteResults.hotels.map(h => (
                                         <button key={h.id} onClick={() => handleSelectSuggestion(h)} className="w-full text-left px-3 py-2 hover:bg-orange-50 rounded-lg text-gray-800 text-sm font-medium flex items-center gap-2">
                                           <BuildingOffice2Icon className="w-4 h-4 text-gray-500" /> {h.name}
@@ -715,10 +724,10 @@ export const HotelDetails: React.FC = () => {
                       </div>
 
                       {/* Dates - Unified Range Picker */}
-                      <div className="flex-[2] px-4 border-r border-white/20 flex items-center gap-2">
+                      <div className="flex-[2] px-4 border-r rtl:border-l border-white/20 flex items-center gap-2">
                          <ClockIcon className="h-4 w-4 text-white/80 shrink-0" />
                          <div className="flex flex-col w-full">
-                            <span className="text-white text-xs font-medium opacity-70">Check-in - Check-out</span>
+                            <span className="text-white text-xs font-medium opacity-70">{t('hotelDetails:dates.checkInCheckOut', 'Check-in - Check-out')}</span>
                             <div className="w-full">
                                <DatePicker
                                   selected={checkInDate}
@@ -739,10 +748,10 @@ export const HotelDetails: React.FC = () => {
                                         value={
                                            checkInDate && checkOutDate
                                            ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${checkOutDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
-                                           : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - Select checkout` : 'Select dates')
+                                           : (checkInDate ? `${checkInDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${t('hotelDetails:dates.selectCheckout', 'Select checkout')}` : t('hotelDetails:dates.selectDates', 'Select dates'))
                                         }
                                         readOnly
-                                        className="bg-transparent border-none p-0 text-white text-sm font-semibold w-full focus:ring-0 cursor-pointer"
+                                        className="bg-transparent border-none p-0 text-white text-sm font-semibold w-full focus:ring-0 cursor-pointer" dir="ltr"
                                      />
                                   }
                                />
@@ -758,9 +767,9 @@ export const HotelDetails: React.FC = () => {
                          >
                             <UserIcon className="h-4 w-4 text-white/80 shrink-0" />
                             <div className="flex flex-col">
-                               <span className="text-white text-xs font-medium opacity-70">{t('common.guests', 'Guests')}</span>
+                               <span className="text-white text-xs font-medium opacity-70">{t('hotelDetails:guests.label', 'Guests')}</span>
                                <span className="text-white text-sm font-semibold truncate">
-                                  {guestCounts.adults + guestCounts.children} Guests, {guestCounts.rooms} Rm
+                                  {guestCounts.adults + guestCounts.children} {t('hotelDetails:guests.label', 'Guests')}, {guestCounts.rooms} {t('hotelDetails:guests.rooms', 'Rm')}
                                </span>
                             </div>
                          </button>
@@ -775,7 +784,7 @@ export const HotelDetails: React.FC = () => {
                                <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 text-gray-800 animate-fadeIn">
                                   {/* Rooms */}
                                   <div className="flex justify-between items-center mb-4">
-                                     <span className="font-medium text-sm">Rooms</span>
+                                     <span className="font-medium text-sm">{t('hotelDetails:guests.rooms', 'Rooms')}</span>
                                      <div className="flex items-center gap-3">
                                         <button
                                            onClick={() => setGuestCounts(prev => ({...prev, rooms: Math.max(1, prev.rooms - 1)}))}
@@ -794,7 +803,7 @@ export const HotelDetails: React.FC = () => {
                                   </div>
                                   {/* Adults */}
                                   <div className="flex justify-between items-center mb-4">
-                                     <span className="font-medium text-sm">Adults</span>
+                                     <span className="font-medium text-sm">{t('hotelDetails:guests.adults', 'Adults')}</span>
                                      <div className="flex items-center gap-3">
                                         <button
                                            onClick={() => setGuestCounts(prev => ({...prev, adults: Math.max(1, prev.adults - 1)}))}
@@ -814,7 +823,7 @@ export const HotelDetails: React.FC = () => {
                                   {/* Children */}
                                   <div className="mb-0">
                                      <div className="flex justify-between items-center">
-                                        <span className="font-medium text-sm">Children</span>
+                                        <span className="font-medium text-sm">{t('hotelDetails:guests.children', 'Children')}</span>
                                         <div className="flex items-center gap-3">
                                            <button
                                               onClick={() => setGuestCounts(prev => ({
@@ -843,11 +852,11 @@ export const HotelDetails: React.FC = () => {
                                      {/* Child Age Selectors */}
                                      {guestCounts.childrenAges && guestCounts.childrenAges.length > 0 && (
                                        <div className="mt-4 pt-3 border-t border-gray-100">
-                                         <p className="text-xs text-gray-500 mb-2">Select age at check-in:</p>
+                                         <p className="text-xs text-gray-500 mb-2">{t('hotelDetails:guests.ages', 'Select age at check-in')}:</p>
                                          <div className={`grid ${guestCounts.childrenAges.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
                                            {guestCounts.childrenAges.map((age, index) => (
                                              <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                                               <span className="text-xs text-gray-500 whitespace-nowrap">Child {index + 1}</span>
+                                               <span className="text-xs text-gray-500 whitespace-nowrap">{t('hotelDetails:guests.children', 'Child')} {index + 1}</span>
                                                <select
                                                  value={age}
                                                  onChange={(e) => {
@@ -874,7 +883,7 @@ export const HotelDetails: React.FC = () => {
                                      className="w-full mt-4 bg-orange-500 text-white text-xs font-bold py-2 rounded-lg hover:bg-orange-600 transition-colors"
                                      onClick={() => setShowGuestPopover(false)}
                                   >
-                                     Done
+                                     {t('common.done', 'Done')}
                                   </button>
                                </div>
                             </>
@@ -885,7 +894,7 @@ export const HotelDetails: React.FC = () => {
                       <button
                         onClick={handleUpdateSearch}
                         className="bg-white text-orange-600 p-2 rounded-full hover:bg-orange-50 transition-colors ml-2 shadow-sm shrink-0"
-                        title={t('common.search', 'Update Search')}
+                        title={t('common:common.search', 'Update Search')}
                       >
                          <MagnifyingGlassIcon className="w-5 h-5 stroke-[2.5]" />
                       </button>
@@ -900,11 +909,11 @@ export const HotelDetails: React.FC = () => {
                         onClick={() => setIsSearchExpanded(true)}
                         className="bg-white rounded-lg p-3 shadow-lg border-2 border-orange-500 cursor-pointer hover:shadow-xl transition-all"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 rtl:flex-row-reverse">
                           <MagnifyingGlassIcon className="h-5 w-5 text-gray-600 shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-gray-900 truncate text-sm">{editableDestination || 'Where to?'}</div>
-                            <div className="text-xs text-gray-600">
+                            <div className="font-bold text-gray-900 truncate text-sm text-start">{editableDestination || 'Where to?'}</div>
+                            <div className="text-xs text-gray-600 text-start">
                                {checkInDate && checkOutDate ? (checkInDate.toLocaleDateString() + ' - ' + checkOutDate.toLocaleDateString()) : 'Add dates'} • {guestCounts.adults} Ad, {guestCounts.children} Ch
                             </div>
                           </div>
@@ -912,11 +921,11 @@ export const HotelDetails: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    /* Full Screen Mobile Modal */
                     <div className="fixed inset-0 z-[100] bg-white overflow-y-auto">
+                         {/* Full Screen Mobile Modal */}
                       <div className="p-4">
                          <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Search</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">{t('common:common.search', 'Search')}</h2>
                             <button
                               onClick={() => setIsSearchExpanded(false)}
                               className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
@@ -927,7 +936,7 @@ export const HotelDetails: React.FC = () => {
 
                          {/* Destination */}
                          <div className="mb-6 relative">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Destination</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('hotelDetails:location.destination', 'Destination')}</label>
                             <div className="relative">
                                <input
                                   type="text"
@@ -967,13 +976,13 @@ export const HotelDetails: React.FC = () => {
                          {/* Dates - Click to open modal */}
                          <div className="grid grid-cols-2 gap-3 mb-6">
                             <div onClick={() => setShowMobileDateModal(true)}>
-                               <label className="block text-sm font-semibold text-gray-700 mb-2">Check-in date</label>
+                               <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.checkIn', 'Check-in date')}</label>
                                <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 font-medium bg-gray-50 flex items-center">
                                   {checkInDate ? checkInDate.toLocaleDateString() : 'Select date'}
                                </div>
                             </div>
                             <div onClick={() => setShowMobileDateModal(true)}>
-                               <label className="block text-sm font-semibold text-gray-700 mb-2">Check-out date</label>
+                               <label className="block text-sm font-semibold text-gray-700 mb-2">{t('search.checkOut', 'Check-out date')}</label>
                                <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 font-medium bg-gray-50 flex items-center">
                                   {checkOutDate ? checkOutDate.toLocaleDateString() : 'Select date'}
                                </div>
@@ -982,10 +991,10 @@ export const HotelDetails: React.FC = () => {
 
                          {/* Guests */}
                          <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Guests</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">{t('hotelDetails:guests.label', 'Guests')}</label>
                             <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
                                <div className="flex justify-between items-center mb-4">
-                                  <span className="font-bold text-gray-900">Adults</span>
+                                  <span className="font-bold text-gray-900">{t('hotelDetails:guests.adults', 'Adults')}</span>
                                   <div className="flex items-center gap-4">
                                      <button onClick={() => setGuestCounts(p => ({...p, adults: Math.max(1, p.adults - 1)}))} className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-gray-600"><MinusIcon className="w-4 h-4" /></button>
                                      <span className="font-bold text-lg">{guestCounts.adults}</span>
@@ -993,7 +1002,7 @@ export const HotelDetails: React.FC = () => {
                                   </div>
                                </div>
                                <div className="flex justify-between items-center">
-                                  <span className="font-bold text-gray-900">Children</span>
+                                  <span className="font-bold text-gray-900">{t('hotelDetails:guests.children', 'Children')}</span>
                                   <div className="flex items-center gap-4">
                                      <button onClick={() => setGuestCounts(p => ({...p, children: Math.max(0, p.children - 1), childrenAges: p.childrenAges.slice(0, -1)}))} className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-gray-600"><MinusIcon className="w-4 h-4" /></button>
                                      <span className="font-bold text-lg">{guestCounts.children}</span>
@@ -1011,7 +1020,7 @@ export const HotelDetails: React.FC = () => {
                            }}
                            className="w-full bg-[#E67915] text-white font-bold py-4 rounded-xl shadow-lg text-lg active:scale-95 transition-transform"
                          >
-                           Update Search
+                           {t('common:common.search', 'Update Search')}
                          </button>
 
                       </div>
@@ -1035,9 +1044,9 @@ export const HotelDetails: React.FC = () => {
                </div>
                {!user ? (
                   <>
-                     <Link to="/login" className="text-sm font-medium hover:text-orange-100">Sign In</Link>
+                     <Link to="/login" className="text-sm font-medium hover:text-orange-100">{t('common:nav.login', 'Sign In')}</Link>
                      <Link to="/register" className="bg-white text-orange-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm hover:bg-orange-50 transition-colors">
-                        Register
+                        {t('common:nav.register', 'Register')}
                      </Link>
                   </>
                ) : (
@@ -1081,7 +1090,7 @@ export const HotelDetails: React.FC = () => {
                     </>
                   )}
                   <span className="mx-1">•</span>
-                  <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('hotels.showOnMap', 'Show on map')}</button>
+                  <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('common:hotels.showOnMap', 'Show on map')}</button>
                </div>
 
               <div className="flex items-center gap-4">
@@ -1095,7 +1104,7 @@ export const HotelDetails: React.FC = () => {
                         {hotel.reviewScoreWord || (hotel.reviewScore >= 9 ? 'Excellent' : hotel.reviewScore >= 8 ? 'Very Good' : hotel.reviewScore >= 7 ? 'Good' : 'Pleasant')}
                      </span>
                      <span className="text-gray-500 text-sm">
-                        {hotel.reviewCount} {t('hotels.reviews', 'reviews')}
+                        {hotel.reviewCount} {t('common:hotels.reviews', 'reviews')}
                      </span>
                      <div className="h-4 w-px bg-gray-300 mx-2"></div>
                    </>
@@ -1104,7 +1113,7 @@ export const HotelDetails: React.FC = () => {
                  {!hotel.reviewScore && !hotel.rating && (
                    <>
                      <span className="text-gray-500 text-sm italic">
-                        {t('hotels.noReviews', 'No reviews yet')}
+                        {t('common:hotels.noReviews', 'No reviews yet')}
                      </span>
                      <div className="h-4 w-px bg-gray-300 mx-2"></div>
                    </>
@@ -1130,14 +1139,21 @@ export const HotelDetails: React.FC = () => {
            {hotel.rates && hotel.rates.length > 0 && (
            <div className="hidden md:flex flex-col items-end">
               <div className="flex items-baseline mb-2">
-                 <span className="text-gray-500 text-lg mr-2">{t('hotels.from', 'From')}</span>
-                 <span className="text-3xl font-bold text-black">{currencySymbol} {lowestPrice.toFixed(0)}</span>
+                 <span className="text-gray-500 text-lg ltr:mr-2 rtl:ml-2">{t('common:hotels.from', 'From')}</span>
+                 <span className="text-3xl font-bold text-black">
+                    {new Intl.NumberFormat(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                       style: 'currency',
+                       currency: currency || 'USD',
+                       minimumFractionDigits: 0,
+                       maximumFractionDigits: 0,
+                    }).format(lowestPrice)}
+                 </span>
               </div>
               <button
                  onClick={() => document.getElementById('room-selection')?.scrollIntoView({ behavior: 'smooth' })}
                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-colors"
               >
-                 {t('hotels.selectRoom', 'Select a room')}
+                 {t('common:hotels.selectRoom', 'Select a room')}
               </button>
            </div>
            )}
@@ -1185,7 +1201,7 @@ export const HotelDetails: React.FC = () => {
                    {idx === 3 && hotelImages.length > 5 && (
                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex flex-col items-center justify-center text-white backdrop-blur-[1px]">
                         <span className="text-2xl font-bold">+{hotelImages.length - 5}</span>
-                        <span className="text-sm font-medium">{t('hotels.photos', 'Photos')}</span>
+                        <span className="text-sm font-medium">{t('common:hotels.photos', 'Photos')}</span>
                      </div>
                    )}
                  </div>
@@ -1198,7 +1214,7 @@ export const HotelDetails: React.FC = () => {
                    className="bg-white/90 backdrop-blur text-gray-800 px-3 py-1.5 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2"
                  >
                    <PhotoIcon className="w-4 h-4" />
-                   {t('hotels.viewAll', 'View All')}
+                   {t('common:common.viewAll', 'View All')}
                  </button>
               </div>
 
@@ -1216,7 +1232,7 @@ export const HotelDetails: React.FC = () => {
         <div className="bg-gradient-to-r from-orange-400 to-orange-300 rounded-lg p-3 md:p-4 mb-6 md:mb-8 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm relative overflow-hidden gap-3 md:gap-0">
            <div className="relative z-10 flex flex-col md:flex-row md:items-center text-white gap-2 md:gap-4">
               <span className="bg-red-500 text-white font-bold px-3 py-1 rounded text-sm uppercase shadow-sm w-fit animate-pulse">
-                {t('common.joinNow', 'Join now')}
+                {t('common:common.joinNow', 'Join now')}
               </span>
               <span className="font-bold text-base md:text-lg leading-snug">
                 {t('hotels.exclusivePrices', 'Exclusive prices for Gaith Tours members')}
@@ -1239,22 +1255,22 @@ export const HotelDetails: React.FC = () => {
         {/* Amenities Section */}
         <div className="mb-6 md:mb-10">
            <div className="flex justify-between items-center mb-4 md:mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">{t('hotels.amenities', 'Amenities')}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('common:hotels.amenities', 'Amenities')}</h2>
               {hotel.amenities && hotel.amenities.length > 12 && (
                 <button
                   onClick={() => setShowAmenitiesModal(true)}
                   className="text-orange-500 font-bold hover:underline"
                 >
-                  {t('common.viewAll', 'View All')}
+                  {t('common:common.viewAll', 'View All')}
                 </button>
               )}
            </div>
 
-           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-8">
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-4 gap-x-4 md:gap-x-8">
               {hotel.amenities?.slice(0, 12).map((amenity, idx) => (
-                 <div key={idx} className="flex items-center text-gray-700">
-                    <div className="w-8">{getAmenityIcon(amenity)}</div>
-                    <span className="text-sm font-medium">{amenity}</span>
+                 <div key={idx} className="flex items-center text-gray-700 min-w-0">
+                    <div className="w-6 md:w-8 shrink-0">{getAmenityIcon(amenity)}</div>
+                    <span className="text-xs md:text-sm font-medium truncate">{amenity}</span>
                  </div>
               ))}
            </div>
@@ -1263,7 +1279,7 @@ export const HotelDetails: React.FC = () => {
                 onClick={() => setShowAmenitiesModal(true)}
                 className="mt-4 text-orange-500 font-medium hover:underline text-sm"
               >
-                 +{hotel.amenities.length - 12} {t('common.more', 'more')}
+                 +{hotel.amenities.length - 12} {t('common:common.more', 'more')}
               </button>
            )}
         </div>
@@ -1275,7 +1291,7 @@ export const HotelDetails: React.FC = () => {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
              <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col relative animate-fadeIn">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                   <h3 className="text-2xl font-bold text-gray-800">{t('hotels.amenities', 'Amenities')}</h3>
+                   <h3 className="text-2xl font-bold text-gray-800">{t('common:hotels.amenities', 'Amenities')}</h3>
                    <button
                       onClick={() => setShowAmenitiesModal(false)}
                       className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
@@ -1312,7 +1328,7 @@ export const HotelDetails: React.FC = () => {
         <div className="mb-8 border-2 border-orange-400 rounded-lg p-1 flex flex-col md:flex-row bg-white">
            {/* Date Picker Section */}
            <div className="flex-1 flex items-center px-4 py-2 border-b md:border-b-0 md:border-r border-gray-100 relative">
-              <CalendarIcon className="w-5 h-5 text-gray-500 mr-3" />
+              <CalendarIcon className="w-5 h-5 text-gray-500 ltr:mr-3 rtl:ml-3" />
               <div className="w-full relative">
                  {/* Mobile Overlay to trigger Modal */}
                  <div
@@ -1320,33 +1336,51 @@ export const HotelDetails: React.FC = () => {
                     onClick={() => setShowMobileDateModal(true)}
                  ></div>
 
-                 <DatePicker
-                    selected={checkInDate}
-                    onChange={(dates: [Date | null, Date | null]) => {
-                       const [start, end] = dates;
-                       setCheckInDate(start);
-                       setCheckOutDate(end);
-                    }}
-                    startDate={checkInDate}
-                    endDate={checkOutDate}
-                    selectsRange
-                    minDate={new Date()}
-                    placeholderText="Check-in - Check-out"
-                    className="w-full border-none p-0 text-gray-900 font-medium focus:ring-0 text-sm placeholder-gray-400"
-                    dateFormat="EEE, MMM d"
-                 />
+                  <DatePicker
+                     selected={checkInDate}
+                     onChange={(dates: [Date | null, Date | null]) => {
+                        const [start, end] = dates;
+                        setCheckInDate(start);
+                        setCheckOutDate(end);
+                     }}
+                     startDate={checkInDate}
+                     endDate={checkOutDate}
+                     selectsRange
+                     minDate={new Date()}
+                     placeholderText={t('hotelDetails:dates.checkInCheckOut', "Check-in - Check-out")}
+                     className="w-full border-none p-0 text-gray-900 font-medium focus:ring-0 text-sm placeholder-gray-400"
+                     dateFormat="EEE, MMM d"
+                     locale={i18n.language === 'ar' ? 'ar' : 'en'}
+                     customInput={
+                        <input
+                           readOnly
+                           className="w-full border-none p-0 text-gray-900 font-medium focus:ring-0 text-sm placeholder-gray-400 bg-transparent cursor-pointer"
+                           value={
+                              checkInDate && checkOutDate
+                                 ? i18n.language === 'ar'
+                                    ? `${format(checkInDate, 'EEEE، d MMMM', { locale: ar })} - ${format(checkOutDate, 'EEEE، d MMMM', { locale: ar })}`
+                                    : `${format(checkInDate, 'EEE, MMM d', { locale: en })} - ${format(checkOutDate, 'EEE, MMM d', { locale: en })}`
+                                 : (checkInDate
+                                    ? i18n.language === 'ar'
+                                       ? `${format(checkInDate, 'EEEE، d MMMM', { locale: ar })} - ${t('hotelDetails:dates.selectCheckout', 'Select checkout')}`
+                                       : `${format(checkInDate, 'EEE, MMM d', { locale: en })} - ${t('hotelDetails:dates.selectCheckout', 'Select checkout')}`
+                                    : '')
+                           }
+                        />
+                     }
+                  />
               </div>
            </div>
 
            {/* Guest Selector Section */}
            <div className="flex-1 flex items-center px-4 py-2 relative">
-             <UserIcon className="w-5 h-5 text-gray-500 mr-3" />
+             <UserIcon className="w-5 h-5 text-gray-500 ltr:mr-3 rtl:ml-3" />
              <div className="flex-1">
                 <button
                   onClick={() => setShowGuestPopover(!showGuestPopover)}
                   className="w-full text-left font-medium text-sm text-gray-900"
                 >
-                   {guestCounts.adults} adults · {guestCounts.children} children · {guestCounts.rooms} room
+                   {guestCounts.adults} {t('hotelDetails:guests.adults', 'adults')} · {guestCounts.children} {t('hotelDetails:guests.children', 'children')} · {guestCounts.rooms} {t('hotelDetails:guests.rooms', 'room')}
                 </button>
              </div>
              <ChevronDownIcon className="w-4 h-4 text-gray-400 ml-2" />
@@ -1357,7 +1391,7 @@ export const HotelDetails: React.FC = () => {
                    <div className="space-y-4">
                       {/* Adults */}
                       <div className="flex justify-between items-center">
-                         <span className="font-semibold text-sm">Adults</span>
+                         <span className="font-semibold text-sm">{t('hotelDetails:guests.adults', 'Adults')}</span>
                          <div className="flex items-center gap-3">
                             <button onClick={() => setGuestCounts(p => ({...p, adults: Math.max(1, p.adults - 1)}))} className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-gray-50"><MinusIcon className="w-3 h-3" /></button>
                             <span className="w-4 text-center font-bold text-sm">{guestCounts.adults}</span>
@@ -1366,7 +1400,7 @@ export const HotelDetails: React.FC = () => {
                       </div>
                       {/* Children */}
                       <div className="flex justify-between items-center">
-                         <span className="font-semibold text-sm">Children</span>
+                         <span className="font-semibold text-sm">{t('hotelDetails:guests.children', 'Children')}</span>
                          <div className="flex items-center gap-3">
                             <button onClick={() => setGuestCounts(p => ({
                                 ...p,
@@ -1385,11 +1419,11 @@ export const HotelDetails: React.FC = () => {
                       {/* Child Ages */}
                       {guestCounts.children > 0 && (
                           <div className="pt-2 border-t border-gray-100 max-h-32 overflow-y-auto">
-                              <p className="text-xs font-semibold text-gray-500 mb-2">Age at check-in</p>
+                              <p className="text-xs font-semibold text-gray-500 mb-2">{t('hotelDetails:guests.ages', 'Age at check-in')}</p>
                               <div className="grid grid-cols-2 gap-2">
                                   {guestCounts.childrenAges?.map((age, idx) => (
                                       <div key={idx} className="flex flex-col">
-                                          <label className="text-[10px] text-gray-500 mb-0.5">Child {idx + 1}</label>
+                                          <label className="text-[10px] text-gray-500 mb-0.5">{t('hotelDetails:guests.children', 'Child')} {idx + 1}</label>
                                           <select
                                             value={age}
                                             onChange={(e) => {
@@ -1400,7 +1434,7 @@ export const HotelDetails: React.FC = () => {
                                             className="w-full text-xs py-1 px-1 border border-gray-200 rounded focus:border-orange-500 focus:ring-0"
                                           >
                                               {[...Array(18)].map((_, i) => (
-                                                  <option key={i} value={i}>{i} y.o</option>
+                                                  <option key={i} value={i}>{i} {i === 1 ? t('hotelDetails:guests.yearAbbr', 'yr') : t('hotelDetails:guests.yearsAbbr', 'yrs')}</option>
                                               ))}
                                           </select>
                                       </div>
@@ -1410,14 +1444,14 @@ export const HotelDetails: React.FC = () => {
                       )}
                       {/* Rooms */}
                       <div className="flex justify-between items-center">
-                         <span className="font-semibold text-sm">Rooms</span>
+                         <span className="font-semibold text-sm">{t('hotelDetails:guests.rooms', 'Rooms')}</span>
                          <div className="flex items-center gap-3">
                             <button onClick={() => setGuestCounts(p => ({...p, rooms: Math.max(1, p.rooms - 1)}))} className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-gray-50"><MinusIcon className="w-3 h-3" /></button>
                             <span className="w-4 text-center font-bold text-sm">{guestCounts.rooms}</span>
                             <button onClick={() => setGuestCounts(p => ({...p, rooms: Math.min(10, p.rooms + 1)}))} className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-gray-50"><PlusIcon className="w-3 h-3" /></button>
                          </div>
                       </div>
-                      <button onClick={() => setShowGuestPopover(false)} className="w-full bg-orange-500 text-white font-bold py-2 rounded-lg text-sm mt-2">Done</button>
+                      <button onClick={() => setShowGuestPopover(false)} className="w-full bg-orange-500 text-white font-bold py-2 rounded-lg text-sm mt-2">{t('common.done', 'Done')}</button>
                    </div>
                 </div>
              )}
@@ -1445,14 +1479,14 @@ export const HotelDetails: React.FC = () => {
              }}
              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 md:py-0 md:rounded-r-md rounded-b-md md:rounded-bl-none transition-colors whitespace-nowrap"
            >
-              {t('common.changeSearch', 'Change search')}
+              {t('common:common.changeSearch', 'Change search')}
            </button>
         </div>
 
         {/* Room Selection */}
         <div id="room-selection" className="mb-12">
            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">{t('hotels.availableRooms', 'Available Rooms')}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('common:hotels.availableRooms', 'Available Rooms')}</h2>
            </div>
 
            {Object.keys(groupedRates).length > 0 ? (
@@ -1546,7 +1580,7 @@ export const HotelDetails: React.FC = () => {
                  onClick={handleBookNow}
                  className="bg-orange-500 text-white font-bold py-2 px-6 rounded-lg shadow-sm"
               >
-                 {t('common.reserve', 'Reserve')}
+                 {t('common:common.reserve', 'Reserve')}
               </button>
            </div>
         )}
@@ -1558,8 +1592,8 @@ export const HotelDetails: React.FC = () => {
                 onClick={handleBookNow}
                 className="bg-orange-500 hover:bg-orange-600 text-white text-lg font-bold py-4 px-8 rounded-full shadow-2xl transition-transform hover:scale-105 flex items-center gap-2 animate-fadeIn"
              >
-                <span>{t('common.reserve', 'Reserve')} ({selectedRates.size})</span>
-                <ArrowLeftIcon className="w-5 h-5 rotate-180" />
+                <span>{t('common:common.reserve', 'Reserve')} ({selectedRates.size})</span>
+                <ArrowLeftIcon className={`w-5 h-5 ${isRTL ? '' : 'rotate-180'}`} />
              </button>
           </div>
         )}
@@ -1618,7 +1652,7 @@ export const HotelDetails: React.FC = () => {
       {showMobileDateModal && (
         <div className="fixed inset-0 z-[1000] bg-white flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-bold text-gray-900">Select Dates</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('hotelDetails:dates.selectDates', 'Select Dates')}</h2>
             <button
                 onClick={() => setShowMobileDateModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -1645,10 +1679,10 @@ export const HotelDetails: React.FC = () => {
                 <div className="mt-6 text-sm text-gray-500 text-center">
                 {checkInDate && checkOutDate ? (
                     <span className="font-medium text-green-600">
-                        {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} nights selected
+                        {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} {t('hotelDetails:dates.nightsSelected', 'nights selected')}
                     </span>
                 ) : (
-                    "Select check-in and check-out dates"
+                    t('hotelDetails:dates.selectCheckInCheckOut', 'Select check-in and check-out dates')
                 )}
                 </div>
             </div>
@@ -1658,7 +1692,7 @@ export const HotelDetails: React.FC = () => {
                 onClick={() => setShowMobileDateModal(false)}
                 className="w-full bg-[#E67915] text-white font-bold py-3.5 rounded-xl hover:bg-orange-600 active:scale-95 transition-all shadow-lg text-lg"
             >
-                Done
+                {t('common.done', 'Done')}
             </button>
             </div>
         </div>

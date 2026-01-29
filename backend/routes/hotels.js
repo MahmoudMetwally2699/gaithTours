@@ -60,6 +60,7 @@ router.get('/suggested', async (req, res) => {
     let destination = null;
     let source = 'fallback'; // history, location, fallback
     const currency = req.query.currency || 'USD';
+    const language = req.query.language || 'en';
 
     // 1. Try to get user from token
     let token;
@@ -94,8 +95,8 @@ router.get('/suggested', async (req, res) => {
 
     console.log(`💡 Getting suggestions for: ${destination} (Source: ${source})`);
 
-    // Check cache first (include currency in cache key)
-    const cacheKey = `suggestions:${destination}:${currency}`;
+    // Check cache first (include currency and language in cache key)
+    const cacheKey = `suggestions:${destination}:${currency}:${language}`;
     const cachedData = getCachedResults(cacheKey);
 
     if (cachedData) {
@@ -117,7 +118,7 @@ router.get('/suggested', async (req, res) => {
     const dates = rateHawkService.constructor.getDefaultDates(daysOffset, 1);
 
     try {
-      suggestions = await rateHawkService.suggest(destination);
+      suggestions = await rateHawkService.suggest(destination, language);
 
       if (suggestions.regions.length > 0 || suggestions.hotels.length > 0) {
         // Pick first region or hotel
@@ -136,6 +137,7 @@ router.get('/suggested', async (req, res) => {
           ...dates,
           adults: 2,
           currency: currency,
+          language: language,
           enrichmentLimit: 0, // Local DB enrichment - no limit needed
           refreshPrices: 0 // DISABLED: Causes rate limiting with 20 parallel calls
         });
