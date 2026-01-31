@@ -17,6 +17,7 @@ import { AnalyticsTab } from '../components/AdminDashboard/AnalyticsTab';
 import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
 import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalBannersTab';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
+import { ClientDetailModal } from '../components/AdminDashboard/ClientDetailModal';
 import {
   UserGroupIcon,
   ClipboardDocumentListIcon,
@@ -188,24 +189,33 @@ export const AdminDashboard: React.FC = () => {
   // Clients state
   const [clients, setClients] = useState<Client[]>([]);
   const [clientSearch, setClientSearch] = useState('');
-  const [clientPage] = useState(1); // TODO: Implement pagination
+  const [clientPage, setClientPage] = useState(1);
+  const [clientsPerPage, setClientsPerPage] = useState(10);
+  const [clientsPagination, setClientsPagination] = useState<{ currentPage: number; totalPages: number; totalClients: number; hasNext: boolean; hasPrev: boolean } | null>(null);
   const [isCreatingClient, setIsCreatingClient] = useState(false);
 
   // Bookings state
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingStatus, setBookingStatus] = useState('');
-  const [bookingPage] = useState(1); // TODO: Implement pagination
+  const [bookingPage, setBookingPage] = useState(1);
+  const [bookingsPerPage, setBookingsPerPage] = useState(10);
+  const [bookingsPagination, setBookingsPagination] = useState<{ currentPage: number; totalPages: number; totalBookings: number; hasNext: boolean; hasPrev: boolean } | null>(null);
 
   // Invoices state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoiceStatus, setInvoiceStatus] = useState('');
-  const [invoicePage] = useState(1); // TODO: Implement pagination
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [invoicesPerPage, setInvoicesPerPage] = useState(10);
+  const [invoicesPagination, setInvoicesPagination] = useState<{ currentPage: number; totalPages: number; totalInvoices: number; hasNext: boolean; hasPrev: boolean } | null>(null);
 
   // Payments state
   const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentStatus, setPaymentStatus] = useState('');
-  const [paymentPage] = useState(1); // TODO: Implement pagination  // Selected items for actions
-  // const [selectedClient, setSelectedClient] = useState<Client | null>(null); // TODO: Implement client details
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentsPerPage, setPaymentsPerPage] = useState(10);
+  const [paymentsPagination, setPaymentsPagination] = useState<{ currentPage: number; totalPages: number; totalPayments: number; hasNext: boolean; hasPrev: boolean } | null>(null);  // Selected items for actions
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showClientDetailModal, setShowClientDetailModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -232,14 +242,16 @@ export const AdminDashboard: React.FC = () => {
       setLoading(true);
       const response = await adminAPI.getClients({
         page: clientPage,
+        limit: clientsPerPage,
         search: clientSearch
       });
       setClients(response.data.data.clients);
+      setClientsPagination(response.data.data.pagination);
     } catch (error) {
       toast.error(t('dashboard.messages.fetchClientsFailed'));
     } finally {
       setLoading(false);
-    }  }, [clientPage, clientSearch, t]);
+    }  }, [clientPage, clientsPerPage, clientSearch, t]);
 
   const handleCreateClient = async (clientData: ClientFormData) => {
     try {
@@ -261,45 +273,51 @@ export const AdminDashboard: React.FC = () => {
       setLoading(true);
       const response = await adminAPI.getBookings({
         page: bookingPage,
+        limit: bookingsPerPage,
         status: bookingStatus
       });
       setBookings(response.data.data.bookings);
+      setBookingsPagination(response.data.data.pagination);
     } catch (error) {
       toast.error(t('dashboard.messages.fetchBookingsFailed'));
     } finally {
       setLoading(false);
     }
-  }, [bookingPage, bookingStatus, t]);
+  }, [bookingPage, bookingsPerPage, bookingStatus, t]);
 
   const fetchInvoices = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminAPI.getInvoices({
         page: invoicePage,
+        limit: invoicesPerPage,
         status: invoiceStatus
       });
       setInvoices(response.data.data.invoices);
+      setInvoicesPagination(response.data.data.pagination);
     } catch (error) {
       toast.error(t('dashboard.messages.fetchInvoicesFailed'));
     } finally {
       setLoading(false);
     }
-  }, [invoicePage, invoiceStatus, t]);
+  }, [invoicePage, invoicesPerPage, invoiceStatus, t]);
 
   const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminAPI.getPayments({
         page: paymentPage,
+        limit: paymentsPerPage,
         status: paymentStatus
       });
       setPayments(response.data.data.payments);
+      setPaymentsPagination(response.data.data.pagination);
     } catch (error) {
       toast.error(t('dashboard.messages.fetchPaymentsFailed'));
     } finally {
       setLoading(false);
     }
-  }, [paymentPage, paymentStatus, t]);
+  }, [paymentPage, paymentsPerPage, paymentStatus, t]);
   // Wrapper functions to handle type conversion for tab components
   const handleSetSelectedBooking = (booking: any) => {
     setSelectedBooking(booking);
@@ -893,17 +911,23 @@ export const AdminDashboard: React.FC = () => {
             <ClientsTab
               clients={clients}
               clientSearch={clientSearch}
-              setClientSearch={setClientSearch}
+              setClientSearch={(search) => { setClientSearch(search); setClientPage(1); }}
               isRTL={isRTL}
               onCreateClient={handleCreateClient}
               isCreatingClient={isCreatingClient}
+              pagination={clientsPagination || undefined}
+              onPageChange={setClientPage}
+              itemsPerPage={clientsPerPage}
+              onItemsPerPageChange={(items) => { setClientsPerPage(items); setClientPage(1); }}
+              onViewClient={(client) => { setSelectedClient(client); setShowClientDetailModal(true); }}
+              onEditClient={(client) => { setSelectedClient(client); setShowClientDetailModal(true); }}
             />
           )}{/* Bookings Tab */}
           {activeTab === 'bookings' && (
             <BookingsTab
               bookings={bookings}
               bookingStatus={bookingStatus}
-              setBookingStatus={setBookingStatus}
+              setBookingStatus={(status) => { setBookingStatus(status); setBookingPage(1); }}
               isRTL={isRTL}
               setSelectedBooking={handleSetSelectedBooking}
               setShowBookingDetailsModal={setShowBookingDetailsModal}
@@ -913,17 +937,25 @@ export const AdminDashboard: React.FC = () => {
               clients={clients}
               onRefreshBookings={fetchBookings}
               isCreatingBooking={loading}
+              pagination={bookingsPagination || undefined}
+              onPageChange={setBookingPage}
+              itemsPerPage={bookingsPerPage}
+              onItemsPerPageChange={(items) => { setBookingsPerPage(items); setBookingPage(1); }}
             />
           )}{/* Payments Tab */}
           {activeTab === 'payments' && (
             <PaymentsTab
               payments={payments}
               paymentStatus={paymentStatus}
-              setPaymentStatus={setPaymentStatus}
+              setPaymentStatus={(status) => { setPaymentStatus(status); setPaymentPage(1); }}
               isRTL={isRTL}
               setSelectedPayment={handleSetSelectedPayment}
               setShowPaymentDetailsModal={setShowPaymentDetailsModal}
               getStatusBadge={handleGetStatusBadge}
+              pagination={paymentsPagination || undefined}
+              onPageChange={setPaymentPage}
+              itemsPerPage={paymentsPerPage}
+              onItemsPerPageChange={(items) => { setPaymentsPerPage(items); setPaymentPage(1); }}
             />
           )}{/* Profit Margins Tab */}
           {activeTab === 'margins' && (
@@ -1027,7 +1059,20 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      )}      {/* Booking Details Modal */}
+      )}
+
+      {/* Client Details Modal */}
+      <ClientDetailModal
+        isOpen={showClientDetailModal}
+        onClose={() => { setShowClientDetailModal(false); setSelectedClient(null); }}
+        client={selectedClient}
+        onUpdate={(updatedClient) => {
+          setClients(prev => prev.map(c => c._id === updatedClient._id ? updatedClient : c));
+        }}
+        isRTL={isRTL}
+      />
+
+      {/* Booking Details Modal */}
       {showBookingDetailsModal && selectedBooking && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-2 lg:p-4">
           <div className="relative top-2 lg:top-10 mx-auto p-0 border w-full max-w-6xl shadow-lg rounded-md bg-white">

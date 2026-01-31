@@ -1023,21 +1023,33 @@ router.post('/session/:sessionId/cancel', protect, async (req, res) => {
     }
 
     // Update all bookings to cancelled status
+    const rateHawkService = require('../utils/RateHawkService');
+
     const updateResults = await Promise.all(
       reservations.map(async (reservation) => {
         try {
-          // TODO: Call RateHawk cancellation API here
-          // const cancellationResult = await rateHawkService.cancelBooking(reservation.ratehawkOrderId);
+          // Call RateHawk cancellation API if reservation has a RateHawk order ID
+          let cancellationResult = null;
+          if (reservation.ratehawkOrderId) {
+            try {
+              cancellationResult = await rateHawkService.cancelBooking(reservation.ratehawkOrderId);
+              console.log(`RateHawk cancellation for ${reservation.ratehawkOrderId}:`, cancellationResult);
+            } catch (rhError) {
+              console.error(`RateHawk cancellation failed for ${reservation.ratehawkOrderId}:`, rhError.message);
+              // Continue with local cancellation even if RateHawk fails
+            }
+          }
 
           reservation.status = 'cancelled';
-          reservation.notes = (reservation.notes || '') + `\n[Cancelled as part of session ${sessionId}]`;
+          reservation.notes = (reservation.notes || '') + `\n[Cancelled as part of session ${sessionId}]${cancellationResult ? ` - RateHawk: ${cancellationResult.status || 'processed'}` : ''}`;
           await reservation.save();
 
           return {
             reservationId: reservation._id,
             ratehawkOrderId: reservation.ratehawkOrderId,
             status: 'cancelled',
-            roomType: reservation.roomType
+            roomType: reservation.roomType,
+            rateHawkCancellation: cancellationResult ? 'success' : 'not_applicable'
           };
         } catch (error) {
           return {

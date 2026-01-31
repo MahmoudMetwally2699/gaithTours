@@ -6,6 +6,7 @@ import {
   FunnelIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline';
+import { Pagination } from './Pagination';
 
 interface Invoice {
   _id: string;
@@ -20,6 +21,14 @@ interface Invoice {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalInvoices: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 interface InvoicesTabProps {
   invoices: Invoice[];
   invoiceStatus: string;
@@ -28,6 +37,10 @@ interface InvoicesTabProps {
   getStatusBadge: (status: string, type: string) => React.ReactNode;
   setSelectedInvoice: (invoice: Invoice) => void;
   setShowInvoiceDetailsModal: (show: boolean) => void;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
+  itemsPerPage?: number;
+  onItemsPerPageChange?: (items: number) => void;
 }
 
 export const InvoicesTab: React.FC<InvoicesTabProps> = ({
@@ -38,6 +51,10 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
   getStatusBadge,
   setSelectedInvoice,
   setShowInvoiceDetailsModal,
+  pagination,
+  onPageChange,
+  itemsPerPage = 10,
+  onItemsPerPageChange,
 }) => {
   const { t } = useTranslation();
 
@@ -256,6 +273,20 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
             </motion.div>
           ))}
         </div>
+
+        {/* Pagination */}
+        {pagination && onPageChange && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalInvoices}
+            itemsPerPage={itemsPerPage}
+            onPageChange={onPageChange}
+            onItemsPerPageChange={onItemsPerPageChange}
+            isRTL={isRTL}
+            itemName="invoices"
+          />
+        )}
       </div>
     </div>
   );

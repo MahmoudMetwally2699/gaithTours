@@ -9,6 +9,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import { AddClientModal, ClientFormData } from './AddClientModal';
+import { Pagination } from './Pagination';
 import toast from 'react-hot-toast';
 
 interface Client {
@@ -20,6 +21,14 @@ interface Client {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalClients: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 interface ClientsTabProps {
   clients: Client[];
   clientSearch: string;
@@ -27,6 +36,12 @@ interface ClientsTabProps {
   isRTL: boolean;
   onCreateClient: (clientData: ClientFormData) => Promise<void>;
   isCreatingClient: boolean;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
+  itemsPerPage?: number;
+  onItemsPerPageChange?: (items: number) => void;
+  onViewClient?: (client: Client) => void;
+  onEditClient?: (client: Client) => void;
 }
 
 export const ClientsTab: React.FC<ClientsTabProps> = ({
@@ -36,6 +51,12 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
   isRTL,
   onCreateClient,
   isCreatingClient,
+  pagination,
+  onPageChange,
+  itemsPerPage = 10,
+  onItemsPerPageChange,
+  onViewClient,
+  onEditClient,
 }) => {
   const { t } = useTranslation();
   const [showAddClientModal, setShowAddClientModal] = useState(false);
@@ -184,13 +205,13 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                   <td className="px-8 py-6">
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => {/* TODO: Implement client details view */}}
+                        onClick={() => onViewClient?.(client)}
                         className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                       >
                         <EyeIcon className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => {/* TODO: Implement client edit */}}
+                        onClick={() => onEditClient?.(client)}
                         className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                       >
                         <PencilIcon className="w-4 h-4" />
@@ -228,13 +249,13 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => {/* TODO: Implement client details view */}}
+                    onClick={() => onViewClient?.(client)}
                     className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                   >
                     <EyeIcon className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => {/* TODO: Implement client edit */}}
+                    onClick={() => onEditClient?.(client)}
                     className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                   >
                     <PencilIcon className="w-4 h-4" />
@@ -262,6 +283,20 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
               </div>
             </motion.div>          ))}
         </div>
+
+        {/* Pagination */}
+        {pagination && onPageChange && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalClients}
+            itemsPerPage={itemsPerPage}
+            onPageChange={onPageChange}
+            onItemsPerPageChange={onItemsPerPageChange}
+            isRTL={isRTL}
+            itemName="clients"
+          />
+        )}
       </div>
 
       {/* Add Client Modal */}

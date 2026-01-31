@@ -11,6 +11,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import { AdminBookingModal } from './AdminBookingModal';
+import { Pagination } from './Pagination';
 
 interface Client {
   _id: string;
@@ -35,6 +36,14 @@ interface Booking {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalBookings: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 interface BookingsTabProps {
   bookings: Booking[];
   bookingStatus: string;
@@ -48,6 +57,10 @@ interface BookingsTabProps {
   clients: Client[];
   onRefreshBookings: () => void;
   isCreatingBooking?: boolean;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
+  itemsPerPage?: number;
+  onItemsPerPageChange?: (items: number) => void;
 }
 
 export const BookingsTab: React.FC<BookingsTabProps> = ({
@@ -63,6 +76,10 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
   clients,
   onRefreshBookings,
   isCreatingBooking = false,
+  pagination,
+  onPageChange,
+  itemsPerPage = 10,
+  onItemsPerPageChange,
 }) => {
   const { t } = useTranslation();
   const [showCreateBookingModal, setShowCreateBookingModal] = useState(false);
@@ -334,6 +351,20 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
             </motion.div>
           ))}
         </div>
+
+        {/* Pagination */}
+        {pagination && onPageChange && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalBookings}
+            itemsPerPage={itemsPerPage}
+            onPageChange={onPageChange}
+            onItemsPerPageChange={onItemsPerPageChange}
+            isRTL={isRTL}
+            itemName="bookings"
+          />
+        )}
       </div>
 
       {/* Admin Booking Modal */}
