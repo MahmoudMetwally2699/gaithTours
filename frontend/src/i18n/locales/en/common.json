@@ -2,6 +2,11 @@
   "brand": {
     "name": "Gaith Tours"
   },
+  "auth": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone"
+  },
   "nav": {
     "home": "Home",
     "about": "About",
@@ -72,7 +77,11 @@
     "joinNow": "Join now",
     "viewAll": "View All",
     "more": "more",
-    "changeSearch": "Change search"
+    "changeSearch": "Change search",
+    "logout": "Sign Out",
+    "explore": "Explore Hotels",
+    "saveChanges": "Save Changes",
+    "guests": "guests"
   },
   "hotels": {
     "perNight": "/night",
@@ -142,6 +151,64 @@
     "units": {
       "m": "m",
       "km": "km"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "overview": "Overview",
+    "settings": "Settings",
+    "welcome": "Welcome back",
+    "manageAccount": "Manage your account and view your trips",
+    "totalTrips": "Total Trips",
+    "planNextTrip": "Plan your next trip",
+    "exploreDestinations": "Explore our curated list of top destinations for your next adventure.",
+    "information": "Personal Information",
+    "personalInfo": "Personal Information",
+    "reservations": "Reservations",
+    "invoices": "Invoices",
+    "favorites": "Favorites",
+    "noReservations": "No reservations yet",
+    "startBooking": "Start exploring hotels and book your next stay",
+    "startExploring": "Start exploring hotels and book your next stay",
+    "noInvoices": "No invoices yet",
+    "invoicesWillAppear": "Your invoices will appear here after booking",
+    "invoicesDescription": "Your invoices will appear here after booking",
+    "noFavorites": "No favorite hotels yet",
+    "addFavorites": "Save hotels you love to see them here",
+    "viewHotel": "View Hotel",
+    "savedHotel": "Saved hotel",
+    "removeFavorite": "Remove from favorites",
+    "hotelId": "Hotel ID",
+    "hotelName": "Hotel",
+    "amount": "Amount",
+    "dueDate": "Due Date",
+    "paidOn": "Paid on",
+    "guestName": "Guest",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "cancelReservation": "Cancel Reservation",
+    "bookedOn": "Booked on",
+    "loadingInvoices": "Loading invoices...",
+    "paidInvoices": "Paid",
+    "pendingInvoices": "Pending",
+    "totalAmount": "Total",
+    "payNow": "Pay Now",
+    "viewInvoice": "View Invoice",
+    "processing": "Processing...",
+    "nationality": "Nationality",
+    "selectNationality": "Select Nationality",
+    "paymentStatusValues": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "unpaid": "Unpaid"
+    }
+  },
+  "reservations": {
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "cancelled": "Cancelled"
     }
   }
 }

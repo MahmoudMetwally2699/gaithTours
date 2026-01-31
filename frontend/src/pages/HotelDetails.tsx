@@ -69,7 +69,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { GuestReviews } from '../components/GuestReviews';
 import { SimilarHotels } from '../components/SimilarHotels';
-import { ShareSaveActions, isFavorited, toggleFavorite } from '../components/ShareSaveActions';
+import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { CompareRooms } from '../components/CompareRooms';
 
 registerLocale('ar', ar);
@@ -1128,7 +1128,7 @@ export const HotelDetails: React.FC = () => {
                   hotelImage={hotel.images?.[0]}
                   isFavorite={isFavorite}
                   onToggleFavorite={() => {
-                    const newState = toggleFavorite(hotelId || '');
+                    const newState = toggleFavoriteWithData(hotelId || '', hotel.name, hotel.images?.[0]);
                     setIsFavorite(newState);
                   }}
                 />

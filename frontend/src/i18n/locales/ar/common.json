@@ -2,6 +2,11 @@
   "brand": {
     "name": "غيث تورز"
   },
+  "auth": {
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف"
+  },
   "nav": {
     "home": "الرئيسية",
     "about": "عن الشركة",
@@ -72,7 +77,11 @@
     "joinNow": "انضم الآن",
     "viewAll": "عرض الكل",
     "more": "المزيد",
-    "changeSearch": "تغيير البحث"
+    "changeSearch": "تغيير البحث",
+    "logout": "تسجيل الخروج",
+    "explore": "استكشف الفنادق",
+    "saveChanges": "حفظ التغييرات",
+    "guests": "ضيوف"
   },
   "hotels": {
     "perNight": "/ليلة",
@@ -142,6 +151,64 @@
     "units": {
       "m": "م",
       "km": "كم"
+    }
+  },
+  "profile": {
+    "title": "ملفي الشخصي",
+    "overview": "نظرة عامة",
+    "settings": "الإعدادات",
+    "welcome": "مرحباً بعودتك",
+    "manageAccount": "إدارة حسابك وعرض رحلاتك",
+    "totalTrips": "إجمالي الرحلات",
+    "planNextTrip": "خطط لرحلتك القادمة",
+    "exploreDestinations": "استكشف قائمتنا المختارة من أفضل الوجهات لمغامرتك القادمة.",
+    "information": "المعلومات الشخصية",
+    "personalInfo": "المعلومات الشخصية",
+    "reservations": "الحجوزات",
+    "invoices": "الفواتير",
+    "favorites": "المفضلة",
+    "noReservations": "لا توجد حجوزات بعد",
+    "startBooking": "ابدأ استكشاف الفنادق واحجز إقامتك القادمة",
+    "startExploring": "ابدأ استكشاف الفنادق واحجز إقامتك القادمة",
+    "noInvoices": "لا توجد فواتير بعد",
+    "invoicesWillAppear": "ستظهر فواتيرك هنا بعد الحجز",
+    "invoicesDescription": "ستظهر فواتيرك هنا بعد الحجز",
+    "noFavorites": "لا توجد فنادق مفضلة بعد",
+    "addFavorites": "احفظ الفنادق المفضلة لديك لمشاهدتها هنا",
+    "viewHotel": "عرض الفندق",
+    "savedHotel": "فندق محفوظ",
+    "removeFavorite": "إزالة من المفضلة",
+    "hotelId": "رقم الفندق",
+    "hotelName": "الفندق",
+    "amount": "المبلغ",
+    "dueDate": "تاريخ الاستحقاق",
+    "paidOn": "تم الدفع في",
+    "guestName": "الضيف",
+    "edit": "تعديل",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "cancelReservation": "إلغاء الحجز",
+    "bookedOn": "تم الحجز في",
+    "loadingInvoices": "جاري تحميل الفواتير...",
+    "paidInvoices": "مدفوعة",
+    "pendingInvoices": "معلقة",
+    "totalAmount": "الإجمالي",
+    "payNow": "ادفع الآن",
+    "viewInvoice": "عرض الفاتورة",
+    "processing": "جاري المعالجة...",
+    "nationality": "الجنسية",
+    "selectNationality": "اختر الجنسية",
+    "paymentStatusValues": {
+      "paid": "مدفوعة",
+      "pending": "معلقة",
+      "unpaid": "غير مدفوعة"
+    }
+  },
+  "reservations": {
+    "status": {
+      "confirmed": "مؤكد",
+      "pending": "قيد الانتظار",
+      "cancelled": "ملغي"
     }
   }
 }

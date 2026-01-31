@@ -168,6 +168,13 @@ export const ShareSaveActions: React.FC<ShareSaveActionsProps> = ({
   );
 };
 
+// Helper interface for favorite hotel data
+export interface FavoriteHotel {
+  id: string;
+  name: string;
+  image?: string;
+}
+
 // Helper functions for favorites persistence
 export const getFavorites = (): string[] => {
   try {
@@ -178,6 +185,17 @@ export const getFavorites = (): string[] => {
   }
 };
 
+// Get favorites with full hotel data (name, image)
+export const getFavoritesWithData = (): FavoriteHotel[] => {
+  try {
+    const favorites = localStorage.getItem('hotel_favorites_data');
+    return favorites ? JSON.parse(favorites) : [];
+  } catch {
+    return [];
+  }
+};
+
+// Add or remove a hotel from favorites (legacy - just IDs)
 export const toggleFavorite = (hotelId: string): boolean => {
   const favorites = getFavorites();
   const index = favorites.indexOf(hotelId);
@@ -189,6 +207,28 @@ export const toggleFavorite = (hotelId: string): boolean => {
   }
 
   localStorage.setItem('hotel_favorites', JSON.stringify(favorites));
+  return index === -1; // Returns true if now favorited
+};
+
+// Toggle favorite with full hotel data
+export const toggleFavoriteWithData = (hotelId: string, hotelName: string, hotelImage?: string): boolean => {
+  const favorites = getFavoritesWithData();
+  const index = favorites.findIndex(f => f.id === hotelId);
+
+  // Also update legacy favorites list for backwards compatibility
+  const legacyFavorites = getFavorites();
+  const legacyIndex = legacyFavorites.indexOf(hotelId);
+
+  if (index === -1) {
+    favorites.push({ id: hotelId, name: hotelName, image: hotelImage });
+    if (legacyIndex === -1) legacyFavorites.push(hotelId);
+  } else {
+    favorites.splice(index, 1);
+    if (legacyIndex !== -1) legacyFavorites.splice(legacyIndex, 1);
+  }
+
+  localStorage.setItem('hotel_favorites_data', JSON.stringify(favorites));
+  localStorage.setItem('hotel_favorites', JSON.stringify(legacyFavorites));
   return index === -1; // Returns true if now favorited
 };
 

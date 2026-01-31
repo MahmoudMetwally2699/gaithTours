@@ -98,6 +98,7 @@ export interface Reservation {
         rating?: number;
         image?: string;
         hotelId?: string;
+        hid?: number; // RateHawk numeric hotel ID for navigation to hotel details
     };
     checkInDate?: string;
     checkOutDate?: string;

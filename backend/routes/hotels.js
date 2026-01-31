@@ -1195,10 +1195,21 @@ router.get('/details/:hid', async (req, res) => {
       language = 'en'
     } = req.query;
 
-    // Validate hid
-    const hotelId = parseInt(hid);
+    // Validate hid - support both numeric hid and string hotelId formats
+    let hotelId = parseInt(hid);
+
+    // If not a valid number, try to look up by string hotelId in the database
     if (!hotelId || isNaN(hotelId)) {
-      return errorResponse(res, 'Invalid hotel ID. Must be a numeric value.', 400);
+      const HotelContent = require('../models/HotelContent');
+      const localHotel = await HotelContent.findOne({ hotelId: hid }).lean();
+
+      if (localHotel && localHotel.hid) {
+        hotelId = localHotel.hid;
+        console.log(`📍 Resolved string hotelId "${hid}" to numeric hid: ${hotelId}`);
+      } else {
+        console.log(`❌ Could not resolve hotelId "${hid}" to numeric hid`);
+        return errorResponse(res, 'Hotel not found', 404);
+      }
     }
 
     // Special handling for ETG Test Hotel (hid=8473727) - for RateHawk certification
