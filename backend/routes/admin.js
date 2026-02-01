@@ -11,10 +11,12 @@ const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail, 
 const whatsappService = require('../utils/whatsappService');
 const PDFDocument = require('pdfkit');
 const InvoicePDFGenerator = require('../utils/invoicePdfGenerator');
+const RateHawkService = require('../utils/RateHawkService');
 const fs = require('fs');
 const path = require('path');
 
 const router = express.Router();
+const rateHawkService = RateHawkService; // Already an instance
 
 // Admin dashboard stats
 router.get('/stats', protect, admin, async (req, res) => {
@@ -762,6 +764,59 @@ router.get('/test-invoice-pdf/:invoiceId', protect, admin, async (req, res) => {
     res.send(pdfBuffer);
   } catch (error) {
     errorResponse(res, 'Failed to generate invoice PDF', 500);
+  }
+});
+
+// Get hotel contact information (phone, email)
+router.get('/hotel-contact/:hotelId', protect, admin, async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    const { language = 'en' } = req.query;
+
+    if (!hotelId) {
+      return errorResponse(res, 'Hotel ID is required', 400);
+    }
+
+    console.log(`🔍 Admin looking up hotel contact: ${hotelId}`);
+
+    // Fetch hotel contact info from RateHawk
+    const contactInfo = await rateHawkService.getHotelContactInfo(hotelId, language);
+
+    // Get basic hotel info from local dump if available
+    let hotelName = hotelId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    let address = '';
+    let city = '';
+    let country = '';
+    let rating = null;
+
+    // Try to get more hotel details from the hotels dump
+    try {
+      const hotelDump = require('../data/hotels_dump.json');
+      const hotel = hotelDump.find(h => h.id === hotelId);
+      if (hotel) {
+        hotelName = hotel.name || hotelName;
+        address = hotel.address || '';
+        city = hotel.region?.name || '';
+        country = hotel.region?.country_code || '';
+        rating = hotel.star_rating || null;
+      }
+    } catch (dumpError) {
+      // Hotels dump not available, use fallback
+    }
+
+    successResponse(res, {
+      id: hotelId,
+      name: hotelName,
+      address,
+      city,
+      country,
+      rating,
+      phone: contactInfo.phone,
+      email: contactInfo.email
+    }, 'Hotel contact info retrieved successfully');
+  } catch (error) {
+    console.error('Error fetching hotel contact:', error);
+    errorResponse(res, 'Failed to get hotel contact info', 500);
   }
 });
 

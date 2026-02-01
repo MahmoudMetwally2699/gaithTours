@@ -16,6 +16,7 @@ import { AdminManagementTab } from '../components/AdminDashboard/AdminManagement
 import { AnalyticsTab } from '../components/AdminDashboard/AnalyticsTab';
 import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
 import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalBannersTab';
+import { HotelContactLookup } from '../components/admin/HotelContactLookup';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import { ClientDetailModal } from '../components/AdminDashboard/ClientDetailModal';
 import {
@@ -31,7 +32,8 @@ import {
   CurrencyDollarIcon,
   ShieldExclamationIcon,
   TagIcon,
-  PhotoIcon
+  PhotoIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
@@ -73,6 +75,8 @@ interface Booking {
     image?: string;
     url?: string;
     price?: number;
+    phone?: string;
+    email?: string;
   };
   checkInDate?: string;
   checkOutDate?: string;
@@ -448,6 +452,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'clients', name: t('dashboard.tabs.clients'), icon: UserGroupIcon },
     { id: 'bookings', name: t('dashboard.tabs.bookings'), icon: ClipboardDocumentListIcon },
     { id: 'payments', name: t('dashboard.tabs.payments'), icon: CreditCardIcon },
+    { id: 'hotel_lookup', name: 'Hotel Lookup', icon: PhoneIcon },
     { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
     { id: 'margins', name: 'Profit Margins', icon: CurrencyDollarIcon },
     { id: 'promo_codes', name: 'Promo Codes', icon: TagIcon },
@@ -960,6 +965,9 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Profit Margins Tab */}
           {activeTab === 'margins' && (
             <ProfitMarginTab isRTL={isRTL} />
+          )}{/* Hotel Lookup Tab */}
+          {activeTab === 'hotel_lookup' && (
+            <HotelContactLookup />
           )}{/* Promo Codes Tab */}
           {activeTab === 'promo_codes' && (
             <PromoCodesTab />
@@ -1127,6 +1135,35 @@ export const AdminDashboard: React.FC = () => {
                         </span>
                       </div>
                     )}
+                    {/* Hotel Contact Info */}
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex items-center mb-2">
+                        <span className="text-gray-600 text-sm w-20">Phone:</span>
+                        {selectedBooking.hotel.phone ? (
+                          <a
+                            href={`tel:${selectedBooking.hotel.phone}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            {selectedBooking.hotel.phone}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 text-sm italic">Not Available</span>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-600 text-sm w-20">Email:</span>
+                        {selectedBooking.hotel.email ? (
+                          <a
+                            href={`mailto:${selectedBooking.hotel.email}`}
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          >
+                            {selectedBooking.hotel.email}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 text-sm italic">Not Available</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

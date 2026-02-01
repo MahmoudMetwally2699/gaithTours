@@ -54,6 +54,11 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   const getBlurPlaceholder = (url: string): string => {
     if (placeholderSrc) return placeholderSrc;
 
+    // Handle undefined or null url
+    if (!url) {
+      return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"%3E%3Crect width="40" height="40" fill="%23f3f4f6"/%3E%3C/svg%3E';
+    }
+
     // Create a tiny version for blur effect
     if (url.includes('1024x768') || url.includes('640x400')) {
       return url.replace(/\d+x\d+/, '40x40');

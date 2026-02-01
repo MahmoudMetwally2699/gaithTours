@@ -693,6 +693,7 @@ export const paymentsAPI = {
      */
     createKashierSession: async (bookingData: {
         hotelId: string;
+        hotelHid?: number; // Numeric hotel ID for fetching contact info
         hotelName: string;
         hotelAddress?: string;
         hotelCity?: string;

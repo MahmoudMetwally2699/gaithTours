@@ -128,6 +128,18 @@ const reservationSchema = new mongoose.Schema({
     rateHawkOrderId: {
       type: String,
       required: false // RateHawk order confirmation ID
+    },
+    // Hotel contact info
+    phone: {
+      type: String,
+      required: false,
+      trim: true
+    },
+    email: {
+      type: String,
+      required: false,
+      trim: true,
+      lowercase: true
     }
   },  checkInDate: {
     type: Date,

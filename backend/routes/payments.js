@@ -817,6 +817,7 @@ router.post('/kashier/create-session', async (req, res) => {
   try {
     const {
       hotelId,
+      hotelHid, // Numeric hotel ID for fetching contact info
       hotelName,
       hotelAddress,
       hotelCity,
@@ -857,6 +858,18 @@ router.post('/kashier/create-session', async (req, res) => {
     console.log('   isRefundable:', selectedRate.isRefundable);
     console.log('   freeCancellationBefore:', selectedRate.freeCancellationBefore);
 
+    // Fetch hotel contact info (phone, email) from RateHawk API
+    let hotelPhone = null;
+    let hotelEmail = null;
+    if (hotelId) {
+      try {
+        const contactInfo = await rateHawkService.getHotelContactInfo(hotelId);
+        hotelPhone = contactInfo.phone;
+        hotelEmail = contactInfo.email;
+      } catch (contactError) {
+        console.warn('⚠️ Could not fetch hotel contact info:', contactError.message);
+      }
+    }
 
     // Generate unique order ID
     const orderId = `GH-${Date.now()}-${uuidv4().slice(0, 8)}`;
@@ -876,12 +889,15 @@ router.post('/kashier/create-session', async (req, res) => {
       nationality: userNationality,
       hotel: {
         hotelId: hotelId, // Correctly save as hotelId (schema field)
+        hid: hotelHid, // Save numeric hotel ID for future use
         name: hotelName,
         address: hotelAddress || '',
         city: hotelCity || 'Unknown',
         country: hotelCountry || 'Unknown',
         rating: parseFloat(hotelRating) || 0,
         image: hotelImage || '',
+        phone: hotelPhone, // Hotel contact phone from API
+        email: hotelEmail, // Hotel contact email from API
         rateHawkMatchHash: selectedRate.matchHash,
         rateHawkBookHash: selectedRate.bookHash, // Save bookHash from frontend
         prebookPaymentAmount: selectedRate.prebookPaymentAmount, // Save prebook payment amount

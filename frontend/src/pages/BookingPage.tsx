@@ -372,6 +372,7 @@ export const BookingPage: React.FC = () => {
 
       const bookingData = {
         hotelId: hotel.id,
+        hotelHid: hotel.hid, // Numeric hotel ID for fetching contact info
         hotelName: hotel.name,
         hotelAddress: hotel.address,
         hotelCity: hotel.city || '',

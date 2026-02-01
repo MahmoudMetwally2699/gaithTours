@@ -621,6 +621,46 @@ class RateHawkService {
   }
 
   /**
+   * Get hotel contact information (phone, email) from RateHawk Content API
+   * @param {string} hotelId - Hotel ID (string format like "hotel_name_city")
+   * @param {string} language - Language code (default: 'en')
+   * @returns {Promise<Object>} - Contact info with phone and email
+   */
+  async getHotelContactInfo(hotelId, language = 'en') {
+    try {
+      console.log(`📞 Fetching contact info for hotel ID: ${hotelId}`);
+
+      const response = await this.makeRequest('/hotel/info/', 'POST', {
+        id: String(hotelId), // Use string hotel ID
+        language
+      });
+
+      // Debug: log full response structure
+      console.log(`   📦 API Response status: ${response.status}`);
+
+      if (response.status !== 'ok' || !response.data) {
+        console.warn(`⚠️ Could not fetch contact info for hotel: ${hotelId}`);
+        if (response.error) {
+          console.warn(`   Error: ${response.error}`);
+        }
+        return { phone: null, email: null };
+      }
+
+      const hotelData = response.data;
+      const phone = hotelData.phone || null;
+      const email = hotelData.email || null;
+
+      console.log(`   📞 Phone: ${phone || 'N/A'}`);
+      console.log(`   📧 Email: ${email || 'N/A'}`);
+
+      return { phone, email };
+    } catch (error) {
+      console.error(`❌ Error fetching hotel contact info for ${hotelId}:`, error.message);
+      return { phone: null, email: null };
+    }
+  }
+
+  /**
    * Search hotels by region with intelligent caching
    * @param {number} regionId - Region ID from suggest()
    * @param {Object} params - Search parameters

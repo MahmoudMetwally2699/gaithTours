@@ -401,6 +401,7 @@ export const HotelDetails: React.FC = () => {
         // Transform the API response to match our Hotel interface
         const transformedHotel: Hotel = {
           id: hotelData.id || hotelId,
+          hid: hotelData.hid, // Numeric hotel ID for API calls (fetching contact info, etc.)
           name: hotelData.name || t('hotelDetails:hotel.nameUnavailable', 'Hotel Name Not Available'),
           address: hotelData.address || t('hotelDetails:location.addressUnavailable', 'Address not available'),
           city: hotelData.city || bookingParams.destination || '',
