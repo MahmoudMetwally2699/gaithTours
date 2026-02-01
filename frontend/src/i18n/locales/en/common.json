@@ -2,10 +2,41 @@
   "brand": {
     "name": "Gaith Tours"
   },
+  "main": {
+    "tagline": "From Gaith to anywhere"
+  },
   "auth": {
     "name": "Name",
     "email": "Email",
-    "phone": "Phone"
+    "phone": "Phone",
+    "password": "Password",
+    "or": "or continue with email",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Remember me",
+    "noAccount": "Don't have an account?",
+    "secureEncryption": "Secure",
+    "globalAccess": "Premium",
+    "quote": "Your journey begins with a single step. Let us guide you on your next adventure.",
+    "features": {
+       "bestPrices": "Best prices guaranteed",
+       "support": "24/7 customer support",
+       "secure": "Secure & trusted booking"
+    },
+    "login": {
+       "title": "Welcome Back",
+       "subtitle": "Please enter your details to sign in",
+       "forgotPassword": "Forgot Password?",
+       "button": "Sign In",
+       "error": "Invalid email or password"
+    },
+    "register": {
+       "title": "Create Account"
+    },
+    "social": {
+       "continueWithFacebook": "Continue with Facebook",
+       "continueWithGoogle": "Continue with Google"
+    }
   },
   "nav": {
     "home": "Home",
@@ -198,6 +229,33 @@
     "processing": "Processing...",
     "nationality": "Nationality",
     "selectNationality": "Select Nationality",
+    "invoiceDetails": "Invoice Details",
+    "invoiceInformation": "Invoice Information",
+    "invoiceNumber": "Invoice Number",
+    "issueDate": "Issue Date",
+    "status": "Status",
+    "amountDetails": "Amount Details",
+    "hotelInformation": "Hotel Information",
+    "address": "Address",
+    "guestInformation": "Guest Information",
+    "email": "Email",
+    "phone": "Phone",
+    "paymentInformation": "Payment Information",
+    "paymentMethod": "Payment Method",
+    "transactionId": "Transaction ID",
+    "paymentDate": "Payment Date",
+    "paymentStatus": "Payment Status",
+    "description": "Description",
+    "downloadReceipt": "Download Receipt",
+    "stayInformation": "Stay Information",
+    "roomType": "Room Type",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights": "Nights",
+    "guests": "Guests",
+    "children": "children",
+    "rooms": "Rooms",
+    "mealPlan": "Meal Plan",
     "paymentStatusValues": {
       "paid": "Paid",
       "pending": "Pending",

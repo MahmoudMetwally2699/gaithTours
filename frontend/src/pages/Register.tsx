@@ -199,10 +199,7 @@ export const Register: React.FC = () => {
     <div className="min-h-screen flex">
       {/* Left Side - Branding */}
       <motion.div
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8 }}
-        className="hidden lg:flex lg:w-5/12 relative bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 overflow-hidden"
+        className="hidden lg:flex lg:w-5/12 relative bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 overflow-hidden sticky top-0 h-screen"
       >
         {/* Background decorations */}
         <div className="absolute inset-0">
@@ -251,7 +248,7 @@ export const Register: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
             className="mb-8"
           >
-            <div className="w-40 h-40 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl border border-white/30 p-6">
+            <div className="w-40 h-40 flex items-center justify-center p-6">
               <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
             </div>
           </motion.div>
@@ -319,8 +316,8 @@ export const Register: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="lg:hidden flex justify-center mb-6"
             >
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-amber-400 rounded-2xl flex items-center justify-center shadow-lg p-4">
-                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
+              <div className="w-32 h-32 flex items-center justify-center p-4">
+                <img src="/new-design/logo.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
               </div>
             </motion.div>
 

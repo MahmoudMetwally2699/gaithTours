@@ -105,6 +105,8 @@ export interface Reservation {
     numberOfGuests: number;
     status: 'pending' | 'approved' | 'denied' | 'invoiced' | 'paid' | 'confirmed' | 'cancelled' | 'completed';
     notes?: string;
+    isRefundable?: boolean; // Whether booking can be cancelled for refund
+    freeCancellationBefore?: string; // Date/time before which cancellation is free
     createdAt: string;
     updatedAt: string;
 }

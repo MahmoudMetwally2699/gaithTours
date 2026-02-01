@@ -44,6 +44,8 @@ interface Reservation {
   status: 'confirmed' | 'pending' | 'cancelled';
   createdAt: string;
   image?: string;
+  isRefundable?: boolean; // Whether booking can be cancelled for refund
+  freeCancellationBefore?: string; // Date/time before which cancellation is free
 }
 
 const NATIONALITIES = [
@@ -132,7 +134,9 @@ export const Profile: React.FC = () => {
             currency: 'USD', // Default currency
             status: mappedStatus,
             createdAt: apiRes.createdAt,
-            image: apiRes.hotel.image
+            image: apiRes.hotel.image,
+            isRefundable: apiRes.isRefundable, // Map refundable status from API
+            freeCancellationBefore: apiRes.freeCancellationBefore // Map free cancellation deadline
           };
         });
         setReservations(transformedReservations);
@@ -268,6 +272,106 @@ export const Profile: React.FC = () => {
     });
   };
 
+  // Check if a reservation can be cancelled (refundable + within free cancellation window)
+  const canCancelReservation = (reservation: Reservation): boolean => {
+    // Already cancelled - can't cancel again
+    if (reservation.status === 'cancelled') return false;
+
+    // Explicitly non-refundable - can't cancel
+    if (reservation.isRefundable === false) return false;
+
+    // If there's a free cancellation deadline, check if we're still within it
+    if (reservation.freeCancellationBefore) {
+      const deadline = new Date(reservation.freeCancellationBefore);
+      const now = new Date();
+      if (now >= deadline) {
+        // Past the free cancellation deadline
+        return false;
+      }
+      // Within the free cancellation window
+      return true;
+    }
+
+    // If isRefundable is explicitly true (with no deadline), can cancel
+    if (reservation.isRefundable === true) {
+      return true;
+    }
+
+    // For older bookings where isRefundable is undefined and there's no deadline data,
+    // we can't reliably determine cancellation eligibility from stored data.
+    // Allow cancellation attempt - the backend will validate against RateHawk API
+    return true;
+  };
+
+  // Get cancellation deadline info with urgency level
+  const getCancellationDeadlineInfo = (reservation: Reservation): { text: string; urgency: 'safe' | 'warning' | 'urgent' | 'expired' | 'nonRefundable' | 'refundable' } | null => {
+    // Already cancelled - no need to show cancellation info
+    if (reservation.status === 'cancelled') {
+      return null;
+    }
+
+    // Explicitly non-refundable
+    if (reservation.isRefundable === false) {
+      return { text: t('profile.nonRefundable', 'Non-refundable'), urgency: 'nonRefundable' };
+    }
+
+    // Explicitly refundable with no deadline set - show free cancellation
+    if (reservation.isRefundable === true && !reservation.freeCancellationBefore) {
+      return { text: t('profile.freeCancellation', 'Free Cancellation'), urgency: 'refundable' };
+    }
+
+    // If isRefundable is undefined (older bookings), don't show any badge
+    // The Cancel button will still work, but we don't want to mislead users
+    if (reservation.isRefundable === undefined && !reservation.freeCancellationBefore) {
+      return null;
+    }
+
+    // If we get here, freeCancellationBefore must be set
+    if (!reservation.freeCancellationBefore) {
+      return null;
+    }
+
+    const deadline = new Date(reservation.freeCancellationBefore);
+    const now = new Date();
+    const timeDiff = deadline.getTime() - now.getTime();
+
+    // Already expired
+    if (timeDiff <= 0) {
+      return { text: t('profile.cancellationExpired', 'Cancellation period ended'), urgency: 'expired' };
+    }
+
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+
+    // Format the deadline date/time
+    const formattedDate = deadline.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    let text: string;
+    let urgency: 'safe' | 'warning' | 'urgent';
+
+    if (hours < 24) {
+      // Less than 24 hours - urgent
+      text = t('profile.cancelWithinHours', 'Free cancellation for {{hours}}h', { hours });
+      urgency = 'urgent';
+    } else if (days <= 3) {
+      // 1-3 days - warning
+      text = t('profile.cancelWithinDays', 'Free cancellation for {{days}}d {{hours}}h', { days, hours: remainingHours });
+      urgency = 'warning';
+    } else {
+      // More than 3 days - safe
+      text = t('profile.cancelUntil', 'Cancel free until {{date}}', { date: formattedDate });
+      urgency = 'safe';
+    }
+
+    return { text, urgency };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -377,7 +481,7 @@ export const Profile: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Total Trips */}
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
                       <BuildingOfficeIcon className="h-24 w-24 text-blue-500" />
                     </div>
                     <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4 text-blue-600">
@@ -391,7 +495,7 @@ export const Profile: React.FC = () => {
 
                   {/* Favorites */}
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <div className={`absolute top-0 ${isRTL ? 'left-0' : 'right-0'} p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
                       <HeartIcon className="h-24 w-24 text-red-500" />
                     </div>
                     <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4 text-red-600">
@@ -423,7 +527,7 @@ export const Profile: React.FC = () => {
             {activeTab === 'reservations' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-gray-900">{t('profile.reservations')}</h2>
-                {reservations.length === 0 ? (
+                {reservations.filter(r => r.status === 'confirmed' || r.status === 'cancelled').length === 0 ? (
                   <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
                     <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                       <BuildingOfficeIcon className="h-8 w-8 text-orange-500" />
@@ -436,7 +540,7 @@ export const Profile: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {reservations.map((reservation) => (
+                    {reservations.filter(r => r.status === 'confirmed' || r.status === 'cancelled').map((reservation) => (
                       <div key={reservation._id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex flex-col md:flex-row justify-between gap-4">
                           <div className="flex gap-4">
@@ -459,17 +563,49 @@ export const Profile: React.FC = () => {
                                   {reservation.guests} {t('common.guests')}
                                 </span>
                               </div>
-                              <span className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                reservation.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                reservation.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {t(`reservations.status.${reservation.status}`)}
-                              </span>
+                              <div className="flex flex-wrap items-center gap-2 mt-2">
+                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  reservation.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                  reservation.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {t(`reservations.status.${reservation.status}`)}
+                                </span>
+                                {/* Cancellation deadline indicator */}
+                                {reservation.status !== 'cancelled' && (() => {
+                                  const deadlineInfo = getCancellationDeadlineInfo(reservation);
+                                  if (!deadlineInfo) return null;
+
+                                  const urgencyStyles = {
+                                    safe: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+                                    urgent: 'bg-red-50 text-red-700 border-red-200 animate-pulse',
+                                    expired: 'bg-gray-100 text-gray-500 border-gray-200',
+                                    nonRefundable: 'bg-gray-100 text-gray-500 border-gray-200',
+                                    refundable: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  };
+
+                                  const urgencyIcons = {
+                                    safe: '✓',
+                                    warning: '⏰',
+                                    urgent: '⚡',
+                                    expired: '✗',
+                                    nonRefundable: '✗',
+                                    refundable: '✓'
+                                  };
+
+                                  return (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${urgencyStyles[deadlineInfo.urgency]}`}>
+                                      <span>{urgencyIcons[deadlineInfo.urgency]}</span>
+                                      {deadlineInfo.text}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                             {reservation.status !== 'cancelled' && (
+                          <div className="flex flex-col items-end gap-2">
+                             {canCancelReservation(reservation) && (
                               <button
                                 onClick={() => handleCancelReservation(reservation._id)}
                                 className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
@@ -685,6 +821,7 @@ export const Profile: React.FC = () => {
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}
         invoice={selectedInvoice}
+        onDownloadReceipt={handleDownloadReceipt}
       />
 
       {selectedReservationForCancel && (

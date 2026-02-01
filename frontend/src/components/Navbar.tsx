@@ -52,11 +52,7 @@ export const Navbar: React.FC = () => {
       href: '/',
       icon: HomeIcon,
     },
-    ...(user ? [{
-      name: t('nav.hotels'),
-      href: '/hotels',
-      icon: BuildingOfficeIcon,
-    }] : []),
+
   ];
 
   return (

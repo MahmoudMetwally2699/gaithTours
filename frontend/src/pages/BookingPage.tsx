@@ -402,7 +402,10 @@ export const BookingPage: React.FC = () => {
           roomName: selectedRate.room_name,
           meal: selectedRate.meal || 'nomeal',
           price: selectedRate.price,
-          currency: selectedRate.currency || 'USD'
+          currency: selectedRate.currency || 'USD',
+          // Cancellation policy fields - important for Profile page display
+          isRefundable: selectedRate.is_free_cancellation === true,
+          freeCancellationBefore: selectedRate.free_cancellation_before || null
         }
       };
 

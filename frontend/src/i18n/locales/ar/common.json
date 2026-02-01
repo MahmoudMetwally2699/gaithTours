@@ -2,10 +2,41 @@
   "brand": {
     "name": "غيث تورز"
   },
+  "main": {
+    "tagline": "من غيث إلى أي مكان"
+  },
   "auth": {
     "name": "الاسم",
     "email": "البريد الإلكتروني",
-    "phone": "الهاتف"
+    "phone": "الهاتف",
+    "password": "كلمة المرور",
+    "or": "أو المتابعة بالبريد الإلكتروني",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "rememberMe": "تذكرني",
+    "noAccount": "ليس لديك حساب؟",
+    "secureEncryption": "آمن",
+    "globalAccess": "بريميوم",
+    "quote": "رحلتك تبدأ بخطوة واحدة. دعنا نرشدك في مغامرتك القادمة.",
+    "features": {
+       "bestPrices": "أفضل الأسعار مضمونة",
+       "support": "دعم العملاء 24/7",
+       "secure": "حجز آمن وموثوق"
+    },
+    "login": {
+       "title": "مرحباً بعودتك",
+       "subtitle": "يرجى إدخال التفاصيل الخاصة بك لتسجيل الدخول",
+       "forgotPassword": "نسيت كلمة المرور؟",
+       "button": "تسجيل الدخول",
+       "error": "البريد الإلكتروني أو كلمة المرور غير صيححة"
+    },
+    "register": {
+       "title": "إنشاء حساب"
+    },
+    "social": {
+       "continueWithFacebook": "المتابعة باستخدام فيسبوك",
+       "continueWithGoogle": "المتابعة باستخدام جوجل"
+    }
   },
   "nav": {
     "home": "الرئيسية",
@@ -198,6 +229,33 @@
     "processing": "جاري المعالجة...",
     "nationality": "الجنسية",
     "selectNationality": "اختر الجنسية",
+    "invoiceDetails": "تفاصيل الفاتورة",
+    "invoiceInformation": "معلومات الفاتورة",
+    "invoiceNumber": "رقم الفاتورة",
+    "issueDate": "تاريخ الإصدار",
+    "status": "الحالة",
+    "amountDetails": "تفاصيل المبلغ",
+    "hotelInformation": "معلومات الفندق",
+    "address": "العنوان",
+    "guestInformation": "معلومات الضيف",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "paymentInformation": "معلومات الدفع",
+    "paymentMethod": "طريقة الدفع",
+    "transactionId": "رقم المعاملة",
+    "paymentDate": "تاريخ الدفع",
+    "paymentStatus": "حالة الدفع",
+    "description": "الوصف",
+    "downloadReceipt": "تحميل الإيصال",
+    "stayInformation": "معلومات الإقامة",
+    "roomType": "نوع الغرفة",
+    "checkIn": "تسجيل الوصول",
+    "checkOut": "تسجيل المغادرة",
+    "nights": "ليالٍ",
+    "guests": "ضيوف",
+    "children": "أطفال",
+    "rooms": "غرف",
+    "mealPlan": "خطة الوجبات",
     "paymentStatusValues": {
       "paid": "مدفوعة",
       "pending": "معلقة",

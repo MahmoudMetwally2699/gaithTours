@@ -131,7 +131,64 @@ const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Guest Information */}
+          {/* Stay Information */}
+          {invoice.reservation && (
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center space-x-2">
+                <CalendarIcon className="h-5 w-5 text-gray-400" />
+                <span>{t('profile.stayInformation')}</span>
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {invoice.reservation.roomType && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.roomType')}</div>
+                      <div className="font-medium">{invoice.reservation.roomType}</div>
+                    </div>
+                  )}
+                  {invoice.reservation.checkInDate && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.checkIn')}</div>
+                      <div className="font-medium">{formatDate(invoice.reservation.checkInDate)}</div>
+                    </div>
+                  )}
+                  {invoice.reservation.checkOutDate && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.checkOut')}</div>
+                      <div className="font-medium">{formatDate(invoice.reservation.checkOutDate)}</div>
+                    </div>
+                  )}
+                  {invoice.reservation.numberOfNights && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.nights')}</div>
+                      <div className="font-medium">{invoice.reservation.numberOfNights}</div>
+                    </div>
+                  )}
+                  {(invoice.reservation.numberOfAdults || invoice.reservation.numberOfGuests) && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.guests')}</div>
+                      <div className="font-medium">
+                        {invoice.reservation.numberOfAdults || invoice.reservation.numberOfGuests}
+                        {invoice.reservation.numberOfChildren ? ` + ${invoice.reservation.numberOfChildren} ${t('profile.children')}` : ''}
+                      </div>
+                    </div>
+                  )}
+                  {invoice.reservation.numberOfRooms && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.rooms')}</div>
+                      <div className="font-medium">{invoice.reservation.numberOfRooms}</div>
+                    </div>
+                  )}
+                  {invoice.reservation.meal && (
+                    <div>
+                      <div className="text-sm text-gray-600">{t('profile.mealPlan')}</div>
+                      <div className="font-medium">{invoice.reservation.meal}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mb-8">
             <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center space-x-2">
               <UserIcon className="h-5 w-5 text-gray-400" />

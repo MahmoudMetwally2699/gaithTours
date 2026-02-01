@@ -52,12 +52,12 @@ class ArabicTextProcessor {
         return text; // Return numbers as-is
       }
 
-      // First, apply Arabic reshaping for proper glyph formation with best options for PDF
-      let processedText = arabicReshaper.convertArabic(text, {
-        letterForms: 'connected',  // Ensures Arabic letters connect properly
-        joinConsecutive: true,     // Keep consecutive Arabic words connected
-        ligatures: true            // Enable ligature support
-      });
+      // First, apply Arabic reshaping for proper glyph formation
+      let processedText = arabicReshaper.convertArabic(text);
+      // console.log('DEBUG: Reshaped hex:', processedText.split('').map(c => c.charCodeAt(0).toString(16)).join(' '));
+
+      // TEMPORARY DEBUG: Return immediately to check reshaper output
+      return processedText;
 
       // Apply the Unicode Bidirectional Algorithm using bidi-js
       const embeddingLevels = bidi.getEmbeddingLevels(processedText, 'rtl');
@@ -85,8 +85,10 @@ class ArabicTextProcessor {
 
         // Get mirrored characters (parentheses etc.)
         const mirrored = bidi.getMirroredCharactersMap(processedText, embeddingLevels);
+        console.log('DEBUG: Mirrored map size:', mirrored.size);
         if (mirrored.size > 0) {
           mirrored.forEach((replacement, index) => {
+            console.log(`DEBUG: Mirroring index ${index}: ${processedText.charCodeAt(index).toString(16)} -> ${replacement.charCodeAt(0).toString(16)}`);
             chars[index] = replacement;
           });
         }

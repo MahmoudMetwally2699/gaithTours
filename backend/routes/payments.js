@@ -693,6 +693,7 @@ router.get('/invoices/:id', protect, async (req, res) => {
 router.get('/invoices/:id/receipt', protect, async (req, res) => {
   try {
     const { id } = req.params;
+    const path = require('path');
 
     const invoice = await Invoice.findById(id)
       .populate('reservation')
@@ -720,64 +721,64 @@ router.get('/invoices/:id/receipt', protect, async (req, res) => {
       return errorResponse(res, 'Payment information not found', 404);
     }
 
-    // Generate PDF receipt
-    const PDFDocument = require('pdfkit');
-    const doc = new PDFDocument({ margin: 50 });
+    // Use the centralized PDF generator with Arabic support
+    const InvoicePDFGenerator = require('../utils/invoicePdfGenerator');
+    const generator = new InvoicePDFGenerator();
 
-    // Set response headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="receipt-${invoice.invoiceNumber}.pdf"`);
+    try {
+      // Prepare invoice data for the generator
+      const invoiceData = {
+        invoiceId: invoice.invoiceNumber,
+        createdAt: payment.processedAt || payment.createdAt,
+        paymentStatus: 'PAID', // Always paid for receipts
+        amount: invoice.amount,
 
-    // Pipe the PDF to the response
-    doc.pipe(res);
+        // Client info
+        clientName: invoice.clientName,
+        clientEmail: invoice.clientEmail,
+        clientPhone: invoice.clientPhone,
+        clientNationality: invoice.clientNationality,
 
-    // Add content to PDF
-    // Header
-    doc.fontSize(20).text('PAYMENT RECEIPT', 50, 50, { align: 'center' });
-    doc.moveDown();
+        // Hotel info
+        hotelName: invoice.hotelName,
+        hotelAddress: invoice.hotelAddress,
+        hotelCity: invoice.hotelCity,
+        hotelImage: invoice.reservation?.hotel?.image || null,
+        hotelId: invoice.reservation?.hotel?.hotelId || null,
+        hotel: invoice.reservation?.hotel || null,
 
-    // Company information (you can customize this)
-    doc.fontSize(12)
-       .text('Gaith Group', 50, 120)
-       .text('Hotel Booking Services', 50, 135)
-       .moveDown();
+        // Booking info (if available)
+        checkInDate: invoice.reservation ? invoice.reservation.checkInDate : null,
+        checkOutDate: invoice.reservation ? invoice.reservation.checkOutDate : null,
+        numberOfGuests: invoice.reservation ? (invoice.reservation.numberOfAdults || invoice.reservation.numberOfGuests) : null,
 
-    // Receipt details
-    doc.text(`Receipt #: ${invoice.invoiceNumber}`, 50, 170)
-       .text(`Date: ${new Date(payment.processedAt || payment.createdAt).toLocaleDateString()}`, 50, 185)
-       .text(`Customer: ${invoice.user.firstName} ${invoice.user.lastName}`, 50, 200)
-       .text(`Email: ${invoice.user.email}`, 50, 215)
-       .moveDown();
+        // Payment details
+        paymentMethod: payment.paymentMethod === 'kashier' ? 'Kashier' : (payment.paymentMethod || 'Card')
+      };
 
-    // Invoice details
-    doc.text('BOOKING DETAILS:', 50, 250)
-       .text(`Hotel: ${invoice.hotelName}`, 50, 270)
-       .text(`Guest: ${invoice.clientName}`, 50, 285)
-       .text(`Email: ${invoice.clientEmail}`, 50, 300)
-       .text(`Phone: ${invoice.clientPhone}`, 50, 315)
-       .text(`Nationality: ${invoice.clientNationality}`, 50, 330)
-       .moveDown();
+      // Generate the PDF
+      // Detect language - if client nationality is Egyptian or Arab country, maybe default to Ar?
+      // For now, let's stick to English ('en') but with Arabic name support which we added to the generator
+      // Or we can check if the name contains Arabic characters to decide the main language?
+      // Let's use 'en' as the document language but our generator now supports Arabic values in English docs.
+      const pdfBuffer = await generator.generateInvoicePDF(invoiceData, 'en');
 
-    // Payment details
-    doc.text('PAYMENT DETAILS:', 50, 370)
-       .text(`Amount: ${invoice.amount.toFixed(2)} ${invoice.currency.toUpperCase()}`, 50, 390)
-       .text(`Payment Method: ${payment.paymentMethod || 'Card'}`, 50, 405)
-       .text(`Transaction ID: ${payment.stripePaymentIntentId || payment.transactionId || 'N/A'}`, 50, 420)
-       .text(`Status: PAID`, 50, 435)
-       .moveDown();
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${invoice.invoiceNumber}.pdf"`);
+      res.send(pdfBuffer);
 
-    // Footer
-    doc.fontSize(10)
-       .text('Thank you for choosing Gaith Group!', 50, 500, { align: 'center' })
-       .text('This is an electronically generated receipt.', 50, 515, { align: 'center' });
-
-    // Finalize the PDF
-    doc.end();
-
+    } catch (genError) {
+      console.error('Invoice generation failed:', genError);
+      throw genError;
+    }
   } catch (error) {
+    console.error('PDF generation error:', error);
     errorResponse(res, 'Failed to generate receipt', 500);
   }
 });
+
+
 
 // ============================================
 // KASHIER PAYMENT GATEWAY ROUTES
@@ -853,6 +854,9 @@ router.post('/kashier/create-session', async (req, res) => {
     console.log('🎯 Creating Kashier payment session for booking...');
     console.log('   Hotel:', hotelName);
     console.log('   Amount:', totalPrice, currency);
+    console.log('   isRefundable:', selectedRate.isRefundable);
+    console.log('   freeCancellationBefore:', selectedRate.freeCancellationBefore);
+
 
     // Generate unique order ID
     const orderId = `GH-${Date.now()}-${uuidv4().slice(0, 8)}`;
@@ -900,7 +904,10 @@ router.post('/kashier/create-session', async (req, res) => {
       kashierOrderId: orderId,
       ratehawkStatus: 'pending',
       promoCode: promoCode,
-      discountAmount: discountAmount || 0
+      discountAmount: discountAmount || 0,
+      // Cancellation policy - important for Profile page display and refund eligibility
+      isRefundable: selectedRate.isRefundable === true, // Only true if explicitly true
+      freeCancellationBefore: selectedRate.freeCancellationBefore || null
     });
 
     await reservation.save();

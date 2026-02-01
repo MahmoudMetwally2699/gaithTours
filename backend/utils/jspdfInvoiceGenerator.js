@@ -12,8 +12,9 @@ const ArabicTextProcessor = require('./arabicTextProcessor');
 
 // Import and apply jspdf-autotable plugin
 try {
-  // Simple require - this should automatically extend jsPDF
-  require('jspdf-autotable');
+  // Correctly apply jspdf-autotable for version 3.x+
+  const { applyPlugin } = require('jspdf-autotable');
+  applyPlugin(jsPDF);
 } catch (error) {
   console.error(`❌ Error loading jspdf-autotable: ${error.message}`);
   console.warn('⚠️ PDF tables will not be available, falling back to simple tables');
@@ -64,10 +65,8 @@ class JsPDFInvoiceGenerator {
         putOnlyUsedFonts: true
       });
 
-      // Add Arabic font support if needed
-      if (isArabic || language === 'both') {
-        await this.registerArabicFonts(doc);
-      }
+      // Add Arabic font support - always register for mixed content support
+      await this.registerArabicFonts(doc);
 
       // Generate the invoice content
       await this.createInvoicePDF(doc, invoiceData, language);
@@ -153,10 +152,10 @@ class JsPDFInvoiceGenerator {
       return text || '';
     }
 
-    // For Arabic language, only process field labels, not values
-    if (language === 'ar' && !options.isValue) {
+    // Always process Arabic text if it exists, regardless of whether it's a label or value
+    // This fixes the issue where customer names in Arabic were not being reshaped
+    if (this.arabicProcessor.hasArabic(text)) {
       try {
-        // Only process labels/field names, not actual user data
         return this.arabicProcessor.processArabicText(text);
       } catch (error) {
         console.warn(`Warning: Arabic processing failed for "${text}": ${error.message}`);
@@ -247,8 +246,8 @@ class JsPDFInvoiceGenerator {
     // Use white text on the colored header background
     doc.setTextColor(255, 255, 255); // White
 
-    // Position title in header area
-    const titleY = y + 20;
+    // Position title in header area - fixed position to avoid logo overlap
+    const titleY = 25;
     doc.text(this.processText(trans.invoice, language), pageWidth / 2, titleY, { align: 'center' });
 
     // Add company name below title
@@ -258,7 +257,7 @@ class JsPDFInvoiceGenerator {
       doc.setFont('helvetica', 'normal');
     }
     doc.setFontSize(14);
-    doc.text(this.processText(trans.companyName, language), pageWidth / 2, titleY + 12, { align: 'center' });    // Move y position below the header with more space
+    doc.text(this.processText(trans.companyName, language), pageWidth / 2, titleY + 10, { align: 'center' });    // Move y position below the header with more space
     y = 85;    // Reset text color for content
     doc.setTextColor(0, 0, 0); // Black
 
@@ -338,20 +337,30 @@ class JsPDFInvoiceGenerator {
           doc.setFillColor(255, 255, 255);
           doc.setDrawColor(this.darkGray);
           doc.setLineWidth(1);
+          // Draw the border/background first
           doc.rect(imageX - 3, hotelImageY - 3, imageWidth + 6, imageHeight + 6, 'FD');
 
-          // Add the image centered
-          doc.addImage(hotelImageBase64, 'JPEG', imageX, hotelImageY, imageWidth, imageHeight);
-          console.log('✅ Hotel image added successfully from API (centered)');
+          // Always update y to reserve space, even if image fails to render
+          y = hotelImageY + imageHeight + 20;
 
-          // Ensure proper spacing after the centered image
-          y = hotelImageY + imageHeight + 15;
+          try {
+            // Add the image centered - try auto-detect format first (pass undefined/null)
+            doc.addImage(hotelImageBase64, undefined, imageX, hotelImageY, imageWidth, imageHeight);
+          } catch (imgError) {
+            console.warn('⚠️ Failed to add hotel image to PDF:', imgError.message);
+            try {
+              // Fallback to JPEG if auto-detect fails
+              doc.addImage(hotelImageBase64, 'JPEG', imageX, hotelImageY, imageWidth, imageHeight);
+            } catch (retryError) {
+              console.warn('⚠️ Safe fallback: Could not render image, but space is reserved.');
+            }
+          }
         } else {
-          console.log('⚠️ No hotel image available from API');
+          // console.log('ℹ️ No hotel image available from API');
         }
       }
     } catch (error) {
-      console.warn('⚠️ Error adding hotel image from API:', error.message);
+      // console.warn('ℹ️ Note: Hotel image skipped:', error.message);
     }
 
     // Hotel/Booking info section
@@ -518,19 +527,36 @@ class JsPDFInvoiceGenerator {
 
       // Always display values in original form without any processing
       const valueText = String(item.value || '-');
+      const valueHasArabic = this.arabicProcessor.hasArabic(valueText);
 
-      // For Arabic layout, position right but use appropriate font
+      // For Arabic layout, position right
       if (isRTL) {
-        // Use helvetica for Latin values to ensure they display properly
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setR2L(false); // Turn off RTL for values to keep them in original format
-        doc.text(valueText, x + width, y, { align: 'right' });
+        // Check if the value itself has Arabic
+        if (valueHasArabic) {
+          doc.setFont('NotoSansArabic', 'normal');
+          // Important: Don't use setR2L(true) because the text is already processed (reversed and shaped)
+          // by our ArabicTextProcessor. Using setR2L(true) would double-reverse it.
+          doc.setR2L(false);
+          doc.text(this.processText(valueText, 'ar', { isValue: true }), x + width, y, { align: 'right' });
+        } else {
+          // Use helvetica for Latin values to ensure they display properly
+          doc.setFont('helvetica', 'normal');
+          doc.setR2L(false); // Turn off RTL for values to keep them in original format
+          doc.text(valueText, x + width, y, { align: 'right' });
+        }
       } else {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setR2L(false);
-        doc.text(valueText, x, y);
+        // LTR Layout
+        if (valueHasArabic) {
+           doc.setFont('NotoSansArabic', 'normal');
+           // For Arabic value in LTR layout, we might still want R2L processing for the text itself
+           // but aligned left? Usually mixed content dictates alignment.
+           // Let's keep align left but use Arabic font and processing
+           doc.text(this.processText(valueText, 'ar', { isValue: true }), x, y);
+        } else {
+           doc.setFont('helvetica', 'normal');
+           doc.setR2L(false);
+           doc.text(valueText, x, y);
+        }
       }
 
       // Move down for next item with proper spacing
@@ -542,6 +568,7 @@ class JsPDFInvoiceGenerator {
    */
   drawPaymentTable(doc, invoiceData, language, x, y, width) {
     const isArabic = language === 'ar';
+    const pageWidth = doc.internal.pageSize.getWidth();
     const trans = this.getTranslations(language);    // Draw payment section header with background
     doc.setFillColor(this.lightGray);
     doc.rect(x - 5, y - 5, width + 10, 20, 'F'); // Background box for title
@@ -587,9 +614,12 @@ class JsPDFInvoiceGenerator {
               styles: { halign: 'right', font: 'helvetica' }
             },
             {
-              // Payment method - keep original format, use helvetica for English text
+              // Payment method - check if it has Arabic
               content: this.getPaymentMethodText(invoiceData.paymentMethod, language),
-              styles: { halign: 'right', font: 'helvetica' }
+              styles: {
+                halign: 'right',
+                font: this.arabicProcessor.hasArabic(this.getPaymentMethodText(invoiceData.paymentMethod, language)) ? 'NotoSansArabic' : 'helvetica'
+              }
             },
             {
               // Date - keep original format
@@ -604,7 +634,10 @@ class JsPDFInvoiceGenerator {
             },
             {
               content: this.getPaymentMethodText(invoiceData.paymentMethod, language),
-              styles: { halign: 'left' }
+              styles: {
+                halign: 'left',
+                font: this.arabicProcessor.hasArabic(this.getPaymentMethodText(invoiceData.paymentMethod, language)) ? 'NotoSansArabic' : 'helvetica'
+              }
             },
             {
               content: `${invoiceData.amount} SAR`,
@@ -733,19 +766,46 @@ class JsPDFInvoiceGenerator {
     doc.rect(x, y, width, rowHeight, 'F');    // Row text - in black
     doc.setTextColor(0, 0, 0);    if (isArabic) {
       // Use helvetica for English values in Arabic layout
-      doc.setFont('helvetica', 'normal');
       doc.setR2L(false);
 
-      // Display values with English currency
+      // Amount
+      doc.setFont('helvetica', 'normal');
       doc.text(`${invoiceData.amount} SAR`, x + width - 5, y + 7, { align: 'right' });
-      doc.text(this.getPaymentMethodText(invoiceData.paymentMethod, language), x + width - colWidth - 5, y + 7, { align: 'right' });
+
+      // Payment Method
+      const paymentMethodText = this.getPaymentMethodText(invoiceData.paymentMethod, language);
+      if (this.arabicProcessor.hasArabic(paymentMethodText)) {
+        doc.setFont('NotoSansArabic', 'normal');
+        doc.setR2L(false); // Disable R2L as text is pre-processed
+        doc.text(this.processText(paymentMethodText, language, { isValue: true }), x + width - colWidth - 5, y + 7, { align: 'right' });
+        // doc.setR2L(false); // Reset not needed if we set it false above
+      } else {
+        doc.setFont('helvetica', 'normal');
+        doc.text(paymentMethodText, x + width - colWidth - 5, y + 7, { align: 'right' });
+      }
+
+      // Date
+      doc.setFont('helvetica', 'normal');
       doc.text(this.formatDate(invoiceData.createdAt, language), x + width - 2*colWidth - 5, y + 7, { align: 'right' });
     } else {
       doc.setFont('helvetica', 'normal');
       doc.setR2L(false);
 
       doc.text(this.formatDate(invoiceData.createdAt, language), x + 5, y + 7);
-      doc.text(this.getPaymentMethodText(invoiceData.paymentMethod, language), x + colWidth + 5, y + 7);
+
+      // Payment Method
+      const paymentMethodText = this.getPaymentMethodText(invoiceData.paymentMethod, language);
+      if (this.arabicProcessor.hasArabic(paymentMethodText)) {
+         doc.setFont('NotoSansArabic', 'normal');
+         // Mixed content in LTR, keeping left align but using Arabic font
+         doc.text(this.processText(paymentMethodText, language, { isValue: true }), x + colWidth + 5, y + 7);
+      } else {
+         doc.setFont('helvetica', 'normal');
+         doc.text(paymentMethodText, x + colWidth + 5, y + 7);
+      }
+
+      // Amount
+      doc.setFont('helvetica', 'normal');
       doc.text(`${invoiceData.amount} SAR`, x + 2*colWidth + 5, y + 7, { align: 'right' });
     }
 
