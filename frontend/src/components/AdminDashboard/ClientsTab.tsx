@@ -7,6 +7,8 @@ import {
   EyeIcon,
   PencilIcon,
   PlusIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { AddClientModal, ClientFormData } from './AddClientModal';
 import { Pagination } from './Pagination';
@@ -42,6 +44,8 @@ interface ClientsTabProps {
   onItemsPerPageChange?: (items: number) => void;
   onViewClient?: (client: Client) => void;
   onEditClient?: (client: Client) => void;
+  onDeleteClient?: (clientId: string) => Promise<void>;
+  isDeletingClient?: boolean;
 }
 
 export const ClientsTab: React.FC<ClientsTabProps> = ({
@@ -57,9 +61,30 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
   onItemsPerPageChange,
   onViewClient,
   onEditClient,
+  onDeleteClient,
+  isDeletingClient = false,
 }) => {
   const { t } = useTranslation();
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+
+  const handleDeleteClick = (client: Client) => {
+    setClientToDelete(client);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (clientToDelete && onDeleteClient) {
+      try {
+        await onDeleteClient(clientToDelete._id);
+        setShowDeleteConfirmModal(false);
+        setClientToDelete(null);
+      } catch (error) {
+        // Error is handled by parent component
+      }
+    }
+  };
 
   const handleCreateClient = async (clientData: ClientFormData) => {
     try {
@@ -216,6 +241,13 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                       >
                         <PencilIcon className="w-4 h-4" />
                       </button>
+                      <button
+                        onClick={() => handleDeleteClick(client)}
+                        className="w-8 h-8 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
+                        title="Delete Client"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </motion.tr>
@@ -259,6 +291,13 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                     className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                   >
                     <PencilIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(client)}
+                    className="w-8 h-8 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
+                    title="Delete Client"
+                  >
+                    <TrashIcon className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -306,6 +345,50 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
         onSubmit={handleCreateClient}
         isLoading={isCreatingClient}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && clientToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+          >
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
+              <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
+              Delete Client
+            </h3>
+            <p className="text-center text-gray-600 mb-2">
+              Are you sure you want to delete <span className="font-semibold">{clientToDelete.name}</span>?
+            </p>
+            <p className="text-center text-sm text-red-600 mb-6">
+              This action will permanently delete all associated bookings, invoices, and payments. This cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setClientToDelete(null);
+                }}
+                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-300"
+                disabled={isDeletingClient}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeletingClient}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeletingClient ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };

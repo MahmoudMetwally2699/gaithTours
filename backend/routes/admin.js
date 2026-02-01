@@ -200,6 +200,39 @@ router.put('/clients/:id', protect, admin, [
   }
 });
 
+// Delete client (user) and all associated data
+router.delete('/clients/:id', protect, admin, async (req, res) => {
+  try {
+    const clientId = req.params.id;
+
+    // Find the client first
+    const client = await User.findById(clientId);
+    if (!client || client.role !== 'user') {
+      return errorResponse(res, 'Client not found', 404);
+    }
+
+    // Delete all associated payments
+    await Payment.deleteMany({ user: clientId });
+
+    // Delete all associated invoices
+    await Invoice.deleteMany({ user: clientId });
+
+    // Delete all associated reservations
+    await Reservation.deleteMany({ user: clientId });
+
+    // Delete all associated WhatsApp messages
+    await WhatsAppMessage.deleteMany({ user: clientId });
+
+    // Finally, delete the user
+    await User.findByIdAndDelete(clientId);
+
+    successResponse(res, null, 'Client and all associated data deleted successfully');
+  } catch (error) {
+    console.error('Delete client error:', error);
+    errorResponse(res, 'Failed to delete client', 500);
+  }
+});
+
 // Get all booking requests
 router.get('/bookings', protect, admin, async (req, res) => {
   try {

@@ -272,6 +272,24 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const [isDeletingClient, setIsDeletingClient] = useState(false);
+
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      setIsDeletingClient(true);
+      await adminAPI.deleteClient(clientId);
+      setClients(prev => prev.filter(client => client._id !== clientId));
+      toast.success('Client deleted successfully!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete client';
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsDeletingClient(false);
+    }
+  };
+
+
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
@@ -926,6 +944,8 @@ export const AdminDashboard: React.FC = () => {
               onItemsPerPageChange={(items) => { setClientsPerPage(items); setClientPage(1); }}
               onViewClient={(client) => { setSelectedClient(client); setShowClientDetailModal(true); }}
               onEditClient={(client) => { setSelectedClient(client); setShowClientDetailModal(true); }}
+              onDeleteClient={handleDeleteClient}
+              isDeletingClient={isDeletingClient}
             />
           )}{/* Bookings Tab */}
           {activeTab === 'bookings' && (

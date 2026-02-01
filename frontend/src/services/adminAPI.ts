@@ -10,6 +10,7 @@ export const adminAPI = {
     getClient: (id: string) => api.get(`/admin/clients/${id}`),
     createClient: (data: any) => api.post('/admin/clients', data),
     updateClient: (id: string, data: any) => api.put(`/admin/clients/${id}`, data),
+    deleteClient: (id: string) => api.delete(`/admin/clients/${id}`),
 
     // Booking requests management
     getBookings: (params = {}) => api.get('/admin/bookings', { params }),
