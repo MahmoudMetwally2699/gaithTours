@@ -261,9 +261,9 @@ export const CompareRooms: React.FC<CompareRoomsProps> = ({
                                   {feature.key === 'price' ? (
                                     <div className="flex flex-col items-center w-full min-w-0">
                                        <div className="flex items-baseline gap-1 flex-wrap justify-center">
-                                          <span className="text-lg md:text-2xl font-bold text-gray-900 truncate max-w-full">{currencySymbol}{room.price.toLocaleString()}</span>
+                                          <span className="text-lg md:text-2xl font-bold text-gray-900 truncate max-w-full font-price">{currencySymbol}{room.price.toLocaleString()}</span>
                                           {room.original_price && room.original_price > room.price && (
-                                             <span className="text-xs md:text-sm text-gray-400 line-through decoration-gray-300 truncate max-w-full">{currencySymbol}{room.original_price.toLocaleString()}</span>
+                                             <span className="text-xs md:text-sm text-gray-400 line-through decoration-gray-300 truncate max-w-full font-price">{currencySymbol}{room.original_price.toLocaleString()}</span>
                                           )}
                                        </div>
                                        {(room.total_taxes || 0) > 0 && (
@@ -345,7 +345,7 @@ export const CompareRooms: React.FC<CompareRoomsProps> = ({
                                       className="w-full py-3 px-2 bg-gray-900 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-95 flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 text-sm md:text-base truncate"
                                     >
                                       <span>{t('compare.select', 'Select')}</span>
-                                      <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] md:text-xs">
+                                      <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] md:text-xs font-price">
                                          {currencySymbol}{room.price.toLocaleString()}
                                       </span>
                                    </button>

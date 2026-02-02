@@ -40,13 +40,24 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
 
   const selectedCountry = countryCodes.find(c => c.code === countryCode);
 
+  // Format phone number: strip leading 0 from local numbers
+  const formatPhoneNumber = (localPhone: string, code: string): string => {
+    let cleaned = localPhone.replace(/[\s-]/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+    return `${code}${cleaned}`;
+  };
+
+  const fullPhone = formatPhoneNumber(phone, countryCode);
+
   const validatePhone = (phoneNumber: string): boolean => {
     const cleaned = phoneNumber.replace(/[\s-]/g, '');
     return /^\d{6,14}$/.test(cleaned);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Handle form submission - directly save phone (OTP skipped for now)
+  const handleSubmit = async () => {
     setError('');
 
     if (!phone.trim()) {
@@ -61,7 +72,6 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
 
     setIsLoading(true);
     try {
-      const fullPhone = `${countryCode}${phone.replace(/[\s-]/g, '')}`;
       await onSubmit(fullPhone);
     } catch (err: any) {
       setError(err.message || t('auth.phoneUpdateFailed', 'Failed to save phone number'));
@@ -106,7 +116,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-8">
+        <div className="p-8">
           <p className="text-gray-600 text-center mb-6">
             {t('auth.phoneModalDescription', 'To complete your registration and receive booking confirmations, please provide your phone number.')}
           </p>
@@ -167,6 +177,11 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                   setPhone(e.target.value);
                   setError('');
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSubmit();
+                  }
+                }}
                 placeholder="5XXXXXXXX"
                 className={`flex-1 px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                   error
@@ -206,7 +221,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span>{t('auth.benefit2', 'Get exclusive deals via WhatsApp')}</span>
+                <span>{t('auth.benefit2', 'Get important travel updates')}</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-700">
                 <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
@@ -221,7 +236,8 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
 
           {/* Submit Button */}
           <motion.button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={isLoading}
             whileHover={{ scale: isLoading ? 1 : 1.02 }}
             whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -233,10 +249,10 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                 <span>{t('auth.saving', 'Saving...')}</span>
               </div>
             ) : (
-              t('auth.continueToGaith', 'Continue to Gaith Tours')
+              t('auth.continue', 'Continue')
             )}
           </motion.button>
-        </form>
+        </div>
       </motion.div>
     </div>
   );

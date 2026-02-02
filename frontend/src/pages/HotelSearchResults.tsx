@@ -789,7 +789,7 @@ export const HotelSearchResults: React.FC = () => {
                           <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
                         <span className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-[120px]">
-                          {user.name}
+                          {user.name?.split(' ')[0]}
                         </span>
                       </Link>
                       {/* Logout Button - Icon on mobile */}
@@ -1501,7 +1501,7 @@ export const HotelSearchResults: React.FC = () => {
                               <div className="text-sm">
                                 <strong>{hotel.name}</strong>
                                 {hotel.price && hotel.price > 0 && (
-                                  <div className="text-orange-600 font-bold">
+                                  <div className="text-orange-600 font-bold font-price">
                                     {currency} {hotel.price}
                                   </div>
                                 )}
@@ -2060,10 +2060,10 @@ export const HotelSearchResults: React.FC = () => {
                                     <div className="text-sm font-bold text-red-600">{t('searchResults:hotelCard.noRates', 'No rates data')}</div>
                                 ) : (
                                     <>
-                                        <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-none">
+                                        <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-none font-price">
                                             {formatPrice(hotel.price)}
                                         </div>
-                                        <div className="text-[10px] text-gray-500 font-medium mb-1">
+                                        <div className="text-[10px] text-gray-500 font-medium mb-1 font-price">
                                             {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).booking_taxes || 0)))}
                                         </div>
                                     </>
@@ -2440,7 +2440,7 @@ export const HotelSearchResults: React.FC = () => {
                       </div>
                       {hotel.price && hotel.price > 0 && (
                         <div className="mt-1.5">
-                          <span className="font-bold text-gray-900">
+                          <span className="font-bold text-gray-900 font-price">
                             {formatPrice(hotel.price)}
                           </span>
                           <span className="text-xs text-gray-500 ml-1">per night</span>

@@ -161,6 +161,39 @@ class WhatsAppService {
   }
 
   /**
+   * Send phone verification OTP code via WhatsApp
+   * @param {string} phone - Phone number with country code
+   * @param {string} code - 6-digit verification code
+   * @param {string} language - Language preference ('en' or 'ar')
+   * @returns {Promise<Object>} API response
+   */
+  async sendVerificationCode(phone, code, language = 'ar') {
+    try {
+      if (!this.accessToken || !this.phoneNumberId) {
+        throw new Error('WhatsApp credentials not configured');
+      }
+
+      // Format phone number - remove + and any non-numeric characters
+      const formattedPhone = phone.replace(/[^\d]/g, '');
+
+      // Bilingual message for better user experience
+      const message = language === 'ar'
+        ? `🔐 رمز التحقق الخاص بك من Gaith Tours هو: *${code}*\n\nهذا الرمز صالح لمدة 10 دقائق.\n\n🔐 Your Gaith Tours verification code is: *${code}*\n\nThis code is valid for 10 minutes.`
+        : `🔐 Your Gaith Tours verification code is: *${code}*\n\nThis code is valid for 10 minutes.\n\n🔐 رمز التحقق الخاص بك من Gaith Tours هو: *${code}*\n\nهذا الرمز صالح لمدة 10 دقائق.`;
+
+      console.log(`📱 Sending verification code to ${formattedPhone}`);
+
+      const response = await this.sendMessage(formattedPhone, message);
+
+      console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to send verification code:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Send Arabic booking approval notification using template
    * @param {Object} booking - Booking details
    * @param {Object} invoice - Invoice details

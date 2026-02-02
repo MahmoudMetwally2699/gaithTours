@@ -336,12 +336,29 @@ export const MainSection: React.FC = () => {
                 </Link>
               </>
             ) : (
-              <div className="flex items-center space-x-2 sm:space-x-4 rtl:space-x-reverse text-white">
-                <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors text-sm sm:text-base truncate max-w-[100px] sm:max-w-none">
-                  {user.name}
+              <div className="flex items-center gap-2 sm:gap-3 rtl:space-x-reverse text-white">
+                {/* User Profile - Modern Card Style */}
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/30 hover:bg-white/25 transition-all shadow-sm"
+                >
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/30 flex items-center justify-center">
+                    <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-[120px]">
+                    {user.name?.split(' ')[0]}
+                  </span>
                 </Link>
-                <button onClick={logout} className="text-xs sm:text-sm opacity-80 hover:opacity-100">
-                  {t('nav.logout', { ns: 'common', defaultValue: 'Logout' })}
+                {/* Logout Button - Icon on mobile */}
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full hover:bg-white/10 transition-colors"
+                  title="Logout"
+                >
+                  <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="hidden sm:inline text-sm font-medium">{t('nav.logout', { ns: 'common', defaultValue: 'Logout' })}</span>
                 </button>
               </div>
             )}

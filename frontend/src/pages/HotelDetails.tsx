@@ -663,9 +663,14 @@ export const HotelDetails: React.FC = () => {
                  {!user ? (
                    <Link to="/login" className="text-sm font-bold text-white hover:text-orange-100">{t('common:nav.login', 'Sign In')}</Link>
                  ) : (
-                   <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xs ring-2 ring-white/10">
-                      {user.name.charAt(0).toUpperCase()}
-                   </div>
+                   <Link to="/profile" className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/30 hover:bg-white/25 transition-all shadow-sm">
+                     <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center">
+                       <UserIcon className="w-3.5 h-3.5" />
+                     </div>
+                     <span className="text-xs font-semibold truncate max-w-[80px]">
+                       {user.name?.split(' ')[0]}
+                     </span>
+                   </Link>
                  )}
                </div>
             </div>
@@ -1051,12 +1056,29 @@ export const HotelDetails: React.FC = () => {
                      </Link>
                   </>
                ) : (
-                  <div className="flex items-center space-x-4 rtl:space-x-reverse text-white">
-                     <Link to="/profile" className="font-medium hover:text-orange-200 transition-colors">
-                       {user.name}
+                  <div className="flex items-center gap-2 sm:gap-3 rtl:space-x-reverse text-white">
+                     {/* User Profile - Modern Card Style */}
+                     <Link
+                       to="/profile"
+                       className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/30 hover:bg-white/25 transition-all shadow-sm"
+                     >
+                       <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/30 flex items-center justify-center">
+                         <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                       </div>
+                       <span className="text-xs sm:text-sm font-semibold truncate max-w-[80px] sm:max-w-[120px]">
+                         {user.name?.split(' ')[0]}
+                       </span>
                      </Link>
-                     <button onClick={logout} className="text-sm opacity-80 hover:opacity-100">
-                       {t('nav.logout', 'Logout')}
+                     {/* Logout Button - Icon on mobile */}
+                     <button
+                       onClick={logout}
+                       className="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full hover:bg-white/10 transition-colors"
+                       title="Logout"
+                     >
+                       <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                       </svg>
+                       <span className="hidden sm:inline text-sm font-medium">{t('nav.logout', 'Logout')}</span>
                      </button>
                   </div>
                )}
@@ -1141,7 +1163,7 @@ export const HotelDetails: React.FC = () => {
            <div className="hidden md:flex flex-col items-end">
               <div className="flex items-baseline mb-2">
                  <span className="text-gray-500 text-lg ltr:mr-2 rtl:ml-2">{t('common:hotels.from', 'From')}</span>
-                 <span className="text-3xl font-bold text-black">
+                 <span className="text-3xl font-bold text-black font-price">
                     {new Intl.NumberFormat(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
                        style: 'currency',
                        currency: currency || 'USD',

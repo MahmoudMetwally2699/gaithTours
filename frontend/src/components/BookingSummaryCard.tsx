@@ -375,7 +375,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
               <span className="text-lg font-bold text-gray-900">
                 {t('booking:totalNow', 'Total to pay now')}
               </span>
-              <span className="text-2xl font-bold text-orange-600">
+              <span className="text-2xl font-bold text-orange-600 font-price">
                 {currencySymbol} {(totalPrice + taxes).toFixed(2)}
               </span>
             </div>

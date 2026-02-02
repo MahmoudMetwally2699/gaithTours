@@ -80,6 +80,21 @@ body {
 
 /* Custom Tailwind Components */
 @layer components {
+  /* Price font utility - forces Inter font for all prices including RTL */
+  .font-price {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' on;
+    letter-spacing: -0.02em;
+  }
+
+  /* RTL price font - still uses Inter for numbers */
+  [dir="rtl"] .font-price {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' on;
+  }
+
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg active:transform active:scale-95;
   }

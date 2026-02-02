@@ -504,7 +504,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                               {formatPrice(Number(rate.original_price))}
                            </div>
                         )}
-                        <div className="text-2xl font-bold text-gray-900 leading-none">
+                        <div className="text-2xl font-bold text-gray-900 leading-none font-price">
                            {formatPrice(Number(rate.price))}
                         </div>
                         {/* Per-night price if multiple nights */}

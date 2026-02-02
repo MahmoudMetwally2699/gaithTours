@@ -118,7 +118,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
         <div className="mt-auto flex justify-end items-baseline pt-2 md:pt-3 border-t border-gray-50">
            {(hotel.pricePerNight && hotel.pricePerNight > 0) ? (
              <>
-               <span className="text-base sm:text-lg font-bold text-gray-800">
+               <span className="text-base sm:text-lg font-bold text-gray-800 font-price">
                  {formatPrice(hotel.pricePerNight, hotel.currency)}
                </span>
                <span className="text-gray-400 text-[10px] sm:text-xs ml-0.5 md:ml-1">{t('hotels.perNight', '/night')}</span>
@@ -126,7 +126,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
            ) : (hotel.price && hotel.price > 0 && formatPrice(hotel.price, hotel.currency)) ? (
              <>
                <span className="text-gray-400 text-[10px] sm:text-xs ltr:mr-1 ltr:md:mr-1.5 rtl:ml-1 rtl:md:ml-1.5">{t('hotels.from', 'From')}</span>
-               <span className="text-base sm:text-lg font-bold text-gray-800">
+               <span className="text-base sm:text-lg font-bold text-gray-800 font-price">
                  {formatPrice(hotel.price, hotel.currency)}
                </span>
              </>

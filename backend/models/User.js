@@ -95,6 +95,14 @@ const userSchema = new mongoose.Schema({
   emailVerificationExpires: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  // Phone verification fields
+  isPhoneVerified: {
+    type: Boolean,
+    default: false
+  },
+  phoneVerificationCode: String,
+  phoneVerificationExpires: Date,
+  phoneVerificationLastSent: Date,
   createdAt: {
     type: Date,
     default: Date.now
@@ -156,7 +164,31 @@ userSchema.methods.toJSON = function() {
   delete userObject.emailVerificationToken;
   delete userObject.passwordResetToken;
   delete userObject.passwordResetExpires;
+  delete userObject.phoneVerificationCode;
+  delete userObject.phoneVerificationExpires;
+  delete userObject.phoneVerificationLastSent;
   return userObject;
+};
+
+// Instance method to generate phone verification code
+userSchema.methods.generatePhoneVerificationCode = function() {
+  // Generate random 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Hash and store in database for security
+  this.phoneVerificationCode = crypto
+    .createHash('sha256')
+    .update(code)
+    .digest('hex');
+
+  // Set expiry to 10 minutes from now
+  this.phoneVerificationExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+  // Track when code was last sent (for rate limiting)
+  this.phoneVerificationLastSent = new Date();
+
+  // Return unhashed code to send via WhatsApp
+  return code;
 };
 
 module.exports = mongoose.model('User', userSchema);

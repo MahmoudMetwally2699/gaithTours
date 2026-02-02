@@ -66,7 +66,7 @@ export const PriceBreakdownCard: React.FC<PriceBreakdownProps> = ({
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-orange-600">
+          <span className="text-lg font-bold text-orange-600 font-price">
             {formatPrice(totalPrice)}
           </span>
           {isExpanded ? (
@@ -158,7 +158,7 @@ export const PriceBreakdownCard: React.FC<PriceBreakdownProps> = ({
           {/* Total */}
           <div className="flex justify-between items-center pt-2 border-t border-gray-200">
             <span className="text-base font-bold text-gray-900">Total</span>
-            <span className="text-lg font-bold text-orange-600">
+            <span className="text-lg font-bold text-orange-600 font-price">
               {formatPrice(totalPrice)}
             </span>
           </div>

@@ -277,7 +277,47 @@ export const authAPI = {
             throw new Error(message);
         }
     },
+
+    // Send phone verification code via WhatsApp (requires auth)
+    sendPhoneVerificationCode: async (phone: string, language: string = 'ar'): Promise<ApiResponse<{ codeSent: boolean; expiresIn: number }>> => {
+        try {
+            const response = await api.post('/auth/send-phone-code-auth', { phone, language });
+            return response.data;
+        } catch (error: any) {
+            const errorData = error.response?.data;
+            let message = 'Failed to send verification code';
+
+            if (errorData?.message) {
+                message = errorData.message;
+            }
+
+            throw new Error(message);
+        }
+    },
+
+    // Verify phone code
+    verifyPhoneCode: async (phone: string, code: string): Promise<ApiResponse<{ user: User; verified: boolean }>> => {
+        try {
+            const response = await api.post('/auth/verify-phone-code', { phone, code });
+            const { user } = response.data.data;
+
+            // Update stored user data
+            localStorage.setItem('user', JSON.stringify(user));
+
+            return response.data;
+        } catch (error: any) {
+            const errorData = error.response?.data;
+            let message = 'Failed to verify code';
+
+            if (errorData?.message) {
+                message = errorData.message;
+            }
+
+            throw new Error(message);
+        }
+    },
 };
+
 
 // Hotels API
 export const hotelsAPI = {

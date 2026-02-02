@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken, sendEmail, sanitizeInput, successResponse, errorResponse } = require('../utils/helpers');
 const { sendWelcomeEmail, sendVerificationEmail } = require('../utils/emailService');
+const whatsappService = require('../utils/whatsappService');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -439,6 +440,224 @@ router.post('/resend-verification', [
     errorResponse(res, 'Failed to resend verification email', 500);
   }
 });
+
+// Send phone verification code via WhatsApp
+router.post('/send-phone-code', [
+  body('phone').isMobilePhone().withMessage('Please enter a valid phone number')
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { phone, language = 'ar' } = req.body;
+    const sanitizedPhone = sanitizeInput(phone);
+
+    // Check if there's a user with this phone to prevent abuse
+    // For new registrations, we create a temp record or use session
+    // For now, we'll create/update a pending verification record
+
+    // Find or create a user record for this phone
+    let user = await User.findOne({ phone: sanitizedPhone });
+
+    // If no user exists yet, we need to handle this case
+    // This can happen during registration - we'll create a temporary tracking
+    if (!user) {
+      // Check if there's a pending verification for this phone (without full user)
+      // For social login users updating their phone, they should be authenticated
+      // This endpoint is mainly for authenticated users or during social login flow
+      return errorResponse(res, 'Please complete registration first or log in', 400);
+    }
+
+    // Rate limiting: check if we sent a code in the last 60 seconds
+    if (user.phoneVerificationLastSent) {
+      const timeSinceLastSent = Date.now() - new Date(user.phoneVerificationLastSent).getTime();
+      const cooldownMs = 60 * 1000; // 60 seconds
+
+      if (timeSinceLastSent < cooldownMs) {
+        const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastSent) / 1000);
+        return errorResponse(res, `Please wait ${remainingSeconds} seconds before requesting a new code`, 429);
+      }
+    }
+
+    // Generate verification code
+    const code = user.generatePhoneVerificationCode();
+    await user.save();
+
+    // Send code via WhatsApp
+    try {
+      await whatsappService.sendVerificationCode(sanitizedPhone, code, language);
+    } catch (whatsappError) {
+      console.error('WhatsApp send error:', whatsappError);
+      // Clear the verification fields since we couldn't send
+      user.phoneVerificationCode = undefined;
+      user.phoneVerificationExpires = undefined;
+      user.phoneVerificationLastSent = undefined;
+      await user.save();
+      return errorResponse(res, 'Failed to send verification code. Please check your WhatsApp number.', 500);
+    }
+
+    successResponse(res, {
+      codeSent: true,
+      expiresIn: 600 // 10 minutes in seconds
+    }, 'Verification code sent to your WhatsApp');
+
+  } catch (error) {
+    console.error('Send phone code error:', error);
+    errorResponse(res, 'Failed to send verification code', 500);
+  }
+});
+
+// Send phone verification code for authenticated users (social login flow)
+router.post('/send-phone-code-auth', protect, [
+  body('phone').custom((value) => {
+    // Clean the phone number and validate basic format
+    const cleaned = value.replace(/[\s\-\(\)]/g, '');
+    if (!/^\+?\d{8,15}$/.test(cleaned)) {
+      throw new Error('Please enter a valid phone number');
+    }
+    return true;
+  })
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { phone, language = 'ar' } = req.body;
+    const sanitizedPhone = sanitizeInput(phone);
+
+    // Get the authenticated user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    // Rate limiting: check if we sent a code in the last 60 seconds
+    if (user.phoneVerificationLastSent) {
+      const timeSinceLastSent = Date.now() - new Date(user.phoneVerificationLastSent).getTime();
+      const cooldownMs = 60 * 1000; // 60 seconds
+
+      if (timeSinceLastSent < cooldownMs) {
+        const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastSent) / 1000);
+        return errorResponse(res, `Please wait ${remainingSeconds} seconds before requesting a new code`, 429);
+      }
+    }
+
+    // Store the phone number temporarily for verification
+    user.phone = sanitizedPhone;
+
+    // Generate verification code
+    const code = user.generatePhoneVerificationCode();
+    await user.save();
+
+    // Send code via WhatsApp
+    try {
+      await whatsappService.sendVerificationCode(sanitizedPhone, code, language);
+    } catch (whatsappError) {
+      console.error('WhatsApp send error:', whatsappError);
+      // Clear the verification fields since we couldn't send
+      user.phoneVerificationCode = undefined;
+      user.phoneVerificationExpires = undefined;
+      user.phoneVerificationLastSent = undefined;
+      await user.save();
+      return errorResponse(res, 'Failed to send verification code. Please check your WhatsApp number.', 500);
+    }
+
+    successResponse(res, {
+      codeSent: true,
+      expiresIn: 600 // 10 minutes in seconds
+    }, 'Verification code sent to your WhatsApp');
+
+  } catch (error) {
+    console.error('Send phone code auth error:', error);
+    errorResponse(res, 'Failed to send verification code', 500);
+  }
+});
+
+// Verify phone code
+router.post('/verify-phone-code', protect, [
+  body('phone').custom((value) => {
+    const cleaned = value.replace(/[\s\-\(\)]/g, '');
+    if (!/^\+?\d{8,15}$/.test(cleaned)) {
+      throw new Error('Please enter a valid phone number');
+    }
+    return true;
+  }),
+  body('code').isLength({ min: 6, max: 6 }).isNumeric().withMessage('Please enter a valid 6-digit code')
+], async (req, res) => {
+  try {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const { phone, code } = req.body;
+    const sanitizedPhone = sanitizeInput(phone);
+
+    // Get the authenticated user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    // Check if verification code exists and hasn't expired
+    if (!user.phoneVerificationCode || !user.phoneVerificationExpires) {
+      return errorResponse(res, 'No verification code found. Please request a new code.', 400);
+    }
+
+    // Check if code has expired
+    if (new Date(user.phoneVerificationExpires) < Date.now()) {
+      // Clear expired code
+      user.phoneVerificationCode = undefined;
+      user.phoneVerificationExpires = undefined;
+      await user.save();
+      return errorResponse(res, 'Verification code has expired. Please request a new code.', 400);
+    }
+
+    // Hash the entered code and compare
+    const hashedCode = crypto
+      .createHash('sha256')
+      .update(code)
+      .digest('hex');
+
+    if (hashedCode !== user.phoneVerificationCode) {
+      return errorResponse(res, 'Invalid verification code. Please try again.', 400);
+    }
+
+    // Auto-detect nationality from phone country code
+    const detectedNationality = getNationalityFromPhone(sanitizedPhone);
+
+    // Code is valid - mark phone as verified
+    user.phone = sanitizedPhone;
+    user.isPhoneVerified = true;
+    user.phoneVerificationCode = undefined;
+    user.phoneVerificationExpires = undefined;
+    user.phoneVerificationLastSent = undefined;
+
+    // Set nationality if detected and not already set
+    if (detectedNationality && (!user.nationality || user.nationality === '')) {
+      user.nationality = detectedNationality;
+    }
+
+    await user.save();
+
+    successResponse(res, {
+      user,
+      verified: true
+    }, 'Phone number verified successfully');
+
+  } catch (error) {
+    console.error('Verify phone code error:', error);
+    errorResponse(res, 'Failed to verify code', 500);
+  }
+});
+
 
 // Social Login (Google/Facebook)
 router.post('/social-login', async (req, res) => {
