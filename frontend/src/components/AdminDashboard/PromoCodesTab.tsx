@@ -362,22 +362,22 @@ const PartnerDetailsModal: React.FC<PartnerDetailsModalProps> = ({ code, onClose
 
         {/* Partner Info */}
         <div className="p-6 border-b border-gray-100 bg-gray-50">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-gray-500">{t('admin:dashboard.promo_codes.referral.partnerName') || 'Partner Name'}</p>
-              <p className="font-medium text-gray-900">{code.partnerInfo?.name || '-'}</p>
+              <p className="text-xs text-gray-500 mb-1">{t('admin:dashboard.promo_codes.referral.partnerName') || 'Partner Name'}</p>
+              <p className="font-medium text-gray-900 truncate">{code.partnerInfo?.name || '-'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">{t('admin:dashboard.promo_codes.referral.partnerEmail') || 'Email'}</p>
-              <p className="font-medium text-gray-900">{code.partnerInfo?.email || '-'}</p>
+              <p className="text-xs text-gray-500 mb-1">{t('admin:dashboard.promo_codes.referral.company') || 'Company'}</p>
+              <p className="font-medium text-gray-900 truncate">{code.partnerInfo?.company || '-'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">{t('admin:dashboard.promo_codes.referral.partnerPhone') || 'Phone'}</p>
-              <p className="font-medium text-gray-900">{code.partnerInfo?.phone || '-'}</p>
+              <p className="text-xs text-gray-500 mb-1">{t('admin:dashboard.promo_codes.referral.partnerEmail') || 'Email'}</p>
+              <p className="font-medium text-gray-900 text-sm break-all">{code.partnerInfo?.email || '-'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">{t('admin:dashboard.promo_codes.referral.company') || 'Company'}</p>
-              <p className="font-medium text-gray-900">{code.partnerInfo?.company || '-'}</p>
+              <p className="text-xs text-gray-500 mb-1">{t('admin:dashboard.promo_codes.referral.partnerPhone') || 'Phone'}</p>
+              <p className="font-medium text-gray-900" dir="ltr">{code.partnerInfo?.phone || '-'}</p>
             </div>
           </div>
         </div>
