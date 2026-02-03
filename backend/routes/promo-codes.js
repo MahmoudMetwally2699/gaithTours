@@ -198,9 +198,15 @@ router.get('/options/destinations', protect, admin, async (req, res) => {
  */
 router.get('/', protect, admin, async (req, res) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
+    const { status, type, page = 1, limit = 20 } = req.query;
 
     const query = {};
+
+    // Filter by type (standard or referral)
+    if (type && ['standard', 'referral'].includes(type)) {
+      query.type = type;
+    }
+
     if (status === 'active') {
       query.isActive = true;
       query.validUntil = { $gte: new Date() };
@@ -256,13 +262,21 @@ router.post('/', protect, admin, async (req, res) => {
       perUserLimit,
       applicableHotels,
       applicableDestinations,
-      applicableMinStars
+      applicableMinStars,
+      // New fields for referral type
+      type = 'standard',
+      partnerInfo
     } = req.body;
 
     // Check if code already exists
     const existingCode = await PromoCode.findOne({ code: code.toUpperCase() });
     if (existingCode) {
       return errorResponse(res, 'Promo code already exists', 400);
+    }
+
+    // Validate referral type requirements
+    if (type === 'referral' && (!partnerInfo || !partnerInfo.name)) {
+      return errorResponse(res, 'Partner name is required for referral codes', 400);
     }
 
     const promoCode = new PromoCode({
@@ -280,6 +294,8 @@ router.post('/', protect, admin, async (req, res) => {
       applicableHotels,
       applicableDestinations,
       applicableMinStars,
+      type,
+      partnerInfo: type === 'referral' ? partnerInfo : undefined,
       createdBy: req.user._id
     });
 
@@ -389,6 +405,107 @@ router.get('/:id/stats', protect, admin, async (req, res) => {
   } catch (error) {
     console.error('Get promo code stats error:', error);
     errorResponse(res, 'Failed to get promo code stats', 500);
+  }
+});
+
+/**
+ * @route   GET /api/promo-codes/:id/referral-stats
+ * @desc    Get referral stats including commission details (admin)
+ * @access  Admin
+ */
+router.get('/:id/referral-stats', protect, admin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const promoCode = await PromoCode.findById(id)
+      .populate('referralBookings.bookingId', 'touristName hotel.name totalPrice createdAt');
+
+    if (!promoCode) {
+      return errorResponse(res, 'Promo code not found', 404);
+    }
+
+    if (promoCode.type !== 'referral') {
+      return errorResponse(res, 'This is not a referral code', 400);
+    }
+
+    // Calculate commission stats
+    const totalEarned = promoCode.totalCommissionEarned || 0;
+    const paidCommissions = promoCode.referralBookings
+      .filter(b => b.commissionPaid)
+      .reduce((sum, b) => sum + (b.partnerCommission || 0), 0);
+    const pendingCommissions = totalEarned - paidCommissions;
+
+    successResponse(res, {
+      code: promoCode.code,
+      partnerInfo: promoCode.partnerInfo,
+      totalBookings: promoCode.referralBookings.length,
+      totalCommissionEarned: totalEarned,
+      paidCommissions,
+      pendingCommissions,
+      currency: promoCode.currency,
+      referralBookings: promoCode.referralBookings.slice(-50) // Last 50 bookings
+    }, 'Referral stats retrieved');
+
+  } catch (error) {
+    console.error('Get referral stats error:', error);
+    errorResponse(res, 'Failed to get referral stats', 500);
+  }
+});
+
+/**
+ * @route   PUT /api/promo-codes/:id/mark-commission-paid
+ * @desc    Mark specific referral booking commissions as paid (admin)
+ * @access  Admin
+ */
+router.put('/:id/mark-commission-paid', protect, admin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { bookingIds } = req.body; // Array of referralBooking _id's to mark as paid
+
+    const promoCode = await PromoCode.findById(id);
+
+    if (!promoCode) {
+      return errorResponse(res, 'Promo code not found', 404);
+    }
+
+    if (promoCode.type !== 'referral') {
+      return errorResponse(res, 'This is not a referral code', 400);
+    }
+
+    let markedCount = 0;
+    const now = new Date();
+
+    promoCode.referralBookings.forEach(booking => {
+      if (bookingIds && bookingIds.includes(booking._id.toString())) {
+        if (!booking.commissionPaid) {
+          booking.commissionPaid = true;
+          booking.paidAt = now;
+          markedCount++;
+        }
+      }
+    });
+
+    // If no specific bookingIds provided, mark all unpaid as paid
+    if (!bookingIds || bookingIds.length === 0) {
+      promoCode.referralBookings.forEach(booking => {
+        if (!booking.commissionPaid) {
+          booking.commissionPaid = true;
+          booking.paidAt = now;
+          markedCount++;
+        }
+      });
+    }
+
+    await promoCode.save();
+
+    successResponse(res, {
+      markedCount,
+      message: `${markedCount} commission(s) marked as paid`
+    }, 'Commissions marked as paid');
+
+  } catch (error) {
+    console.error('Mark commission paid error:', error);
+    errorResponse(res, 'Failed to mark commissions as paid', 500);
   }
 });
 

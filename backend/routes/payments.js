@@ -1121,6 +1121,18 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
           console.log(`   ✅ Promo code usage recorded successfully!`);
           console.log(`   New usage count: ${promoCodeDoc.usageCount}`);
           console.log(`   Total usedBy entries: ${promoCodeDoc.usedBy.length}`);
+
+          // Record referral booking if this is a referral code
+          if (promoCodeDoc.type === 'referral') {
+            console.log(`   🎁 Recording referral booking for partner: ${promoCodeDoc.partnerInfo?.name}`);
+            await promoCodeDoc.recordReferralBooking(
+              reservation._id,
+              reservation.totalPrice + (reservation.discountAmount || 0), // Original booking value before discount
+              reservation.discountAmount || 0
+            );
+            console.log(`   ✅ Referral booking recorded!`);
+            console.log(`   Total commission earned: ${promoCodeDoc.totalCommissionEarned}`);
+          }
         } else {
           console.log(`   ❌ Promo code NOT found in database!`);
           console.log(`   Searched for code: "${reservation.promoCode}"`);
@@ -1489,6 +1501,18 @@ router.get('/kashier/order/:orderId', async (req, res) => {
                   console.log(`   ✅ Promo code usage recorded successfully!`);
                   console.log(`   New usage count: ${promoCodeDoc.usageCount}`);
                   console.log(`   Total usedBy entries: ${promoCodeDoc.usedBy.length}`);
+
+                  // Record referral booking if this is a referral code
+                  if (promoCodeDoc.type === 'referral') {
+                    console.log(`   🎁 Recording referral booking for partner: ${promoCodeDoc.partnerInfo?.name}`);
+                    await promoCodeDoc.recordReferralBooking(
+                      reservation._id,
+                      reservation.totalPrice + (reservation.discountAmount || 0), // Original booking value before discount
+                      reservation.discountAmount || 0
+                    );
+                    console.log(`   ✅ Referral booking recorded!`);
+                    console.log(`   Total commission earned: ${promoCodeDoc.totalCommissionEarned}`);
+                  }
                 } else {
                   console.log(`   ❌ Promo code NOT found in database!`);
                   console.log(`   Searched for code: "${reservation.promoCode}"`);

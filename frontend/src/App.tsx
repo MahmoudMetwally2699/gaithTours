@@ -27,6 +27,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AcceptInvitation } from './pages/AcceptInvitation';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
+import { useReferralCapture } from './hooks/useReferralCapture';
 import './i18n';
 
 // Google OAuth Client ID - Replace with your actual client ID from Google Cloud Console
@@ -34,6 +35,10 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 const AppContent = () => {
   const location = useLocation();
+
+  // Capture referral code from URL (?ref=CODE) and store for checkout
+  useReferralCapture();
+
   const isAdminDashboard = location.pathname.startsWith('/admin/dashboard');
 
   const isHome = location.pathname === '/';

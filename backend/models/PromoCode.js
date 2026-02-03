@@ -90,6 +90,65 @@ const promoCodeSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Promo code type: standard (regular promo) or referral (partner QR code)
+  type: {
+    type: String,
+    enum: ['standard', 'referral'],
+    default: 'standard'
+  },
+  // Partner information for referral type codes
+  partnerInfo: {
+    name: {
+      type: String,
+      trim: true
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+    phone: {
+      type: String,
+      trim: true
+    },
+    company: {
+      type: String,
+      trim: true
+    },
+    commissionType: {
+      type: String,
+      enum: ['percentage', 'fixed'],
+      default: 'percentage'
+    },
+    commissionValue: {
+      type: Number,
+      default: 5 // 5% default commission
+    }
+  },
+  // Total commission earned by this referral partner
+  totalCommissionEarned: {
+    type: Number,
+    default: 0
+  },
+  // Referral bookings tracking
+  referralBookings: [{
+    bookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Reservation'
+    },
+    bookingValue: Number,
+    customerDiscount: Number,
+    partnerCommission: Number,
+    commissionPaid: {
+      type: Boolean,
+      default: false
+    },
+    paidAt: Date,
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -202,9 +261,48 @@ promoCodeSchema.statics.findValidCode = async function(code) {
   return { valid: true, promoCode };
 };
 
+// Instance method: Calculate partner commission for referral codes
+promoCodeSchema.methods.calculateCommission = function(bookingValue) {
+  if (this.type !== 'referral' || !this.partnerInfo) {
+    return { commission: 0 };
+  }
+
+  let commission;
+  if (this.partnerInfo.commissionType === 'percentage') {
+    commission = (bookingValue * this.partnerInfo.commissionValue) / 100;
+  } else {
+    commission = this.partnerInfo.commissionValue;
+  }
+
+  return {
+    commission: Math.round(commission * 100) / 100,
+    commissionType: this.partnerInfo.commissionType,
+    commissionValue: this.partnerInfo.commissionValue
+  };
+};
+
+// Instance method: Record a referral booking
+promoCodeSchema.methods.recordReferralBooking = async function(bookingId, bookingValue, customerDiscount) {
+  if (this.type !== 'referral') return;
+
+  const { commission } = this.calculateCommission(bookingValue);
+
+  this.referralBookings.push({
+    bookingId,
+    bookingValue,
+    customerDiscount,
+    partnerCommission: commission,
+    commissionPaid: false
+  });
+
+  this.totalCommissionEarned += commission;
+  await this.save();
+};
+
 // Indexes
 promoCodeSchema.index({ code: 1 });
 promoCodeSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 });
 promoCodeSchema.index({ createdBy: 1 });
+promoCodeSchema.index({ type: 1 }); // Index for filtering by type
 
 module.exports = mongoose.model('PromoCode', promoCodeSchema);

@@ -13,6 +13,7 @@ import { GuestInformationForm, GuestFormData } from '../components/GuestInformat
 import { LoyaltyRedemption } from '../components/LoyaltyRedemption';
 import { bookingsAPI } from '../services/api';
 import { getHotelDetails } from '../services/hotelService';
+import { getStoredReferralCode, clearReferralCode } from '../hooks/useReferralCapture';
 import { toast } from 'react-hot-toast';
 
 interface LocationState {
@@ -311,6 +312,20 @@ export const BookingPage: React.FC = () => {
       }));
     }
   }, [user]);
+
+  // Auto-apply stored referral code from URL capture
+  useEffect(() => {
+    const storedRefCode = getStoredReferralCode();
+    if (storedRefCode && !promoCode && state?.selectedRate) {
+      console.log('🎁 Auto-applying stored referral code:', storedRefCode);
+      setPromoCode(storedRefCode);
+      // Auto-validate after setting
+      setTimeout(() => {
+        const validateBtn = document.querySelector('[data-validate-promo]') as HTMLButtonElement;
+        if (validateBtn) validateBtn.click();
+      }, 500);
+    }
+  }, [state?.selectedRate]);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -1091,6 +1106,7 @@ export const BookingPage: React.FC = () => {
                   }`}
                 />
                 <button
+                  data-validate-promo
                   onClick={validatePromoCode}
                   disabled={isValidatingPromo || !promoCode.trim()}
                   className="px-4 py-2 bg-orange-100 text-orange-600 rounded-lg font-medium hover:bg-orange-200 transition-colors disabled:bg-gray-100 disabled:text-gray-400"

@@ -280,6 +280,10 @@
           "active": "Active Only",
           "expired": "Expired"
         },
+        "tabs": {
+          "standard": "Standard Codes",
+          "referral": "Referral Codes"
+        },
         "table": {
           "code": "Code",
           "discount": "Discount",
@@ -310,7 +314,10 @@
           "cancel": "Cancel",
           "save": "Create Code",
           "update": "Update Code",
-          "saving": "Saving..."
+          "saving": "Saving...",
+          "createSuccess": "Promo code created successfully!",
+          "updateSuccess": "Promo code updated successfully!",
+          "saveError": "Failed to save promo code"
         },
         "types": {
           "percentage": "Percentage (%)",
@@ -319,7 +326,35 @@
         "delete": {
           "title": "Delete Promo Code",
           "message": "This action cannot be undone.",
-          "confirm": "Delete"
+          "confirm": "Delete",
+          "success": "Promo code deleted",
+          "error": "Failed to delete promo code"
+        },
+        "referral": {
+          "title": "Referral Codes",
+          "subtitle": "Manage partner referral codes with QR tracking",
+          "createButton": "Create Referral",
+          "createTitle": "Create Referral Code",
+          "partnerInfo": "Partner Information",
+          "partnerName": "Partner Name",
+          "partnerEmail": "Email",
+          "partnerPhone": "Phone",
+          "company": "Company",
+          "commission": "Commission",
+          "commissionType": "Commission Type",
+          "commissionValue": "Commission Value",
+          "totalEarned": "Total Earned",
+          "pendingCommission": "Pending",
+          "paidCommission": "Paid",
+          "qrCode": "QR Code",
+          "downloadQR": "Download QR",
+          "copyLink": "Copy Link",
+          "linkCopied": "Link copied!",
+          "referralLink": "Referral Link",
+          "bookingsFromReferral": "Bookings from Referral",
+          "markAsPaid": "Mark as Paid",
+          "noReferrals": "No referral codes yet",
+          "customerDiscount": "Customer Discount"
         }
       },
       "margins": {

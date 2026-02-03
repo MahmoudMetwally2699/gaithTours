@@ -393,6 +393,10 @@
           "active": "نشط فقط",
           "expired": "منتهي الصلاحية"
         },
+        "tabs": {
+          "standard": "الرموز العادية",
+          "referral": "رموز الإحالة"
+        },
         "table": {
           "code": "الرمز",
           "discount": "الخصم",
@@ -438,6 +442,32 @@
         "types": {
           "percentage": "نسبة مئوية (%)",
           "fixed": "مبلغ ثابت"
+        },
+        "referral": {
+          "title": "رموز الإحالة",
+          "subtitle": "إدارة رموز إحالة الشركاء مع تتبع رمز QR",
+          "createButton": "إنشاء رمز إحالة",
+          "createTitle": "إنشاء رمز إحالة جديد",
+          "partnerInfo": "معلومات الشريك",
+          "partnerName": "اسم الشريك",
+          "partnerEmail": "البريد الإلكتروني",
+          "partnerPhone": "الهاتف",
+          "company": "الشركة",
+          "commission": "العمولة",
+          "commissionType": "نوع العمولة",
+          "commissionValue": "قيمة العمولة",
+          "totalEarned": "إجمالي الأرباح",
+          "pendingCommission": "قيد الانتظار",
+          "paidCommission": "مدفوع",
+          "qrCode": "رمز QR",
+          "downloadQR": "تحميل رمز QR",
+          "copyLink": "نسخ الرابط",
+          "linkCopied": "تم نسخ الرابط!",
+          "referralLink": "رابط الإحالة",
+          "bookingsFromReferral": "الحجوزات من الإحالة",
+          "markAsPaid": "تحديد كمدفوع",
+          "noReferrals": "لا توجد رموز إحالة بعد",
+          "customerDiscount": "خصم العميل"
         }
       },
       "margins": {
