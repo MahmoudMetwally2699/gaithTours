@@ -37,6 +37,7 @@ import {
   PhoneIcon,
   TrophyIcon
 } from '@heroicons/react/24/outline';
+import { WhatsAppNotificationListener } from '../components/WhatsApp/WhatsAppNotificationListener';
 
 interface DashboardStats {
   totalClients: number;
@@ -501,6 +502,7 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-white via-orange-50 to-amber-50 ${isRTL ? 'rtl' : 'ltr'}`}>
+      <WhatsAppNotificationListener />
       <div className="flex">        {/* Mobile Menu Button */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
