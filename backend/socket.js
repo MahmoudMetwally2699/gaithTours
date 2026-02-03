@@ -69,7 +69,7 @@ const initializeSocket = (server) => {
         return next(new Error('User not found'));
       }
 
-      if (user.role !== 'admin' && user.role !== 'superadmin') {
+      if (user.role !== 'admin' && user.role !== 'superadmin' && user.role !== 'super_admin') {
         console.error('❌ User does not have admin access:', user.role);
         return next(new Error('Admin access required'));
       }

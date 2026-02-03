@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated && user && user.role && (user.role === 'admin' || user.role === 'superadmin')) {
+    if (isAuthenticated && user && user.role && (user.role === 'admin' || user.role === 'superadmin' || user.role === 'super_admin')) {
       const token = localStorage.getItem('token');
 
       if (!token) {

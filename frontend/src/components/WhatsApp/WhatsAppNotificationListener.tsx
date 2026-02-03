@@ -1,11 +1,51 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSocket } from '../../contexts/SocketContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 // import notificationSound from '../../assets/sounds/notification.mp3'; // You'll need to add a sound file
 
 export const WhatsAppNotificationListener: React.FC = () => {
   const { socket } = useSocket();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { user, isAuthenticated } = useAuth();
+  // Pre-initialize AudioContext on mount and unlock on any user interaction
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Helper to play a clean beep using Web Audio API (No files needed)
+  const playNotificationSound = () => {
+    try {
+      // Ensure context is created and resumed
+      if (!audioContextRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioContextRef.current = new AudioContextClass();
+      }
+
+      const ctx = audioContextRef.current;
+
+      // Resume if suspended (due to browser policy)
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(500, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+      console.error('Audio play failed', e);
+    }
+  };
 
   useEffect(() => {
     // Request notification permission on mount
@@ -13,9 +53,72 @@ export const WhatsAppNotificationListener: React.FC = () => {
       Notification.requestPermission();
     }
 
-    // Initialize audio (optional, if you have a sound file)
-    // audioRef.current = new Audio('/sounds/notification.mp3');
+    // Pre-initialize AudioContext on any user interaction to unlock audio
+    const unlockAudio = () => {
+      if (!audioContextRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          audioContextRef.current = new AudioContextClass();
+        }
+      }
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+    };
+
+    // Listen for any user interaction to unlock audio
+    document.addEventListener('click', unlockAudio, { once: true });
+    document.addEventListener('keydown', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+
+    return () => {
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+    };
   }, []);
+
+  const [apiStatus, setApiStatus] = useState<string>('Checking...');
+  const [socketError, setSocketError] = useState<string>('');
+
+  useEffect(() => {
+    // Check API Health
+    const checkApi = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/health`);
+        if (response.ok) {
+          setApiStatus('Online');
+        } else {
+          setApiStatus(`Error: ${response.status}`);
+        }
+      } catch (err: any) {
+        setApiStatus('Unreachable');
+        console.error('API Check Failed', err);
+      }
+    };
+
+    checkApi();
+    const interval = setInterval(checkApi, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('connect_error', (err: any) => {
+      setSocketError(err.message);
+    });
+
+    socket.on('connect', () => {
+      setSocketError('');
+    });
+
+    return () => {
+      socket.off('connect_error');
+      socket.off('connect');
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (!socket) return;
@@ -27,8 +130,7 @@ export const WhatsAppNotificationListener: React.FC = () => {
       if (message.direction === 'outgoing') return;
 
       // 1. Play Sound
-      // const audio = new Audio('/sounds/notification.mp3');
-      // audio.play().catch(e => console.log('Audio play failed', e));
+      playNotificationSound();
 
       // 2. Browser Notification
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -69,19 +171,38 @@ export const WhatsAppNotificationListener: React.FC = () => {
   }, [socket]);
 
   // Debug UI (Only visible in development or for admins)
+
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 p-4 bg-white/90 backdrop-blur shadow-lg rounded-xl border border-gray-200 text-xs">
+    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 p-4 bg-white/90 backdrop-blur shadow-lg rounded-xl border border-gray-200 text-xs font-mono">
       <div className="flex items-center gap-2">
          <div className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
          <span className="font-medium text-gray-700">
-           {socket?.connected ? 'Socket Connected' : 'Socket Disconnected'}
+           Socket: {socket ? (socket.connected ? 'Connected' : 'Disconnected') : 'NULL (Not Init)'}
          </span>
       </div>
+      <div className="flex items-center gap-2">
+         <div className={`w-2 h-2 rounded-full ${apiStatus === 'Online' ? 'bg-green-500' : 'bg-red-500'}`} />
+         <span className="font-medium text-gray-700">
+           API: {apiStatus}
+         </span>
+      </div>
+
+      {/* Auth Debug Info */}
+      <div className="border-t pt-2 mt-1">
+        <div>Auth: {isAuthenticated ? 'Yes' : 'No'}</div>
+        <div>Role: {user?.role || 'None'}</div>
+        <div>User: {user?.name || 'None'}</div>
+      </div>
+
+      {socketError && (
+        <div className="text-red-500 max-w-[200px] break-words">
+          Err: {socketError}
+        </div>
+      )}
       <button
         onClick={() => {
           // Play sound
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-          audio.play().catch(e => console.error('Audio play failed', e));
+          playNotificationSound();
 
           // Trigger notification
           if ('Notification' in window && Notification.permission === 'granted') {
@@ -95,7 +216,7 @@ export const WhatsAppNotificationListener: React.FC = () => {
 
           toast('Test Notification Triggered', { icon: '🔔' });
         }}
-        className="px-3 py-1 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
+        className="px-3 py-1 mt-1 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
       >
         Test Notification
       </button>

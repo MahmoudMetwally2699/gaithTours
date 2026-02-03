@@ -180,6 +180,9 @@ async function processIncomingMessages(data) {
           // Populate conversation with user data for frontend
           const populatedConversation = await conversation.populate('userId', 'name email');
 
+          console.log('📤 Emitting new_whatsapp_message to whatsapp-admins room');
+          console.log('📤 Message from:', phoneNumber, 'Content:', messageData.text.substring(0, 50));
+
           // Emit to all admin users
           io.to('whatsapp-admins').emit('new_whatsapp_message', {
             message: {
@@ -217,8 +220,10 @@ async function processIncomingMessages(data) {
           });
 
         } catch (socketError) {
+          console.error('❌ Socket emission error:', socketError.message);
         }
       } else {
+        console.warn('⚠️ Socket.IO not available when trying to emit message');
       }
 
 
