@@ -30,8 +30,7 @@ export const SocketProvider = ({ children }) => {
       // Extract just the origin (protocol + host) for Socket.io connection
       // This handles URLs like https://api.gaithtours.com/api correctly
       const url = new URL(apiUrl);
-      const socketUrl = url.origin; // Gets https://api.gaithtours.com (no path)
-      console.log('🔌 Socket connecting to:', socketUrl, '| API URL:', apiUrl);
+      const socketUrl = url.origin;
 
       // Close existing socket if any
       if (socket) {

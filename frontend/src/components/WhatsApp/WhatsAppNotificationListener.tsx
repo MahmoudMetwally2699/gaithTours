@@ -47,6 +47,47 @@ export const WhatsAppNotificationListener: React.FC = () => {
     }
   };
 
+  // Helper to play disconnect alert sound (lower tone, different pattern)
+  const playDisconnectSound = () => {
+    try {
+      if (!audioContextRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioContextRef.current = new AudioContextClass();
+      }
+
+      const ctx = audioContextRef.current;
+
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      // Play two descending tones to indicate disconnect
+      const playTone = (startTime: number, freq: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, startTime + 0.2);
+
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.3);
+      };
+
+      playTone(ctx.currentTime, 600);
+      playTone(ctx.currentTime + 0.35, 400);
+    } catch (e) {
+      console.error('Disconnect sound failed', e);
+    }
+  };
+
   useEffect(() => {
     // Request notification permission on mount
     if ('Notification' in window && Notification.permission === 'default') {
@@ -78,45 +119,30 @@ export const WhatsAppNotificationListener: React.FC = () => {
     };
   }, []);
 
-  const [apiStatus, setApiStatus] = useState<string>('Checking...');
-  const [socketError, setSocketError] = useState<string>('');
-
-  useEffect(() => {
-    // Check API Health
-    const checkApi = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/health`);
-        if (response.ok) {
-          setApiStatus('Online');
-        } else {
-          setApiStatus(`Error: ${response.status}`);
-        }
-      } catch (err: any) {
-        setApiStatus('Unreachable');
-        console.error('API Check Failed', err);
-      }
-    };
-
-    checkApi();
-    const interval = setInterval(checkApi, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('connect_error', (err: any) => {
-      setSocketError(err.message);
-    });
+    const handleDisconnect = () => {
+      playDisconnectSound();
+      toast.error('Socket disconnected! Trying to reconnect...', {
+        duration: 5000,
+        icon: '🔌',
+      });
+    };
 
-    socket.on('connect', () => {
-      setSocketError('');
-    });
+    const handleReconnect = () => {
+      toast.success('Socket reconnected!', {
+        duration: 3000,
+        icon: '✅',
+      });
+    };
+
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect', handleReconnect);
 
     return () => {
-      socket.off('connect_error');
-      socket.off('connect');
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect', handleReconnect);
     };
   }, [socket]);
 
@@ -136,14 +162,12 @@ export const WhatsAppNotificationListener: React.FC = () => {
       if ('Notification' in window && Notification.permission === 'granted') {
         const notification = new Notification(`New Message from ${conversation.customerName || conversation.phoneNumber}`, {
           body: message.message || (message.messageType === 'image' ? '📷 Image' : '📎 Attachment'),
-          icon: '/logo192.png', // Ensure this path exists or use a valid one
-          tag: 'whatsapp-message', // Prevents spamming, replaces old notification from same tag
+          icon: '/logo192.png',
+          tag: 'whatsapp-message',
         });
 
         notification.onclick = () => {
           window.focus();
-          // Ideally navigate to the specific chat, e.g.:
-          // history.push(`/admin/dashboard/whatsapp?phone=${conversation.phoneNumber}`);
         };
       }
 
@@ -151,12 +175,12 @@ export const WhatsAppNotificationListener: React.FC = () => {
       const originalTitle = document.title;
       document.title = `(1) New Message! | ${originalTitle}`;
 
-      // Reset title after 5 seconds or on focus
+      // Reset title after 5 seconds
       setTimeout(() => {
         document.title = originalTitle.replace(/^\(\d+\) New Message! \| /, '');
       }, 5000);
 
-      // 4. In-App Toast (Fallback)
+      // 4. In-App Toast
       toast(`New message from ${conversation.customerName || conversation.phoneNumber}`, {
         icon: '💬',
         duration: 4000,
@@ -170,59 +194,6 @@ export const WhatsAppNotificationListener: React.FC = () => {
     };
   }, [socket]);
 
-  // Debug UI (Only visible in development or for admins)
-
-  return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 p-4 bg-white/90 backdrop-blur shadow-lg rounded-xl border border-gray-200 text-xs font-mono">
-      <div className="flex items-center gap-2">
-         <div className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-         <span className="font-medium text-gray-700">
-           Socket: {socket ? (socket.connected ? 'Connected' : 'Disconnected') : 'NULL (Not Init)'}
-         </span>
-      </div>
-      <div className="flex items-center gap-2">
-         <div className={`w-2 h-2 rounded-full ${apiStatus === 'Online' ? 'bg-green-500' : 'bg-red-500'}`} />
-         <span className="font-medium text-gray-700">
-           API: {apiStatus}
-         </span>
-      </div>
-
-      {/* Auth Debug Info */}
-      <div className="border-t pt-2 mt-1">
-        <div>Auth: {isAuthenticated ? 'Yes' : 'No'}</div>
-        <div>Role: {user?.role || 'None'}</div>
-        <div>User: {user?.name || 'None'}</div>
-      </div>
-
-      {socketError && (
-        <div className="text-red-500 max-w-[200px] break-words">
-          Err: {socketError}
-        </div>
-      )}
-      <button
-        onClick={() => {
-          // Play sound
-          playNotificationSound();
-
-          // Trigger notification
-          if ('Notification' in window && Notification.permission === 'granted') {
-             new Notification('🔔 Test Notification', {
-               body: 'This is a test message to verify permissions.',
-               icon: '/logo192.png'
-             });
-          } else {
-            toast('Notifications not granted', { icon: '⚠️' });
-          }
-
-          toast('Test Notification Triggered', { icon: '🔔' });
-        }}
-        className="px-3 py-1 mt-1 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
-      >
-        Test Notification
-      </button>
-      <div className="text-gray-400 text-[10px]">
-        ID: {socket?.id || 'No ID'}
-      </div>
-    </div>
-  );
+  // This component doesn't render any visible UI
+  return null;
 };
