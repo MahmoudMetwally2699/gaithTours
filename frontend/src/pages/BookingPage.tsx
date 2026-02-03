@@ -10,7 +10,9 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { BookingSummaryCard } from '../components/BookingSummaryCard';
 import { GuestInformationForm, GuestFormData } from '../components/GuestInformationForm';
+import { LoyaltyRedemption } from '../components/LoyaltyRedemption';
 import { bookingsAPI } from '../services/api';
+import { getHotelDetails } from '../services/hotelService';
 import { toast } from 'react-hot-toast';
 
 interface LocationState {
@@ -61,6 +63,10 @@ export const BookingPage: React.FC = () => {
   } | null>(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
+  // Loyalty Points State
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+  const [loyaltyPointsUsed, setLoyaltyPointsUsed] = useState(0);
+
   // Header State
   const [checkInDate, setCheckInDate] = useState<Date | null>(
     state?.checkIn ? new Date(state.checkIn) : null
@@ -75,6 +81,130 @@ export const BookingPage: React.FC = () => {
     childrenAges: state?.childrenAges || []
   });
   const [showGuestPopover, setShowGuestPopover] = useState(false);
+
+  // Dynamic rate state - starts with the rate from navigation state, updates when currency changes
+  const [currentRate, setCurrentRate] = useState<any>(state?.selectedRate);
+  // Dynamic selectedRooms state - for multi-room bookings
+  const [currentSelectedRooms, setCurrentSelectedRooms] = useState<any[]>(state?.selectedRooms || []);
+  const [isRefetchingRate, setIsRefetchingRate] = useState(false);
+  const [rateCurrency, setRateCurrency] = useState<string>(state?.selectedRate?.currency || 'USD');
+
+  // Re-fetch hotel rates when currency changes
+  const lastFetchedCurrency = React.useRef<string>(state?.selectedRate?.currency || 'USD');
+
+  useEffect(() => {
+    const refetchRates = async () => {
+      // Only refetch if currency changed from what we last fetched
+      // Use state.hotel.hid (numeric ID) for API calls, not the URL slug
+      const numericHid = state?.hotel?.hid;
+      if (!numericHid || currency === lastFetchedCurrency.current) {
+        console.log('💱 Skipping refetch - same currency:', currency, '===', lastFetchedCurrency.current, 'or no hid:', numericHid);
+        return;
+      }
+
+      console.log('💱 Currency changed from', lastFetchedCurrency.current, 'to', currency);
+      console.log('💱 Hotel object:', { id: state.hotel.id, hid: state.hotel.hid, name: state.hotel.name });
+
+      setIsRefetchingRate(true);
+      try {
+        console.log('💱 Refetching rates for currency:', currency);
+        console.log('💱 Using numeric hid for API:', numericHid);
+
+        // Use numeric hid from state (not URL slug) for proper rate fetching
+        // IMPORTANT: children param should be comma-separated ages (e.g., "5,8,12"), not a count
+        const childrenAgesStr = state.childrenAges && state.childrenAges.length > 0
+          ? state.childrenAges.join(',')
+          : '';
+
+        console.log('💱 API params:', {
+          hid: numericHid,
+          checkin: state.checkIn,
+          checkout: state.checkOut,
+          adults: state.guests,
+          children: childrenAgesStr,
+          currency: currency
+        });
+
+        const hotelData = await getHotelDetails(String(numericHid), {
+          checkin: state.checkIn,
+          checkout: state.checkOut,
+          adults: state.guests,
+          children: childrenAgesStr || undefined,
+          currency: currency,
+          language: i18n.language
+        });
+
+        console.log('💱 API Response:', hotelData);
+        console.log('💱 Available rates:', hotelData?.rates?.length);
+        console.log('💱 hotelData keys:', hotelData ? Object.keys(hotelData) : 'null');
+        if (!hotelData?.rates || hotelData.rates.length === 0) {
+          console.error('💱 No rates found! Full response:', JSON.stringify(hotelData, null, 2).slice(0, 500));
+        }
+
+        // Helper to find matching rate
+        const findMatchingRate = (targetRate: any) => {
+           if (!targetRate) return null;
+           // Try to match by room_name AND meal
+           return hotelData.rates.find((r: any) => r.room_name === targetRate.room_name && r.meal === targetRate.meal)
+               || hotelData.rates.find((r: any) => r.room_name === targetRate.room_name)
+               || null;
+        };
+
+        if (hotelData?.rates && hotelData.rates.length > 0) {
+          // Handle multi-room selection update
+          if (currentSelectedRooms.length > 0) {
+             console.log('BS: Updating multi-room selection...', currentSelectedRooms.length, 'rooms');
+             const updatedRooms = currentSelectedRooms.map((room, idx) => {
+                const match = findMatchingRate(room);
+                if (match) {
+                    console.log(`BS: Room ${idx} matched!`, match.room_name, match.price, match.currency);
+                    return { ...match, count: room.count };
+                } else {
+                    console.warn(`BS: Room ${idx} processing FAILED to match:`, room.room_name);
+                    // Fallback: If we can't match exact room, try to find ANY room with same name ignoring meal?
+                    // Or desperate fallback to first available rate to at least show correct currency?
+                    const looseMatch = hotelData.rates.find((r: any) => r.room_name === room.room_name);
+                    if (looseMatch) {
+                        console.log(`BS: Room ${idx} loose matched (name only):`, looseMatch.room_name, looseMatch.currency);
+                        return { ...looseMatch, count: room.count };
+                    }
+                    console.error(`BS: Room ${idx} completely failed match. Keeping old rate.`, room);
+                    return room;
+                }
+             });
+             setCurrentSelectedRooms(updatedRooms);
+
+             // Update central currentRate to the first room's new rate if available
+             if (updatedRooms[0]) {
+               console.log('BS: Updating currentRate to:', updatedRooms[0].currency);
+               setCurrentRate(updatedRooms[0]);
+               setRateCurrency(updatedRooms[0].currency || currency);
+             }
+             toast.success(`Prices updated to ${currency}`);
+             lastFetchedCurrency.current = currency; // Update ref after success
+          }
+          // Handle single rate update
+          else {
+             const matchingRate = findMatchingRate(currentRate) || hotelData.rates[0];
+             setCurrentRate(matchingRate);
+             setRateCurrency(matchingRate.currency || currency);
+             toast.success(`Prices updated to ${currency}`);
+             lastFetchedCurrency.current = currency; // Update ref after success
+          }
+        } else {
+          toast.error('Could not fetch updated rates. Showing original prices.');
+        }
+      } catch (error) {
+        console.error('Error refetching rates:', error);
+        toast.error('Failed to update prices. Showing original currency.');
+      } finally {
+        setIsRefetchingRate(false);
+      }
+    };
+
+    refetchRates();
+  }, [currency]); // Only trigger when currency changes
+
 
   // Helper to calculate only taxes paid at booking
   const calculateBookingTaxes = (rate: any, numberOfRooms: number) => {
@@ -198,7 +328,10 @@ export const BookingPage: React.FC = () => {
     return null;
   }
 
-  const { hotel, selectedRate, selectedRooms, checkIn, checkOut, guests, rooms } = state;
+  const { hotel, selectedRooms: initialSelectedRooms, checkIn, checkOut, guests, rooms } = state;
+  // Use dynamic states instead of static navigation state
+  const selectedRate = currentRate;
+  const selectedRooms = currentSelectedRooms.length > 0 ? currentSelectedRooms : (initialSelectedRooms || []);
 
   const handleFormChange = (data: Partial<GuestFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -366,6 +499,16 @@ export const BookingPage: React.FC = () => {
           appliedDiscount = promoCodeResult.discount || 0;
       }
 
+      // Apply loyalty points discount (already deducted from user's account in LoyaltyRedemption)
+      if (loyaltyDiscount > 0) {
+          console.log('🎁 Applying loyalty discount:', loyaltyDiscount);
+          console.log('   Points used:', loyaltyPointsUsed);
+          console.log('   Amount after loyalty:', kashierAmount - loyaltyDiscount);
+
+          kashierAmount = Math.max(0, kashierAmount - loyaltyDiscount);
+          appliedDiscount += loyaltyDiscount; // Add to total discount
+      }
+
       const kashierCurrency = selectedRate.currency || 'USD';
 
       console.log('💳 Kashier payment (final):', kashierAmount, kashierCurrency);
@@ -393,6 +536,9 @@ export const BookingPage: React.FC = () => {
         specialRequests: formData.specialRequests,
         promoCode: usedPromoCode,
         discountAmount: appliedDiscount,
+        // Loyalty points to be deducted AFTER successful payment
+        loyaltyPointsToRedeem: loyaltyPointsUsed > 0 ? loyaltyPointsUsed : null,
+        loyaltyDiscount: loyaltyDiscount > 0 ? loyaltyDiscount : null,
         selectedRate: {
           matchHash: selectedRate.book_hash || selectedRate.match_hash,
           // Store bookHash and payment details for backend to use
@@ -430,7 +576,22 @@ export const BookingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen bg-gray-50 pb-8 relative">
+      {/* Rate Refetching Loading Overlay - shows when changing currency */}
+      {isRefetchingRate && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center animate-bounce-in transform scale-100 transition-all max-w-sm mx-4 text-center">
+            <div className="w-16 h-16 border-4 border-orange-100 border-t-[#EF620F] rounded-full animate-spin mb-6"></div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              {t('booking.updatingRates', 'Updating Rates...')}
+            </h3>
+            <p className="text-gray-500">
+              {t('booking.pleaseWait', 'Please wait while we update prices to {{currency}}', { currency })}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Compact Header Section */}
       <div className="relative w-full bg-[#E67915] shadow-md z-40 mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -884,6 +1045,31 @@ export const BookingPage: React.FC = () => {
                   </div>
                 </details>
               </div>
+            </div>
+
+            {/* Loyalty Points Redemption */}
+            <div className="bg-white rounded-lg shadow p-6 mt-6">
+              <LoyaltyRedemption
+                bookingAmount={Number(selectedRate.price) * (rooms || 1)}
+                currency={selectedRate.currency || 'USD'}
+                exchangeRate={
+                  // Calculate exchange rate: USD to booking currency
+                  // These are approximate rates - RateHawk uses real rates
+                  selectedRate.currency === 'SAR' ? 3.75 :
+                  selectedRate.currency === 'EGP' ? 50 :
+                  1 // Default for USD
+                }
+                onApplyDiscount={(discount, pointsUsed) => {
+                  setLoyaltyDiscount(discount);
+                  setLoyaltyPointsUsed(pointsUsed);
+                  const curr = selectedRate.currency || 'USD';
+                  toast.success(`Applied ${curr} ${discount.toFixed(2)} discount using ${pointsUsed} points!`);
+                }}
+                onRemoveDiscount={() => {
+                  setLoyaltyDiscount(0);
+                  setLoyaltyPointsUsed(0);
+                }}
+              />
             </div>
 
             <div className="bg-white rounded-lg shadow p-6 mt-6">

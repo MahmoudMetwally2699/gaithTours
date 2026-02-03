@@ -30,7 +30,7 @@ interface HotelContactInfo {
 }
 
 export const HotelContactLookup: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['admin']);
   const isRTL = i18n.language === 'ar';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -122,12 +122,12 @@ export const HotelContactLookup: React.FC = () => {
       if (data.success && data.data) {
         setSelectedHotel(data.data);
       } else {
-        setError(data.message || 'Failed to fetch hotel contact info');
+        setError(data.message || t('admin:dashboard.hotelLookup.error'));
         setSelectedHotel(null);
       }
     } catch (err: any) {
       console.error('Error fetching hotel contact:', err);
-      setError(err.message || 'Failed to fetch hotel contact info');
+      setError(err.message || t('admin:dashboard.hotelLookup.error'));
       setSelectedHotel(null);
     } finally {
       setIsLoadingContact(false);
@@ -164,8 +164,8 @@ export const HotelContactLookup: React.FC = () => {
           <PhoneIcon className="h-8 w-8 text-white" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Hotel Contact Lookup</h2>
-          <p className="text-gray-500">Search for hotels and view their contact information</p>
+          <h2 className="text-2xl font-bold text-gray-800">{t('admin:dashboard.hotelLookup.title')}</h2>
+          <p className="text-gray-500">{t('admin:dashboard.hotelLookup.subtitle')}</p>
         </div>
       </div>
 
@@ -173,14 +173,14 @@ export const HotelContactLookup: React.FC = () => {
       <div ref={searchRef} className="relative z-20">
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl p-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Search Hotel
+            {t('admin:dashboard.hotelLookup.searchLabel')}
           </label>
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Type hotel name to search..."
+              placeholder={t('admin:dashboard.hotelLookup.searchPlaceholder')}
               className="w-full px-4 py-3 pl-12 pr-10 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-800 placeholder-gray-400"
             />
             <MagnifyingGlassIcon className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? 'right-4' : 'left-4'} h-5 w-5 text-gray-400`} />
@@ -231,7 +231,7 @@ export const HotelContactLookup: React.FC = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/20 shadow-xl p-8">
           <div className="flex items-center justify-center gap-4">
             <div className="animate-spin h-8 w-8 border-3 border-orange-500 border-t-transparent rounded-full"></div>
-            <span className="text-gray-600 font-medium">Loading hotel contact info...</span>
+            <span className="text-gray-600 font-medium">{t('admin:dashboard.hotelLookup.loading')}</span>
           </div>
         </div>
       )}
@@ -281,7 +281,7 @@ export const HotelContactLookup: React.FC = () => {
               <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
                 <MapPinIcon className="h-6 w-6 text-gray-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-sm font-medium text-gray-500 mb-1">Address</div>
+                  <div className="text-sm font-medium text-gray-500 mb-1">{t('admin:dashboard.hotelLookup.address')}</div>
                   <div className="text-gray-800">
                     {selectedHotel.address && <div>{selectedHotel.address}</div>}
                     <div>{[selectedHotel.city, selectedHotel.country].filter(Boolean).join(', ')}</div>
@@ -299,7 +299,7 @@ export const HotelContactLookup: React.FC = () => {
                     <PhoneIcon className="h-5 w-5 text-green-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-500">Phone</div>
+                    <div className="text-sm font-medium text-gray-500">{t('admin:dashboard.hotelLookup.phone')}</div>
                     {selectedHotel.phone ? (
                       <a
                         href={`tel:${selectedHotel.phone}`}
@@ -308,7 +308,7 @@ export const HotelContactLookup: React.FC = () => {
                         {selectedHotel.phone}
                       </a>
                     ) : (
-                      <span className="text-gray-400 italic">Not available</span>
+                      <span className="text-gray-400 italic">{t('admin:dashboard.hotelLookup.notAvailable')}</span>
                     )}
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export const HotelContactLookup: React.FC = () => {
                     <EnvelopeIcon className="h-5 w-5 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-500">Email</div>
+                    <div className="text-sm font-medium text-gray-500">{t('admin:dashboard.hotelLookup.email')}</div>
                     {selectedHotel.email ? (
                       <a
                         href={`mailto:${selectedHotel.email}`}
@@ -330,7 +330,7 @@ export const HotelContactLookup: React.FC = () => {
                         {selectedHotel.email}
                       </a>
                     ) : (
-                      <span className="text-gray-400 italic">Not available</span>
+                      <span className="text-gray-400 italic">{t('admin:dashboard.hotelLookup.notAvailable')}</span>
                     )}
                   </div>
                 </div>
@@ -346,7 +346,7 @@ export const HotelContactLookup: React.FC = () => {
                     className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
                   >
                     <PhoneIcon className="h-4 w-4" />
-                    Copy Phone
+                    {t('admin:dashboard.hotelLookup.copyPhone')}
                   </button>
                 )}
                 {selectedHotel.email && (
@@ -355,7 +355,7 @@ export const HotelContactLookup: React.FC = () => {
                     className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
                   >
                     <EnvelopeIcon className="h-4 w-4" />
-                    Copy Email
+                    {t('admin:dashboard.hotelLookup.copyEmail')}
                   </button>
                 )}
               </div>
@@ -370,8 +370,8 @@ export const HotelContactLookup: React.FC = () => {
           <div className="p-4 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl w-fit mx-auto mb-4">
             <BuildingOffice2Icon className="h-12 w-12 text-orange-500" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Search for a Hotel</h3>
-          <p className="text-gray-500">Start typing a hotel name above to find contact information</p>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">{t('admin:dashboard.hotelLookup.emptyTitle')}</h3>
+          <p className="text-gray-500">{t('admin:dashboard.hotelLookup.emptySubtitle')}</p>
         </div>
       )}
     </div>

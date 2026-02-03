@@ -84,7 +84,7 @@ interface AnalyticsData {
 const COLORS = ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ef4444', '#eab308'];
 
 export const AnalyticsTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation(['admin']);
   const [period, setPeriod] = useState('30d');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData>({
@@ -123,7 +123,7 @@ export const AnalyticsTab: React.FC = () => {
       });
     } catch (error) {
       console.error('Analytics fetch error:', error);
-      toast.error('Failed to load analytics');
+      toast.error(t('admin:dashboard.analytics.alerts.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -147,9 +147,9 @@ export const AnalyticsTab: React.FC = () => {
       a.click();
       a.remove();
 
-      toast.success(`${type} data exported successfully`);
+      toast.success(t('admin:dashboard.analytics.alerts.exportSuccess', { type }));
     } catch (error) {
-      toast.error('Failed to export data');
+      toast.error(t('admin:dashboard.analytics.alerts.exportFailed'));
     }
   };
 
@@ -170,8 +170,8 @@ export const AnalyticsTab: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
-          <p className="text-gray-600">Track your business performance</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('admin:dashboard.analytics.title')}</h2>
+          <p className="text-gray-600">{t('admin:dashboard.analytics.subtitle')}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -181,9 +181,9 @@ export const AnalyticsTab: React.FC = () => {
             onChange={(e) => setPeriod(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
+            <option value="7d">{t('admin:dashboard.analytics.period.last7Days')}</option>
+            <option value="30d">{t('admin:dashboard.analytics.period.last30Days')}</option>
+            <option value="90d">{t('admin:dashboard.analytics.period.last90Days')}</option>
           </select>
 
           {/* Export Buttons */}
@@ -193,14 +193,14 @@ export const AnalyticsTab: React.FC = () => {
               className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <ArrowDownTrayIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Export Bookings</span>
+              <span className="hidden sm:inline">{t('admin:dashboard.analytics.export.bookings')}</span>
             </button>
             <button
               onClick={() => handleExport('revenue')}
               className="flex items-center gap-2 px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
             >
               <ArrowDownTrayIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Export Revenue</span>
+              <span className="hidden sm:inline">{t('admin:dashboard.analytics.export.revenue')}</span>
             </button>
           </div>
         </div>
@@ -211,7 +211,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Revenue</p>
+              <p className="text-sm text-gray-500">{t('admin:dashboard.analytics.summary.totalRevenue')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 ${data.revenue?.summary.totalRevenue.toLocaleString() || 0}
               </p>
@@ -230,7 +230,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Bookings</p>
+              <p className="text-sm text-gray-500">{t('admin:dashboard.analytics.summary.totalBookings')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {data.bookings?.funnel.initiated || 0}
               </p>
@@ -242,7 +242,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Conversion Rate</p>
+              <p className="text-sm text-gray-500">{t('admin:dashboard.analytics.summary.conversionRate')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 {data.bookings?.funnel.conversionRate || 0}%
               </p>
@@ -254,7 +254,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Avg. Transaction</p>
+              <p className="text-sm text-gray-500">{t('admin:dashboard.analytics.summary.avgTransaction')}</p>
               <p className="text-2xl font-bold text-gray-900">
                 ${data.revenue?.summary.averageTransaction || 0}
               </p>
@@ -268,18 +268,18 @@ export const AnalyticsTab: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Over Time</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin:dashboard.analytics.charts.revenueOverTime')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data.revenue?.data || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
                 dataKey="date"
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value: string) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                tickFormatter={(value: string) => new Date(value).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })}
               />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip
-                formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue']}
+                formatter={(value: any) => [`$${Number(value).toLocaleString()}`, t('admin:dashboard.stats.revenue')]}
                 labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
               />
               <Line
@@ -296,7 +296,7 @@ export const AnalyticsTab: React.FC = () => {
 
         {/* Bookings by Status */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Bookings by Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin:dashboard.analytics.charts.bookingsByStatus')}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -321,7 +321,7 @@ export const AnalyticsTab: React.FC = () => {
 
       {/* Bookings Over Time */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Bookings Over Time</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin:dashboard.analytics.charts.bookingsOverTime')}</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data.bookings?.overTime || []}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -333,8 +333,8 @@ export const AnalyticsTab: React.FC = () => {
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip labelFormatter={(label: string) => new Date(label).toLocaleDateString()} />
             <Legend />
-            <Bar dataKey="confirmed" name="Confirmed" fill="#22c55e" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="cancelled" name="Cancelled" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="confirmed" name={t('admin:dashboard.analytics.charts.confirmed')} fill="#22c55e" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="cancelled" name={t('admin:dashboard.analytics.charts.cancelled')} fill="#ef4444" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -345,7 +345,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <BuildingOfficeIcon className="w-5 h-5 text-orange-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Top Hotels</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('admin:dashboard.analytics.topLists.topHotels')}</h3>
           </div>
           <div className="space-y-3">
             {data.popularHotels.length > 0 ? (
@@ -361,13 +361,13 @@ export const AnalyticsTab: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">{hotel.bookings} bookings</p>
+                    <p className="font-semibold text-gray-900">{hotel.bookings} {t('admin:dashboard.analytics.topLists.bookings')}</p>
                     <p className="text-xs text-green-600">${hotel.revenue.toLocaleString()}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-gray-500 text-center py-4">{t('admin:dashboard.analytics.topLists.noData')}</p>
             )}
           </div>
         </div>
@@ -376,7 +376,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <MapPinIcon className="w-5 h-5 text-blue-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Top Destinations</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('admin:dashboard.analytics.topLists.topDestinations')}</h3>
           </div>
           <div className="space-y-3">
             {data.popularDestinations.length > 0 ? (
@@ -392,13 +392,13 @@ export const AnalyticsTab: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">{dest.bookings} bookings</p>
+                    <p className="font-semibold text-gray-900">{dest.bookings} {t('admin:dashboard.analytics.topLists.bookings')}</p>
                     <p className="text-xs text-green-600">${dest.revenue.toLocaleString()}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-center py-4">No data available</p>
+              <p className="text-gray-500 text-center py-4">{t('admin:dashboard.analytics.topLists.noData')}</p>
             )}
           </div>
         </div>
@@ -410,7 +410,7 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <TagIcon className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Top Promo Codes</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('admin:dashboard.analytics.promoCodes.title')}</h3>
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.promoStats?.topCodes || []} layout="vertical">
@@ -420,14 +420,14 @@ export const AnalyticsTab: React.FC = () => {
               <Tooltip
                 formatter={(value: any, name: any) => {
                   if (name === 'Usage in Period') {
-                    return [`${value} uses`, name];
+                    return [`${value} uses`, t('admin:dashboard.analytics.promoCodes.usageInPeriod')];
                   }
                   return [`$${Number(value).toFixed(2)}`, name];
                 }}
               />
               <Legend />
-              <Bar dataKey="periodCount" name="Usage in Period" fill="#a855f7" radius={[0, 4, 4, 0]} barSize={20} />
-              <Bar dataKey="totalDiscountGiven" name="Total Discount Given" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+              <Bar dataKey="periodCount" name={t('admin:dashboard.analytics.promoCodes.usageInPeriod')} fill="#a855f7" radius={[0, 4, 4, 0]} barSize={20} />
+              <Bar dataKey="totalDiscountGiven" name={t('admin:dashboard.analytics.promoCodes.totalDiscount')} fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -436,16 +436,16 @@ export const AnalyticsTab: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
             <TagIcon className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Recent Usage</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('admin:dashboard.analytics.recentUsage.title')}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                 <tr>
-                  <th className="px-3 py-2">Code</th>
-                  <th className="px-3 py-2">User</th>
-                  <th className="px-3 py-2">Discount</th>
-                  <th className="px-3 py-2">Date</th>
+                  <th className="px-3 py-2">{t('admin:dashboard.analytics.recentUsage.code')}</th>
+                  <th className="px-3 py-2">{t('admin:dashboard.analytics.recentUsage.user')}</th>
+                  <th className="px-3 py-2">{t('admin:dashboard.analytics.recentUsage.discount')}</th>
+                  <th className="px-3 py-2">{t('admin:dashboard.analytics.recentUsage.date')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -463,7 +463,7 @@ export const AnalyticsTab: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-3 py-4 text-center text-gray-500">No recent activity</td>
+                    <td colSpan={4} className="px-3 py-4 text-center text-gray-500">{t('admin:dashboard.analytics.recentUsage.noActivity')}</td>
                   </tr>
                 )}
               </tbody>

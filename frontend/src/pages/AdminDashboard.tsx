@@ -16,6 +16,7 @@ import { AdminManagementTab } from '../components/AdminDashboard/AdminManagement
 import { AnalyticsTab } from '../components/AdminDashboard/AnalyticsTab';
 import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
 import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalBannersTab';
+import { LoyaltyTab } from '../components/AdminDashboard/LoyaltyTab';
 import { HotelContactLookup } from '../components/admin/HotelContactLookup';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import { ClientDetailModal } from '../components/AdminDashboard/ClientDetailModal';
@@ -33,7 +34,8 @@ import {
   ShieldExclamationIcon,
   TagIcon,
   PhotoIcon,
-  PhoneIcon
+  PhoneIcon,
+  TrophyIcon
 } from '@heroicons/react/24/outline';
 
 interface DashboardStats {
@@ -182,7 +184,7 @@ interface Payment {
 }
 
 export const AdminDashboard: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['common', 'admin']);
   const { user, logout } = useAuth();
   const history = useHistory();
   const isRTL = i18n.language === 'ar';
@@ -235,7 +237,7 @@ export const AdminDashboard: React.FC = () => {
       const response = await adminAPI.getStats();
       setStats(response.data.data.stats);
     } catch (error) {
-      toast.error(t('dashboard.messages.fetchStatsFailed'));
+      toast.error(t('admin:dashboard.messages.fetchStatsFailed'));
     } finally {
       setLoading(false);
     }
@@ -252,7 +254,7 @@ export const AdminDashboard: React.FC = () => {
       setClients(response.data.data.clients);
       setClientsPagination(response.data.data.pagination);
     } catch (error) {
-      toast.error(t('dashboard.messages.fetchClientsFailed'));
+      toast.error(t('admin:dashboard.messages.fetchClientsFailed'));
     } finally {
       setLoading(false);
     }  }, [clientPage, clientsPerPage, clientSearch, t]);
@@ -262,9 +264,9 @@ export const AdminDashboard: React.FC = () => {
       setIsCreatingClient(true);
       const response = await adminAPI.createClient(clientData);
       setClients(prev => [response.data.data.client, ...prev]);
-      toast.success('Client created successfully!');
+      toast.success(t('admin:dashboard.messages.clientCreated'));
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to create client';
+      const errorMessage = error.response?.data?.message || t('admin:dashboard.messages.clientCreateFailed');
       toast.error(errorMessage);
       throw error; // Re-throw to let the modal handle it
     } finally {
@@ -279,9 +281,9 @@ export const AdminDashboard: React.FC = () => {
       setIsDeletingClient(true);
       await adminAPI.deleteClient(clientId);
       setClients(prev => prev.filter(client => client._id !== clientId));
-      toast.success('Client deleted successfully!');
+      toast.success(t('admin:dashboard.messages.clientDeleted'));
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete client';
+      const errorMessage = error.response?.data?.message || t('admin:dashboard.messages.clientDeleteFailed');
       toast.error(errorMessage);
       throw error;
     } finally {
@@ -301,7 +303,7 @@ export const AdminDashboard: React.FC = () => {
       setBookings(response.data.data.bookings);
       setBookingsPagination(response.data.data.pagination);
     } catch (error) {
-      toast.error(t('dashboard.messages.fetchBookingsFailed'));
+      toast.error(t('admin:dashboard.messages.fetchBookingsFailed'));
     } finally {
       setLoading(false);
     }
@@ -318,7 +320,7 @@ export const AdminDashboard: React.FC = () => {
       setInvoices(response.data.data.invoices);
       setInvoicesPagination(response.data.data.pagination);
     } catch (error) {
-      toast.error(t('dashboard.messages.fetchInvoicesFailed'));
+      toast.error(t('admin:dashboard.messages.fetchInvoicesFailed'));
     } finally {
       setLoading(false);
     }
@@ -335,7 +337,7 @@ export const AdminDashboard: React.FC = () => {
       setPayments(response.data.data.payments);
       setPaymentsPagination(response.data.data.pagination);
     } catch (error) {
-      toast.error(t('dashboard.messages.fetchPaymentsFailed'));
+      toast.error(t('admin:dashboard.messages.fetchPaymentsFailed'));
     } finally {
       setLoading(false);
     }
@@ -379,12 +381,12 @@ export const AdminDashboard: React.FC = () => {
       await adminAPI.approveBooking(selectedBooking._id, {
         amount: parseFloat(approvalAmount)
       });
-      toast.success(t('dashboard.messages.bookingApproved'));
+      toast.success(t('admin:dashboard.messages.bookingApproved'));
       setShowApprovalModal(false);
       setSelectedBooking(null);
       fetchBookings();
     } catch (error) {
-      toast.error(t('dashboard.messages.bookingApprovalFailed'));
+      toast.error(t('admin:dashboard.messages.bookingApprovalFailed'));
     } finally {
       setLoading(false);
     }
@@ -398,13 +400,13 @@ export const AdminDashboard: React.FC = () => {
       await adminAPI.denyBooking(selectedBooking._id, {
         reason: denialReason
       });
-      toast.success(t('dashboard.messages.bookingDenied'));
+      toast.success(t('admin:dashboard.messages.bookingDenied'));
       setShowDenialModal(false);
       setSelectedBooking(null);
       setDenialReason('');
       fetchBookings();
     } catch (error) {
-      toast.error(t('dashboard.messages.bookingDenialFailed'));
+      toast.error(t('admin:dashboard.messages.bookingDenialFailed'));
     } finally {
       setLoading(false);
     }
@@ -437,7 +439,7 @@ export const AdminDashboard: React.FC = () => {
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
-        {t(`dashboard.status.${status}`, status.charAt(0).toUpperCase() + status.slice(1))}
+        {t(`admin:dashboard.status.${status}`, status.charAt(0).toUpperCase() + status.slice(1))}
       </span>
     );
   };
@@ -446,7 +448,7 @@ export const AdminDashboard: React.FC = () => {
       await logout();
       history.push('/');
     } catch (error) {
-      toast.error(t('dashboard.messages.logoutFailed'));
+      toast.error(t('admin:dashboard.messages.logoutFailed'));
     }
   };
 
@@ -466,17 +468,18 @@ export const AdminDashboard: React.FC = () => {
 
   // All available tabs with their required permissions
   const allTabs = [
-    { id: 'dashboard', name: t('dashboard.tabs.dashboard'), icon: ChartBarIcon },
-    { id: 'clients', name: t('dashboard.tabs.clients'), icon: UserGroupIcon },
-    { id: 'bookings', name: t('dashboard.tabs.bookings'), icon: ClipboardDocumentListIcon },
-    { id: 'payments', name: t('dashboard.tabs.payments'), icon: CreditCardIcon },
-    { id: 'hotel_lookup', name: 'Hotel Lookup', icon: PhoneIcon },
-    { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
-    { id: 'margins', name: 'Profit Margins', icon: CurrencyDollarIcon },
-    { id: 'promo_codes', name: 'Promo Codes', icon: TagIcon },
-    { id: 'promotional_banners', name: 'Promo Banners', icon: PhotoIcon },
-    { id: 'whatsapp', name: t('dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
-    { id: 'admin_management', name: 'Admin Management', icon: ShieldExclamationIcon, superAdminOnly: true }
+    { id: 'dashboard', name: t('admin:dashboard.tabs.dashboard'), icon: ChartBarIcon },
+    { id: 'clients', name: t('admin:dashboard.tabs.clients'), icon: UserGroupIcon },
+    { id: 'bookings', name: t('admin:dashboard.tabs.bookings'), icon: ClipboardDocumentListIcon },
+    { id: 'payments', name: t('admin:dashboard.tabs.payments'), icon: CreditCardIcon },
+    { id: 'hotel_lookup', name: t('admin:dashboard.tabs.hotel_lookup'), icon: PhoneIcon },
+    { id: 'analytics', name: t('admin:dashboard.tabs.analytics'), icon: ChartBarIcon },
+    { id: 'margins', name: t('admin:dashboard.tabs.margins'), icon: CurrencyDollarIcon },
+    { id: 'promo_codes', name: t('admin:dashboard.tabs.promo_codes'), icon: TagIcon },
+    { id: 'promotional_banners', name: t('admin:dashboard.tabs.promotional_banners'), icon: PhotoIcon },
+    { id: 'loyalty', name: t('admin:dashboard.tabs.loyalty'), icon: TrophyIcon },
+    { id: 'whatsapp', name: t('admin:dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
+    { id: 'admin_management', name: t('admin:dashboard.tabs.admin_management'), icon: ShieldExclamationIcon, superAdminOnly: true }
   ];
 
   // Filter tabs based on user role and permissions
@@ -531,9 +534,9 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                    {t('dashboard.title')}
+                    {t('admin:dashboard.header.title')}
                   </h1>
-                  <p className="text-xs text-gray-500">Admin Panel</p>
+                  <p className="text-xs text-gray-500">{t('admin:dashboard.header.adminPanel')}</p>
                 </div>
               </div>
               {/* Mobile Close Button */}
@@ -637,7 +640,7 @@ export const AdminDashboard: React.FC = () => {
                 <ArrowRightOnRectangleIcon className="w-4 h-4 text-red-600" />
               </div>
               <span className={`${isRTL ? 'mr-2 sm:mr-3' : 'ml-2 sm:ml-3'} font-medium`}>
-                {t('dashboard.actions.logout')}
+                {t('admin:dashboard.actions.logout')}
               </span>
             </button>
           </div>
@@ -657,9 +660,9 @@ export const AdminDashboard: React.FC = () => {
                   transition={{ duration: 0.8, delay: 0.2 }}
                   className="text-5xl md:text-6xl font-black mb-4"
                 >                  <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 bg-clip-text text-transparent">
-                    {t('dashboard.header.title').split(' ')[0]}
+                    {t('admin:dashboard.header.title').split(' ')[0]}
                   </span>
-                  <span className="text-gray-800 ml-3">{t('dashboard.header.title').split(' ')[1]}</span>
+                  <span className="text-gray-800 ml-3">{t('admin:dashboard.header.title').split(' ')[1]}</span>
                 </motion.h1>
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
@@ -667,7 +670,7 @@ export const AdminDashboard: React.FC = () => {
                   transition={{ duration: 0.6, delay: 0.4 }}
                   className="text-xl text-gray-600 max-w-2xl mx-auto"
                 >
-                  {t('dashboard.header.subtitle')}
+                  {t('admin:dashboard.header.subtitle')}
                 </motion.p>
                 <motion.div
                   initial={{ opacity: 0, scale: 0 }}
@@ -677,7 +680,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-3 rounded-full border border-orange-200">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-gray-700 font-medium">{t('dashboard.header.systemOnline')}</span>
+                    <span className="text-gray-700 font-medium">{t('admin:dashboard.header.systemOnline')}</span>
                   </div>
                 </motion.div>
               </motion.div>              {/* Modern Stats Grid */}
@@ -701,14 +704,14 @@ export const AdminDashboard: React.FC = () => {
                           <UserGroupIcon className="w-6 h-6 text-orange-600" />
                         </div>                        <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.totalClients}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.clients')}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('admin:dashboard.stats.clients')}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{t('dashboard.stats.totalRegistered')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.stats.totalRegistered')}</span>
                         <div className="flex items-center text-green-600 text-sm">
                           <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                          {t('dashboard.stats.active')}
+                          {t('admin:dashboard.stats.active')}
                         </div>
                       </div>
                     </div>
@@ -728,14 +731,14 @@ export const AdminDashboard: React.FC = () => {
                           <ClipboardDocumentListIcon className="w-6 h-6 text-red-600" />
                         </div>                        <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.failedBookings || 0}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.failed')}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('admin:dashboard.stats.failed')}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{t('dashboard.stats.failedBookings')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.stats.failedBookings')}</span>
                         <div className="flex items-center text-red-600 text-sm">
                           <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                          {t('dashboard.stats.error')}
+                          {t('admin:dashboard.stats.error')}
                         </div>
                       </div>
                     </div>
@@ -755,14 +758,14 @@ export const AdminDashboard: React.FC = () => {
                           <CreditCardIcon className="w-6 h-6 text-white" />
                         </div>                        <div className="text-right">
                           <div className="text-2xl font-bold">{stats.totalRevenue.toLocaleString()}</div>
-                          <div className="text-xs text-emerald-100 uppercase tracking-wide">{t('dashboard.stats.revenue')}</div>
+                          <div className="text-xs text-emerald-100 uppercase tracking-wide">{t('admin:dashboard.stats.revenue')}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-emerald-100">{t('dashboard.stats.totalEarnings')}</span>
+                        <span className="text-sm text-emerald-100">{t('admin:dashboard.stats.totalEarnings')}</span>
                         <div className="flex items-center text-white text-sm">
                           <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
-                          {t('dashboard.stats.live')}
+                          {t('admin:dashboard.stats.live')}
                         </div>
                       </div>
                     </div>                  </motion.div>
@@ -782,14 +785,14 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.totalWhatsAppMessages}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.whatsappMessages')}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('admin:dashboard.stats.whatsappMessages')}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{t('dashboard.stats.totalMessages')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.stats.totalMessages')}</span>
                         <div className="flex items-center text-orange-600 text-sm">
                           <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                          {t('dashboard.stats.allTime')}
+                          {t('admin:dashboard.stats.allTime')}
                         </div>
                       </div>
                     </div>
@@ -810,14 +813,14 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-bold text-gray-900">{stats.unreadWhatsAppMessages}</div>
-                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('dashboard.stats.unreadMessages')}</div>
+                          <div className="text-xs text-gray-500 uppercase tracking-wide">{t('admin:dashboard.stats.unreadMessages')}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{t('dashboard.stats.needsAttention')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.stats.needsAttention')}</span>
                         <div className="flex items-center text-orange-600 text-sm">
                           <div className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></div>
-                          {t('dashboard.stats.unread')}
+                          {t('admin:dashboard.stats.unread')}
                         </div>
                       </div>
                     </div>
@@ -829,8 +832,8 @@ export const AdminDashboard: React.FC = () => {
                 transition={{ duration: 0.8, delay: 0.5 }}
                 className="mt-12"
               >                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('dashboard.quickActions.title')}</h2>
-                  <p className="text-gray-600">{t('dashboard.quickActions.subtitle')}</p>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('admin:dashboard.quickActions.title')}</h2>
+                  <p className="text-gray-600">{t('admin:dashboard.quickActions.subtitle')}</p>
                 </div>
 
                 <motion.div
@@ -854,9 +857,9 @@ export const AdminDashboard: React.FC = () => {
                     <div className="relative z-10">
                       <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors duration-300">
                         <ClipboardDocumentListIcon className="w-6 h-6 text-orange-600" />
-                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.manageBookings.title')}</h3>
-                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.manageBookings.description')}</p>
-                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('dashboard.quickActions.manageBookings.action')}</div>
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('admin:dashboard.quickActions.manageBookings.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('admin:dashboard.quickActions.manageBookings.description')}</p>
+                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('admin:dashboard.quickActions.manageBookings.action')}</div>
                     </div>
                   </motion.button>                  <motion.button
                     initial={{ opacity: 0, y: 20 }}
@@ -874,9 +877,9 @@ export const AdminDashboard: React.FC = () => {
                     <div className="relative z-10">
                       <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors duration-300">
                         <UserGroupIcon className="w-6 h-6 text-orange-600" />
-                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.clientDatabase.title')}</h3>
-                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.clientDatabase.description')}</p>
-                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('dashboard.quickActions.clientDatabase.action')}</div>
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('admin:dashboard.quickActions.clientDatabase.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('admin:dashboard.quickActions.clientDatabase.description')}</p>
+                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('admin:dashboard.quickActions.clientDatabase.action')}</div>
                     </div>
                   </motion.button>                  <motion.button
                     initial={{ opacity: 0, y: 20 }}
@@ -894,9 +897,9 @@ export const AdminDashboard: React.FC = () => {
                     <div className="relative z-10">
                       <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors duration-300">
                         <CreditCardIcon className="w-6 h-6 text-orange-600" />
-                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('dashboard.quickActions.paymentTracking.title')}</h3>
-                      <p className="text-sm text-gray-600">{t('dashboard.quickActions.paymentTracking.description')}</p>
-                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('dashboard.quickActions.paymentTracking.action')}</div>
+                      </div>                      <h3 className="font-semibold text-gray-900 mb-2">{t('admin:dashboard.quickActions.paymentTracking.title')}</h3>
+                      <p className="text-sm text-gray-600">{t('admin:dashboard.quickActions.paymentTracking.description')}</p>
+                      <div className="mt-4 text-xs text-orange-600 font-medium">{t('admin:dashboard.quickActions.paymentTracking.action')}</div>
                     </div>
                   </motion.button>
                 </motion.div>
@@ -909,21 +912,21 @@ export const AdminDashboard: React.FC = () => {
                   className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6"
                 >                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('dashboard.systemStatus.title')}</h3>
-                      <p className="text-gray-600">{t('dashboard.systemStatus.subtitle')}</p>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('admin:dashboard.systemStatus.title')}</h3>
+                      <p className="text-gray-600">{t('admin:dashboard.systemStatus.subtitle')}</p>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">{t('dashboard.systemStatus.database')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.systemStatus.database')}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">{t('dashboard.systemStatus.api')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.systemStatus.api')}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600">{t('dashboard.systemStatus.payments')}</span>
+                        <span className="text-sm text-gray-600">{t('admin:dashboard.systemStatus.payments')}</span>
                       </div>
                     </div>
                   </div>
@@ -1003,29 +1006,32 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Analytics Tab */}
           {activeTab === 'analytics' && (
             <AnalyticsTab />
+          )}{/* Loyalty Program Tab */}
+          {activeTab === 'loyalty' && (
+            <LoyaltyTab />
           )}
         </div>
       </div>      {/* Approval Modal */}
       {showApprovalModal && selectedBooking && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
           <div className="relative top-4 lg:top-20 mx-auto p-5 border w-full max-w-md lg:max-w-lg shadow-lg rounded-md bg-white">
-            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('dashboard.bookings.approvalModal.title')}</h3>
+            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('admin:dashboard.bookings.approvalModal.title')}</h3>
               <p className="text-sm text-gray-600 mb-4">
-                {t('dashboard.bookings.approvalModal.description', {
+                {t('admin:dashboard.bookings.approvalModal.description', {
                   touristName: selectedBooking.touristName,
                   hotelName: selectedBooking.hotel.name
                 })}
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('dashboard.bookings.approvalModal.amount')}
+                  {t('admin:dashboard.bookings.approvalModal.amount')}
                 </label>
                 <input
                   type="number"
                   value={approvalAmount}
                   onChange={(e) => setApprovalAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder={t('dashboard.bookings.approvalModal.amount')}
+                  placeholder={t('admin:dashboard.bookings.approvalModal.amount')}
                 />
               </div>
               <div className="flex justify-end space-x-3">
@@ -1033,14 +1039,14 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setShowApprovalModal(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
-                  {t('dashboard.bookings.approvalModal.cancel')}
+                  {t('admin:dashboard.bookings.approvalModal.cancel')}
                 </button>
                 <button
                   onClick={handleApproveBooking}
                   disabled={loading}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
-                  {loading ? t('dashboard.bookings.approvalModal.approving') : t('dashboard.bookings.approvalModal.approve')}
+                  {loading ? t('admin:dashboard.bookings.approvalModal.approving') : t('admin:dashboard.bookings.approvalModal.approve')}
                 </button>
               </div>
             </div>
@@ -1050,23 +1056,23 @@ export const AdminDashboard: React.FC = () => {
       {showDenialModal && selectedBooking && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
           <div className="relative top-4 lg:top-20 mx-auto p-5 border w-full max-w-md lg:max-w-lg shadow-lg rounded-md bg-white">
-            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('dashboard.bookings.denialModal.title')}</h3>
+            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('admin:dashboard.bookings.denialModal.title')}</h3>
               <p className="text-sm text-gray-600 mb-4">
-                {t('dashboard.bookings.denialModal.description', {
+                {t('admin:dashboard.bookings.denialModal.description', {
                   touristName: selectedBooking.touristName,
                   hotelName: selectedBooking.hotel.name
                 })}
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('dashboard.bookings.denialModal.reason')}
+                  {t('admin:dashboard.bookings.denialModal.reason')}
                 </label>
                 <textarea
                   value={denialReason}
                   onChange={(e) => setDenialReason(e.target.value)}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder={t('dashboard.bookings.denialModal.reasonPlaceholder')}
+                  placeholder={t('admin:dashboard.bookings.denialModal.reasonPlaceholder')}
                 />
               </div>
               <div className="flex justify-end space-x-3">
@@ -1074,14 +1080,14 @@ export const AdminDashboard: React.FC = () => {
                   onClick={() => setShowDenialModal(false)}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
-                  {t('dashboard.bookings.denialModal.cancel')}
+                  {t('admin:dashboard.bookings.denialModal.cancel')}
                 </button>
                 <button
                   onClick={handleDenyBooking}
                   disabled={loading || !denialReason}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                 >
-                  {loading ? t('dashboard.bookings.denialModal.denying') : t('dashboard.bookings.denialModal.deny')}
+                  {loading ? t('admin:dashboard.bookings.denialModal.denying') : t('admin:dashboard.bookings.denialModal.deny')}
                 </button>
               </div>
             </div>
@@ -1106,7 +1112,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="relative top-2 lg:top-10 mx-auto p-0 border w-full max-w-6xl shadow-lg rounded-md bg-white">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-md">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-900">{t('dashboard.bookings.details.title')}</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{t('admin:dashboard.bookings.details.title')}</h3>
                 <button
                   onClick={() => setShowBookingDetailsModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -1144,21 +1150,21 @@ export const AdminDashboard: React.FC = () => {
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 text-sm underline"
                         >
-                          Visit Hotel Website
+                          {t('admin:dashboard.bookings.details.visitWebsite')}
                         </a>
                       </div>
                     )}
                     {selectedBooking.hotel.price && (
                       <div className="mt-2">
                         <span className="text-green-600 font-medium text-sm">
-                          Expected Price: {selectedBooking.hotel.price} $
+                          {t('admin:dashboard.bookings.details.expectedPrice')} {selectedBooking.hotel.price} $
                         </span>
                       </div>
                     )}
                     {/* Hotel Contact Info */}
                     <div className="mt-3 pt-3 border-t border-gray-200">
                       <div className="flex items-center mb-2">
-                        <span className="text-gray-600 text-sm w-20">Phone:</span>
+                        <span className="text-gray-600 text-sm w-20">{t('admin:dashboard.bookings.details.phone')}</span>
                         {selectedBooking.hotel.phone ? (
                           <a
                             href={`tel:${selectedBooking.hotel.phone}`}
@@ -1167,11 +1173,11 @@ export const AdminDashboard: React.FC = () => {
                             {selectedBooking.hotel.phone}
                           </a>
                         ) : (
-                          <span className="text-gray-400 text-sm italic">Not Available</span>
+                          <span className="text-gray-400 text-sm italic">{t('admin:dashboard.bookings.details.notAvailable')}</span>
                         )}
                       </div>
                       <div className="flex items-center">
-                        <span className="text-gray-600 text-sm w-20">Email:</span>
+                        <span className="text-gray-600 text-sm w-20">{t('admin:dashboard.bookings.details.email')}</span>
                         {selectedBooking.hotel.email ? (
                           <a
                             href={`mailto:${selectedBooking.hotel.email}`}
@@ -1180,7 +1186,7 @@ export const AdminDashboard: React.FC = () => {
                             {selectedBooking.hotel.email}
                           </a>
                         ) : (
-                          <span className="text-gray-400 text-sm italic">Not Available</span>
+                          <span className="text-gray-400 text-sm italic">{t('admin:dashboard.bookings.details.notAvailable')}</span>
                         )}
                       </div>
                     </div>
@@ -1192,31 +1198,31 @@ export const AdminDashboard: React.FC = () => {
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 {/* Travel Details */}
                 <div className="space-y-4">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2">Travel Details</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">{t('admin:dashboard.bookings.details.travelDetails')}</h5>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Booking ID:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.bookings.details.bookingId')}</span>
                       <span className="font-medium font-mono text-sm">{selectedBooking._id}</span>
                     </div>
                     {selectedBooking.checkInDate && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Check-in:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.bookings.details.checkIn')}</span>
                         <span className="font-medium">{new Date(selectedBooking.checkInDate).toLocaleDateString()}</span>
                       </div>
                     )}
                     {selectedBooking.checkOutDate && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Check-out:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.bookings.details.checkOut')}</span>
                         <span className="font-medium">{new Date(selectedBooking.checkOutDate).toLocaleDateString()}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Guests:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.bookings.details.guests')}</span>
                       <span className="font-medium">{selectedBooking.numberOfGuests || 1}</span>
                     </div>
                     {selectedBooking.expectedCheckInTime && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Expected Check-in Time:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.bookings.details.expectedCheckInTime')}</span>
                         <span className="font-medium">{selectedBooking.expectedCheckInTime}</span>
                       </div>
                     )}
@@ -1225,28 +1231,28 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Room & Stay Details */}
                 <div className="space-y-4">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2">Room & Stay Details</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">{t('admin:dashboard.bookings.details.roomStayDetails')}</h5>
                   <div className="space-y-3">
                     {selectedBooking.roomType && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Room Type:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.bookings.details.roomType')}</span>
                         <span className="font-medium capitalize">{selectedBooking.roomType.replace('_', ' ')}</span>
                       </div>
                     )}
                     {selectedBooking.stayType && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Stay Type:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.bookings.details.stayType')}</span>
                         <span className="font-medium capitalize">{selectedBooking.stayType.replace('_', ' ')}</span>
                       </div>
                     )}
                     {selectedBooking.paymentMethod && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Payment Method:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.bookings.details.paymentMethod')}</span>
                         <span className="font-medium">{selectedBooking.paymentMethod}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.bookings.details.status')}</span>
                       <span className="font-medium">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           selectedBooking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -1259,7 +1265,7 @@ export const AdminDashboard: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Submission Date:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.bookings.details.submissionDate')}</span>
                       <span className="font-medium">{new Date(selectedBooking.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
@@ -1268,10 +1274,10 @@ export const AdminDashboard: React.FC = () => {
 
               {/* Personal Information */}
               <div className="mb-6">
-                <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Personal Information</h5>
+                <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.bookings.details.personalInfo')}</h5>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Full Name:</span>
+                    <span className="text-gray-600">{t('admin:dashboard.bookings.details.fullName')}</span>
                     <span className="font-medium">{selectedBooking.touristName}</span>
                   </div>
                   <div className="flex justify-between">
@@ -1292,16 +1298,16 @@ export const AdminDashboard: React.FC = () => {
               {/* Additional Guests */}
               {selectedBooking.guests && selectedBooking.guests.length > 0 && (
                 <div className="mb-6">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Additional Guests</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.bookings.details.additionalGuests')}</h5>
                   <div className="space-y-2">
                     {selectedBooking.guests.map((guest, index) => (
                       <div key={index} className="bg-gray-50 p-3 rounded-md">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Guest's Name:</span>
+                          <span className="text-gray-600">{t('admin:dashboard.bookings.details.guestName')}</span>
                           <span className="font-medium">{guest.fullName}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Phone:</span>
+                          <span className="text-gray-600">{t('admin:dashboard.bookings.details.phone')}</span>
                           <span className="font-medium">{guest.phoneNumber}</span>
                         </div>
                       </div>
@@ -1313,7 +1319,7 @@ export const AdminDashboard: React.FC = () => {
               {/* Attachments */}
               {selectedBooking.attachments && selectedBooking.attachments.length > 0 && (
                 <div className="mb-6">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Attachments ({selectedBooking.attachments.length})</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.bookings.details.attachments')} ({selectedBooking.attachments.length})</h5>
                   <div className="space-y-2">
                     {selectedBooking.attachments.map((attachment, index) => (
                       <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
@@ -1326,7 +1332,7 @@ export const AdminDashboard: React.FC = () => {
                             <p className="text-sm font-medium text-gray-900 truncate pr-2">{attachment.fileName}</p>
                             <p className="text-xs text-gray-500 truncate pr-2">
                               {attachment.fileType.toUpperCase()} • {(attachment.size / 1024 / 1024).toFixed(2)} MB •
-                              Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
+                              {t('admin:dashboard.bookings.details.uploaded')} {new Date(attachment.uploadedAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -1334,7 +1340,7 @@ export const AdminDashboard: React.FC = () => {
                           onClick={() => window.open(attachment.fileUrl, '_blank')}
                           className="text-blue-600 hover:text-blue-500 text-sm font-medium"
                         >
-                          View
+                          {t('admin:dashboard.bookings.details.view')}
                         </button>
                       </div>
                     ))}
@@ -1345,7 +1351,7 @@ export const AdminDashboard: React.FC = () => {
               {/* Special Requests */}
               {selectedBooking.notes && (
                 <div className="mb-6">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Special Requests</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.bookings.details.specialRequests')}</h5>
                   <div className="bg-gray-50 p-4 rounded-md">
                     <p className="text-gray-700">{selectedBooking.notes}</p>
                   </div>
@@ -1362,7 +1368,7 @@ export const AdminDashboard: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                   >
-                    Approve Booking
+                    {t('admin:dashboard.bookings.details.approve')}
                   </button>
                   <button
                     onClick={() => {
@@ -1371,7 +1377,7 @@ export const AdminDashboard: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                   >
-                    Deny Booking
+                    {t('admin:dashboard.bookings.details.deny')}
                   </button>
                 </div>
               )}
@@ -1581,7 +1587,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="relative top-10 mx-auto p-0 border max-w-4xl shadow-lg rounded-md bg-white">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-md">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-900">Payment Details</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{t('admin:dashboard.payments.details.title')}</h3>
                 <button
                   onClick={() => setShowPaymentDetailsModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -1597,10 +1603,10 @@ export const AdminDashboard: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="text-2xl font-bold text-gray-900">
-                      Payment {selectedPayment.paymentId ? `#${selectedPayment.paymentId}` : `#${selectedPayment._id.slice(-8)}`}
+                      {t('admin:dashboard.payments.details.paymentLabel')} {selectedPayment.paymentId ? `#${selectedPayment.paymentId}` : `#${selectedPayment._id.slice(-8)}`}
                     </h4>
                     <p className="text-gray-600 mt-1">
-                      Status: <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      {t('admin:dashboard.payments.details.status')} <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         selectedPayment.status === 'completed' ? 'bg-green-100 text-green-800' :
                         selectedPayment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         selectedPayment.status === 'processing' ? 'bg-blue-100 text-blue-800' :
@@ -1611,11 +1617,11 @@ export const AdminDashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">Payment Date</p>
+                    <p className="text-sm text-gray-600">{t('admin:dashboard.payments.details.paymentDate')}</p>
                     <p className="font-medium">{new Date(selectedPayment.createdAt).toLocaleDateString()}</p>
                     {selectedPayment.processedAt && (
                       <div className="mt-2">
-                        <p className="text-sm text-gray-600">Processed Date</p>
+                        <p className="text-sm text-gray-600">{t('admin:dashboard.payments.details.processedDate')}</p>
                         <p className="font-medium">{new Date(selectedPayment.processedAt).toLocaleDateString()}</p>
                       </div>
                     )}
@@ -1626,33 +1632,33 @@ export const AdminDashboard: React.FC = () => {
               {/* Payment & Invoice Information */}
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-4">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2">Payment Information</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">{t('admin:dashboard.payments.details.paymentInfo')}</h5>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Amount:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.payments.details.amount')}</span>
                       <span className="font-medium text-lg">{selectedPayment.amount} {selectedPayment.currency}</span>
                     </div>
                     {selectedPayment.fees && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Processing Fees:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.payments.details.processingFees')}</span>
                         <span className="font-medium">{selectedPayment.fees} {selectedPayment.currency}</span>
                       </div>
                     )}
                     {selectedPayment.netAmount && (
                       <div className="flex justify-between border-t pt-2">
-                        <span className="text-gray-600 font-medium">Net Amount:</span>
+                        <span className="text-gray-600 font-medium">{t('admin:dashboard.payments.details.netAmount')}</span>
                         <span className="font-bold">{selectedPayment.netAmount} {selectedPayment.currency}</span>
                       </div>
                     )}
                     {selectedPayment.paymentMethod && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Payment Method:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.payments.details.paymentMethod')}</span>
                         <span className="font-medium capitalize">{selectedPayment.paymentMethod}</span>
                       </div>
                     )}
                     {selectedPayment.paymentGateway && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Gateway:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.payments.details.gateway')}</span>
                         <span className="font-medium capitalize">{selectedPayment.paymentGateway}</span>
                       </div>
                     )}
@@ -1660,22 +1666,22 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2">Invoice Information</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2">{t('admin:dashboard.payments.details.invoiceInfo')}</h5>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Invoice ID:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.payments.details.invoiceId')}</span>
                       <span className="font-medium">{selectedPayment.invoice.invoiceId}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Invoice Amount:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.payments.details.invoiceAmount')}</span>
                       <span className="font-medium">{selectedPayment.invoice.amount} {selectedPayment.currency}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Customer:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.payments.details.customer')}</span>
                       <span className="font-medium">{selectedPayment.user?.name || 'Guest'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.payments.details.email')}</span>
                       <span className="font-medium">{selectedPayment.user?.email || 'N/A'}</span>
                     </div>
                   </div>
@@ -1685,23 +1691,23 @@ export const AdminDashboard: React.FC = () => {
               {/* Booking Information */}
               {selectedPayment.invoice.booking && (
                 <div className="mb-6">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Related Booking</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.payments.details.relatedBooking')}</h5>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Booking ID</p>
+                        <p className="text-sm text-gray-600">{t('admin:dashboard.payments.details.bookingId')}</p>
                         <p className="font-mono text-sm">{selectedPayment.invoice.booking._id}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Guest Name</p>
+                        <p className="text-sm text-gray-600">{t('admin:dashboard.payments.details.guestName')}</p>
                         <p className="font-medium">{selectedPayment.invoice.booking.touristName}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Hotel</p>
+                        <p className="text-sm text-gray-600">{t('admin:dashboard.payments.details.hotel')}</p>
                         <p className="font-medium">{selectedPayment.invoice.booking.hotel.name}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Location</p>
+                        <p className="text-sm text-gray-600">{t('admin:dashboard.payments.details.location')}</p>
                         <p className="font-medium">{selectedPayment.invoice.booking.hotel.city}, {selectedPayment.invoice.booking.hotel.country}</p>
                       </div>
                     </div>
@@ -1712,16 +1718,16 @@ export const AdminDashboard: React.FC = () => {
               {/* Transaction Details */}
               {selectedPayment.transactionId && (
                 <div className="mb-6">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Transaction Details</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.payments.details.transactionDetails')}</h5>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Transaction ID:</span>
+                        <span className="text-gray-600">{t('admin:dashboard.payments.details.transactionId')}</span>
                         <span className="font-mono text-sm">{selectedPayment.transactionId}</span>
                       </div>
                       {selectedPayment.confirmedAt && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Confirmed At:</span>
+                          <span className="text-gray-600">{t('admin:dashboard.payments.details.confirmedAt')}</span>
                           <span className="font-medium">{new Date(selectedPayment.confirmedAt).toLocaleString()}</span>
                         </div>
                       )}
@@ -1733,11 +1739,11 @@ export const AdminDashboard: React.FC = () => {
               {/* Failure Information */}
               {selectedPayment.status === 'failed' && selectedPayment.failureReason && (
                 <div className="mb-6">
-                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">Failure Information</h5>
+                  <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.payments.details.failureInfo')}</h5>
                   <div className="bg-red-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <XMarkIcon className="w-5 h-5 text-red-500" />
-                      <span className="text-red-800 font-medium">Payment Failed</span>
+                      <span className="text-red-800 font-medium">{t('admin:dashboard.payments.details.paymentFailed')}</span>
                     </div>
                     <p className="text-red-700 text-sm mt-1">{selectedPayment.failureReason}</p>
                   </div>
@@ -1750,11 +1756,11 @@ export const AdminDashboard: React.FC = () => {
                   <div className="bg-green-50 p-4 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <CheckIcon className="w-5 h-5 text-green-500" />
-                      <span className="text-green-800 font-medium">Payment Completed Successfully</span>
+                      <span className="text-green-800 font-medium">{t('admin:dashboard.payments.details.paymentCompleted')}</span>
                     </div>
                     {selectedPayment.processedAt && (
                       <p className="text-green-700 text-sm mt-1">
-                        Processed on {new Date(selectedPayment.processedAt).toLocaleString()}
+                        {t('admin:dashboard.payments.details.processedOn')} {new Date(selectedPayment.processedAt).toLocaleString()}
                       </p>
                     )}
                   </div>

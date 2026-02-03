@@ -62,7 +62,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
   itemsPerPage = 10,
   onItemsPerPageChange,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin']);
 
   // Filter payments based on status
   const filteredPayments = paymentStatus
@@ -82,9 +82,9 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
               </div>
               <div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {t('dashboard.payments.title')}
+                  {t('admin:dashboard.payments.title')}
                 </h2>
-                <p className="text-gray-600 mt-1">Monitor payment transactions and status</p>
+                <p className="text-gray-600 mt-1">{t('admin:dashboard.payments.subtitle')}</p>
               </div>
             </div>
 
@@ -101,7 +101,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                     onChange={(e) => setPaymentStatus(e.target.value)}
                     className="min-w-[160px] px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium"
                   >
-                    <option value="">All Status</option>
+                    <option value="">{t('admin:dashboard.payments.allStatus')}</option>
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
                     <option value="failed">Failed</option>
@@ -124,26 +124,26 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
                   <div className="flex items-center space-x-2">
                     <CreditCardIcon className="w-3 h-3 lg:w-4 lg:h-4 text-purple-600" />
-                    <span>Invoice ID</span>
+                    <span>{t('admin:dashboard.payments.invoiceId')}</span>
                   </div>
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Client Name
+                  {t('admin:dashboard.payments.clientName')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Email
+                  {t('admin:dashboard.payments.email')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Amount
+                  {t('admin:dashboard.payments.amount')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Status
+                  {t('admin:dashboard.payments.status')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Payment Date
+                  {t('admin:dashboard.payments.paymentDate')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Actions
+                  {t('admin:dashboard.payments.actions')}
                 </th>
               </tr>
             </thead>
@@ -201,7 +201,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                       className="group flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <EyeIcon className="w-4 h-4" />
-                      <span>View</span>
+                      <span>{t('admin:dashboard.bookings.details.view')}</span>
                     </motion.button>
                   </td>
                 </motion.tr>
@@ -266,7 +266,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                   className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-xl font-medium shadow-lg text-sm flex items-center space-x-2"
                 >
                   <EyeIcon className="w-4 h-4" />
-                  <span>View Details</span>
+                  <span>{t('admin:dashboard.bookings.details.view')}</span>
                 </motion.button>
               </div>
             </motion.div>

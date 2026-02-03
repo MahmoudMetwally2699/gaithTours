@@ -81,7 +81,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
   itemsPerPage = 10,
   onItemsPerPageChange,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin']);
   const [showCreateBookingModal, setShowCreateBookingModal] = useState(false);
 
   // Filter bookings based on status
@@ -106,9 +106,9 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
               </div>
               <div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  {t('dashboard.bookings.title')}
+                  {t('admin:dashboard.bookings.title')}
                 </h2>
-                <p className="text-gray-600 mt-1">Manage booking requests and reservations</p>
+                <p className="text-gray-600 mt-1">{t('admin:dashboard.bookings.subtitle')}</p>
               </div>
             </div>
 
@@ -120,7 +120,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                 className="flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <PlusIcon className="w-5 h-5 mr-2" />
-                <span className="font-medium">Create Booking</span>
+                <span className="font-medium">{t('admin:dashboard.bookings.createBooking')}</span>
               </button>
 
               {/* Modern Status Filter */}
@@ -132,13 +132,13 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                     onChange={(e) => setBookingStatus(e.target.value)}
                     className="w-full md:w-48 px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 rounded-xl font-medium cursor-pointer"
                   >
-                    <option value="">All Bookings</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="denied">Denied</option>
-                    <option value="invoiced">Invoiced</option>
-                    <option value="paid">Paid</option>
-                    <option value="confirmed">Confirmed</option>
+                    <option value="">{t('admin:dashboard.bookings.allStatus')}</option>
+                    <option value="pending">{t('admin:dashboard.status.pending')}</option>
+                    <option value="approved">{t('admin:dashboard.status.approved')}</option>
+                    <option value="denied">{t('admin:dashboard.status.denied')}</option>
+                    <option value="invoiced">{t('admin:dashboard.status.invoiced')}</option>
+                    <option value="paid">{t('admin:dashboard.status.paid')}</option>
+                    <option value="confirmed">{t('admin:dashboard.status.confirmed')}</option>
                   </select>
                 </div>
               </div>
@@ -157,23 +157,23 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
                   <div className="flex items-center space-x-2">
                     <UserGroupIcon className="w-4 h-4 text-blue-600" />
-                    <span>{t('dashboard.bookings.clientName')}</span>
+                    <span>{t('admin:dashboard.bookings.clientName')}</span>
                   </div>
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.bookings.email')}
+                  {t('admin:dashboard.bookings.email')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.bookings.hotelName')}
+                  {t('admin:dashboard.bookings.hotelName')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.bookings.submissionDate')}
+                  {t('admin:dashboard.bookings.submissionDate')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.bookings.status')}
+                  {t('admin:dashboard.bookings.status')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.bookings.actions')}
+                  {t('admin:dashboard.bookings.actions')}
                 </th>
               </tr>
             </thead>
@@ -218,7 +218,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                     </div>
                   </td>
                   <td className="px-8 py-6 text-sm text-gray-700">
-                    {new Date(booking.createdAt).toLocaleDateString()}
+                    {new Date(booking.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                   </td>
                   <td className="px-8 py-6">
                     {getStatusBadge(booking.status, 'booking')}
@@ -308,8 +308,8 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
 
               <div className="grid grid-cols-1 gap-2 text-sm mb-3">
                 <div>
-                  <p className="text-gray-500 font-medium">{t('dashboard.bookings.submissionDate')}</p>
-                  <p className="text-gray-900 font-semibold">{new Date(booking.createdAt).toLocaleDateString()}</p>
+                  <p className="text-gray-500 font-medium">{t('admin:dashboard.bookings.submissionDate')}</p>
+                  <p className="text-gray-900 font-semibold">{new Date(booking.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}</p>
                 </div>
               </div>
 
@@ -322,7 +322,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   className="flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-lg transition-all duration-300 hover:scale-105 shadow-lg"
                 >
                   <EyeIcon className="w-4 h-4" />
-                  <span className="text-xs font-medium">View</span>
+                  <span className="text-xs font-medium">{t('admin:dashboard.bookings.details.view')}</span>
                 </button>
                 {booking.status === 'pending' && (
                   <>
@@ -334,7 +334,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                       className="flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-lg transition-all duration-300 hover:scale-105 shadow-lg"
                     >
                       <CheckIcon className="w-4 h-4" />
-                      <span className="text-xs font-medium">Approve</span>
+                      <span className="text-xs font-medium">{t('admin:dashboard.bookings.approvalModal.approve')}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -343,7 +343,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                       }}
                       className="flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg transition-all duration-300 hover:scale-105 shadow-lg"
                     >
-                      <XMarkIcon className="w-4 h-4" />                      <span className="text-xs font-medium">Deny</span>
+                      <XMarkIcon className="w-4 h-4" />                      <span className="text-xs font-medium">{t('admin:dashboard.bookings.denialModal.deny')}</span>
                     </button>
                   </>
                 )}
@@ -373,7 +373,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
         onClose={() => setShowCreateBookingModal(false)}
         onSuccess={() => {
           onRefreshBookings();
-          toast.success('Booking created successfully!');
+          toast.success(t('admin:dashboard.messages.bookingCreated'));
         }}
         clients={clients}
         isLoading={isCreatingBooking}

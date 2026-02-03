@@ -1,0 +1,570 @@
+{
+  "dashboard": {
+    "title": "Dashboard",
+    "header": {
+      "title": "Admin Dashboard",
+      "subtitle": "Overview of your business performance",
+      "systemOnline": "System Online",
+      "adminPanel": "Admin Panel"
+    },
+    "tabs": {
+      "dashboard": "Dashboard",
+      "clients": "Clients",
+      "bookings": "Bookings",
+      "payments": "Payments",
+      "hotel_lookup": "Hotel Lookup",
+      "analytics": "Analytics",
+      "margins": "Profit Margins",
+      "promo_codes": "Promo Codes",
+      "promotional_banners": "Promo Banners",
+      "loyalty": "Loyalty Program",
+      "whatsapp": "WhatsApp",
+      "admin_management": "Admin Management"
+    },
+    "clients": {
+      "title": "Client Database",
+      "search": "Search clients...",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "nationality": "Nationality",
+      "registrationDate": "Registration Date",
+      "actions": "Actions",
+      "subtitle": "Manage your customer database",
+      "addClient": "Add Client",
+      "modal": {
+        "deleteTitle": "Delete Client",
+        "deleteConfirm": "Are you sure you want to delete",
+        "deleteWarning": "This action will permanently delete all associated bookings, invoices, and payments. This cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "deleting": "Deleting..."
+      },
+      "alerts": {
+        "createSuccess": "Client created successfully!",
+        "createError": "Failed to create client. Please try again."
+      },
+      "create": {
+        "title": "Add New Client",
+        "subtitle": "Create a new client account",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "Enter client's full name",
+        "emailPlaceholder": "client@example.com",
+        "password": "Password",
+        "passwordPlaceholder": "Enter secure password",
+        "passwordHint": "Must contain at least 8 characters with uppercase, lowercase, number, and special character",
+        "phonePlaceholder": "+966 50 123 4567",
+        "nationalityPlaceholder": "e.g., Saudi Arabia, Egypt, Jordan",
+        "preferredLanguage": "Preferred Language",
+        "submit": "Create Client",
+        "creating": "Creating...",
+        "cancel": "Cancel",
+        "errors": {
+          "nameRequired": "Name is required",
+          "nameLength": "Name must be at least 2 characters long",
+          "emailRequired": "Email is required",
+          "emailInvalid": "Please enter a valid email address",
+          "passwordRequired": "Password is required",
+          "passwordLength": "Password must be at least 8 characters long",
+          "passwordComplex": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+        }
+      },
+      "details": {
+        "title": "Client Details",
+        "editTitle": "Edit Client",
+        "clientInfo": "Client Information",
+        "memberSince": "Member Since",
+        "bookingHistory": "Booking History",
+        "invoiceHistory": "Invoice History",
+        "noBookings": "No bookings found",
+        "noInvoices": "No invoices found",
+        "save": "Save",
+        "saving": "Saving...",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "na": "N/A",
+        "loadError": "Failed to load client details",
+        "updateSuccess": "Client updated successfully",
+        "updateError": "Failed to update client"
+      }
+    },
+    "stats": {
+      "clients": "Clients",
+      "totalRegistered": "Total Registered",
+      "active": "Active",
+      "failed": "Failed",
+      "failedBookings": "Failed Bookings",
+      "error": "Error",
+      "revenue": "Revenue",
+      "totalEarnings": "Total Earnings",
+      "live": "Live",
+      "whatsappMessages": "WhatsApp Messages",
+      "totalMessages": "Total Messages",
+      "allTime": "All Time",
+      "unreadMessages": "Unread Messages",
+      "needsAttention": "Needs Attention",
+      "unread": "Unread"
+    },
+    "messages": {
+      "fetchStatsFailed": "Failed to fetch statistics",
+      "fetchClientsFailed": "Failed to fetch clients",
+      "fetchBookingsFailed": "Failed to fetch bookings",
+      "fetchInvoicesFailed": "Failed to fetch invoices",
+      "fetchPaymentsFailed": "Failed to fetch payments",
+      "bookingApproved": "Booking approved successfully",
+      "bookingApprovalFailed": "Failed to approve booking",
+      "bookingDenied": "Booking denied successfully",
+      "bookingDenialFailed": "Failed to deny booking",
+      "logoutFailed": "Logout failed",
+      "clientCreated": "Client created successfully!",
+      "clientCreateFailed": "Failed to create client",
+      "clientDeleted": "Client deleted successfully!",
+      "clientDeleteFailed": "Failed to delete client",
+      "bookingCreated": "Booking created successfully!"
+    },
+    "actions": {
+      "logout": "Logout"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "denied": "Denied",
+      "invoiced": "Invoiced",
+      "paid": "Paid",
+      "confirmed": "Confirmed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "processing": "Processing",
+      "unpaid": "Unpaid",
+      "refunded": "Refunded"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "subtitle": "Frequently used administrative tasks",
+      "manageBookings": {
+        "title": "Manage Bookings",
+        "description": "View, approve, or deny booking requests",
+        "action": "Go to Bookings"
+      },
+      "clientDatabase": {
+        "title": "Client Database",
+        "description": "Access and manage client information",
+        "action": "View Clients"
+      },
+      "paymentTracking": {
+        "title": "Payment Tracking",
+        "description": "Monitor payments and invoices status",
+        "action": "Check Payments"
+      }
+    },
+    "systemStatus": {
+        "title": "System Status",
+        "subtitle": "Real-time monitoring",
+        "database": "Database",
+        "api": "API",
+        "payments": "Payments"
+    },
+      "analytics": {
+        "title": "Analytics Dashboard",
+        "subtitle": "Track your business performance",
+        "period": {
+          "last7Days": "Last 7 days",
+          "last30Days": "Last 30 days",
+          "last90Days": "Last 90 days"
+        },
+        "export": {
+          "bookings": "Export Bookings",
+          "revenue": "Export Revenue"
+        },
+        "summary": {
+          "totalRevenue": "Total Revenue",
+          "totalBookings": "Total Bookings",
+          "conversionRate": "Conversion Rate",
+          "avgTransaction": "Avg. Transaction"
+        },
+        "charts": {
+          "revenueOverTime": "Revenue Over Time",
+          "bookingsByStatus": "Bookings by Status",
+          "bookingsOverTime": "Bookings Over Time",
+          "confirmed": "Confirmed",
+          "cancelled": "Cancelled"
+        },
+        "topLists": {
+          "topHotels": "Top Hotels",
+          "topDestinations": "Top Destinations",
+          "city": "City",
+          "bookings": "bookings",
+          "noData": "No data available"
+        },
+        "promoCodes": {
+          "title": "Top Promo Codes",
+          "usageInPeriod": "Usage in Period",
+          "totalDiscount": "Total Discount Given"
+        },
+        "recentUsage": {
+          "title": "Recent Usage",
+          "code": "Code",
+          "user": "User",
+          "discount": "Discount",
+          "date": "Date",
+          "noActivity": "No recent activity"
+        },
+        "alerts": {
+          "loadFailed": "Failed to load analytics",
+          "exportSuccess": "{{type}} data exported successfully",
+          "exportFailed": "Failed to export data"
+        }
+      },
+      "admin_management": {
+        "title": "Admin Management",
+        "subtitle": "Manage sub-admin access and permissions",
+        "inviteButton": "Invite Sub-Admin",
+        "tabs": {
+          "subAdmins": "Sub-Admins",
+          "invitations": "Pending Invitations"
+        },
+        "permissions": {
+          "dashboard": "Dashboard Overview",
+          "clients": "Client Management",
+          "bookings": "Booking Management",
+          "payments": "Payment Tracking",
+          "analytics": "Analytics",
+          "margins": "Profit Margins",
+          "promoCodes": "Promo Codes",
+          "whatsapp": "WhatsApp Messages"
+        },
+        "table": {
+          "joined": "Joined",
+          "invitedBy": "Invited by",
+          "expires": "Expires",
+          "sent": "Sent",
+          "cancel": "Cancel",
+          "noSubAdmins": "No Sub-Admins Yet",
+          "noSubAdminsDesc": "Invite team members to help manage the dashboard",
+          "noInvitations": "No Pending Invitations",
+          "noInvitationsDesc": "All invitations have been processed"
+        },
+        "modal": {
+          "inviteTitle": "Invite Sub-Admin",
+          "editTitle": "Edit Permissions",
+          "email": "Email Address",
+          "permissions": "Permissions",
+          "cancel": "Cancel",
+          "send": "Send Invitation",
+          "sending": "Sending...",
+          "save": "Save Changes",
+          "saving": "Saving..."
+        },
+        "alerts": {
+          "confirmRevoke": "Are you sure you want to revoke this sub-admin's access?",
+          "confirmCancel": "Are you sure you want to cancel this invitation?",
+          "inviteSuccess": "Invitation sent successfully!",
+          "revokeSuccess": "Sub-admin access revoked",
+          "cancelSuccess": "Invitation cancelled",
+          "updateSuccess": "Permissions updated successfully!",
+          "inviteFailed": "Failed to send invitation",
+          "updateFailed": "Failed to update permissions",
+          "revokeFailed": "Failed to remove sub-admin",
+          "cancelFailed": "Failed to cancel invitation",
+          "loadFailed": "Failed to load admin data",
+          "selectPermissionError": "Please enter email and select at least one permission"
+        }
+      },
+      "promo_codes": {
+        "title": "Promo Codes",
+        "subtitle": "Manage discount codes for marketing campaigns",
+        "createButton": "Create Code",
+        "filters": {
+          "all": "All Codes",
+          "active": "Active Only",
+          "expired": "Expired"
+        },
+        "table": {
+          "code": "Code",
+          "discount": "Discount",
+          "validity": "Validity",
+          "usage": "Usage",
+          "status": "Status",
+          "actions": "Actions",
+          "noCodes": "No promo codes found",
+          "active": "Active",
+          "inactive": "Inactive",
+          "expired": "Expired",
+          "to": "to"
+        },
+        "modal": {
+          "createTitle": "Create Promo Code",
+          "editTitle": "Edit Promo Code",
+          "code": "Promo Code",
+          "description": "Description",
+          "type": "Type",
+          "value": "Value",
+          "maxCap": "Max Cap",
+          "validFrom": "Valid From",
+          "validUntil": "Valid Until",
+          "targeting": "Targeting (Optional)",
+          "hotels": "Applicable Hotels",
+          "destinations": "Applicable Destinations",
+          "active": "Active",
+          "cancel": "Cancel",
+          "save": "Create Code",
+          "update": "Update Code",
+          "saving": "Saving..."
+        },
+        "types": {
+          "percentage": "Percentage (%)",
+          "fixed": "Fixed Amount"
+        },
+        "delete": {
+          "title": "Delete Promo Code",
+          "message": "This action cannot be undone.",
+          "confirm": "Delete"
+        }
+      },
+      "margins": {
+        "title": "Profit Margins",
+        "subtitle": "Manage pricing rules and markups",
+        "filters": {
+          "allStatus": "All Status",
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "actions": {
+          "simulator": "Simulator",
+          "addRule": "Add Rule"
+        },
+        "stats": {
+          "activeRules": "Active Rules",
+          "timesApplied": "Times Applied",
+          "revenue": "Revenue Generated",
+          "avgMargin": "Average Margin"
+        },
+        "table": {
+          "name": "Rule Name",
+          "typeValue": "Type / Value",
+          "conditions": "Conditions",
+          "priority": "Priority",
+          "status": "Status",
+          "applied": "Applied",
+          "ruleActions": "Actions",
+          "noRules": "No margin rules yet",
+          "noRulesDesc": "Create your first rule to start managing profits"
+        },
+        "modal": {
+          "createTitle": "Create New Rule",
+          "editTitle": "Edit Rule",
+          "ruleName": "Rule Name",
+          "description": "Description",
+          "marginSettings": "Margin Settings",
+          "type": "Type",
+          "amount": "Amount",
+          "percentage": "Percentage",
+          "priority": "Priority",
+          "conditions": "Conditions (Optional)",
+          "conditionsDesc": "Leave empty for a global rule that applies to all bookings"
+        },
+        "conditions": {
+          "countries": "Selected Countries",
+          "cities": "Selected Cities",
+          "minStar": "Minimum Star Rating",
+          "maxStar": "Maximum Star Rating",
+          "star": "Star",
+          "any": "Any",
+          "startDate": "Start Date",
+          "endDate": "End Date",
+          "minBookingValue": "Min Booking Value",
+          "maxBookingValue": "Max Booking Value",
+          "selectCountry": "Select country to add...",
+          "selectCity": "Select city to add...",
+          "selectMealType": "Select meal type to add...",
+          "mealTypes": "Meal Types",
+          "dateRange": "Date Range",
+          "valueFilter": "Booking Value",
+          "global": "Global"
+        },
+        "simulator": {
+          "title": "Margin Simulator",
+          "basePrice": "Base Price",
+          "country": "Country",
+          "city": "City",
+          "starRating": "Star Rating",
+          "run": "Run Simulation",
+          "results": {
+            "basePrice": "Base Price",
+            "marginApplied": "Margin Applied",
+            "finalPrice": "Final Price",
+            "rule": "Rule"
+          }
+        },
+        "mealTypes": {
+          "all_inclusive": "All-Inclusive",
+          "breakfast": "Breakfast",
+          "half_board": "Half-Board",
+          "full_board": "Full-Board",
+          "room_only": "Room Only"
+        }
+      },
+      "hotelLookup": {
+        "title": "Hotel Contact Lookup",
+        "subtitle": "Search for hotels and view their contact information",
+        "searchLabel": "Search Hotel",
+        "searchPlaceholder": "Type hotel name to search...",
+        "loading": "Loading hotel contact info...",
+        "error": "Failed to fetch hotel contact info",
+        "address": "Address",
+        "phone": "Phone",
+        "email": "Email",
+        "notAvailable": "Not available",
+        "copyPhone": "Copy Phone",
+        "copyEmail": "Copy Email",
+        "emptyTitle": "Search for a Hotel",
+        "emptySubtitle": "Start typing a hotel name above to find contact information"
+      },
+      "bookings": {
+        "title": "Bookings",
+        "subtitle": "Manage booking requests and reservations",
+        "createBooking": "Create Booking",
+        "allStatus": "All Bookings",
+        "clientName": "Client Name",
+        "email": "Email",
+        "hotelName": "Hotel Name",
+        "submissionDate": "Submission Date",
+        "status": "Status",
+        "actions": "Actions",
+        "approvalModal": {
+          "title": "Approve Booking",
+          "description": "Are you sure you want to approve the booking for {{touristName}} at {{hotelName}}?",
+          "amount": "Approved Amount",
+          "cancel": "Cancel",
+          "approve": "Approve",
+          "approving": "Approving..."
+        },
+        "denialModal": {
+          "title": "Deny Booking",
+          "description": "Are you sure you want to deny the booking for {{touristName}} at {{hotelName}}?",
+          "reason": "Denial Reason",
+          "reasonPlaceholder": "Please provide a reason for denial...",
+          "cancel": "Cancel",
+          "deny": "Deny",
+          "denying": "Denying..."
+        },
+        "details": {
+          "title": "Booking Details",
+          "visitWebsite": "Visit Hotel Website",
+          "expectedPrice": "Expected Price:",
+          "phone": "Phone:",
+          "email": "Email:",
+          "notAvailable": "Not Available",
+          "travelDetails": "Travel Details",
+          "bookingId": "Booking ID:",
+          "checkIn": "Check-in:",
+          "checkOut": "Check-out:",
+          "guests": "Guests:",
+          "expectedCheckInTime": "Expected Check-in Time:",
+          "roomStayDetails": "Room & Stay Details",
+          "roomType": "Room Type:",
+          "stayType": "Stay Type:",
+          "paymentMethod": "Payment Method:",
+          "status": "Status:",
+          "submissionDate": "Submission Date:",
+          "personalInfo": "Personal Information",
+          "fullName": "Full Name:",
+          "nationality": "Nationality:",
+          "additionalGuests": "Additional Guests",
+          "guestName": "Guest's Name:",
+          "attachments": "Attachments",
+          "view": "View",
+          "specialRequests": "Special Requests",
+          "approve": "Approve Booking",
+          "deny": "Deny Booking",
+          "uploaded": "Uploaded"
+        }
+      },
+      "invoices": {
+          "title": "Invoices",
+          "subtitle": "Track and manage billing invoices",
+          "allStatus": "All Status",
+          "invoiceId": "Invoice ID",
+          "clientName": "Client Name",
+          "email": "Email",
+          "hotelName": "Hotel Name",
+          "amount": "Amount",
+          "status": "Status",
+          "issueDate": "Issue Date",
+          "actions": "Actions",
+          "details": {
+              "title": "Invoice Details",
+              "invoiceLabel": "Invoice",
+              "status": "Status:",
+              "issueDate": "Issue Date",
+              "dueDate": "Due Date",
+              "billTo": "Bill To",
+              "clientId": "Client ID:",
+              "serviceDetails": "Service Details",
+              "bookingInfo": "Booking Information",
+              "bookingId": "Booking ID",
+              "guestName": "Guest Name",
+              "numGuests": "Number of Guests",
+              "roomType": "Room Type",
+              "items": "Invoice Items",
+              "table": {
+                  "description": "Description",
+                  "qty": "Qty",
+                  "unitPrice": "Unit Price",
+                  "total": "Total"
+              },
+              "subtotal": "Subtotal:",
+              "tax": "Tax:",
+              "total": "Total:",
+              "notes": "Notes",
+              "paymentInfo": "Payment Information",
+              "paymentReceived": "Payment Received",
+              "paidOn": "Paid on"
+          }
+      },
+      "payments": {
+          "title": "Payments",
+          "subtitle": "Monitor payment transactions and status",
+          "allStatus": "All Status",
+          "invoiceId": "Invoice ID",
+          "clientName": "Client Name",
+          "email": "Email",
+          "amount": "Amount",
+          "status": "Status",
+          "paymentDate": "Payment Date",
+          "actions": "Actions",
+          "details": {
+              "title": "Payment Details",
+              "paymentLabel": "Payment",
+              "status": "Status:",
+              "paymentDate": "Payment Date",
+              "processedDate": "Processed Date",
+              "paymentInfo": "Payment Information",
+              "amount": "Amount:",
+              "processingFees": "Processing Fees:",
+              "netAmount": "Net Amount:",
+              "paymentMethod": "Payment Method:",
+              "gateway": "Gateway:",
+              "invoiceInfo": "Invoice Information",
+              "invoiceId": "Invoice ID:",
+              "invoiceAmount": "Invoice Amount:",
+              "customer": "Customer:",
+              "email": "Email:",
+              "relatedBooking": "Related Booking",
+              "bookingId": "Booking ID",
+              "guestName": "Guest Name",
+              "hotel": "Hotel",
+              "location": "Location",
+              "transactionDetails": "Transaction Details",
+              "transactionId": "Transaction ID:",
+              "confirmedAt": "Confirmed At:",
+              "failureInfo": "Failure Information",
+              "paymentFailed": "Payment Failed",
+              "successInfo": "Success Information",
+              "paymentCompleted": "Payment Completed Successfully",
+              "processedOn": "Processed on"
+          }
+      }
+  }
+}

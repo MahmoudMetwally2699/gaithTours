@@ -14,6 +14,7 @@ import {
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import adminAPI from '../../services/adminAPI';
 
 interface Client {
   _id: string;
@@ -98,22 +99,10 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/admin/clients/${client._id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch client details');
-
-      const data = await response.json();
-      setClientDetails(data.data);
+      const response = await adminAPI.getClient(client._id);
+      setClientDetails(response.data.data);
     } catch (error) {
-      toast.error('Failed to load client details');
+      toast.error(t('admin:dashboard.clients.details.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -124,30 +113,16 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
     try {
       setIsSaving(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/admin/clients/${client._id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(editForm),
-        }
-      );
+      const response = await adminAPI.updateClient(client._id, editForm);
 
-      if (!response.ok) throw new Error('Failed to update client');
-
-      const data = await response.json();
-      toast.success('Client updated successfully');
+      toast.success(t('admin:dashboard.clients.details.updateSuccess'));
       setIsEditing(false);
 
-      if (onUpdate && data.data?.client) {
-        onUpdate(data.data.client);
+      if (onUpdate && response.data.data.client) {
+        onUpdate(response.data.data.client);
       }
     } catch (error) {
-      toast.error('Failed to update client');
+      toast.error(t('admin:dashboard.clients.details.updateError'));
     } finally {
       setIsSaving(false);
     }
@@ -166,7 +141,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
 
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {t(`admin:dashboard.status.${status}`, status.charAt(0).toUpperCase() + status.slice(1))}
       </span>
     );
   };
@@ -201,7 +176,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">
-                      {isEditing ? 'Edit Client' : 'Client Details'}
+                      {isEditing ? t('admin:dashboard.clients.details.editTitle') : t('admin:dashboard.clients.details.title')}
                     </h2>
                     <p className="text-white/80 text-sm">
                       {client?.email}
@@ -228,14 +203,14 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                   {/* Client Info Section */}
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-5">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-800">Client Information</h3>
+                      <h3 className="text-lg font-semibold text-gray-800">{t('admin:dashboard.clients.details.clientInfo')}</h3>
                       {!isEditing ? (
                         <button
                           onClick={() => setIsEditing(true)}
                           className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium transition-colors"
                         >
                           <PencilIcon className="w-4 h-4" />
-                          Edit
+                          {t('admin:dashboard.clients.details.edit')}
                         </button>
                       ) : (
                         <div className="flex gap-2">
@@ -243,7 +218,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             onClick={() => setIsEditing(false)}
                             className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl text-sm font-medium transition-colors"
                           >
-                            Cancel
+                            {t('admin:dashboard.clients.details.cancel')}
                           </button>
                           <button
                             onClick={handleSave}
@@ -251,7 +226,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                             className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             <CheckIcon className="w-4 h-4" />
-                            {isSaving ? 'Saving...' : 'Save'}
+                            {isSaving ? t('admin:dashboard.clients.details.saving') : t('admin:dashboard.clients.details.save')}
                           </button>
                         </div>
                       )}
@@ -262,7 +237,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
                           <UserCircleIcon className="w-4 h-4" />
-                          Name
+                          {t('admin:dashboard.clients.name')}
                         </label>
                         {isEditing ? (
                           <input
@@ -282,7 +257,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
                           <EnvelopeIcon className="w-4 h-4" />
-                          Email
+                          {t('admin:dashboard.clients.email')}
                         </label>
                         {isEditing ? (
                           <input
@@ -302,7 +277,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
                           <PhoneIcon className="w-4 h-4" />
-                          Phone
+                          {t('admin:dashboard.clients.phone')}
                         </label>
                         {isEditing ? (
                           <input
@@ -313,7 +288,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                           />
                         ) : (
                           <p className="text-gray-900 font-medium bg-white px-4 py-2.5 rounded-xl border border-gray-100">
-                            {client?.phone || 'N/A'}
+                            {client?.phone || t('admin:dashboard.clients.details.na')}
                           </p>
                         )}
                       </div>
@@ -322,7 +297,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       <div className="space-y-1.5">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
                           <GlobeAltIcon className="w-4 h-4" />
-                          Nationality
+                          {t('admin:dashboard.clients.nationality')}
                         </label>
                         {isEditing ? (
                           <input
@@ -333,7 +308,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                           />
                         ) : (
                           <p className="text-gray-900 font-medium bg-white px-4 py-2.5 rounded-xl border border-gray-100">
-                            {client?.nationality || 'N/A'}
+                            {client?.nationality || t('admin:dashboard.clients.details.na')}
                           </p>
                         )}
                       </div>
@@ -342,14 +317,14 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                       <div className="space-y-1.5 md:col-span-2">
                         <label className="flex items-center gap-2 text-sm font-medium text-gray-600">
                           <CalendarIcon className="w-4 h-4" />
-                          Member Since
+                          {t('admin:dashboard.clients.details.memberSince')}
                         </label>
                         <p className="text-gray-900 font-medium bg-white px-4 py-2.5 rounded-xl border border-gray-100">
-                          {client?.createdAt ? new Date(client.createdAt).toLocaleDateString('en-US', {
+                          {client?.createdAt ? new Date(client.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
-                          }) : 'N/A'}
+                          }) : t('admin:dashboard.clients.details.na')}
                         </p>
                       </div>
                     </div>
@@ -360,7 +335,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     <div className="flex items-center gap-2 mb-4">
                       <ClipboardDocumentListIcon className="w-5 h-5 text-blue-600" />
                       <h3 className="text-lg font-semibold text-gray-800">
-                        Booking History ({clientDetails?.bookings?.length || 0})
+                        {t('admin:dashboard.clients.details.bookingHistory')} ({clientDetails?.bookings?.length || 0})
                       </h3>
                     </div>
 
@@ -383,7 +358,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-center py-4">No bookings found</p>
+                      <p className="text-gray-500 text-center py-4">{t('admin:dashboard.clients.details.noBookings')}</p>
                     )}
                   </div>
 
@@ -392,7 +367,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     <div className="flex items-center gap-2 mb-4">
                       <DocumentTextIcon className="w-5 h-5 text-emerald-600" />
                       <h3 className="text-lg font-semibold text-gray-800">
-                        Invoice History ({clientDetails?.invoices?.length || 0})
+                        {t('admin:dashboard.clients.details.invoiceHistory')} ({clientDetails?.invoices?.length || 0})
                       </h3>
                     </div>
 
@@ -413,7 +388,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-center py-4">No invoices found</p>
+                      <p className="text-gray-500 text-center py-4">{t('admin:dashboard.clients.details.noInvoices')}</p>
                     )}
                   </div>
                 </div>

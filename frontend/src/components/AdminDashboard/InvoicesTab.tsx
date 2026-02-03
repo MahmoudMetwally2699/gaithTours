@@ -56,7 +56,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
   itemsPerPage = 10,
   onItemsPerPageChange,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin']);
 
   // Filter invoices based on status
   const filteredInvoices = invoiceStatus
@@ -76,9 +76,9 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
               </div>
               <div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  {t('dashboard.invoices.title')}
+                  {t('admin:dashboard.invoices.title')}
                 </h2>
-                <p className="text-gray-600 mt-1">Track and manage billing invoices</p>
+                <p className="text-gray-600 mt-1">{t('admin:dashboard.invoices.subtitle')}</p>
               </div>
             </div>
 
@@ -95,10 +95,10 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                     onChange={(e) => setInvoiceStatus(e.target.value)}
                     className="min-w-[160px] px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium"
                   >
-                    <option value="">All Status</option>
-                    <option value="invoiced">Invoiced</option>
-                    <option value="paid">Paid</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="">{t('admin:dashboard.invoices.allStatus')}</option>
+                    <option value="invoiced">{t('admin:dashboard.status.invoiced')}</option>
+                    <option value="paid">{t('admin:dashboard.status.paid')}</option>
+                    <option value="cancelled">{t('admin:dashboard.status.cancelled')}</option>
                   </select>
                 </div>
               </div>
@@ -117,29 +117,29 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
                   <div className="flex items-center space-x-2">
                     <DocumentTextIcon className="w-3 h-3 lg:w-4 lg:h-4 text-emerald-600" />
-                    <span>Invoice ID</span>
+                    <span>{t('admin:dashboard.invoices.invoiceId')}</span>
                   </div>
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Client Name
+                  {t('admin:dashboard.invoices.clientName')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Email
+                  {t('admin:dashboard.invoices.email')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Hotel Name
+                  {t('admin:dashboard.invoices.hotelName')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Amount
+                  {t('admin:dashboard.invoices.amount')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Status
+                  {t('admin:dashboard.invoices.status')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Issue Date
+                  {t('admin:dashboard.invoices.issueDate')}
                 </th>
                 <th className={`px-4 lg:px-8 py-4 lg:py-6 ${isRTL ? 'text-right' : 'text-left'} text-xs lg:text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  Actions
+                  {t('admin:dashboard.invoices.actions')}
                 </th>
               </tr>
             </thead>
@@ -159,7 +159,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                       </div>
                       <div>
                         <p className="text-sm font-bold text-gray-900">{invoice.invoiceId}</p>
-                        <p className="text-xs text-gray-500">Invoice</p>
+                        <p className="text-xs text-gray-500">{t('admin:dashboard.invoices.details.invoiceLabel')}</p>
                       </div>
                     </div>
                   </td>
@@ -185,7 +185,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                     {getStatusBadge(invoice.status, 'invoice')}
                   </td>
                   <td className="px-4 lg:px-8 py-4 lg:py-6 text-sm text-gray-700">
-                    {new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString()}
+                    {new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                   </td>
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
                     <motion.button
@@ -198,7 +198,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                       className="group flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-4 py-2 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <EyeIcon className="w-4 h-4" />
-                      <span>View</span>
+                      <span>{t('admin:dashboard.bookings.details.view')}</span>
                     </motion.button>
                   </td>
                 </motion.tr>
@@ -224,7 +224,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-900">{invoice.invoiceId}</p>
-                    <p className="text-xs text-gray-500">Invoice</p>
+                    <p className="text-xs text-gray-500">{t('admin:dashboard.invoices.details.invoiceLabel')}</p>
                   </div>
                 </div>
                 {getStatusBadge(invoice.status, 'invoice')}
@@ -232,27 +232,27 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
 
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-600 font-medium">Client</span>
+                  <span className="text-xs text-gray-600 font-medium">{t('admin:dashboard.invoices.clientName')}</span>
                   <span className="text-sm text-gray-900 font-medium">{invoice.clientName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-600 font-medium">Email</span>
+                  <span className="text-xs text-gray-600 font-medium">{t('admin:dashboard.invoices.email')}</span>
                   <span className="text-sm text-gray-600 truncate max-w-[200px]">{invoice.clientEmail}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-600 font-medium">Hotel</span>
+                  <span className="text-xs text-gray-600 font-medium">{t('admin:dashboard.invoices.hotelName')}</span>
                   <span className="text-sm text-gray-700 font-medium truncate max-w-[200px]">{invoice.hotelName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-600 font-medium">Amount</span>
+                  <span className="text-xs text-gray-600 font-medium">{t('admin:dashboard.invoices.amount')}</span>
                   <div className="flex items-center space-x-1">
                     <span className="text-lg font-bold text-gray-900">{invoice.amount}</span>
                     <span className="text-xs text-gray-500 uppercase">{invoice.currency}</span>
                   </div>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-xs text-gray-600 font-medium">Issue Date</span>
-                  <span className="text-sm text-gray-700">{new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-600 font-medium">{t('admin:dashboard.invoices.issueDate')}</span>
+                  <span className="text-sm text-gray-700">{new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}</span>
                 </div>
               </div>
 
@@ -267,7 +267,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                   className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-4 py-2 rounded-xl font-medium shadow-lg text-sm flex items-center space-x-2"
                 >
                   <EyeIcon className="w-4 h-4" />
-                  <span>View Details</span>
+                  <span>{t('admin:dashboard.bookings.details.view')}</span>
                 </motion.button>
               </div>
             </motion.div>

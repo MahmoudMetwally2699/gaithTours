@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   XMarkIcon,
@@ -33,6 +34,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
   onSubmit,
   isLoading
 }) => {
+  const { t } = useTranslation(['admin']);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -59,23 +61,23 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
     const newErrors: Partial<ClientFormData> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('admin:dashboard.clients.create.errors.nameRequired');
     } else if (formData.name.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters long';
+      newErrors.name = t('admin:dashboard.clients.create.errors.nameLength');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('admin:dashboard.clients.create.errors.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('admin:dashboard.clients.create.errors.emailInvalid');
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('admin:dashboard.clients.create.errors.passwordRequired');
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+      newErrors.password = t('admin:dashboard.clients.create.errors.passwordLength');
     } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+      newErrors.password = t('admin:dashboard.clients.create.errors.passwordComplex');
     }
 
     setErrors(newErrors);
@@ -126,8 +128,8 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                 <UserIcon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Add New Client</h3>
-                <p className="text-amber-100 text-sm">Create a new client account</p>
+                <h3 className="text-2xl font-bold">{t('admin:dashboard.clients.create.title')}</h3>
+                <p className="text-amber-100 text-sm">{t('admin:dashboard.clients.create.subtitle')}</p>
               </div>
             </div>
             <button
@@ -145,7 +147,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name *
+                {t('admin:dashboard.clients.create.fullName')} *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -159,7 +161,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                   className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200 ${
                     errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
-                  placeholder="Enter client's full name"
+                  placeholder={t('admin:dashboard.clients.create.fullNamePlaceholder')}
                 />
               </div>
               {errors.name && (
@@ -170,7 +172,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address *
+                {t('admin:dashboard.clients.email')} *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -184,7 +186,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                   className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200 ${
                     errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
-                  placeholder="client@example.com"
+                  placeholder={t('admin:dashboard.clients.create.emailPlaceholder')}
                 />
               </div>
               {errors.email && (
@@ -195,7 +197,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password *
+                {t('admin:dashboard.clients.create.password')} *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -209,7 +211,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                   className={`block w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200 ${
                     errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
-                  placeholder="Enter secure password"
+                  placeholder={t('admin:dashboard.clients.create.passwordPlaceholder')}
                 />
                 <button
                   type="button"
@@ -227,14 +229,14 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
               <p className="mt-1 text-xs text-gray-500">
-                Must contain at least 8 characters with uppercase, lowercase, number, and special character
+                {t('admin:dashboard.clients.create.passwordHint')}
               </p>
             </div>
 
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                {t('admin:dashboard.clients.phone')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -246,7 +248,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                   value={formData.phone}
                   onChange={handleChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="+966 50 123 4567"
+                  placeholder={t('admin:dashboard.clients.create.phonePlaceholder')}
                 />
               </div>
             </div>
@@ -254,7 +256,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             {/* Nationality */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nationality
+                {t('admin:dashboard.clients.nationality')}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -266,7 +268,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
                   value={formData.nationality}
                   onChange={handleChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="e.g., Saudi Arabia, Egypt, Jordan"
+                  placeholder={t('admin:dashboard.clients.create.nationalityPlaceholder')}
                 />
               </div>
             </div>
@@ -274,7 +276,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             {/* Preferred Language */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Preferred Language
+                {t('admin:dashboard.clients.create.preferredLanguage')}
               </label>
               <select
                 name="preferredLanguage"
@@ -295,7 +297,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
               onClick={handleClose}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
             >
-              Cancel
+              {t('admin:dashboard.clients.create.cancel')}
             </button>
             <button
               type="submit"
@@ -305,10 +307,10 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Creating...</span>
+                  <span>{t('admin:dashboard.clients.create.creating')}</span>
                 </>
               ) : (
-                <span>Create Client</span>
+                <span>{t('admin:dashboard.clients.create.submit')}</span>
               )}
             </button>
           </div>

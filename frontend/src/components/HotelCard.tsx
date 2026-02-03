@@ -115,7 +115,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
         </p>
 
         {/* Price Section */}
-        <div className="mt-auto flex justify-end items-baseline pt-2 md:pt-3 border-t border-gray-50">
+        <div className="mt-auto flex flex-col pt-2 md:pt-3 border-t border-gray-50">
+          <div className="flex justify-end items-baseline">
            {(hotel.pricePerNight && hotel.pricePerNight > 0) ? (
              <>
                <span className="text-base sm:text-lg font-bold text-gray-800 font-price">
@@ -135,6 +136,15 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
                {t('hotels.viewDetails', 'View Details')}
              </span>
            )}
+          </div>
+          {/* Taxes Display */}
+          {hotel.total_taxes && hotel.total_taxes > 0 && (
+            <div className="flex justify-end mt-0.5">
+              <span className="text-gray-400 text-[9px] sm:text-[10px]">
+                + {formatPrice(hotel.total_taxes, hotel.taxes_currency || hotel.currency)} {t('common:taxesAndFees', 'taxes and fees')}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

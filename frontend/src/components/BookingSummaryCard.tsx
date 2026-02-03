@@ -61,8 +61,12 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   rooms = 1
 }) => {
   const { t, i18n } = useTranslation(['common', 'booking']);
-  const { currencySymbol } = useCurrency();
+  const { getCurrencySymbol } = useCurrency();
   const totalGuests = guests + children;
+
+  // Get currency from the rate data (this is the currency the rate was fetched in)
+  const rateCurrency = selectedRate.currency || 'USD';
+  const currencySymbol = getCurrencySymbol(rateCurrency);
 
   // Calculate number of nights with validation
   const calculateNights = () => {
@@ -381,6 +385,10 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
             </div>
             <div className="text-xs text-gray-500 text-right mt-1">
               {t('booking:includesTaxes', 'Includes taxes and fees')}
+            </div>
+            {/* Currency info note */}
+            <div className="text-xs text-blue-600 text-right mt-1">
+              {t('booking:currencyNote', `Prices shown in ${rateCurrency}`)}
             </div>
           </div>
         </div>

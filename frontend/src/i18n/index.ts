@@ -5,9 +5,11 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import translation files
 import enCommon from './locales/en/common.json';
 import enHome from './locales/en/home.json';
+import enAdmin from './locales/en/admin.json';
 
 import arCommon from './locales/ar/common.json';
 import arHome from './locales/ar/home.json';
+import arAdmin from './locales/ar/admin.json';
 import enSearchResults from './locales/en/searchResults.json';
 import arSearchResults from './locales/ar/searchResults.json';
 import enHotelDetails from './locales/en/hotelDetails.json';
@@ -20,6 +22,7 @@ const resources = {
     en: {
         common: enCommon,
         home: enHome,
+        admin: enAdmin,
         searchResults: enSearchResults,
         hotelDetails: enHotelDetails,
         booking: enBooking
@@ -27,6 +30,7 @@ const resources = {
     ar: {
         common: arCommon,
         home: arHome,
+        admin: arAdmin,
         searchResults: arSearchResults,
         hotelDetails: arHotelDetails,
         booking: arBooking
@@ -40,7 +44,7 @@ i18n
         resources,
         fallbackLng: 'en',
         defaultNS: 'common',
-        ns: ['common', 'home', 'searchResults', 'hotelDetails', 'booking'],
+        ns: ['common', 'home', 'admin', 'searchResults', 'hotelDetails', 'booking'],
 
         debug: process.env.NODE_ENV === 'development',
 

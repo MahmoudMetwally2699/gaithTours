@@ -280,6 +280,21 @@ const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Contact Support Note */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="text-sm text-orange-800 text-center">
+              {t('profile.needHelp', 'For more help, please contact us:')}
+              <br />
+              <span className="font-medium">
+                {t('common.email', 'Email')}: <a href="mailto:support@gaithtours.com" className="text-orange-600 hover:underline">support@gaithtours.com</a>
+              </span>
+              <span className="mx-2">|</span>
+              <span className="font-medium">
+                WhatsApp: <a href="https://wa.me/966549412412" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">+966 549 412 412</a>
+              </span>
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

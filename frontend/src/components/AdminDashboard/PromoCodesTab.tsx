@@ -82,6 +82,7 @@ interface MultiSelectProps {
 }
 
 const MultiSelect: React.FC<MultiSelectProps> = ({ label, placeholder, selectedItems, onChange, fetchOptions }) => {
+  const { t } = useTranslation(['admin']);
   const [inputValue, setInputValue] = useState('');
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
@@ -159,7 +160,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, placeholder, selectedI
       {showDropdown && (
         <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {loading ? (
-            <div className="p-3 text-center text-gray-500 text-xs">Loading...</div>
+            <div className="p-3 text-center text-gray-500 text-xs">{t('admin:dashboard.loading') || 'Loading...'}</div>
           ) : options.length > 0 ? (
             <ul>
               {options.map(option => (
@@ -173,7 +174,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, placeholder, selectedI
               ))}
             </ul>
           ) : (
-            <div className="p-3 text-center text-gray-500 text-xs">No results found</div>
+            <div className="p-3 text-center text-gray-500 text-xs">{t('admin:dashboard.noResults') || 'No results found'}</div>
           )}
         </div>
       )}
@@ -183,7 +184,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({ label, placeholder, selectedI
 
 // --- Main Component ---
 export const PromoCodesTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin']);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -213,7 +214,8 @@ export const PromoCodesTab: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching promo codes:', error);
-      toast.error('Failed to load promo codes');
+      console.error('Error fetching promo codes:', error);
+      toast.error(t('admin:dashboard.error') || 'Failed to load promo codes');
     } finally {
       setLoading(false);
     }
@@ -324,15 +326,15 @@ export const PromoCodesTab: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(editingCode ? 'Promo code updated!' : 'Promo code created!');
+        toast.success(editingCode ? t('admin:dashboard.promo_codes.modal.updateSuccess') || 'Promo code updated!' : t('admin:dashboard.promo_codes.modal.createSuccess') || 'Promo code created!');
         setShowModal(false);
         fetchPromoCodes();
       } else {
-        toast.error(data.message || 'Failed to save promo code');
+        toast.error(data.message || t('admin:dashboard.promo_codes.modal.saveError') || 'Failed to save promo code');
       }
     } catch (error) {
       console.error('Error saving promo code:', error);
-      toast.error('Failed to save promo code');
+      toast.error(t('admin:dashboard.promo_codes.modal.saveError') || 'Failed to save promo code');
     } finally {
       setIsSubmitting(false);
     }
@@ -347,14 +349,14 @@ export const PromoCodesTab: React.FC = () => {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Promo code deleted');
+        toast.success(t('admin:dashboard.promo_codes.delete.success') || 'Promo code deleted');
         setShowDeleteConfirm(null);
         fetchPromoCodes();
       } else {
-        toast.error(data.message || 'Failed to delete');
+        toast.error(data.message || t('admin:dashboard.promo_codes.delete.error') || 'Failed to delete');
       }
     } catch (error) {
-      toast.error('Failed to delete promo code');
+      toast.error(t('admin:dashboard.promo_codes.delete.error') || 'Failed to delete promo code');
     }
   };
 
@@ -372,8 +374,8 @@ export const PromoCodesTab: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Promo Codes</h2>
-          <p className="text-gray-600">Manage discount codes for marketing campaigns</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('admin:dashboard.promo_codes.title')}</h2>
+          <p className="text-gray-600">{t('admin:dashboard.promo_codes.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -381,16 +383,16 @@ export const PromoCodesTab: React.FC = () => {
             onChange={(e) => setFilter(e.target.value as 'all' | 'active' | 'expired')}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            <option value="all">All Codes</option>
-            <option value="active">Active Only</option>
-            <option value="expired">Expired</option>
+            <option value="all">{t('admin:dashboard.promo_codes.filters.all')}</option>
+            <option value="active">{t('admin:dashboard.promo_codes.filters.active')}</option>
+            <option value="expired">{t('admin:dashboard.promo_codes.filters.expired')}</option>
           </select>
           <button
             onClick={handleOpenCreate}
             className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
-            Create Code
+            {t('admin:dashboard.promo_codes.createButton')}
           </button>
         </div>
       </div>
@@ -400,12 +402,12 @@ export const PromoCodesTab: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin:dashboard.promo_codes.table.code')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin:dashboard.promo_codes.table.discount')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin:dashboard.promo_codes.table.validity')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin:dashboard.promo_codes.table.usage')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin:dashboard.promo_codes.table.status')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin:dashboard.promo_codes.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -413,7 +415,7 @@ export const PromoCodesTab: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     <TagIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No promo codes found</p>
+                    <p>{t('admin:dashboard.promo_codes.table.noCodes')}</p>
                   </td>
                 </tr>
               ) : (
@@ -434,7 +436,7 @@ export const PromoCodesTab: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       <div>{new Date(code.validFrom).toLocaleDateString()}</div>
-                      <div className="text-gray-400">to</div>
+                      <div className="text-gray-400">{t('admin:dashboard.promo_codes.table.to')}</div>
                       <div>{new Date(code.validUntil).toLocaleDateString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -445,11 +447,11 @@ export const PromoCodesTab: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {isExpired(code.validUntil) ? (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">Expired</span>
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">{t('admin:dashboard.promo_codes.table.expired')}</span>
                       ) : code.isActive ? (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Active</span>
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">{t('admin:dashboard.promo_codes.table.active')}</span>
                       ) : (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">Inactive</span>
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">{t('admin:dashboard.promo_codes.table.inactive')}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -474,13 +476,13 @@ export const PromoCodesTab: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-20">
-              <h3 className="text-lg font-semibold text-gray-900">{editingCode ? 'Edit Promo Code' : 'Create Promo Code'}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{editingCode ? t('admin:dashboard.promo_codes.modal.editTitle') : t('admin:dashboard.promo_codes.modal.createTitle')}</h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><XMarkIcon className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Promo Code *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.code')} *</label>
                   <input
                     type="text"
                     value={formData.code}
@@ -491,7 +493,7 @@ export const PromoCodesTab: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.description')}</label>
                   <input
                     type="text"
                     value={formData.description}
@@ -503,18 +505,18 @@ export const PromoCodesTab: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.type')} *</label>
                   <select
                     value={formData.discountType}
                     onChange={(e) => setFormData(p => ({ ...p, discountType: e.target.value as 'percentage' | 'fixed' }))}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount</option>
+                    <option value="percentage">{t('admin:dashboard.promo_codes.types.percentage')}</option>
+                    <option value="fixed">{t('admin:dashboard.promo_codes.types.fixed')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Value *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.value')} *</label>
                   <input
                     type="number"
                     value={formData.discountValue}
@@ -525,7 +527,7 @@ export const PromoCodesTab: React.FC = () => {
                 </div>
                 {formData.discountType === 'percentage' && (
                    <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Cap</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.maxCap')}</label>
                     <input
                       type="number"
                       value={formData.maxDiscount || ''}
@@ -539,7 +541,7 @@ export const PromoCodesTab: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Valid From *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.validFrom')} *</label>
                   <input
                     type="date"
                     value={formData.validFrom}
@@ -549,7 +551,7 @@ export const PromoCodesTab: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Valid Until *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin:dashboard.promo_codes.modal.validUntil')} *</label>
                   <input
                     type="date"
                     value={formData.validUntil}
@@ -561,19 +563,20 @@ export const PromoCodesTab: React.FC = () => {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-bold text-gray-900">Targeting (Optional)</h4>
+                <h4 className="text-sm font-bold text-gray-900">{t('admin:dashboard.promo_codes.modal.targeting')}</h4>
+
 
                 <MultiSelect
-                  label="Applicable Hotels"
-                  placeholder="Search hotels..."
+                  label={t('admin:dashboard.promo_codes.modal.hotels')}
+                  placeholder={t('admin:dashboard.searchHotels') || 'Search hotels...'}
                   selectedItems={formData.applicableHotels}
                   onChange={(items) => setFormData(prev => ({ ...prev, applicableHotels: items }))}
                   fetchOptions={fetchHotelOptions}
                 />
 
                 <MultiSelect
-                  label="Applicable Destinations"
-                  placeholder="Search destinations..."
+                  label={t('admin:dashboard.promo_codes.modal.destinations')}
+                  placeholder={t('admin:dashboard.searchDestinations') || 'Search destinations...'}
                   selectedItems={formData.applicableDestinations}
                   onChange={(items) => setFormData(prev => ({ ...prev, applicableDestinations: items }))}
                   fetchOptions={fetchDestinationOptions}
@@ -590,17 +593,17 @@ export const PromoCodesTab: React.FC = () => {
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                 </label>
-                <span className="text-sm font-medium text-gray-700">Active</span>
+                <span className="text-sm font-medium text-gray-700">{t('admin:dashboard.promo_codes.modal.active')}</span>
               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">{t('admin:dashboard.promo_codes.modal.cancel')}</button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 flex items-center gap-2"
                 >
-                  {isSubmitting ? 'Saving...' : (editingCode ? 'Update Code' : 'Create Code')}
+                  {isSubmitting ? t('admin:dashboard.promo_codes.modal.saving') : (editingCode ? t('admin:dashboard.promo_codes.modal.update') : t('admin:dashboard.promo_codes.modal.save'))}
                 </button>
               </div>
             </form>
@@ -616,13 +619,13 @@ export const PromoCodesTab: React.FC = () => {
                 <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Promo Code</h3>
-                <p className="text-sm text-gray-600">This action cannot be undone.</p>
+                <h3 className="text-lg font-semibold text-gray-900">{t('admin:dashboard.promo_codes.delete.title')}</h3>
+                <p className="text-sm text-gray-600">{t('admin:dashboard.promo_codes.delete.message')}</p>
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={() => handleDelete(showDeleteConfirm)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Delete</button>
+              <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">{t('admin:dashboard.promo_codes.modal.cancel')}</button>
+              <button onClick={() => handleDelete(showDeleteConfirm)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">{t('admin:dashboard.promo_codes.delete.confirm')}</button>
             </div>
           </div>
         </div>

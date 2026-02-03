@@ -1299,6 +1299,9 @@ class RateHawkService {
       currency
     };
 
+    // Debug: Log the currency being sent to RateHawk API
+    console.log(`💱 RateHawk API request: HID=${hid}, currency=${currency}, checkin=${checkin}, checkout=${checkout}`);
+
     // Include match_hash if provided (for rate matching)
     if (match_hash) {
       payload.match_hash = match_hash;

@@ -183,6 +183,19 @@ const reservationSchema = new mongoose.Schema({
     required: false,
     min: [0, 'Discount amount cannot be negative']
   },
+  // Loyalty points to redeem after successful payment
+  loyaltyPointsToRedeem: {
+    type: Number,
+    required: false,
+    default: 0,
+    min: [0, 'Points cannot be negative']
+  },
+  loyaltyDiscount: {
+    type: Number,
+    required: false,
+    default: 0,
+    min: [0, 'Loyalty discount cannot be negative']
+  },
   numberOfGuests: {
     type: Number,
     default: 1,

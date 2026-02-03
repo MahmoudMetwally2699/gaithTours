@@ -1244,6 +1244,9 @@ router.get('/details/:hid', async (req, res) => {
 
     let hotelDetails;
     try {
+      // Debug log for currency tracing
+      console.log(`💷 Hotel details request: HID=${hotelId}, currency=${currency}, language=${language}`);
+
       // Try to get hotel details with rates
       hotelDetails = await rateHawkService.getHotelDetails(hotelId, {
         ...searchDates,

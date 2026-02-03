@@ -206,6 +206,22 @@ try {
   console.error('Error loading promotional banners routes:', error);
 }
 
+// Favorites routes (Server-side Wishlist)
+try {
+  app.use('/api/favorites', require('./routes/favorites'));
+  console.log('✅ Favorites routes loaded');
+} catch (error) {
+  console.error('Error loading favorites routes:', error);
+}
+
+// Loyalty program routes
+try {
+  app.use('/api/loyalty', require('./routes/loyalty'));
+  console.log('✅ Loyalty routes loaded');
+} catch (error) {
+  console.error('Error loading loyalty routes:', error);
+}
+
 
 // Debug routes (development only)
 if (process.env.NODE_ENV !== 'production') {

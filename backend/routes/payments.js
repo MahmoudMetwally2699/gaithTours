@@ -836,7 +836,9 @@ router.post('/kashier/create-session', async (req, res) => {
       specialRequests,
       selectedRate,
       promoCode,
-      discountAmount
+      discountAmount,
+      loyaltyPointsToRedeem,
+      loyaltyDiscount
     } = req.body;
 
     // Validate required fields
@@ -921,6 +923,9 @@ router.post('/kashier/create-session', async (req, res) => {
       ratehawkStatus: 'pending',
       promoCode: promoCode,
       discountAmount: discountAmount || 0,
+      // Loyalty points to be deducted after successful payment
+      loyaltyPointsToRedeem: loyaltyPointsToRedeem || 0,
+      loyaltyDiscount: loyaltyDiscount || 0,
       // Cancellation policy - important for Profile page display and refund eligibility
       isRefundable: selectedRate.isRefundable === true, // Only true if explicitly true
       freeCancellationBefore: selectedRate.freeCancellationBefore || null
@@ -1128,6 +1133,88 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
       }
     } else {
       console.log('   ℹ️ No promo code applied to this reservation');
+    }
+
+    // Handle Loyalty Points Redemption
+    if (reservation.loyaltyPointsToRedeem && reservation.loyaltyPointsToRedeem > 0 && reservation.user) {
+      try {
+        console.log(`🎁 Processing loyalty points redemption: ${reservation.loyaltyPointsToRedeem} points`);
+        console.log(`   User ID: ${reservation.user}`);
+        console.log(`   Loyalty Discount: ${reservation.loyaltyDiscount}`);
+
+        const User = require('../models/User');
+        const LoyaltySettings = require('../models/LoyaltySettings');
+
+        const user = await User.findById(reservation.user);
+
+        if (user && user.loyaltyPoints >= reservation.loyaltyPointsToRedeem) {
+          const previousPoints = user.loyaltyPoints;
+          user.loyaltyPoints -= reservation.loyaltyPointsToRedeem;
+
+          // Recalculate tier
+          user.loyaltyTier = await LoyaltySettings.calculateTier(user.loyaltyPoints);
+
+          await user.save();
+
+          console.log(`   ✅ Loyalty points deducted successfully!`);
+          console.log(`   Points: ${previousPoints} → ${user.loyaltyPoints}`);
+          console.log(`   New tier: ${user.loyaltyTier}`);
+        } else {
+          console.log(`   ⚠️ Could not deduct points - insufficient balance or user not found`);
+        }
+      } catch (loyaltyError) {
+        console.error('❌ Error deducting loyalty points:', loyaltyError);
+        console.error('   Error details:', loyaltyError.message);
+        // Don't fail the whole payment flow for this
+      }
+    } else {
+      console.log('   ℹ️ No loyalty points to redeem for this reservation');
+    }
+
+    // Award Loyalty Points for the booking
+    if (reservation.user) {
+      try {
+        const User = require('../models/User');
+        const LoyaltySettings = require('../models/LoyaltySettings');
+
+        const loyaltySettings = await LoyaltySettings.getSettings();
+
+        if (loyaltySettings.isEnabled) {
+          // Use booking amount for points calculation
+          const bookingAmount = reservation.totalPrice || 0;
+          const bookingCurrency = reservation.currency || 'USD';
+
+          // Convert to base currency (simplified - using USD equivalent)
+          // For proper implementation, use actual exchange rates
+          const amountInUSD = bookingCurrency === 'USD' ? bookingAmount : bookingAmount;
+
+          // Calculate points earned using configurable formula: "For every $X spent, earn Y points"
+          const dollarsRequired = loyaltySettings.earningDollarsRequired || 1;
+          const pointsToEarn = loyaltySettings.pointsPerDollar || 1;
+          const pointsEarned = Math.floor(amountInUSD / dollarsRequired) * pointsToEarn;
+
+          if (pointsEarned > 0) {
+            const user = await User.findById(reservation.user);
+            if (user) {
+              const previousPoints = user.loyaltyPoints || 0;
+              user.loyaltyPoints = previousPoints + pointsEarned;
+              user.totalSpent = (user.totalSpent || 0) + amountInUSD;
+
+              // Recalculate tier
+              user.loyaltyTier = await LoyaltySettings.calculateTier(user.loyaltyPoints);
+
+              await user.save();
+
+              console.log(`🎁 Loyalty: Awarded ${pointsEarned} points to ${user.email} (${amountInUSD} ${bookingCurrency} / ${dollarsRequired} × ${pointsToEarn})`);
+              console.log(`   Points: ${previousPoints} → ${user.loyaltyPoints}`);
+              console.log(`   Tier: ${user.loyaltyTier}`);
+            }
+          }
+        }
+      } catch (loyaltyError) {
+        console.error('❌ Error awarding loyalty points:', loyaltyError);
+        // Don't fail the whole payment flow for this
+      }
     }
 
     // Create RateHawk booking
@@ -1413,6 +1500,42 @@ router.get('/kashier/order/:orderId', async (req, res) => {
               }
             } else {
               console.log('   ℹ️ No promo code applied to this reservation');
+            }
+
+            // Award Loyalty Points for the booking
+            if (reservation.user) {
+              try {
+                const User = require('../models/User');
+                const LoyaltySettings = require('../models/LoyaltySettings');
+
+                const loyaltySettings = await LoyaltySettings.getSettings();
+
+                if (loyaltySettings.isEnabled) {
+                  const bookingAmount = reservation.totalPrice || 0;
+                  const bookingCurrency = reservation.currency || 'USD';
+                  const amountInUSD = bookingCurrency === 'USD' ? bookingAmount : bookingAmount;
+
+                  const dollarsRequired = loyaltySettings.earningDollarsRequired || 1;
+                  const pointsToEarn = loyaltySettings.pointsPerDollar || 1;
+                  const pointsEarned = Math.floor(amountInUSD / dollarsRequired) * pointsToEarn;
+
+                  if (pointsEarned > 0) {
+                    const user = await User.findById(reservation.user);
+                    if (user) {
+                      const previousPoints = user.loyaltyPoints || 0;
+                      user.loyaltyPoints = previousPoints + pointsEarned;
+                      user.totalSpent = (user.totalSpent || 0) + amountInUSD;
+                      user.loyaltyTier = await LoyaltySettings.calculateTier(user.loyaltyPoints);
+                      await user.save();
+
+                      console.log(`🎁 Loyalty: Awarded ${pointsEarned} points to ${user.email}`);
+                      console.log(`   Points: ${previousPoints} → ${user.loyaltyPoints}`);
+                    }
+                  }
+                }
+              } catch (loyaltyError) {
+                console.error('❌ Error awarding loyalty points:', loyaltyError);
+              }
             }
 
             // Trigger RateHawk booking asynchronously (only once when status changes from pending_payment)

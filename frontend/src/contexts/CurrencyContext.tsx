@@ -7,14 +7,15 @@ interface CurrencyContextType {
   currency: Currency;
   setCurrency: (currency: Currency) => void;
   currencySymbol: string;
+  getCurrencySymbol: (currency: Currency | string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 const CURRENCY_STORAGE_KEY = 'gaith_selected_currency';
 
-const getCurrencySymbol = (currency: Currency): string => {
-  switch (currency) {
+const getCurrencySymbolFn = (currency: Currency | string): string => {
+  switch (currency?.toUpperCase()) {
     case 'USD':
       return '$';
     case 'SAR':
@@ -22,7 +23,7 @@ const getCurrencySymbol = (currency: Currency): string => {
     case 'EGP':
       return 'EGP';
     default:
-      return currency;
+      return currency || '$';
   }
 };
 
@@ -52,7 +53,8 @@ export const CurrencyProvider: React.FC<CurrencyProviderProps> = ({ children }) 
   const value: CurrencyContextType = {
     currency,
     setCurrency,
-    currencySymbol: getCurrencySymbol(currency),
+    currencySymbol: getCurrencySymbolFn(currency),
+    getCurrencySymbol: getCurrencySymbolFn
   };
 
   return (

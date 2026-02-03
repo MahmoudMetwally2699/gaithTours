@@ -70,7 +70,7 @@ const initialConditions: MarginConditions = {
 };
 
 export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin']);
   const [rules, setRules] = useState<MarginRule[]>([]);
   const [stats, setStats] = useState<MarginStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +120,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
       setStats(statsRes.data.data || null);
     } catch (error) {
       console.error('Error fetching margin data:', error);
-      toast.error('Failed to load margin rules');
+      toast.error(t('admin:dashboard.error') || 'Failed to load margin rules');
     } finally {
       setLoading(false);
     }
@@ -193,35 +193,35 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
   // Save rule
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      toast.error('Rule name is required');
+      toast.error(t('admin:dashboard.margins.modal.ruleNameError') || 'Rule name is required');
       return;
     }
 
     try {
       if (editingRule) {
         await adminAPI.updateMarginRule(editingRule._id, formData);
-        toast.success('Rule updated successfully');
+        toast.success(t('admin:dashboard.margins.modal.updateSuccess') || 'Rule updated successfully');
       } else {
         await adminAPI.createMarginRule(formData);
-        toast.success('Rule created successfully');
+        toast.success(t('admin:dashboard.margins.modal.createSuccess') || 'Rule created successfully');
       }
       setShowModal(false);
       fetchData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save rule');
+      toast.error(error.response?.data?.message || t('admin:dashboard.margins.modal.saveError') || 'Failed to save rule');
     }
   };
 
   // Delete rule
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this rule?')) return;
+    if (!window.confirm(t('admin:dashboard.margins.modal.deleteConfirm') || 'Are you sure you want to delete this rule?')) return;
 
     try {
       await adminAPI.deleteMarginRule(id);
-      toast.success('Rule deleted');
+      toast.success(t('admin:dashboard.margins.modal.deleteSuccess') || 'Rule deleted');
       fetchData();
     } catch (error) {
-      toast.error('Failed to delete rule');
+      toast.error(t('admin:dashboard.margins.modal.deleteError') || 'Failed to delete rule');
     }
   };
 
@@ -229,10 +229,10 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
   const handleToggle = async (id: string) => {
     try {
       await adminAPI.toggleMarginRule(id);
-      toast.success('Rule status updated');
+      toast.success(t('admin:dashboard.margins.modal.statusUpdateSuccess') || 'Rule status updated');
       fetchData();
     } catch (error) {
-      toast.error('Failed to toggle rule');
+      toast.error(t('admin:dashboard.margins.modal.statusUpdateError') || 'Failed to toggle rule');
     }
   };
 
@@ -242,7 +242,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
       const res = await adminAPI.simulateMargin(simulatorData);
       setSimulationResult(res.data.data);
     } catch (error) {
-      toast.error('Simulation failed');
+      toast.error(t('admin:dashboard.margins.simulator.error') || 'Simulation failed');
     }
   };
 
@@ -304,9 +304,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
               </div>
               <div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  Profit Margins
+                  {t('admin:dashboard.margins.title')}
                 </h2>
-                <p className="text-gray-600 mt-1">Manage pricing rules and markups</p>
+                <p className="text-gray-600 mt-1">{t('admin:dashboard.margins.subtitle')}</p>
               </div>
             </div>
 
@@ -322,9 +322,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="min-w-[120px] px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 font-medium"
                   >
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="">{t('admin:dashboard.margins.filters.allStatus')}</option>
+                    <option value="active">{t('admin:dashboard.margins.filters.active')}</option>
+                    <option value="inactive">{t('admin:dashboard.margins.filters.inactive')}</option>
                   </select>
                 </div>
               </div>
@@ -337,7 +337,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-3 rounded-xl font-medium shadow-lg"
               >
                 <PlayIcon className="w-5 h-5" />
-                <span>Simulator</span>
+                <span>{t('admin:dashboard.margins.actions.simulator')}</span>
               </motion.button>
 
               {/* Add Rule Button */}
@@ -348,7 +348,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-3 rounded-xl font-medium shadow-lg"
               >
                 <PlusIcon className="w-5 h-5" />
-                <span>Add Rule</span>
+                <span>{t('admin:dashboard.margins.actions.addRule')}</span>
               </motion.button>
             </div>
           </div>
@@ -365,7 +365,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Active Rules</p>
+                <p className="text-sm text-gray-500 font-medium">{t('admin:dashboard.margins.stats.activeRules')}</p>
                 <p className="text-3xl font-bold text-gray-900">{stats.summary.totalRules}</p>
               </div>
               <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
@@ -382,7 +382,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Times Applied</p>
+                <p className="text-sm text-gray-500 font-medium">{t('admin:dashboard.margins.stats.timesApplied')}</p>
                 <p className="text-3xl font-bold text-gray-900">{stats.summary.totalApplied.toLocaleString()}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -399,7 +399,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Revenue Generated</p>
+                <p className="text-sm text-gray-500 font-medium">{t('admin:dashboard.margins.stats.revenue')}</p>
                 <p className="text-3xl font-bold text-gray-900">SAR {stats.summary.totalRevenue.toLocaleString()}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -416,7 +416,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Average Margin</p>
+                <p className="text-sm text-gray-500 font-medium">{t('admin:dashboard.margins.stats.avgMargin')}</p>
                 <p className="text-3xl font-bold text-gray-900">{(stats.summary.avgMargin || 0).toFixed(1)}%</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
@@ -436,8 +436,8 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
         ) : rules.length === 0 ? (
           <div className="text-center py-20">
             <CurrencyDollarIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No margin rules yet</p>
-            <p className="text-gray-400 text-sm mt-1">Create your first rule to start managing profits</p>
+            <p className="text-gray-500 text-lg">{t('admin:dashboard.margins.table.noRules')}</p>
+            <p className="text-gray-400 text-sm mt-1">{t('admin:dashboard.margins.table.noRulesDesc')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -445,25 +445,25 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
               <thead>
                 <tr className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 backdrop-blur-sm">
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Rule Name
+                    {t('admin:dashboard.margins.table.name')}
                   </th>
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Type / Value
+                    {t('admin:dashboard.margins.table.typeValue')}
                   </th>
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Conditions
+                    {t('admin:dashboard.margins.table.conditions')}
                   </th>
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Priority
+                    {t('admin:dashboard.margins.table.priority')}
                   </th>
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Status
+                    {t('admin:dashboard.margins.table.status')}
                   </th>
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Applied
+                    {t('admin:dashboard.margins.table.applied')}
                   </th>
                   <th className={`px-6 py-5 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-gray-700 uppercase tracking-wider`}>
-                    Actions
+                    {t('admin:dashboard.margins.table.ruleActions')}
                   </th>
                 </tr>
               </thead>
@@ -502,12 +502,12 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                       <div className="flex flex-wrap gap-1">
                         {rule.conditions.countries.length > 0 && (
                           <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                            {rule.conditions.countries.length} countries
+                            {rule.conditions.countries.length} {t('admin:dashboard.margins.conditions.countries')}
                           </span>
                         )}
                         {rule.conditions.cities.length > 0 && (
                           <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                            {rule.conditions.cities.length} cities
+                            {rule.conditions.cities.length} {t('admin:dashboard.margins.conditions.cities')}
                           </span>
                         )}
                         {rule.conditions.starRating.min && (
@@ -517,17 +517,17 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                         )}
                         {(rule.conditions.dateRange?.start || rule.conditions.dateRange?.end) && (
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                            📅 Date Range
+                            📅 {t('admin:dashboard.margins.conditions.dateRange')}
                           </span>
                         )}
                         {(rule.conditions.bookingValue?.min || rule.conditions.bookingValue?.max) && (
                           <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">
-                            💰 Value Filter
+                            💰 {t('admin:dashboard.margins.conditions.valueFilter')}
                           </span>
                         )}
                         {rule.conditions.mealTypes?.length > 0 && (
                           <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
-                            🍽️ {rule.conditions.mealTypes.length} meal types
+                            🍽️ {rule.conditions.mealTypes.length} {t('admin:dashboard.margins.conditions.mealTypes')}
                           </span>
                         )}
                         {rule.conditions.countries.length === 0 &&
@@ -611,7 +611,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-2xl font-bold text-gray-900">
-                    {editingRule ? 'Edit Rule' : 'Create New Rule'}
+                    {editingRule ? t('admin:dashboard.margins.modal.editTitle') : t('admin:dashboard.margins.modal.createTitle')}
                   </h3>
                   <button
                     onClick={() => setShowModal(false)}
@@ -626,7 +626,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Rule Name *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.modal.ruleName')} *</label>
                     <input
                       type="text"
                       value={formData.name}
@@ -636,7 +636,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.modal.description')}</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -649,23 +649,23 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
 
                 {/* Margin Settings */}
                 <div className="bg-gray-50 rounded-2xl p-4 space-y-4">
-                  <h4 className="font-semibold text-gray-900">Margin Settings</h4>
+                  <h4 className="font-semibold text-gray-900">{t('admin:dashboard.margins.modal.marginSettings')}</h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.modal.type')}</label>
                       <select
                         value={formData.type}
                         onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed">Fixed Amount</option>
+                        <option value="percentage">{t('admin:dashboard.margins.modal.percentage')}</option>
+                        <option value="fixed">{t('admin:dashboard.margins.modal.fixed')}</option>
                         <option value="hybrid">Hybrid</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {formData.type === 'fixed' ? 'Amount' : 'Percentage'}
+                        {formData.type === 'fixed' ? t('admin:dashboard.margins.modal.amount') : t('admin:dashboard.margins.modal.percentage')}
                       </label>
                       <input
                         type="number"
@@ -677,7 +677,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.modal.priority')}</label>
                       <input
                         type="number"
                         value={formData.priority}
@@ -692,12 +692,12 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
 
                 {/* Conditions */}
                 <div className="bg-gray-50 rounded-2xl p-4 space-y-4">
-                  <h4 className="font-semibold text-gray-900">Conditions (Optional)</h4>
-                  <p className="text-sm text-gray-500">Leave empty for a global rule that applies to all bookings</p>
+                  <h4 className="font-semibold text-gray-900">{t('admin:dashboard.margins.modal.conditions')}</h4>
+                  <p className="text-sm text-gray-500">{t('admin:dashboard.margins.modal.conditionsDesc')}</p>
 
                   {/* Countries */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Countries</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.countries')}</label>
                     <div className="flex gap-2 mb-2 flex-wrap">
                       {formData.conditions.countries.map((country) => (
                         <span key={country} className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm flex items-center gap-1">
@@ -717,7 +717,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                         }
                       }}
                     >
-                      <option value="">Select country to add...</option>
+                      <option value="">{t('admin:dashboard.margins.conditions.selectCountry')}</option>
                       {availableCountries
                         .filter(c => !formData.conditions.countries.includes(c.name))
                         .map((country) => (
@@ -728,7 +728,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
 
                   {/* Cities */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Cities</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.cities')}</label>
                     <div className="flex gap-2 mb-2 flex-wrap">
                       {formData.conditions.cities.map((city) => (
                         <span key={city} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm flex items-center gap-1">
@@ -748,7 +748,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                         }
                       }}
                     >
-                      <option value="">Select city to add...</option>
+                      <option value="">{t('admin:dashboard.margins.conditions.selectCity')}</option>
                       {availableCities
                         .filter(c => !formData.conditions.cities.includes(c))
                         .map((city) => (
@@ -760,7 +760,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   {/* Star Rating */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Min Star Rating</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.minStar')}</label>
                       <select
                         value={formData.conditions.starRating.min || ''}
                         onChange={(e) => setFormData({
@@ -772,14 +772,14 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                         })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="">Any</option>
+                        <option value="">{t('admin:dashboard.margins.conditions.any')}</option>
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>{n} Star</option>
+                          <option key={n} value={n}>{n} {t('admin:dashboard.margins.conditions.star')}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Max Star Rating</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.maxStar')}</label>
                       <select
                         value={formData.conditions.starRating.max || ''}
                         onChange={(e) => setFormData({
@@ -791,9 +791,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                         })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="">Any</option>
+                        <option value="">{t('admin:dashboard.margins.conditions.any')}</option>
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>{n} Star</option>
+                          <option key={n} value={n}>{n} {t('admin:dashboard.margins.conditions.star')}</option>
                         ))}
                       </select>
                     </div>
@@ -802,7 +802,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   {/* Date Range */}
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.startDate')}</label>
                       <input
                         type="date"
                         value={formData.conditions.dateRange.start || ''}
@@ -817,7 +817,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.endDate')}</label>
                       <input
                         type="date"
                         value={formData.conditions.dateRange.end || ''}
@@ -836,7 +836,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   {/* Booking Value */}
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Min Booking Value ($)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.minBookingValue')}</label>
                       <input
                         type="number"
                         value={formData.conditions.bookingValue.min || ''}
@@ -853,7 +853,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Max Booking Value ($)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.maxBookingValue')}</label>
                       <input
                         type="number"
                         value={formData.conditions.bookingValue.max || ''}
@@ -873,15 +873,15 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
 
                   {/* Meal Types */}
                   <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Meal Types</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.conditions.mealTypes')}</label>
                     <div className="flex gap-2 mb-2 flex-wrap">
                       {formData.conditions.mealTypes.map((meal) => {
                         const mealLabels: { [key: string]: string } = {
-                          'all_inclusive': 'All-Inclusive',
-                          'breakfast': 'Breakfast',
-                          'half_board': 'Half-Board',
-                          'full_board': 'Full-Board',
-                          'room_only': 'Room Only'
+                          'all_inclusive': t('admin:dashboard.margins.mealTypes.all_inclusive'),
+                          'breakfast': t('admin:dashboard.margins.mealTypes.breakfast'),
+                          'half_board': t('admin:dashboard.margins.mealTypes.half_board'),
+                          'full_board': t('admin:dashboard.margins.mealTypes.full_board'),
+                          'room_only': t('admin:dashboard.margins.mealTypes.room_only')
                         };
                         return (
                           <span key={meal} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm flex items-center gap-1">
@@ -914,13 +914,13 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                         }
                       }}
                     >
-                      <option value="">Select meal type to add...</option>
+                      <option value="">{t('admin:dashboard.margins.conditions.selectMealType')}</option>
                       {[
-                        { value: 'all_inclusive', label: 'All-Inclusive' },
-                        { value: 'breakfast', label: 'Breakfast' },
-                        { value: 'half_board', label: 'Half-Board' },
-                        { value: 'full_board', label: 'Full-Board' },
-                        { value: 'room_only', label: 'Room Only' }
+                        { value: 'all_inclusive', label: t('admin:dashboard.margins.mealTypes.all_inclusive') },
+                        { value: 'breakfast', label: t('admin:dashboard.margins.mealTypes.breakfast') },
+                        { value: 'half_board', label: t('admin:dashboard.margins.mealTypes.half_board') },
+                        { value: 'full_board', label: t('admin:dashboard.margins.mealTypes.full_board') },
+                        { value: 'room_only', label: t('admin:dashboard.margins.mealTypes.room_only') }
                       ]
                         .filter(m => !formData.conditions.mealTypes.includes(m.value))
                         .map((meal) => (
@@ -936,14 +936,14 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   onClick={() => setShowModal(false)}
                   className="px-6 py-3 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-medium"
                 >
-                  Cancel
+                  {t('admin:dashboard.margins.modal.cancel') || 'Cancel'}
                 </button>
                 <button
                   onClick={handleSave}
                   className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-colors font-medium flex items-center space-x-2"
                 >
                   <CheckIcon className="w-5 h-5" />
-                  <span>{editingRule ? 'Update Rule' : 'Create Rule'}</span>
+                  <span>{editingRule ? t('admin:dashboard.margins.modal.update') : t('admin:dashboard.margins.modal.create')}</span>
                 </button>
               </div>
           </motion.div>
@@ -968,7 +968,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
             >
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-gray-900">Margin Simulator</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">{t('admin:dashboard.margins.simulator.title')}</h3>
                   <button
                     onClick={() => setShowSimulator(false)}
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -980,7 +980,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
 
               <div className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Base Price</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.basePrice')}</label>
                   <input
                     type="number"
                     value={simulatorData.basePrice}
@@ -990,7 +990,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.country')}</label>
                     <input
                       type="text"
                       value={simulatorData.country}
@@ -1000,7 +1000,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.city')}</label>
                     <input
                       type="text"
                       value={simulatorData.city}
@@ -1011,14 +1011,14 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Star Rating</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.starRating')}</label>
                   <select
                     value={simulatorData.starRating}
                     onChange={(e) => setSimulatorData({ ...simulatorData, starRating: Number(e.target.value) })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
                   >
                     {[1, 2, 3, 4, 5].map((n) => (
-                      <option key={n} value={n}>{n} Star</option>
+                      <option key={n} value={n}>{n} {t('admin:dashboard.margins.conditions.star')}</option>
                     ))}
                   </select>
                 </div>
@@ -1027,25 +1027,25 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   onClick={runSimulation}
                   className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-colors"
                 >
-                  Run Simulation
+                  {t('admin:dashboard.margins.simulator.run')}
                 </button>
 
                 {simulationResult && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-xl space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Base Price:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.margins.simulator.basePrice')}:</span>
                       <span className="font-medium">SAR {simulationResult.calculation.basePrice}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Margin Applied:</span>
+                      <span className="text-gray-600">{t('admin:dashboard.margins.simulator.marginApplied')}</span>
                       <span className="font-medium text-emerald-600">+SAR {simulationResult.calculation.marginAmount}</span>
                     </div>
                     <div className="flex justify-between border-t pt-3">
-                      <span className="font-semibold">Final Price:</span>
+                      <span className="font-semibold">{t('admin:dashboard.margins.simulator.finalPrice')}</span>
                       <span className="text-xl font-bold text-gray-900">SAR {simulationResult.calculation.finalPrice}</span>
                     </div>
                     <div className="text-sm text-gray-500">
-                      Rule: {simulationResult.appliedRule?.name || 'Default (15%)'}
+                      {t('admin:dashboard.margins.simulator.rule')} {simulationResult.appliedRule?.name || 'Default (15%)'}
                     </div>
                   </div>
                 )}

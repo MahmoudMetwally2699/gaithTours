@@ -64,7 +64,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
   onDeleteClient,
   isDeletingClient = false,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin']);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
@@ -90,9 +90,9 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
     try {
       await onCreateClient(clientData);
       setShowAddClientModal(false);
-      toast.success('Client created successfully!');
+      toast.success(t('admin:dashboard.clients.alerts.createSuccess'));
     } catch (error) {
-      toast.error('Failed to create client. Please try again.');
+      toast.error(t('admin:dashboard.clients.alerts.createError'));
     }
   };
 
@@ -121,9 +121,9 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
               </div>
               <div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                  {t('dashboard.clients.title')}
+                  {t('admin:dashboard.clients.title')}
                 </h2>
-                <p className="text-gray-600 mt-1">Manage your customer database</p>
+                <p className="text-gray-600 mt-1">{t('admin:dashboard.clients.subtitle')}</p>
               </div>
             </div>
 
@@ -135,7 +135,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                 className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 <PlusIcon className="w-5 h-5" />
-                <span className="font-medium">Add Client</span>
+                <span className="font-medium">{t('admin:dashboard.clients.addClient')}</span>
               </button>
 
               {/* Modern Search Bar */}
@@ -148,7 +148,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                     </div>
                     <input
                       type="text"
-                      placeholder={t('dashboard.clients.search')}
+                      placeholder={t('admin:dashboard.clients.search')}
                       value={clientSearch}
                       onChange={(e) => setClientSearch(e.target.value)}
                       className="w-full md:w-80 px-4 py-3 bg-transparent border-0 focus:outline-none focus:ring-0 text-gray-700 placeholder-gray-500"
@@ -171,23 +171,23 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
                   <div className="flex items-center space-x-2">
                     <UserGroupIcon className="w-4 h-4 text-amber-600" />
-                    <span>{t('dashboard.clients.name')}</span>
+                    <span>{t('admin:dashboard.clients.name')}</span>
                   </div>
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.clients.email')}
+                  {t('admin:dashboard.clients.email')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.clients.phone')}
+                  {t('admin:dashboard.clients.phone')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.clients.nationality')}
+                  {t('admin:dashboard.clients.nationality')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.clients.registrationDate')}
+                  {t('admin:dashboard.clients.registrationDate')}
                 </th>
                 <th className={`px-8 py-6 ${isRTL ? 'text-right' : 'text-left'} text-sm font-bold text-gray-700 uppercase tracking-wider`}>
-                  {t('dashboard.clients.actions')}
+                  {t('admin:dashboard.clients.actions')}
                 </th>
               </tr>
             </thead>
@@ -225,7 +225,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                     </span>
                   </td>
                   <td className="px-8 py-6 text-sm text-gray-700">
-                    {new Date(client.createdAt).toLocaleDateString()}
+                    {new Date(client.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center space-x-3">
@@ -304,11 +304,11 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-gray-500 font-medium">{t('dashboard.clients.phone')}</p>
+                  <p className="text-gray-500 font-medium">{t('admin:dashboard.clients.phone')}</p>
                   <p className="text-gray-900 font-semibold">{client.phone}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 font-medium">{t('dashboard.clients.nationality')}</p>
+                  <p className="text-gray-500 font-medium">{t('admin:dashboard.clients.nationality')}</p>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300">
                     {client.nationality}
                   </span>
@@ -317,7 +317,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
 
               <div className="mt-3 pt-3 border-t border-amber-200/50">
                 <p className="text-xs text-gray-500">
-                  {t('dashboard.clients.registrationDate')}: {new Date(client.createdAt).toLocaleDateString()}
+                  {t('admin:dashboard.clients.registrationDate')}: {new Date(client.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                 </p>
               </div>
             </motion.div>          ))}
@@ -359,13 +359,13 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
               <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
             </div>
             <h3 className="text-xl font-bold text-center text-gray-900 mb-2">
-              Delete Client
+              {t('admin:dashboard.clients.modal.deleteTitle')}
             </h3>
             <p className="text-center text-gray-600 mb-2">
-              Are you sure you want to delete <span className="font-semibold">{clientToDelete.name}</span>?
+              {t('admin:dashboard.clients.modal.deleteConfirm')} <span className="font-semibold">{clientToDelete.name}</span>?
             </p>
             <p className="text-center text-sm text-red-600 mb-6">
-              This action will permanently delete all associated bookings, invoices, and payments. This cannot be undone.
+              {t('admin:dashboard.clients.modal.deleteWarning')}
             </p>
             <div className="flex space-x-3">
               <button
@@ -376,14 +376,14 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                 className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-300"
                 disabled={isDeletingClient}
               >
-                Cancel
+                {t('admin:dashboard.clients.modal.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={isDeletingClient}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isDeletingClient ? 'Deleting...' : 'Delete'}
+                {isDeletingClient ? t('admin:dashboard.clients.modal.deleting') : t('admin:dashboard.clients.modal.delete')}
               </button>
             </div>
           </motion.div>

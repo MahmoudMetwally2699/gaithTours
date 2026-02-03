@@ -103,6 +103,24 @@ const userSchema = new mongoose.Schema({
   phoneVerificationCode: String,
   phoneVerificationExpires: Date,
   phoneVerificationLastSent: Date,
+  // Favorites (Server-side Wishlist)
+  favorites: [{
+    type: String // Hotel IDs (hid)
+  }],
+  // Loyalty Program
+  loyaltyPoints: {
+    type: Number,
+    default: 0
+  },
+  loyaltyTier: {
+    type: String,
+    enum: ['Bronze', 'Silver', 'Gold', 'Platinum'],
+    default: 'Bronze'
+  },
+  totalSpent: {
+    type: Number,
+    default: 0 // Total USD spent on bookings
+  },
   createdAt: {
     type: Date,
     default: Date.now

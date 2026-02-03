@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import {
   UserPlusIcon,
@@ -49,18 +50,19 @@ interface AdminManagementTabProps {
   isRTL: boolean;
 }
 
-const AVAILABLE_PERMISSIONS = [
-  { id: 'dashboard', label: 'Dashboard Overview', icon: ChartBarIcon, color: 'orange' },
-  { id: 'clients', label: 'Client Management', icon: UserGroupIcon, color: 'blue' },
-  { id: 'bookings', label: 'Booking Management', icon: ClipboardDocumentListIcon, color: 'purple' },
-  { id: 'payments', label: 'Payment Tracking', icon: CreditCardIcon, color: 'green' },
-  { id: 'analytics', label: 'Analytics', icon: PresentationChartLineIcon, color: 'indigo' },
-  { id: 'margins', label: 'Profit Margins', icon: CurrencyDollarIcon, color: 'emerald' },
-  { id: 'promoCodes', label: 'Promo Codes', icon: TagIcon, color: 'pink' },
-  { id: 'whatsapp', label: 'WhatsApp Messages', icon: ChatBubbleLeftRightIcon, color: 'cyan' }
+const getAvailablePermissions = (t: any) => [
+  { id: 'dashboard', label: t('admin:dashboard.admin_management.permissions.dashboard'), icon: ChartBarIcon, color: 'orange' },
+  { id: 'clients', label: t('admin:dashboard.admin_management.permissions.clients'), icon: UserGroupIcon, color: 'blue' },
+  { id: 'bookings', label: t('admin:dashboard.admin_management.permissions.bookings'), icon: ClipboardDocumentListIcon, color: 'purple' },
+  { id: 'payments', label: t('admin:dashboard.admin_management.permissions.payments'), icon: CreditCardIcon, color: 'green' },
+  { id: 'analytics', label: t('admin:dashboard.admin_management.permissions.analytics'), icon: PresentationChartLineIcon, color: 'indigo' },
+  { id: 'margins', label: t('admin:dashboard.admin_management.permissions.margins'), icon: CurrencyDollarIcon, color: 'emerald' },
+  { id: 'promoCodes', label: t('admin:dashboard.admin_management.permissions.promoCodes'), icon: TagIcon, color: 'pink' },
+  { id: 'whatsapp', label: t('admin:dashboard.admin_management.permissions.whatsapp'), icon: ChatBubbleLeftRightIcon, color: 'cyan' }
 ];
 
 export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL }) => {
+  const { t } = useTranslation(['admin']);
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,7 +84,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
       setInvitations(invitationsRes.data.data.invitations || []);
     } catch (error) {
       console.error('Error fetching admin data:', error);
-      toast.error('Failed to load admin data');
+      toast.error(t('admin:dashboard.admin_management.alerts.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
 
   const handleInvite = async () => {
     if (!inviteEmail || selectedPermissions.length === 0) {
-      toast.error('Please enter email and select at least one permission');
+      toast.error(t('admin:dashboard.admin_management.alerts.selectPermissionError'));
       return;
     }
 
@@ -104,13 +106,13 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
         email: inviteEmail,
         permissions: selectedPermissions
       });
-      toast.success('Invitation sent successfully!');
+      toast.success(t('admin:dashboard.admin_management.alerts.inviteSuccess'));
       setShowInviteModal(false);
       setInviteEmail('');
       setSelectedPermissions([]);
       fetchData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to send invitation');
+      toast.error(error.response?.data?.message || t('admin:dashboard.admin_management.alerts.inviteFailed'));
     } finally {
       setLoading(false);
     }
@@ -118,50 +120,50 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
 
   const handleUpdatePermissions = async () => {
     if (!selectedSubAdmin || selectedPermissions.length === 0) {
-      toast.error('Please select at least one permission');
+      toast.error(t('admin:dashboard.admin_management.alerts.selectPermissionError'));
       return;
     }
 
     try {
       setLoading(true);
       await adminAPI.updateSubAdminPermissions(selectedSubAdmin._id, selectedPermissions);
-      toast.success('Permissions updated successfully!');
+      toast.success(t('admin:dashboard.admin_management.alerts.updateSuccess'));
       setShowEditModal(false);
       setSelectedSubAdmin(null);
       setSelectedPermissions([]);
       fetchData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update permissions');
+      toast.error(error.response?.data?.message || t('admin:dashboard.admin_management.alerts.updateFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveSubAdmin = async (id: string) => {
-    if (!window.confirm('Are you sure you want to revoke this sub-admin\'s access?')) return;
+    if (!window.confirm(t('admin:dashboard.admin_management.alerts.confirmRevoke'))) return;
 
     try {
       setLoading(true);
       await adminAPI.removeSubAdmin(id);
-      toast.success('Sub-admin access revoked');
+      toast.success(t('admin:dashboard.admin_management.alerts.revokeSuccess'));
       fetchData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to remove sub-admin');
+      toast.error(error.response?.data?.message || t('admin:dashboard.admin_management.alerts.revokeFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancelInvitation = async (id: string) => {
-    if (!window.confirm('Are you sure you want to cancel this invitation?')) return;
+    if (!window.confirm(t('admin:dashboard.admin_management.alerts.confirmCancel'))) return;
 
     try {
       setLoading(true);
       await adminAPI.cancelInvitation(id);
-      toast.success('Invitation cancelled');
+      toast.success(t('admin:dashboard.admin_management.alerts.cancelSuccess'));
       fetchData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to cancel invitation');
+      toast.error(error.response?.data?.message || t('admin:dashboard.admin_management.alerts.cancelFailed'));
     } finally {
       setLoading(false);
     }
@@ -182,7 +184,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -191,7 +193,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
 
   const getPermissionBadges = (permissions: string[]) => {
     return permissions.map(permId => {
-      const perm = AVAILABLE_PERMISSIONS.find(p => p.id === permId);
+      const perm = getAvailablePermissions(t).find(p => p.id === permId);
       if (!perm) return null;
       const Icon = perm.icon;
       return (
@@ -216,8 +218,8 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Admin Management</h2>
-          <p className="text-gray-600 mt-1">Manage sub-admin access and permissions</p>
+          <h2 className="text-3xl font-bold text-gray-900">{t('admin:dashboard.admin_management.title')}</h2>
+          <p className="text-gray-600 mt-1">{t('admin:dashboard.admin_management.subtitle')}</p>
         </div>
         <button
           onClick={() => {
@@ -228,7 +230,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
           className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-300"
         >
           <UserPlusIcon className="w-5 h-5 mr-2" />
-          Invite Sub-Admin
+          {t('admin:dashboard.admin_management.inviteButton')}
         </button>
       </motion.div>
 
@@ -242,7 +244,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          Sub-Admins ({subAdmins.length})
+          {t('admin:dashboard.admin_management.tabs.subAdmins')} ({subAdmins.length})
         </button>
         <button
           onClick={() => setActiveTab('invitations')}
@@ -252,7 +254,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          Pending Invitations ({invitations.filter(i => i.status === 'pending').length})
+          {t('admin:dashboard.admin_management.tabs.invitations')} ({invitations.filter(i => i.status === 'pending').length})
         </button>
       </div>
 
@@ -268,13 +270,13 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
           {loading && subAdmins.length === 0 ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-              <p className="mt-4 text-gray-500">Loading sub-admins...</p>
+              <p className="mt-4 text-gray-500">{t('admin:dashboard.loading')}</p>
             </div>
           ) : subAdmins.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl shadow-md">
               <ShieldCheckIcon className="w-16 h-16 text-gray-300 mx-auto" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No Sub-Admins Yet</h3>
-              <p className="mt-2 text-gray-500">Invite team members to help manage the dashboard</p>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">{t('admin:dashboard.admin_management.table.noSubAdmins')}</h3>
+              <p className="mt-2 text-gray-500">{t('admin:dashboard.admin_management.table.noSubAdminsDesc')}</p>
             </div>
           ) : (
             subAdmins.map((admin) => (
@@ -293,8 +295,8 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                       <h3 className="font-semibold text-gray-900">{admin.name}</h3>
                       <p className="text-sm text-gray-500">{admin.email}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Joined {formatDate(admin.createdAt)}
-                        {admin.invitedBy && ` • Invited by ${admin.invitedBy.name}`}
+                        {t('admin:dashboard.admin_management.table.joined')} {formatDate(admin.createdAt)}
+                        {admin.invitedBy && ` • ${t('admin:dashboard.admin_management.table.invitedBy')} ${admin.invitedBy.name}`}
                       </p>
                     </div>
                   </div>
@@ -335,8 +337,8 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
           {invitations.filter(i => i.status === 'pending').length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl shadow-md">
               <EnvelopeIcon className="w-16 h-16 text-gray-300 mx-auto" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No Pending Invitations</h3>
-              <p className="mt-2 text-gray-500">All invitations have been processed</p>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">{t('admin:dashboard.admin_management.table.noInvitations')}</h3>
+              <p className="mt-2 text-gray-500">{t('admin:dashboard.admin_management.table.noInvitationsDesc')}</p>
             </div>
           ) : (
             invitations
@@ -356,10 +358,10 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                       <div>
                         <h3 className="font-semibold text-gray-900">{invitation.email}</h3>
                         <p className="text-sm text-gray-500">
-                          Expires {formatDate(invitation.expiresAt)}
+                          {t('admin:dashboard.admin_management.table.expires')} {formatDate(invitation.expiresAt)}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                          Sent {formatDate(invitation.createdAt)}
+                          {t('admin:dashboard.admin_management.table.sent')} {formatDate(invitation.createdAt)}
                           {invitation.invitedBy && ` by ${invitation.invitedBy.name}`}
                         </p>
                       </div>
@@ -369,7 +371,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                       className="inline-flex items-center px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
                     >
                       <XMarkIcon className="w-4 h-4 mr-1" />
-                      Cancel
+                      {t('admin:dashboard.admin_management.table.cancel')}
                     </button>
                   </div>
                   <div className="mt-4 flex flex-wrap">
@@ -390,7 +392,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
             className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Invite Sub-Admin</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('admin:dashboard.admin_management.modal.inviteTitle')}</h3>
               <button
                 onClick={() => setShowInviteModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -402,7 +404,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
+                  {t('admin:dashboard.admin_management.modal.email')}
                 </label>
                 <input
                   type="email"
@@ -415,10 +417,10 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Permissions
+                  {t('admin:dashboard.admin_management.modal.permissions')}
                 </label>
                 <div className="space-y-2">
-                  {AVAILABLE_PERMISSIONS.map((perm) => {
+                  {getAvailablePermissions(t).map((perm) => {
                     const Icon = perm.icon;
                     const isSelected = selectedPermissions.includes(perm.id);
                     return (
@@ -450,14 +452,14 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                 onClick={() => setShowInviteModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('admin:dashboard.admin_management.modal.cancel')}
               </button>
               <button
                 onClick={handleInvite}
                 disabled={loading || !inviteEmail || selectedPermissions.length === 0}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Sending...' : 'Send Invitation'}
+                {loading ? t('admin:dashboard.admin_management.modal.sending') : t('admin:dashboard.admin_management.modal.send')}
               </button>
             </div>
           </motion.div>
@@ -474,7 +476,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Edit Permissions</h3>
+                <h3 className="text-xl font-bold text-gray-900">{t('admin:dashboard.admin_management.modal.editTitle')}</h3>
                 <p className="text-sm text-gray-500">{selectedSubAdmin.email}</p>
               </div>
               <button
@@ -486,7 +488,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
             </div>
 
             <div className="space-y-2">
-              {AVAILABLE_PERMISSIONS.map((perm) => {
+              {getAvailablePermissions(t).map((perm) => {
                 const Icon = perm.icon;
                 const isSelected = selectedPermissions.includes(perm.id);
                 return (
@@ -516,14 +518,14 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                 onClick={() => setShowEditModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('admin:dashboard.admin_management.modal.cancel')}
               </button>
               <button
                 onClick={handleUpdatePermissions}
                 disabled={loading || selectedPermissions.length === 0}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? t('admin:dashboard.admin_management.modal.saving') : t('admin:dashboard.admin_management.modal.save')}
               </button>
             </div>
           </motion.div>

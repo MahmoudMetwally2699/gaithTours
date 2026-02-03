@@ -1,0 +1,591 @@
+{
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "header": {
+      "title": "لوحة التحكم",
+      "subtitle": "نظرة عامة على أداء عملك",
+      "systemOnline": "النظام متصل",
+      "adminPanel": "لوحة الإدارة"
+    },
+    "tabs": {
+      "dashboard": "الرئيسية",
+      "clients": "العملاء",
+      "analytics": "التحليلات",
+      "bookings": "الحجوزات",
+      "payments": "المدفوعات",
+      "hotel_lookup": "بحث عن فندق",
+      "margins": "هوامش الربح",
+      "promo_codes": "الرموز الترويجية",
+      "promotional_banners": "اللافتات الترويجية",
+      "loyalty": "برنامج الولاء",
+      "whatsapp": "واتساب",
+      "admin_management": "إدارة المسؤولين"
+    },
+    "clients": {
+      "title": "قاعدة بيانات العملاء",
+      "search": "البحث عن العملاء...",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "nationality": "الجنسية",
+      "registrationDate": "تاريخ التسجيل",
+      "actions": "الإجراءات",
+      "subtitle": "إدارة قاعدة بيانات العملاء",
+      "addClient": "إضافة عميل",
+      "modal": {
+        "deleteTitle": "حذف العميل",
+        "deleteConfirm": "هل أنت متأكد أنك تريد حذف",
+        "deleteWarning": "سيؤدي هذا الإجراء إلى حذف جميع الحجوزات والفواتير والمدفوعات المرتبطة بشكل دائم. لا يمكن التراجع عن هذا.",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "deleting": "جاري الحذف..."
+      },
+      "alerts": {
+        "createSuccess": "تم إنشاء العميل بنجاح!",
+        "createError": "فشل إنشاء العميل. يرجى المحاولة مرة أخرى."
+      },
+      "create": {
+        "title": "إضافة عميل جديد",
+        "subtitle": "إنشاء حساب عميل جديد",
+        "fullName": "الاسم الكامل",
+        "fullNamePlaceholder": "أدخل الاسم الكامل للعميل",
+        "emailPlaceholder": "client@example.com",
+        "password": "كلمة المرور",
+        "passwordPlaceholder": "أدخل كلمة مرور آمنة",
+        "passwordHint": "يجب أن تحتوي على 8 أحرف على الأقل مع أحرف كبيرة وصغيرة وأرقام ورموز خاصة",
+        "phonePlaceholder": "+966 50 123 4567",
+        "nationalityPlaceholder": "مثال: المملكة العربية السعودية، مصر، الأردن",
+        "preferredLanguage": "اللغة المفضلة",
+        "submit": "إنشاء عميل",
+        "creating": "جاري الإنشاء...",
+        "cancel": "إلغاء",
+        "errors": {
+          "nameRequired": "الاسم مطلوب",
+          "nameLength": "يجب أن يكون الاسم مكونًا من حرفين على الأقل",
+          "emailRequired": "البريد الإلكتروني مطلوب",
+          "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+          "passwordRequired": "كلمة المرور مطلوبة",
+          "passwordLength": "يجب أن تكون كلمة المرور مكونة من 8 أحرف على الأقل",
+          "passwordComplex": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل، وحرف صغير، ورقم، ورمز خاص"
+        }
+      },
+      "details": {
+        "title": "تفاصيل العميل",
+        "editTitle": "تعديل العميل",
+        "clientInfo": "معلومات العميل",
+        "memberSince": "عضو منذ",
+        "bookingHistory": "سجل الحجوزات",
+        "invoiceHistory": "سجل الفواتير",
+        "noBookings": "لا توجد حجوزات",
+        "noInvoices": "لا توجد فواتير",
+        "save": "حفظ",
+        "saving": "جاري الحفظ...",
+        "edit": "تعديل",
+        "cancel": "إلغاء",
+        "na": "غير متوفر",
+        "loadError": "فشل تحميل تفاصيل العميل",
+        "updateSuccess": "تم تحديث العميل بنجاح",
+        "updateError": "فشل تحديث العميل"
+      }
+    },
+    "stats": {
+      "clients": "العملاء",
+      "totalRegistered": "إجمالي المسجلين",
+      "active": "نشط",
+      "failed": "فشل",
+      "failedBookings": "حجوزات فاشلة",
+      "error": "خطأ",
+      "revenue": "الإيرادات",
+      "totalEarnings": "إجمالي الأرباح",
+      "live": "مباشر",
+      "whatsappMessages": "رسائل واتساب",
+      "totalMessages": "إجمالي الرسائل",
+      "allTime": "كل الوقت",
+      "unreadMessages": "رسائل غير مقروءة",
+      "needsAttention": "يحتاج إلى اهتمام",
+      "unread": "غير مقروء"
+    },
+    "messages": {
+      "fetchStatsFailed": "فشل في جلب الإحصائيات",
+      "fetchClientsFailed": "فشل في جلب العملاء",
+      "fetchBookingsFailed": "فشل في جلب الحجوزات",
+      "fetchInvoicesFailed": "فشل في جلب الفواتير",
+      "fetchPaymentsFailed": "فشل في جلب المدفوعات",
+      "bookingApproved": "تمت الموافقة على الحجز بنجاح",
+      "bookingApprovalFailed": "فشلت الموافقة على الحجز",
+      "bookingDenied": "تم رفض الحجز بنجاح",
+      "bookingDenialFailed": "فشل رفض الحجز",
+      "logoutFailed": "فشل تسجيل الخروج",
+      "clientCreated": "تم إنشاء العميل بنجاح!",
+      "clientCreateFailed": "فشل إنشاء العميل",
+      "clientDeleted": "تم حذف العميل بنجاح!",
+      "clientDeleteFailed": "فشل حذف العميل",
+      "bookingCreated": "تم إنشاء الحجز بنجاح!"
+    },
+    "actions": {
+      "logout": "تسجيل الخروج"
+    },
+    "status": {
+      "pending": "قيد الانتظار",
+      "approved": "تمت الموافقة",
+      "denied": "مرفوض",
+      "invoiced": "مفوتر",
+      "paid": "مدفوع",
+      "confirmed": "مؤكد",
+      "failed": "فشل",
+      "cancelled": "ملغى",
+      "completed": "مكتمل",
+      "processing": "قيد المعالجة",
+      "unpaid": "غير مدفوع",
+      "refunded": "تم استرداد المبلغ"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "subtitle": "المهام الإدارية المستخدمة بشكل متكرر",
+      "manageBookings": {
+        "title": "إدارة الحجوزات",
+        "description": "عرض وقبول أو رفض طلبات الحجز",
+        "action": "الذهاب إلى الحجوزات"
+      },
+      "clientDatabase": {
+        "title": "قاعدة بيانات العملاء",
+        "description": "الوصول إلى معلومات العملاء وإدارتها",
+        "action": "عرض العملاء"
+      },
+      "paymentTracking": {
+        "title": "تتبع المدفوعات",
+        "description": "مراقبة حالة المدفوعات والفواتير",
+        "action": "تحقق من المدفوعات"
+      }
+    },
+    "systemStatus": {
+        "title": "حالة النظام",
+        "subtitle": "مراقبة في الوقت الحقيقي",
+        "database": "قاعدة البيانات",
+        "api": "واجهة برمجة التطبيقات",
+        "payments": "المدفوعات"
+    },
+    "hotelLookup": {
+      "title": "بحث عن أرقام الفنادق",
+      "subtitle": "ابحث عن الفنادق واعرض معلومات الاتصال الخاصة بهم",
+      "searchLabel": "بحث عن فندق",
+      "searchPlaceholder": "اكتب اسم الفندق للبحث...",
+      "loading": "جارٍ تحميل معلومات الاتصال...",
+      "error": "فشل جلب معلومات الاتصال",
+      "address": "العنوان",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "notAvailable": "غير متوفر",
+      "copyPhone": "نسخ الهاتف",
+      "copyEmail": "نسخ البريد الإلكتروني",
+      "emptyTitle": "ابحث عن فندق",
+      "emptySubtitle": "ابدأ بكتابة اسم الفندق أعلاه للعثور على معلومات الاتصال"
+    },
+     "bookings": {
+        "title": "الحجوزات",
+        "subtitle": "إدارة طلبات الحجز والحجوزات المؤكدة",
+        "createBooking": "إنشاء حجز",
+        "allStatus": "جميع الحجوزات",
+        "clientName": "اسم العميل",
+        "email": "البريد الإلكتروني",
+        "hotelName": "اسم الفندق",
+        "submissionDate": "تاريخ التقديم",
+        "status": "الحالة",
+        "actions": "الإجراءات",
+        "approvalModal": {
+          "title": "الموافقة على الحجز",
+          "description": "هل أنت متأكد أنك تريد الموافقة على الحجز لـ {{touristName}} في {{hotelName}}؟",
+          "amount": "المبلغ المعتمد",
+          "cancel": "إلغاء",
+          "approve": "موافقة",
+          "approving": "جاري الموافقة..."
+        },
+        "denialModal": {
+          "title": "رفض الحجز",
+          "description": "هل أنت متأكد أنك تريد رفض الحجز لـ {{touristName}} في {{hotelName}}؟",
+          "reason": "سبب الرفض",
+          "reasonPlaceholder": "يرجى تقديم سبب للرفض...",
+          "cancel": "إلغاء",
+          "deny": "رفض",
+          "denying": "جاري الرفض..."
+        },
+        "details": {
+          "title": "تفاصيل الحجز",
+          "visitWebsite": "زيارة موقع الفندق",
+          "expectedPrice": "السعر المتوقع:",
+          "phone": "الهاتف:",
+          "email": "البريد الإلكتروني:",
+          "notAvailable": "غير متوفر",
+          "travelDetails": "تفاصيل السفر",
+          "bookingId": "رقم الحجز:",
+          "checkIn": "تسجيل الوصول:",
+          "checkOut": "تسجيل المغادرة:",
+          "guests": "الضيوف:",
+          "expectedCheckInTime": "وقت الوصول المتوقع:",
+          "roomStayDetails": "تفاصيل الغرفة والإقامة",
+          "roomType": "نوع الغرفة:",
+          "stayType": "نوع الإقامة:",
+          "paymentMethod": "طريقة الدفع:",
+          "status": "الحالة:",
+          "submissionDate": "تاريخ التقديم:",
+          "personalInfo": "المعلومات الشخصية",
+          "fullName": "الاسم الكامل:",
+          "nationality": "الجنسية:",
+          "additionalGuests": "ضيوف إضافيين",
+          "guestName": "اسم الضيف:",
+          "attachments": "المرفقات",
+          "view": "عرض",
+          "specialRequests": "طلبات خاصة",
+          "approve": "الموافقة على الحجز",
+          "deny": "رفض الحجز",
+          "uploaded": "تم الرفع"
+        }
+      },
+      "invoices": {
+          "title": "الفواتير",
+          "subtitle": "تتبع وإدارة الفواتير",
+          "allStatus": "جميع الحالات",
+          "invoiceId": "رقم الفاتورة",
+          "clientName": "اسم العميل",
+          "email": "البريد الإلكتروني",
+          "hotelName": "اسم الفندق",
+          "amount": "المبلغ",
+          "status": "الحالة",
+          "issueDate": "تاريخ الإصدار",
+          "actions": "الإجراءات",
+          "details": {
+              "title": "تفاصيل الفاتورة",
+              "invoiceLabel": "فاتورة",
+              "status": "الحالة:",
+              "issueDate": "تاريخ الإصدار",
+              "dueDate": "تاريخ الاستحقاق",
+              "billTo": "فاتورة إلى",
+              "clientId": "رقم العميل:",
+              "serviceDetails": "تفاصيل الخدمة",
+              "bookingInfo": "معلومات الحجز",
+              "bookingId": "رقم الحجز",
+              "guestName": "اسم الضيف",
+              "numGuests": "عدد الضيوف",
+              "roomType": "نوع الغرفة",
+              "items": "عناصر الفاتورة",
+              "table": {
+                  "description": "الوصف",
+                  "qty": "الكمية",
+                  "unitPrice": "سعر الوحدة",
+                  "total": "المجموع"
+              },
+              "subtotal": "المجموع الفرعي:",
+              "tax": "الضريبة:",
+              "total": "الإجمالي:",
+              "notes": "ملاحظات",
+              "paymentInfo": "معلومات الدفع",
+              "paymentReceived": "تم استلام الدفع",
+              "paidOn": "دفع في"
+          }
+      },
+      "payments": {
+          "title": "المدفوعات",
+          "subtitle": "مراقبة معاملات الدفع وحالتها",
+          "allStatus": "جميع الحالات",
+          "invoiceId": "رقم الفاتورة",
+          "clientName": "اسم العميل",
+          "email": "البريد الإلكتروني",
+          "amount": "المبلغ",
+          "status": "الحالة",
+          "paymentDate": "تاريخ الدفع",
+          "actions": "الإجراءات",
+          "details": {
+              "title": "تفاصيل الدفع",
+              "paymentLabel": "دفع",
+              "status": "الحالة:",
+              "paymentDate": "تاريخ الدفع",
+              "processedDate": "تاريخ المعالجة",
+              "paymentInfo": "معلومات الدفع",
+              "amount": "المبلغ:",
+              "processingFees": "رسوم المعالجة:",
+              "netAmount": "المبلغ الصافي:",
+              "paymentMethod": "طريقة الدفع:",
+              "gateway": "بوابة الدفع:",
+              "invoiceInfo": "معلومات الفاتورة",
+              "invoiceId": "رقم الفاتورة:",
+              "invoiceAmount": "مبلغ الفاتورة:",
+              "customer": "العميل:",
+              "email": "البريد الإلكتروني:",
+              "relatedBooking": "الحجز المرتبط",
+              "bookingId": "رقم الحجز",
+              "guestName": "اسم الضيف",
+              "hotel": "الفندق",
+              "location": "الموقع",
+              "transactionDetails": "تفاصيل المعاملة",
+              "transactionId": "رقم المعاملة:",
+              "confirmedAt": "تم التأكيد في:",
+              "failureInfo": "معلومات الفشل",
+              "paymentFailed": "فشل الدفع",
+              "successInfo": "معلومات النجاح",
+              "paymentCompleted": "تم الدفع بنجاح",
+              "processedOn": "تمت المعالجة في"
+          }
+      },
+      "admin_management": {
+        "title": "إدارة المسؤولين",
+        "subtitle": "إدارة المسؤولين الفرعيين والأذونات",
+        "createButton": "دعوة مسؤول",
+        "permissions": {
+          "dashboard": "لوحة التحكم",
+          "clients": "العملاء",
+          "bookings": "الحجوزات",
+          "payments": "المدفوعات",
+          "analytics": "التحليلات",
+          "margins": "هوامش الربح",
+          "promoCodes": "الرموز الترويجية",
+          "whatsapp": "واتساب"
+        },
+        "table": {
+          "user": "المستخدم",
+          "role": "الدور",
+          "status": "الحالة",
+          "permissions": "الأذونات",
+          "lastActive": "آخر نشاط",
+          "joined": "انضم",
+          "invitedBy": "تمت الدعوة بواسطة",
+          "expires": "تنتهي الصلاحية",
+          "sent": "أرسلت",
+          "cancel": "إلغاء",
+          "actions": "الإجراءات",
+          "noSubAdmins": "لا يوجد مسؤولين فرعيين",
+          "noSubAdminsDesc": "قم بدعوة أعضاء الفريق للمساعدة في إدارة لوحة التحكم",
+          "noInvitations": "لا توجد دعوات معلقة",
+          "noInvitationsDesc": "جميع الدعوات المرسلة تمت معالجتها"
+        },
+        "modal": {
+          "inviteTitle": "دعوة مسؤول جديد",
+          "editTitle": "تعديل أذونات المسؤول",
+          "email": "عنوان البريد الإلكتروني",
+          "permissions": "الأذونات",
+          "cancel": "إلغاء",
+          "send": "إرسال الدعوة",
+          "sending": "جاري الإرسال...",
+          "save": "حفظ التغييرات",
+          "saving": "جاري الحفظ..."
+        },
+        "alerts": {
+          "confirmRevoke": "هل أنت متأكد أنك تريد إلغاء وصول هذا المسؤول؟",
+          "confirmCancel": "هل أنت متأكد أنك تريد إلغاء هذه الدعوة؟",
+          "inviteSuccess": "تم إرسال الدعوة بنجاح",
+          "revokeSuccess": "تم إلغاء وصول المسؤول",
+          "cancelSuccess": "تم إلغاء الدعوة",
+          "updateSuccess": "تم تحديث الأذونات بنجاح",
+          "error": "حدث خطأ ما",
+          "inviteFailed": "فشل إرسال الدعوة",
+          "updateFailed": "فشل تحديث الأذونات",
+          "revokeFailed": "فشل إزالة المسؤول الفرعي",
+          "cancelFailed": "فشل إلغاء الدعوة",
+          "loadFailed": "فشل تحميل بيانات المسؤول",
+          "selectPermissionError": "يرجى إدخال البريد الإلكتروني وتحديد إذن واحد على الأقل"
+        }
+      },
+      "promo_codes": {
+        "title": "الرموز الترويجية",
+        "subtitle": "إدارة رموز الخصم للحملات التسويقية",
+        "createButton": "إنشاء رمز",
+        "filters": {
+          "all": "جميع الرموز",
+          "active": "نشط فقط",
+          "expired": "منتهي الصلاحية"
+        },
+        "table": {
+          "code": "الرمز",
+          "discount": "الخصم",
+          "validity": "الصلاحية",
+          "usage": "الاستخدام",
+          "status": "الحالة",
+          "actions": "الإجراءات",
+          "to": "إلى",
+          "expired": "منتهي",
+          "active": "نشط",
+          "inactive": "غير نشط",
+          "noCodes": "لا توجد رموز ترويجية"
+        },
+        "modal": {
+          "createTitle": "إنشاء رمز ترويجي",
+          "editTitle": "تعديل الرمز الترويجي",
+          "code": "الرمز الترويجي",
+          "description": "الوصف",
+          "type": "النوع",
+          "value": "القيمة",
+          "maxCap": "الحد الأقصى للخصم",
+          "validFrom": "صالح من",
+          "validUntil": "صالح حتى",
+          "targeting": "الاستهداف (اختياري)",
+          "hotels": "الفنادق المطبقة",
+          "destinations": "الوجهات المطبقة",
+          "active": "نشط",
+          "cancel": "إلغاء",
+          "save": "إنشاء الرمز",
+          "update": "تحديث الرمز",
+          "saving": "جاري الحفظ...",
+          "createSuccess": "تم إنشاء الرمز الترويجي!",
+          "updateSuccess": "تم تحديث الرمز الترويجي!",
+          "saveError": "فشل حفظ الرمز الترويجي"
+        },
+        "delete": {
+          "title": "حذف الرمز الترويجي",
+          "message": "لا يمكن التراجع عن هذا الإجراء.",
+          "confirm": "حذف",
+          "success": "تم حذف الرمز الترويجي",
+          "error": "فشل الحذف"
+        },
+        "types": {
+          "percentage": "نسبة مئوية (%)",
+          "fixed": "مبلغ ثابت"
+        }
+      },
+      "margins": {
+        "title": "هوامش الربح",
+        "subtitle": "إدارة قواعد التسعير والعلامات التجارية",
+        "filters": {
+          "allStatus": "كل الحالات",
+          "active": "نشط",
+          "inactive": "غير نشط"
+        },
+        "actions": {
+          "simulator": "المحاكي",
+          "addRule": "إضافة قاعدة"
+        },
+        "stats": {
+          "activeRules": "القواعد النشطة",
+          "timesApplied": "مرات التطبيق",
+          "revenue": "الإيرادات الناتجة",
+          "avgMargin": "متوسط الهامش"
+        },
+        "table": {
+          "name": "اسم القاعدة",
+          "typeValue": "النوع / القيمة",
+          "conditions": "الشروط",
+          "priority": "الأولوية",
+          "status": "الحالة",
+          "applied": "تم التطبيق",
+          "ruleActions": "الإجراءات",
+          "noRules": "لا توجد قواعد هامش بعد",
+          "noRulesDesc": "قم بإنشاء قاعدتك الأولى لبدء إدارة الأرباح"
+        },
+        "modal": {
+          "createTitle": "إنشاء قاعدة جديدة",
+          "editTitle": "تعديل القاعدة",
+          "ruleName": "اسم القاعدة",
+          "ruleNameError": "اسم القاعدة مطلوب",
+          "description": "الوصف",
+          "marginSettings": "إعدادات الهامش",
+          "type": "النوع",
+          "percentage": "نسبة مئوية",
+          "fixed": "مبلغ ثابت",
+          "amount": "المبلغ",
+          "priority": "الأولوية",
+          "conditions": "الشروط (اختياري)",
+          "conditionsDesc": "اتركه فارغًا لقاعدة عامة تنطبق على جميع الحجوزات",
+          "cancel": "إلغاء",
+          "create": "إنشاء قاعدة",
+          "update": "تحديث القاعدة",
+          "createSuccess": "تم إنشاء القاعدة بنجاح",
+          "updateSuccess": "تم تحديث القاعدة بنجاح",
+          "saveError": "فشل حفظ القاعدة",
+          "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذه القاعدة؟",
+          "deleteSuccess": "تم حذف القاعدة",
+          "deleteError": "فشل حذف القاعدة",
+          "statusUpdateSuccess": "تم تحديث حالة القاعدة",
+          "statusUpdateError": "فشل تغيير حالة القاعدة"
+        },
+        "conditions": {
+          "countries": "الدول المختارة",
+          "cities": "المدن المختارة",
+          "minStar": "أدنى تصنيف للنجوم",
+          "maxStar": "أقصى تصنيف للنجوم",
+          "mealTypes": "أنواع الوجبات",
+          "selectCountry": "اختر الدولة للإضافة...",
+          "selectCity": "اختر المدينة للإضافة...",
+          "selectMealType": "اختر نوع الوجبة للإضافة...",
+          "any": "أي",
+          "star": "نجمة",
+          "startDate": "تاريخ البدء",
+          "endDate": "تاريخ الانتهاء",
+          "minBookingValue": "أدنى قيمة للحجز",
+          "maxBookingValue": "أقصى قيمة للحجز",
+          "dateRange": "نطاق التاريخ",
+          "valueFilter": "قيمة الحجز",
+          "global": "عالمي"
+        },
+        "simulator": {
+          "title": "محاكي الهامش",
+          "basePrice": "السعر الأساسي",
+          "country": "الدولة",
+          "city": "المدينة",
+          "starRating": "تصنيف النجوم",
+          "run": "تشغيل المحاكاة",
+          "error": "فشلت المحاكاة",
+          "results": {
+            "basePrice": "السعر الأساسي",
+            "marginApplied": "الهامش المطبق",
+            "finalPrice": "السعر النهائي",
+            "rule": "القاعدة"
+          }
+        },
+        "mealTypes": {
+          "all_inclusive": "شامل كليًا",
+          "breakfast": "إفطار",
+          "half_board": "نصف إقامة",
+          "full_board": "إقامة كاملة",
+          "room_only": "غرفة فقط"
+        }
+      },
+      "analytics": {
+        "title": "لوحة التحليلات",
+        "subtitle": "رؤى وأداء الأعمال",
+        "period": {
+          "last7Days": "آخر 7 أيام",
+          "last30Days": "آخر 30 يومًا",
+          "last90Days": "آخر 90 يومًا"
+        },
+        "export": {
+          "bookings": "تصدير الحجوزات",
+          "revenue": "تصدير الإيرادات"
+        },
+        "summary": {
+          "totalRevenue": "إجمالي الإيرادات",
+          "totalBookings": "إجمالي الحجوزات",
+          "conversionRate": "معدل التحويل",
+          "avgTransaction": "متوسط المعاملة"
+        },
+        "charts": {
+          "revenueOverTime": "الإيرادات عبر الوقت",
+          "bookingsByStatus": "الحجوزات حسب الحالة",
+          "bookingsOverTime": "الحجوزات عبر الوقت",
+          "confirmed": "مؤكد",
+          "cancelled": "ملغى"
+        },
+        "topLists": {
+          "topHotels": "أفضل الفنادق",
+          "topDestinations": "أفضل الوجهات",
+          "bookings": "حجوزات",
+          "noData": "لا توجد بيانات متاحة"
+        },
+        "promoCodes": {
+           "title": "أداء الرموز الترويجية",
+           "usageInPeriod": "الاستخدام (في الفترة)",
+           "totalDiscount": "إجمالي الخصم"
+        },
+        "recentUsage": {
+           "title": "الاستخدام الأخير",
+           "code": "الرمز",
+           "user": "المستخدم",
+           "discount": "الخصم",
+           "date": "التاريخ",
+           "noActivity": "لا يوجد نشاط أخير"
+        },
+        "alerts": {
+          "loadFailed": "فشل تحميل التحليلات",
+          "exportSuccess": "تم تصدير بيانات {{type}} بنجاح",
+          "exportFailed": "فشل تصدير البيانات"
+        }
+      }
+   }
+}

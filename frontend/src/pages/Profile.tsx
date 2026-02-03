@@ -29,6 +29,7 @@ import InvoiceDetailModal from '../components/InvoiceDetailModal';
 import { CancellationModal } from '../components/CancellationModal';
 import { useDirection } from '../hooks/useDirection';
 import { getFavoritesWithData, toggleFavoriteWithData, FavoriteHotel } from '../components/ShareSaveActions';
+import { LoyaltyCard } from '../components/LoyaltyCard';
 
 interface Reservation {
   _id: string;
@@ -94,7 +95,7 @@ export const Profile: React.FC = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
-    if (tabFromUrl && ['overview', 'reservations', 'invoices', 'favorites', 'settings'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['overview', 'reservations', 'favorites', 'settings'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, []);
@@ -151,6 +152,7 @@ export const Profile: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'reservations' || activeTab === 'overview') {
       fetchReservations();
+      fetchInvoices(); // Fetch invoices to link with reservations
     }
   }, [activeTab]);
 
@@ -167,9 +169,6 @@ export const Profile: React.FC = () => {
     }
   };
   useEffect(() => {
-    if (activeTab === 'invoices') {
-      fetchInvoices();
-    }
     if (activeTab === 'favorites' || activeTab === 'overview') {
       setFavorites(getFavoritesWithData());
     }
@@ -260,9 +259,13 @@ export const Profile: React.FC = () => {
     { id: 'overview', label: t('profile.overview', 'Overview'), icon: HomeIcon },
     { id: 'reservations', label: t('profile.reservations'), icon: BuildingOfficeIcon },
     { id: 'favorites', label: t('profile.favorites'), icon: HeartIcon },
-    { id: 'invoices', label: t('profile.invoices'), icon: DocumentTextIcon },
     { id: 'settings', label: t('profile.settings', 'Settings'), icon: Cog6ToothIcon },
   ];
+
+  // Helper to find invoice for a reservation
+  const getInvoiceForReservation = (reservationId: string): Invoice | undefined => {
+    return invoices.find(inv => inv.reservation?._id === reservationId);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
@@ -506,6 +509,9 @@ export const Profile: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Loyalty Rewards Card */}
+                <LoyaltyCard />
+
                 {/* Recent Activity / Quick Actions */}
                 <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl p-8 text-white relative overflow-hidden">
                   <div className="relative z-10">
@@ -613,54 +619,22 @@ export const Profile: React.FC = () => {
                                 {t('common.cancel')}
                               </button>
                             )}
-                            <Link
-                              to={`/hotels/details/${reservation.hotelHid || reservation.hotelId || reservation._id}?checkIn=${reservation.checkIn ? new Date(reservation.checkIn).toISOString().split('T')[0] : ''}&checkOut=${reservation.checkOut ? new Date(reservation.checkOut).toISOString().split('T')[0] : ''}&adults=${reservation.guests || 2}`}
-                              className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-                            >
-                              {t('profile.viewHotel')}
-                            </Link>
+                            {(() => {
+                              const invoice = getInvoiceForReservation(reservation._id);
+                              return invoice ? (
+                                <button
+                                  onClick={() => handleViewInvoice(invoice._id)}
+                                  className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                                >
+                                  {t('profile.viewInvoice')}
+                                </button>
+                              ) : (
+                                <span className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-sm font-medium">
+                                  {t('profile.noInvoice', 'No invoice')}
+                                </span>
+                              );
+                            })()}
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Invoices Tab */}
-            {activeTab === 'invoices' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">{t('profile.invoices')}</h2>
-                {invoices.length === 0 ? (
-                  <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <DocumentTextIcon className="h-8 w-8 text-blue-500" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('profile.noInvoices')}</h3>
-                    <p className="text-gray-500">{t('profile.invoicesDescription')}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {invoices.map((invoice) => (
-                      <div key={invoice._id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                            <DocumentTextIcon className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-gray-900">#{invoice.invoiceNumber}</h4>
-                            <p className="text-sm text-gray-500">{formatDate(invoice.issueDate)} · {invoice.hotelName}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-gray-900">{parseFloat(String(invoice.amount)).toFixed(2)} {invoice.currency}</p>
-                          <button
-                            onClick={() => handleViewInvoice(invoice._id)}
-                            className="text-blue-600 text-sm font-medium hover:underline"
-                          >
-                            {t('profile.viewInvoice')}
-                          </button>
                         </div>
                       </div>
                     ))}

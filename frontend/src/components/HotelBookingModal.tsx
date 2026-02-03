@@ -7,6 +7,7 @@ import { UploadedFile } from './FileUpload';
 import { reservationsAPI, bookingsAPI } from '../services/api';
 import { useDirection } from '../hooks/useDirection';
 import toast from 'react-hot-toast';
+import { LoyaltyRedemption } from './LoyaltyRedemption';
 
 // Helper function to get calling code from country code
 const getCallingCodeFromCountry = (countryCode: string): string => {
@@ -84,7 +85,9 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
   const { t } = useTranslation();
   const { isRTL } = useDirection();
   const history = useHistory();
-  const [loading, setLoading] = useState(false);  // Custom stylish toast notification
+  const [loading, setLoading] = useState(false);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
+  const [loyaltyPointsUsed, setLoyaltyPointsUsed] = useState(0);  // Custom stylish toast notification
   const showBookingSuccessToast = () => {
     toast.custom((toastInstance) => (
       <div        className={`${
@@ -550,6 +553,50 @@ export const HotelBookingModal: React.FC<HotelBookingModalProps> = ({
                       </a>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Loyalty Points Redemption */}
+            <div className="border-b border-gray-200 pb-6">
+              <LoyaltyRedemption
+                bookingAmount={parseFloat(searchParams.hotelPrice) || 0}
+                currency={searchParams.currency || 'SAR'}
+                exchangeRate={
+                  // Calculate exchange rate: USD to booking currency
+                  searchParams.currency === 'SAR' ? 3.75 :
+                  searchParams.currency === 'EGP' ? 50 :
+                  searchParams.currency === 'USD' ? 1 :
+                  3.75 // Default to SAR rate
+                }
+                onApplyDiscount={(discount, pointsUsed) => {
+                  setLoyaltyDiscount(discount);
+                  setLoyaltyPointsUsed(pointsUsed);
+                }}
+                onRemoveDiscount={() => {
+                  setLoyaltyDiscount(0);
+                  setLoyaltyPointsUsed(0);
+                }}
+              />
+            </div>
+
+            {/* Price Summary with Discount */}
+            {loyaltyDiscount > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <h3 className="font-semibold text-green-800 mb-2">{t('loyalty.discountSummary', 'Loyalty Discount Applied')}</h3>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{t('booking.originalPrice', 'Original Price')}</span>
+                  <span>{searchParams.currency || 'SAR'} {searchParams.hotelPrice}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>{t('loyalty.pointsDiscount', 'Points Discount')} ({loyaltyPointsUsed} pts)</span>
+                  <span>-{searchParams.currency || 'SAR'} {loyaltyDiscount}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-green-300">
+                  <span>{t('booking.finalPrice', 'Final Price')}</span>
+                  <span className="text-green-700">
+                    {searchParams.currency || 'SAR'} {(parseFloat(searchParams.hotelPrice) - loyaltyDiscount).toFixed(2)}
+                  </span>
                 </div>
               </div>
             )}

@@ -575,6 +575,43 @@ router.post('/create', async (req, res) => {
     reservation.invoice = invoice._id;
     await reservation.save();
 
+    // Award loyalty points for the booking
+    if (req.user?._id) {
+      try {
+        const LoyaltySettings = require('../models/LoyaltySettings');
+        const User = require('../models/User');
+
+        const loyaltySettings = await LoyaltySettings.getSettings();
+
+        if (loyaltySettings.isEnabled) {
+          // Convert price to USD if needed (simplified - in production use real exchange rates)
+          const amountInUSD = bookingCurrency === 'USD' ? bookingAmount : bookingAmount; // Assume USD for now
+
+          // Calculate points earned using configurable formula: "For every $X spent, earn Y points"
+          const dollarsRequired = loyaltySettings.earningDollarsRequired || 1;
+          const pointsToEarn = loyaltySettings.pointsPerDollar || 1;
+          const pointsEarned = Math.floor(amountInUSD / dollarsRequired) * pointsToEarn;
+
+          if (pointsEarned > 0) {
+            // Update user's loyalty info
+            const user = await User.findById(req.user._id);
+            user.loyaltyPoints = (user.loyaltyPoints || 0) + pointsEarned;
+            user.totalSpent = (user.totalSpent || 0) + amountInUSD;
+
+            // Recalculate tier
+            user.loyaltyTier = await LoyaltySettings.calculateTier(user.loyaltyPoints);
+
+            await user.save();
+
+            console.log(`🎁 Loyalty: Awarded ${pointsEarned} points to ${user.email} (${amountInUSD} USD / ${dollarsRequired} × ${pointsToEarn}). Total: ${user.loyaltyPoints}. Tier: ${user.loyaltyTier}`);
+          }
+        }
+      } catch (loyaltyError) {
+        // Don't fail the booking if loyalty update fails
+        console.error('Warning: Could not award loyalty points:', loyaltyError.message);
+      }
+    }
+
     successResponse(res, {
       reservation: {
         id: reservation._id,

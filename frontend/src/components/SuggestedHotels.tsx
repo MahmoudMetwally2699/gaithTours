@@ -14,6 +14,8 @@ interface ExtendedHotel extends Hotel {
   pricePerNight?: number;
   nights?: number;
   currency?: string;
+  total_taxes?: number;
+  taxes_currency?: string;
   isSearchedHotel?: boolean;
 }
 

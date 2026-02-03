@@ -176,19 +176,43 @@ class WhatsAppService {
       // Format phone number - remove + and any non-numeric characters
       const formattedPhone = phone.replace(/[^\d]/g, '');
 
-      // Bilingual message for better user experience
-      const message = language === 'ar'
-        ? `🔐 رمز التحقق الخاص بك من Gaith Tours هو: *${code}*\n\nهذا الرمز صالح لمدة 10 دقائق.\n\n🔐 Your Gaith Tours verification code is: *${code}*\n\nThis code is valid for 10 minutes.`
-        : `🔐 Your Gaith Tours verification code is: *${code}*\n\nThis code is valid for 10 minutes.\n\n🔐 رمز التحقق الخاص بك من Gaith Tours هو: *${code}*\n\nهذا الرمز صالح لمدة 10 دقائق.`;
+      console.log(`📱 Sending verification code to ${formattedPhone} using template`);
 
-      console.log(`📱 Sending verification code to ${formattedPhone}`);
+      // Use the approved WhatsApp template
+      const data = {
+        messaging_product: 'whatsapp',
+        to: formattedPhone,
+        type: 'template',
+        template: {
+          name: 'verfications_code',  // Your approved template name
+          language: {
+            code: 'en'  // Template language
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: code  // The 6-digit OTP code
+                }
+              ]
+            }
+          ]
+        }
+      };
 
-      const response = await this.sendMessage(formattedPhone, message);
+      const response = await axios.post(this.baseUrl, data, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
-      return response;
+      return response.data;
     } catch (error) {
-      console.error('❌ Failed to send verification code:', error.message);
+      console.error('❌ Failed to send verification code:', error.response?.data || error.message);
       throw error;
     }
   }
