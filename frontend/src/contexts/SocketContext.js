@@ -26,9 +26,11 @@ export const SocketProvider = ({ children }) => {
         return;
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      // Remove /api from the URL for Socket.io connection
-      const socketUrl = apiUrl.replace('/api', '');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      // Extract just the origin (protocol + host) for Socket.io connection
+      // This handles URLs like https://api.gaithtours.com/api correctly
+      const url = new URL(apiUrl);
+      const socketUrl = url.origin; // Gets https://api.gaithtours.com (no path)
       console.log('🔌 Socket connecting to:', socketUrl, '| API URL:', apiUrl);
 
       // Close existing socket if any
