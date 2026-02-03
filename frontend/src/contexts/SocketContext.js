@@ -29,6 +29,8 @@ export const SocketProvider = ({ children }) => {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       // Remove /api from the URL for Socket.io connection
       const socketUrl = apiUrl.replace('/api', '');
+      console.log('🔌 Socket connecting to:', socketUrl, '| API URL:', apiUrl);
+
       // Close existing socket if any
       if (socket) {
         socket.close();
