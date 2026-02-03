@@ -1509,6 +1509,7 @@ router.get('/kashier/order/:orderId', async (req, res) => {
                 const LoyaltySettings = require('../models/LoyaltySettings');
 
                 const loyaltySettings = await LoyaltySettings.getSettings();
+                console.log(`🎁 Loyalty check: isEnabled=${loyaltySettings.isEnabled}, user=${reservation.user}`);
 
                 if (loyaltySettings.isEnabled) {
                   const bookingAmount = reservation.totalPrice || 0;
@@ -1518,6 +1519,8 @@ router.get('/kashier/order/:orderId', async (req, res) => {
                   const dollarsRequired = loyaltySettings.earningDollarsRequired || 1;
                   const pointsToEarn = loyaltySettings.pointsPerDollar || 1;
                   const pointsEarned = Math.floor(amountInUSD / dollarsRequired) * pointsToEarn;
+
+                  console.log(`   Booking: ${bookingAmount} ${bookingCurrency}, dollarsRequired=${dollarsRequired}, pointsToEarn=${pointsToEarn}, earned=${pointsEarned}`);
 
                   if (pointsEarned > 0) {
                     const user = await User.findById(reservation.user);
@@ -1530,12 +1533,20 @@ router.get('/kashier/order/:orderId', async (req, res) => {
 
                       console.log(`🎁 Loyalty: Awarded ${pointsEarned} points to ${user.email}`);
                       console.log(`   Points: ${previousPoints} → ${user.loyaltyPoints}`);
+                    } else {
+                      console.log(`   ⚠️ User not found for ID: ${reservation.user}`);
                     }
+                  } else {
+                    console.log(`   ⚠️ No points to award (pointsEarned=${pointsEarned})`);
                   }
+                } else {
+                  console.log(`   ⚠️ Loyalty program is DISABLED`);
                 }
               } catch (loyaltyError) {
                 console.error('❌ Error awarding loyalty points:', loyaltyError);
               }
+            } else {
+              console.log(`   ⚠️ No user attached to reservation`);
             }
 
             // Trigger RateHawk booking asynchronously (only once when status changes from pending_payment)
