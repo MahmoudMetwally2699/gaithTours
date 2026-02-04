@@ -4,13 +4,13 @@ import { MessageCircle, Users, Star, Clock } from 'lucide-react';
 const WhatsAppStats = ({ stats }) => {
   return (
     <div className="grid grid-cols-2 gap-3 mb-4">
-      <div className="bg-blue-50 p-3 rounded-lg">
+      <div className="bg-orange-50 p-3 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-blue-600 font-medium">Total</p>
-            <p className="text-lg font-semibold text-blue-900">{stats.totalConversations}</p>
+            <p className="text-xs text-orange-600 font-medium">Total</p>
+            <p className="text-lg font-semibold text-orange-900">{stats.totalConversations}</p>
           </div>
-          <MessageCircle className="text-blue-500" size={20} />
+          <MessageCircle className="text-orange-500" size={20} />
         </div>
       </div>
 
@@ -41,13 +41,13 @@ const WhatsAppStats = ({ stats }) => {
         </div>
       </div>
 
-      <div className="bg-green-50 p-3 rounded-lg">
+      <div className="bg-amber-50 p-3 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-green-600 font-medium">Active</p>
-            <p className="text-lg font-semibold text-green-900">{stats.activeConversations || 0}</p>
+            <p className="text-xs text-amber-600 font-medium">Active</p>
+            <p className="text-lg font-semibold text-amber-900">{stats.activeConversations || 0}</p>
           </div>
-          <Users className="text-green-500" size={20} />
+          <Users className="text-amber-500" size={20} />
         </div>
       </div>
     </div>

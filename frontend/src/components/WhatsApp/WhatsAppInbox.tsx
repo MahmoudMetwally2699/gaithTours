@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Filter, MoreVertical, Send, Phone, Star, Archive, Paperclip, X, Image, FileText, Music, Video } from 'lucide-react';
+import { Search, Filter, MoreVertical, Send, Phone, Star, Archive, Paperclip, X, Image, FileText, Music, Video, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { whatsappService } from '../../services/whatsappService';
 import { useSocket } from '../../contexts/SocketContext';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
@@ -7,6 +7,7 @@ import WhatsAppStats from './WhatsAppStats';
 import MessageBubble from './MessageBubble';
 import ConversationItem from './ConversationItem';
 import SocketDebugPanel from './SocketDebugPanel';
+import CustomerBookingPanel from './CustomerBookingPanel';
 
 // TypeScript interfaces
 interface WhatsAppConversation {
@@ -19,6 +20,9 @@ interface WhatsAppConversation {
   unreadCount: number;
   isVip?: boolean;
   isArchived?: boolean;
+  userId?: any;
+  bookingCount?: number;
+  hasUpcomingCheckIn?: boolean;
 }
 
 interface WhatsAppMessage {
@@ -55,6 +59,29 @@ interface WhatsAppMessage {
     filename?: string;
     size?: number;
   }>;
+}
+
+// Reservation interface for customer bookings
+interface Reservation {
+  _id: string;
+  checkIn?: string;
+  checkOut?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  totalAmount: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  hotelName?: string;
+  hotel?: {
+    name?: string;
+    address?: string;
+    city?: string;
+  };
+  currency?: string;
+  roomType?: string;
+  numberOfRooms?: number;
+  roomCount?: number;
+  confirmationNumber?: string;
+  partnerId?: string;
 }
 
 interface WhatsAppStatsInterface {
@@ -96,6 +123,10 @@ const WhatsAppInbox = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showAttachmentPreview, setShowAttachmentPreview] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+
+  // Customer booking panel state
+  const [customerReservations, setCustomerReservations] = useState<Reservation[]>([]);
+  const [showBookingPanel, setShowBookingPanel] = useState<boolean>(true);
 
   // Suppress unused variable warnings temporarily
   void pagination;
@@ -146,6 +177,8 @@ const WhatsAppInbox = () => {
       if (reset || page === 1) {
         setMessages(data.messages);
         setSelectedConversation(data.conversation);
+        // Store customer reservations from the API response
+        setCustomerReservations(data.reservations || []);
       } else {
         setMessages(prev => [...data.messages, ...prev]);
       }
@@ -644,14 +677,14 @@ const WhatsAppInbox = () => {
   }, [pollingData, isConnected, selectedConversation]);
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex h-full w-full overflow-hidden bg-gray-100">
       {/* Sidebar - Conversations List */}
-      <div className="w-full lg:w-1/3 bg-white/80 backdrop-blur-xl border-r border-white/20 shadow-2xl flex flex-col">
+      <div className="w-full lg:w-1/3 xl:w-1/4 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="p-4 lg:p-6 border-b border-gray-200/50 bg-gradient-to-r from-green-50/30 to-emerald-50/30">
+        <div className="p-4 border-b border-gray-200 bg-white flex-shrink-0">
           <div className="flex items-center justify-between mb-4 lg:mb-6">
             <div className="flex items-center space-x-3 lg:space-x-4">
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-md">
                 <div className="w-5 h-5 lg:w-6 lg:h-6 text-white">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.531 3.506z"/>
@@ -665,7 +698,7 @@ const WhatsAppInbox = () => {
             </div>
             <div className="flex items-center space-x-2 lg:space-x-3">
               {/* Connection Status */}
-              <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-2 lg:px-3 py-1 lg:py-2 rounded-xl border border-white/30 shadow-lg">
+              <div className="flex items-center space-x-2 bg-gray-100 px-2 lg:px-3 py-1 lg:py-2 rounded-xl">
                 <div
                   className={`w-2 h-2 lg:w-3 lg:h-3 rounded-full ${
                     isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-bounce'
@@ -687,10 +720,10 @@ const WhatsAppInbox = () => {
                   }
                 </span>
               </div>
-              <button className="p-2 lg:p-3 text-gray-500 hover:text-green-600 rounded-xl hover:bg-green-50/50 transition-all duration-300 shadow-lg bg-white/60 backdrop-blur-sm border border-white/30">
+              <button className="p-2 lg:p-3 text-gray-500 hover:text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300">
                 <Filter size={16} className="lg:w-5 lg:h-5" />
               </button>
-              <button className="p-2 lg:p-3 text-gray-500 hover:text-green-600 rounded-xl hover:bg-green-50/50 transition-all duration-300 shadow-lg bg-white/60 backdrop-blur-sm border border-white/30">
+              <button className="p-2 lg:p-3 text-gray-500 hover:text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300">
                 <MoreVertical size={16} className="lg:w-5 lg:h-5" />
               </button>
             </div>
@@ -700,11 +733,10 @@ const WhatsAppInbox = () => {
           {stats && <WhatsAppStats stats={stats} />}
 
           {/* Search */}
-          <div className="relative mb-4 lg:mb-6 group">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-            <div className="relative bg-white/80 backdrop-blur-xl border border-white/30 rounded-2xl shadow-lg">
+          <div className="relative mb-4 lg:mb-6">
+            <div className="bg-gray-100 rounded-xl">
               <div className="flex items-center">
-                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center ml-2">
+                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center ml-2">
                   <Search className="text-white" size={16} />
                 </div>
                 <input
@@ -722,8 +754,8 @@ const WhatsAppInbox = () => {
           <div className="flex space-x-2 lg:space-x-3 mb-4 overflow-x-auto">
             {['all', 'unread', 'vip', 'archived'].map((filter, index) => {
               const gradients = [
-                'from-blue-500 to-cyan-500',
-                'from-amber-500 to-orange-500',
+                'from-orange-500 to-amber-500',
+                'from-red-500 to-rose-500',
                 'from-purple-500 to-pink-500',
                 'from-gray-500 to-slate-500'
               ];
@@ -747,17 +779,17 @@ const WhatsAppInbox = () => {
         </div>
 
         {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-white/20">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <div className="relative">
-                <div className="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-4 border-green-200"></div>
-                <div className="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-t-4 border-green-600 absolute top-0 left-0"></div>
+                <div className="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-4 border-orange-200"></div>
+                <div className="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-t-4 border-orange-600 absolute top-0 left-0"></div>
               </div>
             </div>
           ) : conversations.length === 0 ? (
             <div className="text-center py-8 lg:py-12 px-4 lg:px-6">
-              <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
+              <div className="w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
                 <Phone size={24} className="lg:w-8 lg:h-8 text-white" />
               </div>
               <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-2">No conversations found</h3>
@@ -777,11 +809,11 @@ const WhatsAppInbox = () => {
       </div>
 
       {/* Main Chat Area - Hidden on mobile when conversation list is shown */}
-      <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} flex-1 flex-col bg-white/70 backdrop-blur-xl border-l border-white/20 shadow-2xl`}>
+      <div className={`${selectedConversation ? 'flex' : 'hidden lg:flex'} flex-1 flex-col bg-white border-l border-gray-200 h-full overflow-hidden`}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="bg-gradient-to-r from-green-50/50 to-emerald-50/50 backdrop-blur-xl border-b border-white/30 p-4 lg:p-6 flex items-center justify-between shadow-lg">
+            <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center space-x-3 lg:space-x-4">
                 {/* Back button for mobile */}
                 <button
@@ -794,14 +826,14 @@ const WhatsAppInbox = () => {
                 </button>
 
                 <div className="relative">
-                  <div className="w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center text-white font-bold shadow-xl ring-4 ring-green-100">
+                  <div className="w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center text-white font-bold shadow-md ring-4 ring-orange-100">
                     {selectedConversation.customerName ?
                       selectedConversation.customerName.charAt(0).toUpperCase() :
                       selectedConversation.phoneNumber.slice(-2)
                     }
                   </div>
                   {/* Online indicator */}
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 lg:w-5 lg:h-5 bg-green-400 border-2 lg:border-3 border-white rounded-full"></div>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 lg:w-5 lg:h-5 bg-orange-400 border-2 lg:border-3 border-white rounded-full"></div>
                 </div>
                 <div>
                   <h3 className="text-base lg:text-lg font-bold text-gray-900">
@@ -809,8 +841,8 @@ const WhatsAppInbox = () => {
                   </h3>
                   <p className="text-sm text-gray-600 font-medium">{selectedConversation.phoneNumber}</p>
                   <div className="flex items-center mt-1">
-                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                    <span className="text-xs text-green-600 font-semibold">Online</span>
+                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-orange-400 rounded-full mr-2 animate-pulse"></div>
+                    <span className="text-xs text-orange-600 font-semibold">Online</span>
                   </div>
                 </div>
                 {selectedConversation.isVip && (
@@ -822,12 +854,29 @@ const WhatsAppInbox = () => {
               </div>
 
               <div className="flex items-center space-x-2 lg:space-x-3">
+                {/* Toggle Booking Panel */}
+                <button
+                  onClick={() => setShowBookingPanel(!showBookingPanel)}
+                  className={`p-2 lg:p-3 rounded-xl transition-all duration-300 hidden lg:flex items-center ${
+                    showBookingPanel
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
+                      : 'bg-gray-100 text-gray-500 hover:text-orange-500'
+                  }`}
+                  title={showBookingPanel ? 'Hide customer info' : 'Show customer info'}
+                >
+                  {showBookingPanel ? <PanelRightClose size={16} className="lg:w-5 lg:h-5" /> : <PanelRightOpen size={16} className="lg:w-5 lg:h-5" />}
+                  {customerReservations.length > 0 && !showBookingPanel && (
+                    <span className="ml-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {customerReservations.length}
+                    </span>
+                  )}
+                </button>
                 <button
                   onClick={() => whatsappService.toggleVip(selectedConversation._id)}
-                  className={`p-2 lg:p-3 rounded-xl transition-all duration-300 shadow-lg ${
+                  className={`p-2 lg:p-3 rounded-xl transition-all duration-300 ${
                     selectedConversation.isVip
                       ? 'bg-gradient-to-r from-yellow-400 to-amber-400 text-white'
-                      : 'bg-white/60 backdrop-blur-sm text-gray-500 hover:text-yellow-500 border border-white/30'
+                      : 'bg-gray-100 text-gray-500 hover:text-yellow-500'
                   }`}
                   title="Toggle VIP"
                 >
@@ -835,26 +884,26 @@ const WhatsAppInbox = () => {
                 </button>
                 <button
                   onClick={() => whatsappService.toggleArchive(selectedConversation._id)}
-                  className="p-2 lg:p-3 text-gray-500 hover:text-gray-700 rounded-xl hover:bg-white/80 transition-all duration-300 shadow-lg bg-white/60 backdrop-blur-sm border border-white/30"
+                  className="p-2 lg:p-3 text-gray-500 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-300"
                   title="Archive"
                 >
                   <Archive size={16} className="lg:w-5 lg:h-5" />
                 </button>
-                <button className="p-2 lg:p-3 text-gray-500 hover:text-gray-700 rounded-xl hover:bg-white/80 transition-all duration-300 shadow-lg bg-white/60 backdrop-blur-sm border border-white/30">
+                <button className="p-2 lg:p-3 text-gray-500 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-300">
                   <MoreVertical size={16} className="lg:w-5 lg:h-5" />
                 </button>
               </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-3 lg:space-y-4 bg-gradient-to-b from-gray-50/30 to-white/30">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0">
               {loadingMessages ? (
                 <div className="flex items-center justify-center h-40">
                   <div className="relative">
-                    <div className="animate-spin rounded-full h-12 w-12 lg:h-16 lg:w-16 border-4 border-green-200"></div>
-                    <div className="animate-spin rounded-full h-12 w-12 lg:h-16 lg:w-16 border-t-4 border-green-600 absolute top-0 left-0"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 lg:h-16 lg:w-16 border-4 border-orange-200"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 lg:h-16 lg:w-16 border-t-4 border-orange-600 absolute top-0 left-0"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-5 h-5 lg:w-6 lg:h-6 text-green-600">
+                      <div className="w-5 h-5 lg:w-6 lg:h-6 text-orange-600">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.531 3.506z"/>
                         </svg>
@@ -873,8 +922,8 @@ const WhatsAppInbox = () => {
               <div ref={messagesEndRef} />
             </div>            {/* Message Input */}
             <div
-              className={`bg-gradient-to-r from-green-50/30 to-emerald-50/30 backdrop-blur-xl border-t border-white/30 p-4 lg:p-6 shadow-lg transition-all duration-300 ${
-                isDragOver ? 'bg-gradient-to-r from-blue-50/50 to-green-50/50 border-blue-300' : ''
+              className={`bg-white border-t border-gray-200 p-4 flex-shrink-0 transition-all duration-300 ${
+                isDragOver ? 'bg-orange-50 border-orange-300' : ''
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -882,10 +931,10 @@ const WhatsAppInbox = () => {
             >
               {/* Attachment Preview */}
               {showAttachmentPreview && selectedFile && (
-                <div className="mb-4 p-3 bg-white/90 backdrop-blur-sm rounded-xl border border-white/30 shadow-md">
+                <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-semibold text-gray-900 flex items-center">
-                      <Paperclip size={14} className="mr-2 text-green-600" />
+                      <Paperclip size={14} className="mr-2 text-orange-600" />
                       Attachment
                     </h4>
                     <button
@@ -910,9 +959,9 @@ const WhatsAppInbox = () => {
 
               {/* Drag & Drop Overlay */}
               {isDragOver && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-green-500/20 backdrop-blur-sm rounded-xl border-2 border-dashed border-blue-400 flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-orange-100/80 rounded-xl border-2 border-dashed border-orange-400 flex items-center justify-center z-10">
                   <div className="text-center">
-                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
+                    <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md">
                       <Paperclip size={24} className="text-white" />
                     </div>
                     <p className="text-lg font-semibold text-gray-900">Drop file here to attach</p>
@@ -933,7 +982,7 @@ const WhatsAppInbox = () => {
                   />
                   <label
                     htmlFor="attachment-input"
-                    className="cursor-pointer p-3 lg:p-4 text-gray-500 hover:text-green-600 rounded-xl hover:bg-green-50/50 transition-all duration-300 shadow-lg bg-white/60 backdrop-blur-sm border border-white/30 flex items-center justify-center"
+                    className="cursor-pointer p-3 lg:p-4 text-gray-500 hover:text-orange-600 rounded-xl hover:bg-orange-50 transition-all duration-300 bg-gray-100 flex items-center justify-center"
                     title="Attach file"
                   >
                     <Paperclip size={18} className="lg:w-5 lg:h-5" />
@@ -941,8 +990,7 @@ const WhatsAppInbox = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="flex-1 relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl blur-xl group-focus-within:blur-2xl transition-all duration-300"></div>
+                <div className="flex-1 relative">
                   <textarea
                     ref={messageInputRef}
                     value={newMessage}
@@ -950,7 +998,7 @@ const WhatsAppInbox = () => {
                     onKeyPress={handleKeyPress}
                     placeholder={selectedFile ? "Add a caption (optional)..." : "Type a message..."}
                     rows={1}
-                    className="relative w-full px-4 lg:px-6 py-3 lg:py-4 bg-white/80 backdrop-blur-xl border border-white/30 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 resize-none shadow-lg font-medium text-gray-700 placeholder-gray-500 transition-all duration-300 text-sm lg:text-base"
+                    className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-gray-100 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 resize-none font-medium text-gray-700 placeholder-gray-500 transition-all duration-300 text-sm lg:text-base"
                     style={{ minHeight: '48px', maxHeight: '120px' }}
                   />
                 </div>
@@ -959,7 +1007,7 @@ const WhatsAppInbox = () => {
                 <button
                   onClick={sendMessage}
                   disabled={(!newMessage.trim() && !selectedFile) || sendingMessage}
-                  className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl flex items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100"
+                  className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100"
                 >
                   {sendingMessage ? (
                     <div className="animate-spin rounded-full h-5 w-5 lg:h-6 lg:w-6 border-2 border-white border-t-transparent"></div>
@@ -970,9 +1018,9 @@ const WhatsAppInbox = () => {
               </div>            </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50/30 to-white/30">
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
             <div className="text-center max-w-md mx-auto p-6 lg:p-8">
-              <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8 shadow-2xl">
+              <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-r from-orange-400 to-amber-400 rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8 shadow-lg">
                 <div className="w-12 h-12 lg:w-16 lg:h-16 text-white">
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.531 3.506z"/>
@@ -982,14 +1030,28 @@ const WhatsAppInbox = () => {
               <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3 lg:mb-4">Select a conversation</h3>
               <p className="text-gray-600 text-base lg:text-lg leading-relaxed">Choose a conversation from the sidebar to start messaging with your customers</p>
               <div className="mt-6 lg:mt-8 flex justify-center space-x-2">
-                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-green-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-emerald-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-teal-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-orange-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-yellow-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Customer Booking Panel - Shows when a conversation is selected */}
+      {selectedConversation && showBookingPanel && (
+        <CustomerBookingPanel
+          conversation={selectedConversation as any}
+          reservations={customerReservations}
+          onSendMessage={(message) => {
+            setNewMessage(message);
+            // Focus on message input
+            messageInputRef.current?.focus();
+          }}
+          onClose={() => setShowBookingPanel(false)}
+        />
+      )}
 
       {/* Debug Panel */}
       {process.env.NODE_ENV === 'development' && <SocketDebugPanel />}

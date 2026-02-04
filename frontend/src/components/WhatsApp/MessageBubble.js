@@ -235,15 +235,15 @@ const MessageBubble = ({ message, isOwn }) => {
       <div className={`max-w-[85%] sm:max-w-xs lg:max-w-md xl:max-w-lg transform transition-all duration-300 hover:scale-105 ${
         isOwn ? 'order-2' : 'order-1'
       }`}>
-        <div className={`px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-2xl shadow-lg relative ${
+      <div className={`px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-2xl shadow-lg relative ${
           isOwn
-            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
             : 'bg-white text-gray-900 border border-gray-200 shadow-md'
         }`}>
           {/* Message tail */}
           <div className={`absolute top-2 sm:top-3 w-2 h-2 sm:w-3 sm:h-3 transform rotate-45 ${
             isOwn
-              ? '-right-1 bg-gradient-to-r from-green-500 to-emerald-500'
+              ? '-right-1 bg-gradient-to-r from-orange-500 to-amber-500'
               : '-left-1 bg-white border-l border-b border-gray-200'
           }`}></div>
 

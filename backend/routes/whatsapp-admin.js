@@ -175,14 +175,69 @@ router.get('/conversations', async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
+    // Get booking counts for conversations with linked users
+    const userIds = conversations
+      .filter(conv => conv.userId)
+      .map(conv => conv.userId._id || conv.userId);
+
+    // Get booking counts and upcoming check-ins for each user
+    const now = new Date();
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+    let bookingData = {};
+    if (userIds.length > 0) {
+      const bookingAggregation = await Reservation.aggregate([
+        {
+          $match: {
+            user: { $in: userIds },
+            status: { $in: ['confirmed', 'pending'] }
+          }
+        },
+        {
+          $group: {
+            _id: '$user',
+            bookingCount: { $sum: 1 },
+            upcomingCheckIns: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $gte: ['$checkInDate', now] },
+                      { $lte: ['$checkInDate', threeDaysFromNow] },
+                      { $eq: ['$status', 'confirmed'] }
+                    ]
+                  },
+                  1,
+                  0
+                ]
+              }
+            }
+          }
+        }
+      ]);
+
+      bookingAggregation.forEach(item => {
+        bookingData[item._id.toString()] = {
+          bookingCount: item.bookingCount,
+          hasUpcomingCheckIn: item.upcomingCheckIns > 0
+        };
+      });
+    }
 
     // Map database fields to frontend expected fields
-    const mappedConversations = conversations.map(conv => ({
-      ...conv,
-      lastMessageTimestamp: conv.lastMessageAt, // Map database field to frontend expected field
-      lastMessage: conv.lastMessagePreview, // Map preview to lastMessage
-      lastMessageDirection: conv.lastMessageDirection || 'incoming' // Add default if not present
-    }));
+    const mappedConversations = conversations.map(conv => {
+      const userId = conv.userId?._id || conv.userId;
+      const userBookingData = userId ? bookingData[userId.toString()] : null;
+
+      return {
+        ...conv,
+        lastMessageTimestamp: conv.lastMessageAt, // Map database field to frontend expected field
+        lastMessage: conv.lastMessagePreview, // Map preview to lastMessage
+        lastMessageDirection: conv.lastMessageDirection || 'incoming', // Add default if not present
+        bookingCount: userBookingData?.bookingCount || 0,
+        hasUpcomingCheckIn: userBookingData?.hasUpcomingCheckIn || false
+      };
+    });
 
     // Get total count
     const total = await WhatsAppConversation.countDocuments(query);
@@ -261,11 +316,31 @@ router.get('/messages/:phone', async (req, res) => {
     // Get customer reservations if linked
     let reservations = [];
     if (conversation.userId) {
-      reservations = await Reservation.find({ userId: conversation.userId })
+      // The Reservation model uses 'user' field, not 'userId'
+      const userId = conversation.userId._id || conversation.userId;
+      reservations = await Reservation.find({ user: userId })
         .sort({ createdAt: -1 })
-        .limit(5)
-        .select('_id checkIn checkOut totalAmount status hotelName')
+        .limit(10)
+        .select('_id checkInDate checkOutDate totalPrice currency status hotel roomType numberOfRooms ratehawkOrderId createdAt')
         .lean();
+
+      // Map the reservation fields to match frontend expectations
+      reservations = reservations.map(r => ({
+        _id: r._id,
+        checkIn: r.checkInDate,
+        checkOut: r.checkOutDate,
+        checkInDate: r.checkInDate,
+        checkOutDate: r.checkOutDate,
+        totalAmount: r.totalPrice,
+        currency: r.currency || 'EGP',
+        status: r.status,
+        hotelName: r.hotel?.name,
+        hotel: r.hotel,
+        roomType: r.roomType,
+        numberOfRooms: r.numberOfRooms || 1,
+        confirmationNumber: r.ratehawkOrderId,
+        createdAt: r.createdAt
+      }));
     }
 
     res.json({

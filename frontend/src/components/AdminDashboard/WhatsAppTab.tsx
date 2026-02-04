@@ -8,10 +8,10 @@ export const WhatsAppTab: React.FC = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="h-full"
+      className="h-full w-full overflow-hidden"
     >
       {/* WhatsApp Inbox Container - Full Page */}
-      <div className="h-full">
+      <div className="h-full w-full overflow-hidden">
         <WhatsAppInbox />
       </div>
     </motion.div>

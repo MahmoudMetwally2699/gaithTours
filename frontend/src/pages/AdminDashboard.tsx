@@ -647,7 +647,11 @@ export const AdminDashboard: React.FC = () => {
             </button>
           </div>
         </div>        {/* Main Content */}
-        <div className={`flex-1 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'} p-4 lg:p-8 bg-gradient-to-br from-white via-orange-50 to-amber-50 min-h-screen pt-20 lg:pt-8`}>          {/* Dashboard Stats */}
+        <div className={`flex-1 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'} ${
+          activeTab === 'whatsapp'
+            ? 'h-screen overflow-hidden pt-16 lg:pt-0'
+            : 'p-4 lg:p-8 bg-gradient-to-br from-white via-orange-50 to-amber-50 min-h-screen pt-20 lg:pt-8'
+        }`}>          {/* Dashboard Stats */}
           {activeTab === 'dashboard' && (            <div className="space-y-6">
               {/* Modern Header */}
               <motion.div
