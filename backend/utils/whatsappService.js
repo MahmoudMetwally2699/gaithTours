@@ -176,29 +176,18 @@ class WhatsAppService {
       // Format phone number - remove + and any non-numeric characters
       const formattedPhone = phone.replace(/[^\d]/g, '');
 
-      console.log(`📱 Sending verification code to ${formattedPhone} using template`);
+      console.log(`📱 Sending welcome message to ${formattedPhone}`);
 
-      // Use the approved WhatsApp template
+      // Use the new welcome template (no parameters needed)
       const data = {
         messaging_product: 'whatsapp',
         to: formattedPhone,
         type: 'template',
         template: {
-          name: 'verfications_code',  // Your approved template name
+          name: 'welcome_massage',  // Your new welcome template
           language: {
-            code: 'en'  // Template language
-          },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                {
-                  type: 'text',
-                  text: code  // The 6-digit OTP code
-                }
-              ]
-            }
-          ]
+            code: 'ar'  // Template language
+          }
         }
       };
 
@@ -209,7 +198,17 @@ class WhatsAppService {
         }
       });
 
-      console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
+      console.log(`✅ Welcome message sent successfully to ${formattedPhone}`);
+
+      // Send the OTP code in monospace format as a follow-up message
+      try {
+        await this.sendMessage(formattedPhone, `\`${code}\``);
+        console.log(`✅ OTP code sent in monospace format to ${formattedPhone}`);
+      } catch (followUpError) {
+        console.warn('⚠️ Failed to send OTP code:', followUpError.message);
+        // Don't throw - the welcome message was sent successfully
+      }
+
       return response.data;
     } catch (error) {
       console.error('❌ Failed to send verification code:', error.response?.data || error.message);

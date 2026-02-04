@@ -211,7 +211,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
       >
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-8 text-white text-center">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6 sm:px-8 sm:py-8 text-white text-center">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
             {step === 'phone' ? (
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,7 +242,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="p-5 sm:p-8">
           {step === 'phone' ? (
             <>
               <p className="text-gray-600 text-center mb-6">
@@ -254,13 +254,13 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('auth.phoneNumber', 'Phone Number')}
                 </label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   {/* Country Code Dropdown */}
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                      className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 hover:border-orange-300 transition-colors min-w-[120px]"
+                      className="flex items-center gap-2 px-3 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 hover:border-orange-300 transition-colors min-w-[100px]"
                     >
                       <span>{selectedCountry?.flag}</span>
                       <span className="font-medium">{countryCode}</span>
@@ -306,7 +306,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                       setError('');
                     }}
                     placeholder="5XXXXXXXX"
-                    className={`flex-1 px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                    className={`flex-1 px-3 sm:px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                       error
                         ? 'border-red-300 focus:border-red-500'
                         : 'border-gray-200 focus:border-orange-500'
