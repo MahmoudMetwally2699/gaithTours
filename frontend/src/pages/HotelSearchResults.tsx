@@ -736,14 +736,31 @@ export const HotelSearchResults: React.FC = () => {
         <div className="absolute inset-0 z-0 overflow-hidden bg-[#E67915] h-full shadow-md"></div>
 
         {/* Main Content Container */}
-        <div className="relative z-10 flex flex-col px-3 sm:px-6 lg:px-16 py-3 pb-6">
+        <div className="relative z-10 flex flex-col px-3 sm:px-6 lg:px-16 py-2 sm:py-3 pb-4 sm:pb-6">
 
           {/* Top Bar: Logo & Auth */}
-          <header className="flex flex-row justify-between items-center w-full mb-4 relative z-[60]">
-             {/* Logo */}
-             <a href="/" className="flex-shrink-0 z-10">
-                <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-7 sm:h-10 md:h-12 w-auto drop-shadow-lg hover:scale-105 transition-transform" />
-             </a>
+          <header className="flex flex-row justify-between items-center w-full mb-3 relative z-[60]">
+             <div className="flex items-center gap-2">
+                 {/* Logo */}
+                 <a href="/" className="flex-shrink-0 z-10">
+                    <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="h-7 sm:h-10 md:h-12 w-auto drop-shadow-lg hover:scale-105 transition-transform" />
+                 </a>
+
+                 {/* Mobile Currency & Language */}
+                 <div className="md:hidden flex items-center gap-1.5 bg-white/10 backdrop-blur-sm rounded-full px-2 py-1 border border-white/20">
+                     <div className="scale-90 flex items-center">
+                        <CurrencySelector variant="light" />
+                     </div>
+                     <div className="w-px h-3 bg-white/30"></div>
+                     <button
+                       onClick={toggleLanguage}
+                       className="flex items-center gap-1 text-white hover:text-orange-100 transition-colors"
+                     >
+                        <GlobeAltIcon className="w-3 h-3" />
+                        <span className="text-[10px] font-bold">{i18n.language.toUpperCase()}</span>
+                     </button>
+                 </div>
+             </div>
 
              {/* Right Side: Auth & Settings */}
              <div className="flex items-center gap-2 sm:gap-3 rtl:space-x-reverse text-white">
@@ -810,35 +827,22 @@ export const HotelSearchResults: React.FC = () => {
 
           {/* Mobile Search Bar - Compact & Expandable (md and below) */}
           <div className="md:hidden">
-            {/* Mobile Currency & Language Row - Added for visibility */}
-            <div className="flex items-center justify-end gap-3 mb-3 px-1">
-               <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 border border-white/20 flex items-center gap-2">
-                 <CurrencySelector variant="light" />
-                 <div className="w-px h-3 bg-white/30"></div>
-                 <button
-                   onClick={toggleLanguage}
-                   className="flex items-center gap-1 text-white hover:text-orange-100 transition-colors"
-                 >
-                    <GlobeAltIcon className="w-3.5 h-3.5" />
-                    <span className="text-xs font-bold">{i18n.language.toUpperCase()}</span>
-                 </button>
-               </div>
-            </div>
+            {/* Mobile Currency & Language Row - Moved to Header */}{/* Mobile Currency & Language Row - Added for visibility */}
             {!isSearchExpanded ? (
               /* Compact Search Summary */
               <div className="w-full max-w-5xl mx-auto">
                 <div
                   onClick={() => setIsSearchExpanded(true)}
-                  className="bg-white rounded-xl p-4 shadow-lg border-2 border-orange-500 cursor-pointer hover:shadow-xl transition-all"
+                  className="bg-white rounded-lg p-3 shadow-lg border border-orange-500 cursor-pointer hover:shadow-xl transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-600 shrink-0" />
+                    <MagnifyingGlassIcon className="h-4 w-4 text-gray-600 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900 truncate">{editableDestination || 'Where to?'}</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-bold text-sm text-gray-900 truncate">{editableDestination || 'Where to?'}</div>
+                      <div className="text-xs text-gray-600">
                         {checkInDate && checkOutDate ? (
-                          `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} ${t('searchResults:hotelCard.perNight', 'night').replace('/', '').trim()}${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) > 1 ? 's' : ''}) • ${guestCounts.adults} ${t('searchResults:searchBar.adults', 'adult')}${guestCounts.adults > 1 ? 's' : ''}`
-                        ) : t('searchResults:searchBar.addDates', 'Add dates and guests')}
+                          `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • ${guestCounts.adults} Ad.`
+                        ) : t('searchResults:searchBar.addDates', 'Add dates')}
                       </div>
                     </div>
                   </div>
@@ -1390,21 +1394,21 @@ export const HotelSearchResults: React.FC = () => {
         <div className="px-3 sm:px-6 py-3 sm:py-4">
           {/* Mobile Action Buttons - Only show when search is compact on mobile */}
           {!isSearchExpanded && (
-            <div className="md:hidden flex items-center justify-center gap-3 mb-4 max-w-md mx-auto">
+            <div className="md:hidden flex items-center justify-center gap-2 mb-2 max-w-md mx-auto">
               <button
                 onClick={() => setShowMobileFilters(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-xs font-medium"
               >
-                <FunnelIcon className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('common:common.filter', 'Filter')}</span>
+                <FunnelIcon className="w-3.5 h-3.5 text-gray-600" />
+                <span className="text-gray-700">{t('common:common.filter', 'Filter')}</span>
               </button>
 
               <button
                 onClick={() => setFullscreenMap(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-xs font-medium"
               >
-                <MapIcon className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">{t('searchResults:map.map', 'Map')}</span>
+                <MapIcon className="w-3.5 h-3.5 text-gray-600" />
+                <span className="text-gray-700">{t('searchResults:map.map', 'Map')}</span>
               </button>
             </div>
           )}
@@ -1424,11 +1428,11 @@ export const HotelSearchResults: React.FC = () => {
                 <select
                   value={filters.sortBy}
                   onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                  className="border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 flex-1 sm:flex-none"
+                  className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 sm:px-3 sm:py-2 flex-1 sm:flex-none"
                 >
                   <option value="top_picks">{t('searchResults:sort.top_picks', 'Top picks')}</option>
-                  <option value="price_low">{t('searchResults:sort.price_low', 'Price (lowest first)')}</option>
-                  <option value="price_high">{t('searchResults:sort.price_high', 'Price (highest first)')}</option>
+                  <option value="price_low">{t('searchResults:sort.price_low', 'Price (low)')}</option>
+                  <option value="price_high">{t('searchResults:sort.price_high', 'Price (high)')}</option>
                   <option value="rating">{t('searchResults:sort.rating', 'Best reviewed')}</option>
                 </select>
               </div>
@@ -1839,18 +1843,18 @@ export const HotelSearchResults: React.FC = () => {
                       }`}
                     >
                       <div className={(hotel as any).isSearchedHotel ? 'bg-white rounded-[6px]' : ''}>
-                      <div className="flex flex-col sm:flex-row h-full">
+                      <div className="flex flex-row h-full">
                         {/* Hotel Image with Heart Icon */}
-                        <div className="relative w-full sm:w-48 md:w-56 lg:w-64 flex-shrink-0">
+                        <div className="relative w-32 sm:w-48 md:w-56 lg:w-64 flex-shrink-0">
                           {hotel.image ? (
                             <img
                               src={hotel.image}
                               alt={hotel.name}
                               loading="lazy"
-                              className="w-full h-48 sm:h-full object-cover rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"
+                              className="w-full h-full object-cover rounded-l-lg"
                             />
                           ) : (
-                            <div className="w-full h-48 sm:h-full bg-gray-100 flex items-center justify-center rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none">
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-l-lg">
                               <BuildingOfficeIcon className="h-12 w-12 text-gray-400" />
                             </div>
                           )}
@@ -1863,41 +1867,53 @@ export const HotelSearchResults: React.FC = () => {
                         </div>
 
                         {/* Content Container - Split into Info and Price columns for desktop */}
-                        <div className="flex-1 flex flex-col sm:flex-row min-w-0">
-                          {/* Left: Hotel Info */}
-                          <div className="flex-1 p-4 flex flex-col gap-3">
-                            <div>
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
-                                        <h3
-                                            onClick={() => handleHotelClick(hotel)}
-                                            className="text-base sm:text-lg font-bold text-[#003B95] hover:text-[#cd924a] cursor-pointer leading-tight transition-colors"
-                                        >
-                                            {hotel.name}
-                                        </h3>
+                        {/* Content Container */}
+                        {/* Content Container */}
+                        <div className="flex-1 flex flex-col sm:flex-row justify-between min-w-0 relative">
+                          {/* Heart Icon - Moved here for mobile z-index issues if needed, or keep in image */}
+
+                          {/* Top Section: Info */}
+                          <div className="p-3 sm:p-4 flex-1 flex flex-col gap-1 sm:gap-3">
+                            <div className="flex justify-between items-start gap-2">
+                                <div className="flex flex-col gap-0.5">
+                                    <h3
+                                        onClick={() => handleHotelClick(hotel)}
+                                        className="text-sm sm:text-lg font-bold text-[#1a1a1a] leading-tight line-clamp-2"
+                                    >
+                                        {hotel.name}
+                                    </h3>
+                                    {/* Stars & Location Row */}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
                                         <div className="flex">
                                             {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
                                         </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                                        <span className="text-[#003B95] underline cursor-pointer" onClick={() => setFullscreenMap(true)}>
+                                        <span className="text-[10px] sm:text-xs text-gray-500">•</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[100px] sm:max-w-none">
                                             {hotel.city || searchQuery.destination}
                                         </span>
-                                        <span className="text-[#003B95] cursor-pointer" onClick={() => setFullscreenMap(true)}>
-                                            {t('searchResults:map.showMap', 'Show on map')}
-                                        </span>
-                                        {hotel.address && (
-                                            <span className="text-gray-600 hidden sm:inline">· {hotel.address}</span>
-                                        )}
                                     </div>
-                                  </div>
+                                </div>
+
+                                {/* Mobile Rating Badge (Absolute top right or flex) */}
+                                <div className="flex flex-col items-end shrink-0 sm:hidden">
+                                   <div className="bg-[#F7871D] text-white text-xs font-bold px-1.5 py-1 rounded">
+                                       {Math.min(hotel.rating, 10).toFixed(1)}
+                                   </div>
                                 </div>
                             </div>
 
-                            {/* Room Info */}
-                            <div className="border-l-2 border-gray-200 pl-3 mt-1">
+                            {/* Mobile Only: Highlight Badges (Breakfast/Cancel) - One line */}
+                            <div className="flex flex-wrap gap-2 sm:hidden mt-1">
+                                {(hotel as any).free_cancellation && (
+                                     <span className="text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded">Free cancel</span>
+                                )}
+                                {(hotel as any).meal && (hotel as any).meal !== 'nomeal' && (
+                                     <span className="text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded">Breakfast</span>
+                                )}
+                            </div>
+
+                            {/* Desktop only: Room Info */}
+                            <div className="hidden sm:block border-l-2 border-gray-200 pl-3 mt-1">
                                 {(hotel as any).room_name && (
                                     <div className="font-bold text-xs sm:text-sm text-gray-900 mb-1">
                                         {(hotel as any).room_name}
@@ -1947,8 +1963,7 @@ export const HotelSearchResults: React.FC = () => {
                                 })()}
                             </div>
 
-                            {/* Badges */}
-                            <div className="flex flex-wrap gap-2 mt-auto">
+                            <div className="hidden sm:flex flex-wrap gap-2 mt-auto">
                                 {(hotel as any).free_cancellation && (
                                     <div className="flex items-center gap-1 text-xs font-bold text-green-700">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1971,7 +1986,7 @@ export const HotelSearchResults: React.FC = () => {
 
                             {/* Amenities Icons with Tooltips */}
                             {(hotel as any).amenities && (hotel as any).amenities.length > 0 && (
-                                <div className="flex flex-wrap items-center gap-1 mt-2">
+                                <div className="hidden sm:flex flex-wrap items-center gap-1 mt-2">
                                   {((hotel as any).amenities as string[])
                                     .map((amenity: string) => getAmenityIcon(amenity, t))
                                     .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
@@ -2029,10 +2044,12 @@ export const HotelSearchResults: React.FC = () => {
                           </div>
 
                           {/* Right: Price & Action */}
-                          <div className="p-4 flex flex-row sm:flex-col justify-between items-end sm:border-l border-t sm:border-t-0 border-gray-100 sm:w-48 lg:w-60 bg-gray-50/50 sm:bg-transparent">
+                          {/* Right: Price & Action */}
+                          <div className="p-2 pt-0 sm:pt-4 sm:p-4 flex flex-col justify-end sm:justify-between items-end sm:border-l border-t-0 sm:border-t-0 border-gray-100 sm:w-48 lg:w-60 bg-transparent sm:bg-transparent mt-auto sm:mt-0">
                             {/* Reviews */}
-                            <div className="flex items-center gap-2 mb-auto order-1 sm:order-none">
-                                <div className="text-right hidden sm:block">
+                            {/* Reviews - Desktop */}
+                            <div className="hidden sm:flex items-center gap-2 mb-auto order-1 sm:order-none">
+                                <div className="text-right">
                                     <div className="text-sm font-medium text-gray-900 leading-tight">
                                         {getScoreText(hotel.rating, t)}
                                     </div>
@@ -2046,8 +2063,8 @@ export const HotelSearchResults: React.FC = () => {
                             </div>
 
                             {/* Price Block */}
-                            <div className="flex flex-col items-end gap-2 mt-4 order-2 sm:order-none w-full sm:w-auto">
-                                <div className="text-xs text-gray-500">
+                            <div className="flex flex-col items-end gap-1 sm:gap-2 mt-2 sm:mt-4 order-2 sm:order-none w-full sm:w-auto">
+                                <div className="hidden sm:block text-xs text-gray-500">
                                     {(() => {
                                         const checkIn = new Date(searchQuery.checkIn);
                                         const checkOut = new Date(searchQuery.checkOut);
@@ -2060,16 +2077,16 @@ export const HotelSearchResults: React.FC = () => {
                                     <div className="text-sm font-bold text-red-600">{t('searchResults:hotelCard.noRates', 'No rates data')}</div>
                                 ) : (
                                     <>
-                                        <div className="text-xl sm:text-2xl font-bold text-gray-900 leading-none font-price">
+                                        <div className="hidden sm:block text-lg sm:text-2xl font-bold text-gray-900 leading-none font-price">
                                             {formatPrice(hotel.price)}
                                         </div>
-                                        <div className="text-[10px] text-gray-500 font-medium mb-1 font-price">
+                                        <div className="hidden sm:block text-[10px] text-gray-500 font-medium mb-1 font-price">
                                             {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).booking_taxes || 0)))}
                                         </div>
                                     </>
                                 )}
-                                {/* Compare Checkbox */}
-                                <div className="w-full flex justify-end mb-2">
+                                {/* Compare Checkbox - Desktop Only */}
+                                <div className="hidden sm:flex w-full justify-end mb-2">
                                   <label className="flex items-center gap-2 cursor-pointer select-none group">
                                     <input
                                       type="checkbox"
@@ -2081,9 +2098,33 @@ export const HotelSearchResults: React.FC = () => {
                                   </label>
                                 </div>
 
+                                {/* Mobile Bottom Row: Price & Action */}
+                                <div className="sm:hidden flex items-end justify-between w-full mt-2">
+                                    <div className="flex flex-col">
+                                         <div className="text-xs text-gray-500 font-medium">
+                                            {1} night, {searchQuery.adults} ad.
+                                         </div>
+                                         <div className="text-lg font-bold text-gray-900 leading-none">
+                                            {formatPrice(hotel.price)}
+                                         </div>
+                                         <div className="text-[10px] text-gray-500 font-medium leading-tight font-price">
+                                            + {formatPrice(Math.round((hotel as any).booking_taxes || 0))} taxes
+                                         </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleHotelClick(hotel)}
+                                        className="bg-[#E67915] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm"
+                                    >
+                                        View
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+
                                 <button
                                     onClick={() => handleHotelClick(hotel)}
-                                    className="w-full sm:w-auto bg-[#F7871D] hover:bg-[#c5650f] text-white px-4 py-2 rounded-md font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                    className="hidden sm:flex w-full sm:w-auto bg-[#F7871D] hover:bg-[#c5650f] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md font-bold text-xs sm:text-sm transition-colors items-center justify-center gap-2 shadow-sm"
                                 >
                                     {t('searchResults:hotelCard.seeAvailability', 'See availability')}
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

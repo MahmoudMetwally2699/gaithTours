@@ -54,7 +54,9 @@ import { registerLocale } from "react-datepicker";
 import { format } from "date-fns";
 import ar from 'date-fns/locale/ar-SA';
 import en from 'date-fns/locale/en-US';
-
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 import { Hotel } from '../types/hotel';
 import { getHotelDetails } from '../services/hotelService';
@@ -71,6 +73,15 @@ import { GuestReviews } from '../components/GuestReviews';
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { CompareRooms } from '../components/CompareRooms';
+
+// Fix for default marker icons in Leaflet with React
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
 
 registerLocale('ar', ar);
 registerLocale('en', en);
@@ -172,6 +183,9 @@ export const HotelDetails: React.FC = () => {
   // Room Comparison State
   const [comparedRooms, setComparedRooms] = useState<Map<string, RoomRate>>(new Map());
   const [showCompareRooms, setShowCompareRooms] = useState(false);
+
+  // Map Modal State
+  const [showMapModal, setShowMapModal] = useState(false);
 
   const handleToggleCompare = (rate: RoomRate) => {
     setComparedRooms(prev => {
@@ -1113,7 +1127,7 @@ export const HotelDetails: React.FC = () => {
                     </>
                   )}
                   <span className="mx-1">•</span>
-                  <button type="button" className="text-blue-600 underline hover:text-blue-700">{t('common:hotels.showOnMap', 'Show on map')}</button>
+                  <button onClick={() => setShowMapModal(true)} type="button" className="text-blue-600 underline hover:text-blue-700">{t('common:hotels.showOnMap', 'Show on map')}</button>
                </div>
 
               <div className="flex items-center gap-4">
@@ -1344,6 +1358,7 @@ export const HotelDetails: React.FC = () => {
           <HotelAreaInfo
             poiData={(hotel as any).poi_data}
             neighborhoodDescription={t('hotels.neighborhoodInfo', 'Guests loved walking around the neighborhood!')}
+            onShowMap={() => setShowMapModal(true)}
           />
         )}
 
@@ -1756,6 +1771,48 @@ export const HotelDetails: React.FC = () => {
             }}
             currencySymbol={currencySymbol}
         />
+      )}
+
+      {/* Map Modal */}
+      {showMapModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col relative overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div>
+                 <h3 className="text-xl font-bold text-gray-900">{hotel.name}</h3>
+                 <p className="text-sm text-gray-500">{hotel.address}</p>
+              </div>
+              <button
+                onClick={() => setShowMapModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Map */}
+            <div className="flex-1 relative">
+               <MapContainer
+                 center={[hotel.coordinates.latitude, hotel.coordinates.longitude]}
+                 zoom={15}
+                 scrollWheelZoom={true}
+                 style={{ height: '100%', width: '100%' }}
+               >
+                 <TileLayer
+                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                 />
+                 <Marker position={[hotel.coordinates.latitude, hotel.coordinates.longitude]}>
+                   <Popup>
+                     <div className="font-bold text-sm">{hotel.name}</div>
+                     <div className="text-xs text-gray-600">{hotel.address}</div>
+                   </Popup>
+                 </Marker>
+               </MapContainer>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

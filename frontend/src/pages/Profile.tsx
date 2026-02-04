@@ -45,6 +45,7 @@ interface Reservation {
   status: 'confirmed' | 'pending' | 'cancelled';
   createdAt: string;
   image?: string;
+  roomType?: string;
   isRefundable?: boolean; // Whether booking can be cancelled for refund
   freeCancellationBefore?: string; // Date/time before which cancellation is free
 }
@@ -136,6 +137,7 @@ export const Profile: React.FC = () => {
             status: mappedStatus,
             createdAt: apiRes.createdAt,
             image: apiRes.hotel.image,
+            roomType: apiRes.roomType,
             isRefundable: apiRes.isRefundable, // Map refundable status from API
             freeCancellationBefore: apiRes.freeCancellationBefore // Map free cancellation deadline
           };
@@ -559,15 +561,27 @@ export const Profile: React.FC = () => {
                             </div>
                             <div>
                               <h3 className="text-lg font-bold text-gray-900">{reservation.hotelName}</h3>
-                              <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                                <span className="flex items-center gap-1">
-                                  <CalendarIcon className="h-4 w-4" />
-                                  {formatDate(reservation.checkIn)}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <UserIcon className="h-4 w-4" />
-                                  {reservation.guests} {t('common.guests')}
-                                </span>
+                              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {reservation.roomType && (
+                                  <div className="col-span-1 sm:col-span-2">
+                                    <p className="text-xs text-gray-500 mb-1">{t('common.roomType', 'Room Type')}</p>
+                                    <p className="text-sm font-medium text-gray-900">{reservation.roomType}</p>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">{t('common.checkIn', 'Check-in')}</p>
+                                  <p className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                    <CalendarIcon className="h-4 w-4 text-gray-400" />
+                                    {formatDate(reservation.checkIn)}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500 mb-1">{t('common.checkOut', 'Check-out')}</p>
+                                  <p className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                                    <CalendarIcon className="h-4 w-4 text-gray-400" />
+                                    {formatDate(reservation.checkOut)}
+                                  </p>
+                                </div>
                               </div>
                               <div className="flex flex-wrap items-center gap-2 mt-2">
                                 <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${

@@ -40,6 +40,7 @@ interface POIData {
 interface HotelAreaInfoProps {
   poiData: POIData | null;
   neighborhoodDescription?: string;
+  onShowMap?: () => void;
 }
 
 // Format distance for display
@@ -50,8 +51,6 @@ const formatDistance = (distanceMeters: number, t: any): string => {
   }
   return `${(distanceMeters / 1000).toFixed(1)} ${t('common:hotels.units.km', 'km')}`;
 };
-
-
 
 // Get icon and color for each category
 const getCategoryConfig = (category: string) => {
@@ -144,7 +143,8 @@ const POICategory: React.FC<{ category: string; items: POIItem[] }> = ({ categor
 
 export const HotelAreaInfo: React.FC<HotelAreaInfoProps> = ({
   poiData,
-  neighborhoodDescription
+  neighborhoodDescription,
+  onShowMap
 }) => {
   const { t } = useTranslation();
 
@@ -175,9 +175,14 @@ export const HotelAreaInfo: React.FC<HotelAreaInfoProps> = ({
           )}
         </div>
 
-        <button className="text-blue-600 text-sm font-medium hover:underline flex items-center gap-1">
-          <span>{t('common:hotels.showMap', 'Show map')}</span>
-        </button>
+        {onShowMap && (
+          <button
+            onClick={onShowMap}
+            className="text-blue-600 text-sm font-medium hover:underline flex items-center gap-1"
+          >
+            <span>{t('common:hotels.showMap', 'Show map')}</span>
+          </button>
+        )}
       </div>
 
       {/* POI Grid - Responsive columns like Booking.com */}
