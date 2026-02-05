@@ -380,7 +380,7 @@ export const PartnerDashboard: React.FC = () => {
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left py-3 px-2 text-sm font-medium text-gray-500">Date</th>
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-500">Hotel</th>
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-500">Customer</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">Booking Value</th>
                       <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">Commission</th>
                       <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">Status</th>
@@ -393,7 +393,7 @@ export const PartnerDashboard: React.FC = () => {
                           {formatDate(booking.createdAt)}
                         </td>
                         <td className="py-3 px-2 text-sm text-gray-900 font-medium">
-                          {booking.booking?.hotel?.name || 'N/A'}
+                          {booking.booking?.touristName || 'N/A'}
                         </td>
                         <td className="py-3 px-2 text-sm text-gray-600 text-right">
                           {formatCurrency(booking.bookingValue, stats?.currency)}
