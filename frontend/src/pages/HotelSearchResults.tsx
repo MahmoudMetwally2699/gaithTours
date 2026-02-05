@@ -21,9 +21,10 @@ import {
   TruckIcon,
   CheckIcon,
   FireIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  HeartIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconSolid, BuildingOffice2Icon, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBed, faBedPulse, faUtensils, faWifi, faPersonSwimming, faSquareParking, faDumbbell, faSpa, faSnowflake, faElevator, faBanSmoking, faPaw } from '@fortawesome/free-solid-svg-icons';
 import DatePicker from 'react-datepicker';
@@ -38,6 +39,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { useAuth } from '../contexts/AuthContext';
 import { CompareHotels, CompareBar } from '../components/CompareHotels';
+import { isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { Link } from 'react-router-dom';
 
 // Fix for default marker icons in Leaflet with React
@@ -217,6 +219,11 @@ export const HotelSearchResults: React.FC = () => {
   const isRTL = direction === 'rtl';
   const { currency, currencySymbol } = useCurrency();
 
+  // Scroll to top when location changes (including search params)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname, location.search]);
+
   // Helper to format currency
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', {
@@ -260,6 +267,53 @@ export const HotelSearchResults: React.FC = () => {
   // Comparison State
   const [comparedHotels, setComparedHotels] = useState<Hotel[]>([]);
   const [showCompare, setShowCompare] = useState(false);
+
+  // Favorites State
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  // Initialize favorites from local storage
+  useEffect(() => {
+    // Helper to load favorites from localStorage
+    const loadFavorites = () => {
+      try {
+        const stored = localStorage.getItem('hotel_favorites');
+        if (stored) {
+          setFavoriteIds(new Set(JSON.parse(stored)));
+        }
+      } catch (e) {
+        console.error('Failed to load favorites', e);
+      }
+    };
+
+    loadFavorites();
+
+    // Listen for storage events (in case favorites change in another tab)
+    window.addEventListener('storage', loadFavorites);
+    return () => window.removeEventListener('storage', loadFavorites);
+  }, []);
+
+  const handleToggleFavorite = (e: React.MouseEvent, hotel: Hotel) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    toggleFavoriteWithData(
+      String(hotel.id || hotel.hid),
+      hotel.name,
+      hotel.image || undefined
+    );
+
+    // Update local state to reflect change immediately
+    setFavoriteIds(prev => {
+      const newSet = new Set(prev);
+      const id = String(hotel.id || hotel.hid);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
 
   const handleToggleCompare = (hotel: Hotel) => {
     setComparedHotels(prev => {
@@ -1859,10 +1913,15 @@ export const HotelSearchResults: React.FC = () => {
                             </div>
                           )}
                           {/* Heart Icon */}
-                          <button className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors">
-                            <svg className="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
+                          <button
+                            onClick={(e) => handleToggleFavorite(e, hotel)}
+                            className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-colors z-20"
+                          >
+                            {favoriteIds.has(String(hotel.id || hotel.hid)) ? (
+                              <HeartIconSolid className="w-5 h-5 text-red-500" />
+                            ) : (
+                              <HeartIcon className="w-5 h-5 text-gray-400 hover:text-red-500" />
+                            )}
                           </button>
                         </div>
 
@@ -2085,8 +2144,8 @@ export const HotelSearchResults: React.FC = () => {
                                         </div>
                                     </>
                                 )}
-                                {/* Compare Checkbox - Desktop Only */}
-                                <div className="hidden sm:flex w-full justify-end mb-2">
+                                {/* Compare Checkbox - Desktop & Mobile */}
+                                <div className="flex w-full justify-end mb-2">
                                   <label className="flex items-center gap-2 cursor-pointer select-none group">
                                     <input
                                       type="checkbox"

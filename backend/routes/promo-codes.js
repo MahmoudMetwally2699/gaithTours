@@ -7,11 +7,12 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 /**
  * @route   POST /api/promo-codes/validate
  * @desc    Validate a promo code for a booking
- * @access  Public (but tracks user if authenticated)
+ * @access  Protected - User must be signed in to use promo codes
  */
-router.post('/validate', async (req, res) => {
+router.post('/validate', protect, async (req, res) => {
   try {
-    const { code, bookingValue, hotelId, destination, userId } = req.body;
+    const { code, bookingValue, hotelId, destination } = req.body;
+    const userId = req.user._id; // Get user ID from authenticated user
 
     if (!code) {
       return errorResponse(res, 'Promo code is required', 400);
@@ -29,12 +30,10 @@ router.post('/validate', async (req, res) => {
 
     const promoCode = result.promoCode;
 
-    // Check if user can use this code
-    if (userId) {
-      const userCheck = promoCode.canUserUse(userId);
-      if (!userCheck.canUse) {
-        return errorResponse(res, userCheck.message, 400);
-      }
+    // Check if user can use this code (per-user limit check)
+    const userCheck = promoCode.canUserUse(userId);
+    if (!userCheck.canUse) {
+      return errorResponse(res, userCheck.message, 400);
     }
 
     // Check hotel restrictions

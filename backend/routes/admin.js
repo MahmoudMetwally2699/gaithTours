@@ -853,4 +853,358 @@ router.get('/hotel-contact/:hotelId', protect, admin, async (req, res) => {
   }
 });
 
+// ============ PARTNER MANAGEMENT ROUTES ============
+const PromoCode = require('../models/PromoCode');
+
+/**
+ * @route   GET /api/admin/partners
+ * @desc    Get all partners with their promo codes and stats
+ * @access  Admin
+ */
+router.get('/partners', protect, admin, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const search = req.query.search || '';
+    const skip = (page - 1) * limit;
+
+    // Find all users with role 'partner'
+    let query = { role: 'partner' };
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const partners = await User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await User.countDocuments(query);
+
+    // Enrich each partner with their promo code stats
+    const enrichedPartners = await Promise.all(partners.map(async (partner) => {
+      const promoCode = await PromoCode.findOne({
+        createdBy: partner._id,
+        type: 'referral'
+      });
+
+      return {
+        _id: partner._id,
+        name: partner.name,
+        email: partner.email,
+        phone: partner.phone,
+        createdAt: partner.createdAt,
+        promoCode: promoCode ? {
+          code: promoCode.code,
+          isActive: promoCode.isActive,
+          totalBookings: promoCode.referralBookings?.length || 0,
+          totalCommission: promoCode.totalCommissionEarned || 0,
+          discountType: promoCode.discountType,
+          discountValue: promoCode.discountValue,
+          commissionType: promoCode.partnerInfo?.commissionType,
+          commissionValue: promoCode.partnerInfo?.commissionValue
+        } : null
+      };
+    }));
+
+    successResponse(res, {
+      partners: enrichedPartners,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    }, 'Partners retrieved successfully');
+
+  } catch (error) {
+    console.error('Get partners error:', error);
+    errorResponse(res, 'Failed to get partners', 500);
+  }
+});
+
+/**
+ * @route   GET /api/admin/partners/:id
+ * @desc    Get single partner with full stats
+ * @access  Admin
+ */
+router.get('/partners/:id', protect, admin, async (req, res) => {
+  try {
+    const partner = await User.findById(req.params.id).select('-password');
+    if (!partner || partner.role !== 'partner') {
+      return errorResponse(res, 'Partner not found', 404);
+    }
+
+    const promoCode = await PromoCode.findOne({
+      createdBy: partner._id,
+      type: 'referral'
+    }).populate('referralBookings.bookingId', 'touristName hotel.name totalPrice createdAt status');
+
+    if (!promoCode) {
+      return errorResponse(res, 'Partner promo code not found', 404);
+    }
+
+    // Calculate stats
+    const paidCommissions = promoCode.referralBookings
+      ?.filter(b => b.commissionPaid)
+      .reduce((sum, b) => sum + (b.partnerCommission || 0), 0) || 0;
+
+    successResponse(res, {
+      partner: {
+        _id: partner._id,
+        name: partner.name,
+        email: partner.email,
+        phone: partner.phone,
+        createdAt: partner.createdAt
+      },
+      promoCode: {
+        _id: promoCode._id,
+        code: promoCode.code,
+        description: promoCode.description,
+        discountType: promoCode.discountType,
+        discountValue: promoCode.discountValue,
+        isActive: promoCode.isActive,
+        validFrom: promoCode.validFrom,
+        validUntil: promoCode.validUntil
+      },
+      partnerInfo: promoCode.partnerInfo,
+      stats: {
+        totalBookings: promoCode.referralBookings?.length || 0,
+        totalCommissionEarned: promoCode.totalCommissionEarned || 0,
+        paidCommissions,
+        pendingCommissions: (promoCode.totalCommissionEarned || 0) - paidCommissions,
+        currency: promoCode.currency || 'USD'
+      },
+      recentBookings: promoCode.referralBookings?.slice(-10).reverse() || []
+    }, 'Partner details retrieved successfully');
+
+  } catch (error) {
+    console.error('Get partner error:', error);
+    errorResponse(res, 'Failed to get partner details', 500);
+  }
+});
+
+/**
+ * @route   POST /api/admin/partners
+ * @desc    Create a new partner with auto-generated promo code
+ * @access  Admin
+ */
+router.post('/partners', protect, admin, [
+  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('phone').optional().trim(),
+  body('company').optional().trim(),
+  body('discountType').isIn(['percentage', 'fixed']).withMessage('Discount type must be percentage or fixed'),
+  body('discountValue').isNumeric().withMessage('Discount value is required'),
+  body('commissionType').isIn(['percentage', 'fixed']).withMessage('Commission type must be percentage or fixed'),
+  body('commissionValue').isNumeric().withMessage('Commission value is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return errorResponse(res, 'Validation failed', 400, errors.array());
+    }
+
+    const {
+      name,
+      email,
+      password,
+      phone,
+      company,
+      discountType,
+      discountValue,
+      commissionType,
+      commissionValue,
+      validUntil
+    } = req.body;
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return errorResponse(res, 'User already exists with this email', 400);
+    }
+
+    // Create the partner user
+    const partner = await User.create({
+      name,
+      email,
+      password,
+      phone: phone || '',
+      nationality: 'Partner', // Placeholder for partner accounts
+      role: 'partner',
+      isEmailVerified: true // Auto-verify partner accounts
+    });
+
+    // Generate unique promo code from partner name
+    const baseCode = 'PARTNER-' + name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
+    let code = baseCode;
+    let suffix = 1;
+    while (await PromoCode.findOne({ code })) {
+      code = `${baseCode}${suffix}`;
+      suffix++;
+    }
+
+    // Create the referral promo code
+    const promoCode = await PromoCode.create({
+      code,
+      description: `Referral code for partner: ${name}`,
+      type: 'referral',
+      discountType,
+      discountValue: parseFloat(discountValue),
+      validFrom: new Date(),
+      validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Default 1 year
+      usageLimit: null, // Unlimited
+      perUserLimit: 1,
+      partnerInfo: {
+        name,
+        email,
+        phone: phone || '',
+        company: company || '',
+        commissionType,
+        commissionValue: parseFloat(commissionValue)
+      },
+      createdBy: partner._id // Link to the partner user
+    });
+
+    // Generate referral URL
+    const baseUrl = process.env.FRONTEND_URL || 'https://gaithtours.com';
+    const referralUrl = `${baseUrl}?ref=${promoCode.code}`;
+
+    successResponse(res, {
+      partner: {
+        _id: partner._id,
+        name: partner.name,
+        email: partner.email,
+        phone: partner.phone
+      },
+      promoCode: {
+        code: promoCode.code,
+        discountType: promoCode.discountType,
+        discountValue: promoCode.discountValue,
+        referralUrl
+      },
+      commissionInfo: {
+        type: commissionType,
+        value: parseFloat(commissionValue)
+      }
+    }, 'Partner created successfully', 201);
+
+  } catch (error) {
+    console.error('Create partner error:', error);
+    if (error.code === 11000) {
+      return errorResponse(res, 'Email already exists', 400);
+    }
+    errorResponse(res, 'Failed to create partner', 500);
+  }
+});
+
+/**
+ * @route   PUT /api/admin/partners/:id
+ * @desc    Update partner info and promo code settings
+ * @access  Admin
+ */
+router.put('/partners/:id', protect, admin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      phone,
+      company,
+      discountType,
+      discountValue,
+      commissionType,
+      commissionValue,
+      isActive
+    } = req.body;
+
+    // Update user
+    const partner = await User.findById(id);
+    if (!partner || partner.role !== 'partner') {
+      return errorResponse(res, 'Partner not found', 404);
+    }
+
+    if (name) partner.name = name;
+    if (phone !== undefined) partner.phone = phone;
+    await partner.save();
+
+    // Update promo code
+    const promoCode = await PromoCode.findOne({
+      createdBy: id,
+      type: 'referral'
+    });
+
+    if (promoCode) {
+      if (discountType) promoCode.discountType = discountType;
+      if (discountValue !== undefined) promoCode.discountValue = parseFloat(discountValue);
+      if (isActive !== undefined) promoCode.isActive = isActive;
+      if (commissionType || commissionValue !== undefined) {
+        promoCode.partnerInfo = {
+          ...promoCode.partnerInfo,
+          name: name || promoCode.partnerInfo?.name,
+          phone: phone !== undefined ? phone : promoCode.partnerInfo?.phone,
+          company: company !== undefined ? company : promoCode.partnerInfo?.company,
+          commissionType: commissionType || promoCode.partnerInfo?.commissionType,
+          commissionValue: commissionValue !== undefined ? parseFloat(commissionValue) : promoCode.partnerInfo?.commissionValue
+        };
+      }
+      await promoCode.save();
+    }
+
+    successResponse(res, {
+      partner: {
+        _id: partner._id,
+        name: partner.name,
+        email: partner.email,
+        phone: partner.phone
+      },
+      promoCode: promoCode ? {
+        code: promoCode.code,
+        isActive: promoCode.isActive,
+        discountType: promoCode.discountType,
+        discountValue: promoCode.discountValue
+      } : null
+    }, 'Partner updated successfully');
+
+  } catch (error) {
+    console.error('Update partner error:', error);
+    errorResponse(res, 'Failed to update partner', 500);
+  }
+});
+
+/**
+ * @route   DELETE /api/admin/partners/:id
+ * @desc    Delete a partner and their promo code
+ * @access  Admin
+ */
+router.delete('/partners/:id', protect, admin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const partner = await User.findById(id);
+    if (!partner || partner.role !== 'partner') {
+      return errorResponse(res, 'Partner not found', 404);
+    }
+
+    // Delete associated promo code
+    await PromoCode.deleteOne({
+      createdBy: id,
+      type: 'referral'
+    });
+
+    // Delete partner user
+    await User.findByIdAndDelete(id);
+
+    successResponse(res, null, 'Partner deleted successfully');
+
+  } catch (error) {
+    console.error('Delete partner error:', error);
+    errorResponse(res, 'Failed to delete partner', 500);
+  }
+});
+
 module.exports = router;

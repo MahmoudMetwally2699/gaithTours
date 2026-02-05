@@ -36,6 +36,22 @@
     "social": {
        "continueWithFacebook": "Continue with Facebook",
        "continueWithGoogle": "Continue with Google"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "subtitle": "Enter your email to reset your password",
+      "email": "Email Address",
+      "emailPlaceholder": "Enter your email",
+      "button": "Send Reset Link",
+      "backToLogin": "Back to Login",
+      "invalidEmail": "Please enter a valid email address",
+      "error": "Failed to send reset email",
+      "success": {
+        "title": "Check your email",
+        "message": "We've sent a password reset link to your email.",
+        "instructions": "Follow the link in the email to reset your password.",
+        "backToLogin": "Back to Login"
+      }
     }
   },
   "nav": {
@@ -112,7 +128,8 @@
     "logout": "Sign Out",
     "explore": "Explore Hotels",
     "saveChanges": "Save Changes",
-    "guests": "guests"
+    "guests": "guests",
+    "preparingJourney": "Preparing your journey..."
   },
   "hotels": {
     "perNight": "/night",

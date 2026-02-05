@@ -222,6 +222,14 @@ try {
   console.error('Error loading loyalty routes:', error);
 }
 
+// Partner portal routes
+try {
+  app.use('/api/partners', require('./routes/partners'));
+  console.log('✅ Partner routes loaded');
+} catch (error) {
+  console.error('Error loading partner routes:', error);
+}
+
 
 // Debug routes (development only)
 if (process.env.NODE_ENV !== 'production') {

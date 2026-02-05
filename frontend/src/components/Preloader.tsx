@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 interface PreloaderProps {
   isLoading: boolean;
@@ -15,6 +16,7 @@ export const Preloader: React.FC<PreloaderProps> = ({
   minDisplayTime = 1500,
   maxDisplayTime = 8000 // Maximum time to show preloader (failsafe)
 }) => {
+  const { t: translate } = useTranslation();
   const [showPreloader, setShowPreloader] = useState(true);
   const [hasMinTimePassed, setHasMinTimePassed] = useState(false);
   const [forceHide, setForceHide] = useState(false);
@@ -132,7 +134,7 @@ export const Preloader: React.FC<PreloaderProps> = ({
                   ease: 'easeInOut',
                 }}
               >
-                Preparing your journey...
+                {translate('common.preparingJourney')}
               </motion.p>
             </motion.div>
 

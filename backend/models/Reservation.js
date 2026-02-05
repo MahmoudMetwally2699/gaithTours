@@ -259,6 +259,17 @@ const reservationSchema = new mongoose.Schema({
     required: false,
     default: 'EGP'
   },
+  // Actual payment amount in payment currency (USD) for commission calculation
+  actualPaymentAmount: {
+    type: Number,
+    required: false,
+    min: [0, 'Actual payment amount cannot be negative']
+  },
+  actualPaymentCurrency: {
+    type: String,
+    required: false,
+    default: 'USD'
+  },
   numberOfNights: {
     type: Number,
     required: false,

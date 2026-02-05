@@ -388,6 +388,16 @@ export const BookingPage: React.FC = () => {
       return;
     }
 
+    // Check if user is signed in - promo codes require authentication
+    if (!user) {
+      setPromoCodeResult({
+        valid: false,
+        message: t('booking:promoCodeRequiresSignIn', 'Please sign in to use promo codes')
+      });
+      toast.error(t('booking:promoCodeRequiresSignIn', 'Please sign in to use promo codes'));
+      return;
+    }
+
     setIsValidatingPromo(true);
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
@@ -399,15 +409,20 @@ export const BookingPage: React.FC = () => {
       const taxAmount = calculateBookingTaxes(selectedRate, numberOfRooms);
       const bookingValue = totalPriceWithMargin + taxAmount;
 
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+
       const response = await fetch(`${API_URL}/promo-codes/validate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           code: promoCode,
           bookingValue,
           hotelId: hotel.id,
-          destination: hotel.city,
-          userId: user?._id
+          destination: hotel.city
         })
       });
 
@@ -1091,7 +1106,7 @@ export const BookingPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 {t('booking:promoCode', 'Promo Code')}
               </h3>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={promoCode}
@@ -1100,7 +1115,7 @@ export const BookingPage: React.FC = () => {
                     if (promoCodeResult) setPromoCodeResult(null);
                   }}
                   placeholder={t('booking:enterPromoCode', 'Enter code')}
-                  className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase ${
+                  className={`w-full sm:flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase ${
                     promoCodeResult?.valid === false ? 'border-red-300' :
                     promoCodeResult?.valid === true ? 'border-green-300' : 'border-gray-300'
                   }`}
@@ -1109,7 +1124,7 @@ export const BookingPage: React.FC = () => {
                   data-validate-promo
                   onClick={validatePromoCode}
                   disabled={isValidatingPromo || !promoCode.trim()}
-                  className="px-4 py-2 bg-orange-100 text-orange-600 rounded-lg font-medium hover:bg-orange-200 transition-colors disabled:bg-gray-100 disabled:text-gray-400"
+                  className="w-full sm:w-auto px-4 py-2 bg-orange-100 text-orange-600 rounded-lg font-medium hover:bg-orange-200 transition-colors disabled:bg-gray-100 disabled:text-gray-400"
                 >
                   {isValidatingPromo ? (
                     <span className="flex items-center gap-2">

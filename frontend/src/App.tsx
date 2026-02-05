@@ -25,6 +25,8 @@ import { PaymentFailure } from './pages/PaymentFailure';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AcceptInvitation } from './pages/AcceptInvitation';
+import { PartnerLogin } from './pages/PartnerLogin';
+import { PartnerDashboard } from './pages/PartnerDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { useReferralCapture } from './hooks/useReferralCapture';
@@ -40,6 +42,7 @@ const AppContent = () => {
   useReferralCapture();
 
   const isAdminDashboard = location.pathname.startsWith('/admin/dashboard');
+  const isPartnerPage = location.pathname.startsWith('/partner');
 
   const isHome = location.pathname === '/';
   const isHotelSearch = location.pathname === '/hotels/search';
@@ -54,7 +57,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!isAdminDashboard && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && !isLogin && !isRegister && !isForgotPassword && !isResetPassword && !isEmailVerification && <Navbar />}
+      {!isAdminDashboard && !isPartnerPage && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && !isLogin && !isRegister && !isForgotPassword && !isResetPassword && !isEmailVerification && <Navbar />}
       <main className="flex-grow">
         <Switch>
           <Route exact path="/" component={Home} />
@@ -88,9 +91,12 @@ const AppContent = () => {
               </AdminProtectedRoute>
             )}
           />
+          {/* Partner Routes */}
+          <Route path="/partner/login" component={PartnerLogin} />
+          <Route path="/partner/dashboard" component={PartnerDashboard} />
         </Switch>
       </main>
-      {!isAdminDashboard && <Footer />}
+      {!isAdminDashboard && !isPartnerPage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

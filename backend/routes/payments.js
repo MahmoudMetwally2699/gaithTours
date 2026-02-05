@@ -1006,8 +1006,10 @@ router.post('/kashier/create-session', async (req, res) => {
       return errorResponse(res, 'Failed to create payment session', 500);
     }
 
-    // Update reservation with session ID
+    // Update reservation with session ID and actual payment amount
     reservation.kashierSessionId = paymentSession.sessionId;
+    reservation.actualPaymentAmount = kashierAmount; // Store actual USD amount for commission calculation
+    reservation.actualPaymentCurrency = kashierCurrency;
     await reservation.save();
 
     successResponse(res, {
@@ -1125,12 +1127,15 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
           // Record referral booking if this is a referral code
           if (promoCodeDoc.type === 'referral') {
             console.log(`   🎁 Recording referral booking for partner: ${promoCodeDoc.partnerInfo?.name}`);
+            // Use actualPaymentAmount (USD) for commission calculation, not display currency
+            const commissionBaseAmount = reservation.actualPaymentAmount || (reservation.totalPrice + (reservation.discountAmount || 0));
             await promoCodeDoc.recordReferralBooking(
               reservation._id,
-              reservation.totalPrice + (reservation.discountAmount || 0), // Original booking value before discount
+              commissionBaseAmount, // Use actual USD payment amount
               reservation.discountAmount || 0
             );
             console.log(`   ✅ Referral booking recorded!`);
+            console.log(`   Commission base amount: ${commissionBaseAmount} ${reservation.actualPaymentCurrency || reservation.currency}`);
             console.log(`   Total commission earned: ${promoCodeDoc.totalCommissionEarned}`);
           }
         } else {
@@ -1505,12 +1510,15 @@ router.get('/kashier/order/:orderId', async (req, res) => {
                   // Record referral booking if this is a referral code
                   if (promoCodeDoc.type === 'referral') {
                     console.log(`   🎁 Recording referral booking for partner: ${promoCodeDoc.partnerInfo?.name}`);
+                    // Use actualPaymentAmount (USD) for commission calculation, not display currency
+                    const commissionBaseAmount = reservation.actualPaymentAmount || (reservation.totalPrice + (reservation.discountAmount || 0));
                     await promoCodeDoc.recordReferralBooking(
                       reservation._id,
-                      reservation.totalPrice + (reservation.discountAmount || 0), // Original booking value before discount
+                      commissionBaseAmount, // Use actual USD payment amount
                       reservation.discountAmount || 0
                     );
                     console.log(`   ✅ Referral booking recorded!`);
+                    console.log(`   Commission base amount: ${commissionBaseAmount} ${reservation.actualPaymentCurrency || reservation.currency}`);
                     console.log(`   Total commission earned: ${promoCodeDoc.totalCommissionEarned}`);
                   }
                 } else {

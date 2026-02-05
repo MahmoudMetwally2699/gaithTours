@@ -56,7 +56,7 @@ export interface User {
     phone: string;
     nationality: string;
     preferredLanguage: 'en' | 'ar';
-    role: 'user' | 'admin' | 'super_admin' | 'sub_admin';
+    role: 'user' | 'admin' | 'super_admin' | 'sub_admin' | 'partner';
     adminPermissions?: string[]; // For sub_admin: array of permitted tabs
     invitedBy?: string; // For sub_admin: ID of the super_admin who invited
     isEmailVerified: boolean;

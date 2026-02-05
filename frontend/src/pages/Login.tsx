@@ -154,7 +154,7 @@ export const Login: React.FC = () => {
             className="mb-8"
           >
             <div className="w-40 h-40 flex items-center justify-center p-6">
-              <img src="/new-design/logo-white.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
+              <img src="/Group.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
             </div>
           </motion.div>
 
@@ -260,7 +260,7 @@ export const Login: React.FC = () => {
               className="lg:hidden flex justify-center mb-8"
             >
               <div className="w-32 h-32 flex items-center justify-center p-4">
-                <img src="/new-design/logo.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
+                <img src="/Group.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
               </div>
             </motion.div>
 

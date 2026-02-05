@@ -677,7 +677,7 @@ export const HotelDetails: React.FC = () => {
                  {!user ? (
                    <Link to="/login" className="text-sm font-bold text-white hover:text-orange-100">{t('common:nav.login', 'Sign In')}</Link>
                  ) : (
-                   <Link to="/profile" className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/30 hover:bg-white/25 transition-all shadow-sm">
+                   <Link to="/profile" className="flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/30 hover:bg-white/25 transition-all shadow-sm text-white">
                      <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center">
                        <UserIcon className="w-3.5 h-3.5" />
                      </div>
