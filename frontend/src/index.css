@@ -88,6 +88,11 @@ body {
     letter-spacing: -0.02em;
   }
 
+  .inter-700 {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+  }
+
   /* RTL price font - still uses Inter for numbers */
   [dir="rtl"] .font-price {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;

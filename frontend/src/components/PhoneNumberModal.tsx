@@ -6,6 +6,7 @@ import { authAPI } from '../services/api';
 interface PhoneNumberModalProps {
   isOpen: boolean;
   onSubmit: (phone: string) => Promise<void>;
+  onClose?: () => void;
   userName?: string;
 }
 
@@ -32,6 +33,7 @@ type Step = 'phone' | 'otp';
 export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
   isOpen,
   onSubmit,
+  onClose,
   userName
 }) => {
   const { t, i18n } = useTranslation();
@@ -210,8 +212,21 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
       >
+        {/* Close Button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
+            aria-label={t('common.close', 'Close')}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6 sm:px-8 sm:py-8 text-white text-center">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6 sm:px-8 sm:py-8 text-white text-center relative">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
             {step === 'phone' ? (
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

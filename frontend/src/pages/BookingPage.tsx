@@ -183,6 +183,15 @@ export const BookingPage: React.FC = () => {
              }
              toast.success(`Prices updated to ${currency}`);
              lastFetchedCurrency.current = currency; // Update ref after success
+
+             // Re-validate promo code with new rates if one was applied
+             if (promoCode && promoCodeResult?.valid) {
+               console.log('💱 Re-validating promo code with new currency rates...');
+               setTimeout(() => {
+                 const validateBtn = document.querySelector('[data-validate-promo]') as HTMLButtonElement;
+                 if (validateBtn) validateBtn.click();
+               }, 100);
+             }
           }
           // Handle single rate update
           else {
@@ -191,6 +200,15 @@ export const BookingPage: React.FC = () => {
              setRateCurrency(matchingRate.currency || currency);
              toast.success(`Prices updated to ${currency}`);
              lastFetchedCurrency.current = currency; // Update ref after success
+
+             // Re-validate promo code with new rates if one was applied
+             if (promoCode && promoCodeResult?.valid) {
+               console.log('💱 Re-validating promo code with new currency rates...');
+               setTimeout(() => {
+                 const validateBtn = document.querySelector('[data-validate-promo]') as HTMLButtonElement;
+                 if (validateBtn) validateBtn.click();
+               }, 100);
+             }
           }
         } else {
           toast.error('Could not fetch updated rates. Showing original prices.');
@@ -1260,6 +1278,7 @@ export const BookingPage: React.FC = () => {
               guests={guests}
               children={guestCounts.children}
               rooms={rooms}
+              promoCodeResult={promoCodeResult}
             />
 
             {/* Hotel Highlights */}

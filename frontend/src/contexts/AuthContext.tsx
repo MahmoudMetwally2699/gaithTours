@@ -57,9 +57,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const response = await authAPI.getCurrentUser();
             if (response.data?.user) {
               setUser(response.data.user);
-              // Check if social user needs phone number
+              // Check if social user needs phone number or phone is not verified
               const fetchedUser = response.data.user;
-              if (fetchedUser.phone === undefined || fetchedUser.phone === null || fetchedUser.phone === '') {
+              const needsPhoneVerification =
+                !fetchedUser.phone ||
+                fetchedUser.phone === '' ||
+                fetchedUser.isPhoneVerified === false;
+              if (needsPhoneVerification) {
                 setShowPhoneModal(true);
               }
             }
@@ -170,6 +174,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Handle closing phone modal - logs out user and redirects to home
+  const handleClosePhoneModal = () => {
+    setUser(null);
+    setShowPhoneModal(false);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/';
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
@@ -190,6 +203,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       <PhoneNumberModal
         isOpen={showPhoneModal}
         onSubmit={updatePhone}
+        onClose={handleClosePhoneModal}
         userName={user?.name}
       />
     </AuthContext.Provider>

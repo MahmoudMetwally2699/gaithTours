@@ -176,18 +176,33 @@ class WhatsAppService {
       // Format phone number - remove + and any non-numeric characters
       const formattedPhone = phone.replace(/[^\d]/g, '');
 
-      console.log(`📱 Sending welcome message to ${formattedPhone}`);
+      // Format code with LTR mark to ensure correct direction (Left-to-Right)
+      // but KEEP IT COMPACT (no spaces) as requested: 123456
+      const formattedCode = '\u202A' + code + '\u202C';
 
-      // Use the new welcome template (no parameters needed)
+      console.log(`📱 Sending verification code to ${formattedPhone} using template`);
+
+      // Use the verfications_code template with the formatted code parameter
       const data = {
         messaging_product: 'whatsapp',
         to: formattedPhone,
         type: 'template',
         template: {
-          name: 'welcome_massage',  // Your new welcome template
+          name: 'verfications_code',  // Your approved template name
           language: {
-            code: 'ar'  // Template language
-          }
+            code: 'en'  // Template language
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: formattedCode  // Use LTR-marked code so it doesn't reverse
+                }
+              ]
+            }
+          ]
         }
       };
 
@@ -198,16 +213,8 @@ class WhatsAppService {
         }
       });
 
-      console.log(`✅ Welcome message sent successfully to ${formattedPhone}`);
-
-      // Send the OTP code in monospace format as a follow-up message
-      try {
-        await this.sendMessage(formattedPhone, `\`${code}\``);
-        console.log(`✅ OTP code sent in monospace format to ${formattedPhone}`);
-      } catch (followUpError) {
-        console.warn('⚠️ Failed to send OTP code:', followUpError.message);
-        // Don't throw - the welcome message was sent successfully
-      }
+      console.log('📋 WhatsApp API Response:', JSON.stringify(response.data, null, 2));
+      console.log(`✅ Verification code sent successfully to ${formattedPhone}`);
 
       return response.data;
     } catch (error) {

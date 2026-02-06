@@ -60,6 +60,7 @@ export interface User {
     adminPermissions?: string[]; // For sub_admin: array of permitted tabs
     invitedBy?: string; // For sub_admin: ID of the super_admin who invited
     isEmailVerified: boolean;
+    isPhoneVerified?: boolean; // Whether phone has been verified via OTP
     createdAt: string;
     updatedAt: string;
 }

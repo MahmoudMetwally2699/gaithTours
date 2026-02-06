@@ -11,11 +11,13 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
   ShieldCheckIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
 import { SocialLoginButtons } from '../components/SocialLoginButtons';
+import { getPromoRedirectUrl, clearPromoRedirect } from '../hooks/useReferralCapture';
 
 export const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -32,7 +34,21 @@ export const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const from = (location.state as any)?.from?.pathname || '/';
+  // Check if user was redirected from promo code scan
+  const searchParams = new URLSearchParams(location.search);
+  const isPromoRedirect = searchParams.get('promo') === 'true';
+
+  // Determine where to redirect after successful login
+  const getRedirectUrl = () => {
+    // First check for promo redirect URL (from QR code scan)
+    const promoRedirectUrl = getPromoRedirectUrl();
+    if (promoRedirectUrl) {
+      clearPromoRedirect(); // Clear it so it's only used once
+      return promoRedirectUrl;
+    }
+    // Otherwise use the standard 'from' location
+    return (location.state as any)?.from?.pathname || '/';
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -49,7 +65,7 @@ export const Login: React.FC = () => {
 
     try {
       await login(formData.email, formData.password);
-      history.push(from);
+      history.push(getRedirectUrl());
     } catch (err: any) {
       setError(err.message || t('auth.login.error'));
     } finally {
@@ -62,7 +78,7 @@ export const Login: React.FC = () => {
       setIsLoading(true);
       setError('');
       await socialLogin('google', accessToken, userInfo);
-      history.push(from);
+      history.push(getRedirectUrl());
     } catch (err: any) {
       setError(err.message || 'Google login failed');
     } finally {
@@ -75,7 +91,7 @@ export const Login: React.FC = () => {
       setIsLoading(true);
       setError('');
       await socialLogin('facebook', accessToken, userInfo);
-      history.push(from);
+      history.push(getRedirectUrl());
     } catch (err: any) {
       setError(err.message || 'Facebook login failed');
     } finally {
@@ -292,8 +308,31 @@ export const Login: React.FC = () => {
                 {t('auth.login.title')} 👋
               </h1>
               <p className="text-gray-600">
-                {t('auth.login.subtitle')}
+                {isPromoRedirect
+                  ? t('auth.login.promoSubtitle', 'Sign in to use your promo code')
+                  : t('auth.login.subtitle')}
               </p>
+
+              {/* Promo Code Banner */}
+              {isPromoRedirect && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4 flex items-center gap-3"
+                >
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full flex items-center justify-center">
+                    <TagIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-orange-800">
+                      {t('auth.login.promoCodeDetected', 'Promo Code Detected!')}
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      {t('auth.login.promoSignInMessage', 'Sign in to apply your discount')}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
 
             {/* Social Login Buttons */}

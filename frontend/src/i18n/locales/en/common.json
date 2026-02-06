@@ -26,6 +26,9 @@
     "login": {
        "title": "Welcome Back",
        "subtitle": "Please enter your details to sign in",
+       "promoSubtitle": "Sign in to use your promo code",
+       "promoCodeDetected": "Promo Code Detected!",
+       "promoSignInMessage": "Sign in to apply your discount",
        "forgotPassword": "Forgot Password?",
        "button": "Sign In",
        "error": "Invalid email or password"

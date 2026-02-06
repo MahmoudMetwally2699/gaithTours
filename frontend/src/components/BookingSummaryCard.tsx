@@ -39,6 +39,14 @@ interface RoomRate {
   taxes?: TaxItem[];
 }
 
+interface PromoCodeResult {
+  valid: boolean;
+  code?: string;
+  discount?: number;
+  finalValue?: number;
+  message?: string;
+}
+
 interface BookingSummaryCardProps {
   hotel: Hotel;
   selectedRate: RoomRate;
@@ -48,6 +56,7 @@ interface BookingSummaryCardProps {
   guests: number;       // Adults count
   children?: number;    // Children count
   rooms?: number; // Total room count
+  promoCodeResult?: PromoCodeResult | null; // Promo code discount info
 }
 
 export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
@@ -58,7 +67,8 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   checkOut,
   guests,
   children = 0,
-  rooms = 1
+  rooms = 1,
+  promoCodeResult
 }) => {
   const { t, i18n } = useTranslation(['common', 'booking']);
   const { getCurrencySymbol } = useCurrency();
@@ -371,6 +381,21 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 </span>
               </div>
             )}
+
+            {/* Promo Code Discount */}
+            {promoCodeResult?.valid && promoCodeResult.discount && promoCodeResult.discount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span className="flex items-center gap-1">
+                  🎟️ {t('booking:promoDiscount', 'Promo Code Discount')}
+                  <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">
+                    {promoCodeResult.code}
+                  </span>
+                </span>
+                <span className="font-semibold">
+                  -{currencySymbol} {promoCodeResult.discount.toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Total */}
@@ -380,7 +405,11 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 {t('booking:totalNow', 'Total to pay now')}
               </span>
               <span className="text-2xl font-bold text-orange-600 font-price">
-                {currencySymbol} {(totalPrice + taxes).toFixed(2)}
+                {currencySymbol} {(
+                  promoCodeResult?.valid && promoCodeResult.finalValue
+                    ? promoCodeResult.finalValue
+                    : (totalPrice + taxes)
+                ).toFixed(2)}
               </span>
             </div>
             <div className="text-xs text-gray-500 text-right mt-1">

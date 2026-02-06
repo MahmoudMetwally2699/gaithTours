@@ -2136,7 +2136,7 @@ export const HotelSearchResults: React.FC = () => {
                                     <div className="text-sm font-bold text-red-600">{t('searchResults:hotelCard.noRates', 'No rates data')}</div>
                                 ) : (
                                     <>
-                                        <div className="hidden sm:block text-lg sm:text-2xl font-bold text-gray-900 leading-none font-price">
+                                        <div className="hidden sm:block text-lg sm:text-2xl font-bold text-gray-900 leading-none font-price inter-700">
                                             {formatPrice(hotel.price)}
                                         </div>
                                         <div className="hidden sm:block text-[10px] text-gray-500 font-medium mb-1 font-price">
@@ -2163,7 +2163,7 @@ export const HotelSearchResults: React.FC = () => {
                                          <div className="text-xs text-gray-500 font-medium">
                                             {1} night, {searchQuery.adults} ad.
                                          </div>
-                                         <div className="text-lg font-bold text-gray-900 leading-none">
+                                         <div className="text-lg font-bold text-gray-900 leading-none inter-700">
                                             {formatPrice(hotel.price)}
                                          </div>
                                          <div className="text-[10px] text-gray-500 font-medium leading-tight font-price">
