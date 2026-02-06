@@ -1844,16 +1844,21 @@ export const HotelSearchResults: React.FC = () => {
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
-                    <div className="flex gap-4">
-                      <div className="w-48 h-32 bg-gray-200 rounded-lg" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-5 bg-gray-200 rounded w-2/3" />
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {/* Image Skeleton */}
+                      <div className="w-full sm:w-48 h-48 sm:h-32 bg-gray-200 rounded-lg flex-shrink-0" />
+
+                      {/* Content Skeleton */}
+                      <div className="flex-1 space-y-2 min-w-0">
+                        <div className="h-5 bg-gray-200 rounded w-3/4" />
                         <div className="h-4 bg-gray-200 rounded w-1/3" />
                         <div className="h-4 bg-gray-200 rounded w-1/2" />
                       </div>
-                      <div className="w-32 space-y-2">
-                        <div className="h-6 bg-gray-200 rounded" />
-                        <div className="h-8 bg-gray-200 rounded" />
+
+                      {/* Price/Action Skeleton */}
+                      <div className="w-full sm:w-32 flex flex-row sm:flex-col justify-between sm:justify-start gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 sm:border-transparent">
+                        <div className="h-6 bg-gray-200 rounded w-20 sm:w-full" />
+                        <div className="h-8 bg-gray-200 rounded w-24 sm:w-full" />
                       </div>
                     </div>
                   </div>

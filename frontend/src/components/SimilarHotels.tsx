@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { StarIcon, MapPinIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface SimilarHotelsProps {
   city: string;
@@ -31,6 +32,7 @@ export const SimilarHotels: React.FC<SimilarHotelsProps> = ({
   children = 0
 }) => {
   const { t, i18n } = useTranslation();
+  const { currency } = useCurrency();
   const isRTL = i18n.language === 'ar';
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export const SimilarHotels: React.FC<SimilarHotelsProps> = ({
         // Pass the city as a location hint
         const params = new URLSearchParams({
           location: city,
-          currency: 'USD',
+          currency: currency || 'USD',
           language: i18n.language
         });
 
@@ -77,7 +79,7 @@ export const SimilarHotels: React.FC<SimilarHotelsProps> = ({
               name: h.name,
               rating: h.star_rating || h.rating || 0,
               price: h.price || 0,
-              currency: h.currency || 'USD',
+              currency: h.currency || currency || 'USD',
               image: h.image || h.images?.[0] || '/placeholder-hotel.jpg',
               address: h.address || h.city || city
             }));
@@ -95,7 +97,7 @@ export const SimilarHotels: React.FC<SimilarHotelsProps> = ({
     fetchSimilarHotels();
 
     return () => abortController.abort();
-  }, [city, currentHotelId, i18n.language]);
+  }, [city, currentHotelId, i18n.language, currency]);
 
   // RTL-aware scroll function
   const scroll = (direction: 'left' | 'right') => {
