@@ -467,7 +467,9 @@
           "bookingsFromReferral": "الحجوزات من الإحالة",
           "markAsPaid": "تحديد كمدفوع",
           "noReferrals": "لا توجد رموز إحالة بعد",
-          "customerDiscount": "خصم العميل"
+          "customerDiscount": "خصم العميل",
+          "marginWarning": "تحذير: العمولة ({{commission}}%) + الخصم ({{discount}}%) = {{total}}% تتجاوز متوسط هامش الربح {{margin}}%",
+          "markedAsPaid": "تم تحديد العمولات كمدفوعة!"
         }
       },
       "margins": {

@@ -1063,11 +1063,32 @@ class RateHawkService {
         isDefault: true
       };
 
-      const priceResult = MarginService.applyMargin(hotel.price || 0, marginInfo);
+      // UPDATED: Apply margin to (base price + booking taxes) instead of just base price
+      // This ensures margin is calculated on the total amount paid at booking time
+      const marginBase = (hotel.price || 0) + (hotel.booking_taxes || 0);
+      const priceResult = MarginService.applyMargin(marginBase, marginInfo);
 
-      hotel.price = priceResult.finalPrice; // Base price with margin (no taxes)
+      // Calculate the margin percentage to apply to taxes
+      const marginMultiplier = marginBase > 0 ? priceResult.finalPrice / marginBase : 1;
+
+      // The final price includes the margin on (price + booking_taxes)
+      // We need to separate it back: final_price = original_price + margin_on_total
+      hotel.price = priceResult.finalPrice; // Total price with margin (includes booking taxes)
       hotel.pricePerNight = hotel.nights > 0 ? Math.round(priceResult.finalPrice / hotel.nights) : priceResult.finalPrice;
-      // Keep hotel.total_taxes unchanged - it's already calculated from the original data
+
+      // Apply margin to tax display amounts as well
+      const originalTotalTaxes = hotel.total_taxes;
+      const originalBookingTaxes = hotel.booking_taxes;
+      hotel.total_taxes = Math.round((hotel.total_taxes || 0) * marginMultiplier);
+      hotel.booking_taxes = Math.round((hotel.booking_taxes || 0) * marginMultiplier);
+
+      // Debug: Log first hotel margin application
+      if (hotels.indexOf(hotel) === 0) {
+        console.log(`   🔍 Search margin debug: price=${priceResult.finalPrice}, multiplier=${marginMultiplier.toFixed(4)}`);
+        console.log(`      original_taxes=${originalTotalTaxes} → adjusted=${hotel.total_taxes}`);
+        console.log(`      booking_taxes=${originalBookingTaxes} → adjusted=${hotel.booking_taxes}`);
+      }
+
       hotel.marginApplied = {
           ruleName: matchingRule?.name || 'Default',
           marginPercentage: priceResult.marginPercentage,
@@ -1560,12 +1581,14 @@ class RateHawkService {
         isDefault: true
       };
 
-      // Apply margin to the TOTAL stay price
-      const priceResult = MarginService.applyMargin(totalStayPrice, marginInfo);
+      // UPDATED: Apply margin to (total stay price + booking taxes) instead of just base price
+      // This ensures margin is calculated on the total amount paid at booking time (rate + taxes included by supplier)
+      const marginBase = totalStayPrice + includedTaxesTotal;
+      const priceResult = MarginService.applyMargin(marginBase, marginInfo);
 
       // Debug log for first rate
       if (hotelData.rates.indexOf(rate) === 0) {
-        console.log(`   💰 Rate margin: totalStay=${totalStayPrice} (${numberOfNights} nights), marginType=${marginInfo.marginType}, marginValue=${marginInfo.marginValue}`);
+        console.log(`   💰 Rate margin: totalStay=${totalStayPrice}, bookingTaxes=${includedTaxesTotal}, marginBase=${marginBase} (${numberOfNights} nights), marginType=${marginInfo.marginType}, marginValue=${marginInfo.marginValue}`);
         console.log(`      Result: final=${priceResult.finalPrice}, marginAmount=${priceResult.marginAmount}, rule="${matchingRule?.name || 'Default'}"`);
       }
 
@@ -1575,10 +1598,18 @@ class RateHawkService {
       if (matchingRule) {
          MarginRule.updateOne({ _id: matchingRule._id }, { $inc: { appliedCount: 1 } }).catch(() => {});
       }
-      // For now, let's use the simple applyMarkup for taxes to avoid complex rule triggering on small amounts
-      // OR, better, use the same percentage applied to the base price.
-      // Let's stick to simple markup for taxes for now to be safe, or 0 if users pay taxes at hotel.
-      const displayTaxes = totalTaxes > 0 ? this.applyMarkup(totalTaxes) : 0;
+
+      // Apply the same margin percentage to taxes for display
+      const marginMultiplier = marginBase > 0 ? priceResult.finalPrice / marginBase : 1;
+      const displayTaxes = totalTaxes > 0 ? Math.round(totalTaxes * marginMultiplier) : 0;
+
+      // Debug: Log tax transformation for first rate
+      if (hotelData.rates.indexOf(rate) === 0) {
+        console.log(`   🧾 Tax margin: marginMultiplier=${marginMultiplier.toFixed(4)}, originalTaxes=${totalTaxes}, displayTaxes=${displayTaxes}`);
+        if (taxData?.taxes) {
+          taxData.taxes.forEach(t => console.log(`      ${t.name}: $${t.amount} → $${(parseFloat(t.amount) * marginMultiplier).toFixed(2)}`));
+        }
+      }
 
       return {
         book_hash: rate.book_hash,
@@ -1602,17 +1633,39 @@ class RateHawkService {
           isDefault: marginInfo.isDefault
         },
 
-        // Tax Data - ensure each tax has the correct currency
+        // Tax Data - ensure each tax has the correct currency AND margin applied
         total_taxes: displayTaxes,
         taxes_currency: paymentType?.show_currency_code || currency,
-        // Map taxes to use the correct currency for display
-        tax_data: taxData ? {
-          ...taxData,
-          taxes: taxData.taxes?.map(tax => ({
-            ...tax,
-            currency: paymentType?.currency_code || currency // Override currency to match rate
-          })) || []
-        } : null,
+        // Map taxes to use the correct currency for display AND apply margin to amounts
+        tax_data: taxData ? (() => {
+          const mappedTaxes = taxData.taxes?.map(tax => {
+            const originalAmount = parseFloat(tax.amount || 0);
+            const adjustedAmount = Math.round(originalAmount * marginMultiplier * 100) / 100;
+
+            // Debug log for first rate
+            if (hotelData.rates.indexOf(rate) === 0) {
+              console.log(`      📊 Tax mapping: ${tax.name}: original=${originalAmount} → adjusted=${adjustedAmount} (multiplier=${marginMultiplier.toFixed(4)})`);
+            }
+
+            return {
+              ...tax,
+              amount: adjustedAmount, // Return as number, not string
+              currency: paymentType?.currency_code || currency
+            };
+          }) || [];
+
+          return {
+            ...taxData,
+            taxes: mappedTaxes
+          };
+        })() : null,
+        // Also provide a simplified taxes array with margin applied
+        taxes: taxData?.taxes?.map(tax => ({
+          name: tax.name,
+          amount: Math.round(parseFloat(tax.amount || 0) * marginMultiplier * 100) / 100,
+          currency: paymentType?.currency_code || currency,
+          included: tax.included_by_supplier || false
+        })) || [],
 
         // Policies
         is_free_cancellation: isFreeCancellation,
@@ -1702,30 +1755,16 @@ class RateHawkService {
         })(),
 
         // Pricing with tax breakdown (Booking.com style: room price + taxes separately)
+        // NOTE: We REMOVED the duplicate total_taxes, tax_data, taxes_currency here
+        // because they were OVERWRITING the margin-adjusted values set above
         ...(() => {
-          // 1. Get all taxes
-          const allTaxes = (paymentType?.tax_data?.taxes || []).map(tax => ({
-            name: tax.name,
-            amount: parseFloat(tax.amount) || 0,
-            currency: tax.currency_code,
-            included: tax.included_by_supplier || false
-          }));
-
-          // 2. Calculate Total Taxes to display separately
-          const totalTaxAmount = allTaxes.reduce((sum, tax) => sum + tax.amount, 0);
-
           return {
             daily_prices: rate.daily_prices,
             // NOTE: price is already set above with margin applied (priceResult.finalPrice)
             // DO NOT override it here!
+            // total_taxes, taxes_currency, and tax_data are also already set above with margin applied
 
-            // Show ALL taxes below price (since we stripped them from main price)
-            total_taxes: Math.round(totalTaxAmount),
-            taxes_currency: allTaxes[0]?.currency || paymentType?.show_currency_code || currency,
-
-            // Tax breakdown
-            tax_data: paymentType?.tax_data || null,
-            taxes: allTaxes,
+            // Tax breakdown - only include vat_data which isn't margin-related
             vat_data: paymentType?.vat_data || null
           };
         })(),

@@ -112,11 +112,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
 
   // Helper to format price with correct locale and currency
-  const formatPrice = (price: number, fractionDigits = 0) => {
+  const formatPrice = (price: number, currencyCode?: string, fractionDigits = 0) => {
     try {
+      const targetCurrency = currencyCode || currency || 'USD';
       return new Intl.NumberFormat(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
         style: 'currency',
-        currency: currency || 'USD',
+        currency: targetCurrency,
         minimumFractionDigits: fractionDigits,
         maximumFractionDigits: fractionDigits,
       }).format(price);
@@ -510,7 +511,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                         {/* Per-night price if multiple nights */}
                         {nights > 1 && (
                           <div className="text-xs text-gray-600 mt-0.5">
-                            ({formatPrice(Math.round(Number(rate.price) / nights))}/night)
+                            ({formatPrice(Math.round(Number(rate.price) / nights))}{t('common:hotels.perNight', '/night')})
                           </div>
                         )}
                         {/* Tax display - Detailed breakdown with Pay at Booking vs Pay at Hotel */}
@@ -525,10 +526,19 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                               const paidAtBookingTotal = paidAtBookingTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
                               const payAtHotelTotal = payAtHotelTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
 
+                              // DEBUG: Log tax data received from API
+                              console.log('🧾 RoomCard Tax Debug:', {
+                                roomName: rate.room_name,
+                                totalTaxes: rate.total_taxes,
+                                individualTaxes: allTaxes.map((t: TaxItem) => ({ name: t.name, amount: t.amount })),
+                                calculatedBookingTotal: paidAtBookingTotal,
+                                calculatedHotelTotal: payAtHotelTotal
+                              });
+
                               return (
                                 <>
                                   <span className="border-b border-dotted border-gray-400">
-                                    +{currencySymbol} {Math.round(rate.total_taxes || 0)} {t('common:hotels.taxesAndFees', 'taxes and fees')}
+                                    +{formatPrice(Math.round(rate.total_taxes || 0))} {t('common:hotels.taxesAndFees', 'taxes and fees')}
                                   </span>
 
                                   {/* Tax Breakdown Tooltip */}
@@ -537,7 +547,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
                                     <div className="flex justify-between mb-2 text-gray-700">
                                       <span>{t('common:hotels.basePrice', 'Base Price')}:</span>
-                                      <span className="font-medium">{currencySymbol} {Number(rate.price).toFixed(2)}</span>
+                                      <span className="font-medium">{formatPrice(Number(rate.price), undefined, 2)}</span>
                                     </div>
 
                                     {/* Paid at Booking Section */}
@@ -546,15 +556,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                         <div className="text-green-700 font-semibold mb-1 flex items-center">
                                           <span className="mr-1">✓</span> {t('common:hotels.paidAtBooking', 'Paid at Booking')}:
                                         </div>
-                                        {paidAtBookingTaxes.map((tax: TaxItem, idx: number) => (
-                                          <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
-                                            <span>{tax.name}:</span>
-                                            <span className="text-green-600">+{currencySymbol} {Number(tax.amount).toFixed(2)}</span>
-                                          </div>
-                                        ))}
-                                        <div className="flex justify-between ml-4 text-green-700 font-medium border-t border-gray-100 pt-1 mt-1">
-                                          <span>{t('common:hotels.subtotal', 'Subtotal')}:</span>
-                                          <span>+{currencySymbol} {paidAtBookingTotal.toFixed(2)}</span>
+                                        <div className="flex justify-between ml-4 text-green-700 font-medium mt-0.5">
+                                          <span>{t('common:hotels.taxesAndFees', 'Taxes and fees')}:</span>
+                                          <span>+{formatPrice(paidAtBookingTotal, undefined, 2)}</span>
                                         </div>
                                       </div>
                                     )}
@@ -568,12 +572,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                         {payAtHotelTaxes.map((tax: TaxItem, idx: number) => (
                                           <div key={idx} className="flex justify-between text-gray-600 ml-4 mb-0.5">
                                             <span>{tax.name}:</span>
-                                            <span className="text-orange-500">+{tax.currency_code || tax.currency || rate.taxes_currency || currencySymbol} {Number(tax.amount).toFixed(2)}</span>
+                                            <span className="text-orange-500">+{formatPrice(Number(tax.amount), tax.currency_code || tax.currency || rate.taxes_currency, 2)}</span>
                                           </div>
                                         ))}
                                         <div className="flex justify-between ml-4 text-orange-600 font-medium border-t border-gray-100 pt-1 mt-1">
                                           <span>{t('common:hotels.subtotal', 'Subtotal')}:</span>
-                                          <span>+{payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency || currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
+                                          <span>+{formatPrice(payAtHotelTotal, payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency, 2)}</span>
                                         </div>
                                       </div>
                                     )}
@@ -582,12 +586,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                                     <div className="border-t-2 border-gray-300 pt-2 mt-2">
                                       <div className="flex justify-between font-bold text-gray-900">
                                         <span>{t('common:hotels.totalAtBooking', 'Total at Booking')}:</span>
-                                        <span>{currencySymbol} {(Number(rate.price) + paidAtBookingTotal).toFixed(2)}</span>
+                                        <span>{formatPrice(Number(rate.price) + paidAtBookingTotal, undefined, 2)}</span>
                                       </div>
                                       {payAtHotelTotal > 0 && (
                                         <div className="flex justify-between text-orange-600 mt-1 text-[11px]">
                                           <span>{t('common:hotels.dueAtHotel', 'Due at Hotel')}:</span>
-                                          <span>+{payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency || currencySymbol} {payAtHotelTotal.toFixed(2)}</span>
+                                          <span>+{formatPrice(payAtHotelTotal, payAtHotelTaxes[0]?.currency_code || payAtHotelTaxes[0]?.currency || rate.taxes_currency, 2)}</span>
                                         </div>
                                       )}
                                     </div>

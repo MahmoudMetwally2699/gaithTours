@@ -69,6 +69,17 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       const data = await response.json();
 
       if (data.success) {
+        // Debug: Log first hotel to verify margin-adjusted prices
+        if (data.data.hotels.length > 0) {
+          const firstHotel = data.data.hotels[0];
+          console.log('🏨 SuggestedHotels API response - first hotel:', {
+            name: firstHotel.name,
+            price: firstHotel.price,
+            pricePerNight: firstHotel.pricePerNight,
+            total_taxes: firstHotel.total_taxes,
+            marginApplied: firstHotel.marginApplied
+          });
+        }
         setHotels(data.data.hotels);
         setSource(data.data.source);
         setDestinationName(data.data.destination);

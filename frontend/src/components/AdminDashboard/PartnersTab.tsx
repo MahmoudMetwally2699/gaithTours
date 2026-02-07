@@ -12,7 +12,8 @@ import {
   CheckIcon,
   ArrowDownTrayIcon,
   UserGroupIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
@@ -78,6 +79,24 @@ export const PartnersTab: React.FC = () => {
     commissionValue: '5'
   });
 
+  // Global margin for alert
+  const [globalMargin, setGlobalMargin] = useState<number>(0);
+
+  // Fetch global margin stats on mount
+  useEffect(() => {
+    const fetchMarginStats = async () => {
+      try {
+        const response = await api.get('/admin/margins/stats');
+        if (response.data?.success && response.data?.data?.summary?.avgMargin) {
+          setGlobalMargin(Math.round(response.data.data.summary.avgMargin * 100) / 100);
+        }
+      } catch (error) {
+        console.error('Error fetching margin stats:', error);
+      }
+    };
+    fetchMarginStats();
+  }, []);
+
   const fetchPartners = useCallback(async () => {
     try {
       setLoading(true);
@@ -101,6 +120,21 @@ export const PartnersTab: React.FC = () => {
 
   const handleCreatePartner = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if margin warning condition is met and show confirmation
+    if (formData.commissionType === 'percentage' &&
+        formData.discountType === 'percentage' &&
+        globalMargin > 0 &&
+        (parseFloat(formData.commissionValue) + parseFloat(formData.discountValue)) > globalMargin) {
+      const total = parseFloat(formData.commissionValue) + parseFloat(formData.discountValue);
+      const confirmed = window.confirm(
+        `⚠️ Warning: Commission (${formData.commissionValue}%) + Discount (${formData.discountValue}%) = ${total}% exceeds your average margin of ${globalMargin}%.\n\nAre you sure you want to continue?`
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       setIsCreating(true);
       await api.post('/admin/partners', {
@@ -486,6 +520,26 @@ export const PartnersTab: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Margin Warning Alert */}
+                {formData.commissionType === 'percentage' &&
+                 formData.discountType === 'percentage' &&
+                 globalMargin > 0 &&
+                 (parseFloat(formData.commissionValue) + parseFloat(formData.discountValue)) > globalMargin && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-3">
+                    <ExclamationTriangleIcon className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-amber-800 font-medium">
+                        {t('admin:dashboard.promo_codes.referral.marginWarning', {
+                          commission: formData.commissionValue,
+                          discount: formData.discountValue,
+                          total: parseFloat(formData.commissionValue) + parseFloat(formData.discountValue),
+                          margin: globalMargin
+                        }) || `Warning: Commission (${formData.commissionValue}%) + Discount (${formData.discountValue}%) = ${parseFloat(formData.commissionValue) + parseFloat(formData.discountValue)}% exceeds your average margin of ${globalMargin}%`}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Submit Button */}
                 <div className="pt-4">

@@ -9,7 +9,7 @@ import {
   TrashIcon,
   ChartBarIcon,
   FunnelIcon,
-  PlayIcon,
+
   XMarkIcon,
   CheckIcon,
   ArrowPathIcon,
@@ -76,7 +76,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingRule, setEditingRule] = useState<MarginRule | null>(null);
-  const [showSimulator, setShowSimulator] = useState(false);
+
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
 
@@ -96,17 +96,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
     conditions: { ...initialConditions },
   });
 
-  // Simulator state
-  const [simulatorData, setSimulatorData] = useState({
-    basePrice: 500,
-    country: '',
-    city: '',
-    starRating: 4,
-    checkInDate: '',
-    mealType: 'room_only',
-    customerType: 'b2c',
-  });
-  const [simulationResult, setSimulationResult] = useState<any>(null);
+
 
   // Fetch rules and stats
   const fetchData = async () => {
@@ -236,15 +226,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
     }
   };
 
-  // Run simulation
-  const runSimulation = async () => {
-    try {
-      const res = await adminAPI.simulateMargin(simulatorData);
-      setSimulationResult(res.data.data);
-    } catch (error) {
-      toast.error(t('admin:dashboard.margins.simulator.error') || 'Simulation failed');
-    }
-  };
+
 
   // Add condition
   const addCountry = (country: string) => {
@@ -329,16 +311,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 </div>
               </div>
 
-              {/* Simulator Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowSimulator(true)}
-                className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-3 rounded-xl font-medium shadow-lg"
-              >
-                <PlayIcon className="w-5 h-5" />
-                <span>{t('admin:dashboard.margins.actions.simulator')}</span>
-              </motion.button>
+
 
               {/* Add Rule Button */}
               <motion.button
@@ -950,109 +923,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
         </motion.div>
       )}
 
-      {/* Simulator Modal */}
-      {showSimulator && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowSimulator(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-gray-900">{t('admin:dashboard.margins.simulator.title')}</h3>
-                  <button
-                    onClick={() => setShowSimulator(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <XMarkIcon className="w-6 h-6 text-gray-500" />
-                  </button>
-                </div>
-              </div>
 
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.basePrice')}</label>
-                  <input
-                    type="number"
-                    value={simulatorData.basePrice}
-                    onChange={(e) => setSimulatorData({ ...simulatorData, basePrice: Number(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.country')}</label>
-                    <input
-                      type="text"
-                      value={simulatorData.country}
-                      onChange={(e) => setSimulatorData({ ...simulatorData, country: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
-                      placeholder="Saudi Arabia"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.city')}</label>
-                    <input
-                      type="text"
-                      value={simulatorData.city}
-                      onChange={(e) => setSimulatorData({ ...simulatorData, city: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
-                      placeholder="Makkah"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin:dashboard.margins.simulator.starRating')}</label>
-                  <select
-                    value={simulatorData.starRating}
-                    onChange={(e) => setSimulatorData({ ...simulatorData, starRating: Number(e.target.value) })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500"
-                  >
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <option key={n} value={n}>{n} {t('admin:dashboard.margins.conditions.star')}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  onClick={runSimulation}
-                  className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-colors"
-                >
-                  {t('admin:dashboard.margins.simulator.run')}
-                </button>
-
-                {simulationResult && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-xl space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">{t('admin:dashboard.margins.simulator.basePrice')}:</span>
-                      <span className="font-medium">SAR {simulationResult.calculation.basePrice}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">{t('admin:dashboard.margins.simulator.marginApplied')}</span>
-                      <span className="font-medium text-emerald-600">+SAR {simulationResult.calculation.marginAmount}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-3">
-                      <span className="font-semibold">{t('admin:dashboard.margins.simulator.finalPrice')}</span>
-                      <span className="text-xl font-bold text-gray-900">SAR {simulationResult.calculation.finalPrice}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {t('admin:dashboard.margins.simulator.rule')} {simulationResult.appliedRule?.name || 'Default (15%)'}
-                    </div>
-                  </div>
-                )}
-              </div>
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 };

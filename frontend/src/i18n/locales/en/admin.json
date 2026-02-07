@@ -354,7 +354,9 @@
           "bookingsFromReferral": "Bookings from Referral",
           "markAsPaid": "Mark as Paid",
           "noReferrals": "No referral codes yet",
-          "customerDiscount": "Customer Discount"
+          "customerDiscount": "Customer Discount",
+          "marginWarning": "Warning: Commission ({{commission}}%) + Discount ({{discount}}%) = {{total}}% exceeds your average margin of {{margin}}%",
+          "markedAsPaid": "Commissions marked as paid!"
         }
       },
       "margins": {

@@ -474,8 +474,28 @@ export const PromoCodesTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'standard' | 'referral'>('standard');
   const [showQRModal, setShowQRModal] = useState<PromoCode | null>(null);
   const [showPartnerDetails, setShowPartnerDetails] = useState<PromoCode | null>(null);
+  const [globalMargin, setGlobalMargin] = useState<number>(0);
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
   const SITE_URL = process.env.REACT_APP_SITE_URL || window.location.origin;
+
+  // Fetch global margin stats on mount
+  useEffect(() => {
+    const fetchMarginStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/admin/margins/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success && data.data?.summary?.avgMargin) {
+          setGlobalMargin(Math.round(data.data.summary.avgMargin * 100) / 100);
+        }
+      } catch (error) {
+        console.error('Error fetching margin stats:', error);
+      }
+    };
+    fetchMarginStats();
+  }, [API_URL]);
 
   useEffect(() => {
     fetchPromoCodes();
@@ -1001,6 +1021,26 @@ export const PromoCodesTab: React.FC = () => {
                         />
                       </div>
                     </div>
+
+                    {/* Margin Warning Alert */}
+                    {formData.commissionType === 'percentage' &&
+                     formData.discountType === 'percentage' &&
+                     globalMargin > 0 &&
+                     (formData.commissionValue + formData.discountValue) > globalMargin && (
+                      <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+                        <ExclamationTriangleIcon className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-amber-800 font-medium">
+                            {t('admin:dashboard.promo_codes.referral.marginWarning', {
+                              commission: formData.commissionValue,
+                              discount: formData.discountValue,
+                              total: formData.commissionValue + formData.discountValue,
+                              margin: globalMargin
+                            }) || `Warning: Commission (${formData.commissionValue}%) + Discount (${formData.discountValue}%) = ${formData.commissionValue + formData.discountValue}% exceeds your average margin of ${globalMargin}%`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
