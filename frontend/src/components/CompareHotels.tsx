@@ -159,7 +159,7 @@ export const CompareHotels: React.FC<CompareHotelsProps> = ({
               <BuildingOffice2Icon className="w-6 h-6 text-orange-600" />
               {t('compare.compareHotels', 'Compare Hotels')}
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">{hotels.length} hotels selected</p>
+            <p className="text-sm text-gray-500 mt-0.5">{hotels.length} {t('compare.hotelsSelected', 'hotels selected')}</p>
           </div>
           <button
             onClick={onClose}
@@ -208,7 +208,7 @@ export const CompareHotels: React.FC<CompareHotelsProps> = ({
                              />
                              {isBestValue(hotel, 'price') && (
                                 <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg uppercase tracking-wider">
-                                  Best Price
+                                  {t('common:hotels.bestPrice', 'Best Price')}
                                 </div>
                              )}
                           </div>

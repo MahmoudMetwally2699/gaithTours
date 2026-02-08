@@ -66,7 +66,10 @@
     "seeAvailability": "عرض التوافر",
     "propertiesFoundIn": "وجدنا {{count}} مكان إقامة في {{destination}}",
     "noRates": "لا توجد أسعار متاحة",
-    "totalWithTaxes": "إجمالي (شامل الضرائب والرسوم)"
+    "totalWithTaxes": "إجمالي (شامل الضرائب والرسوم)",
+    "night": "ليلة",
+    "nights": "ليالٍ",
+    "fromCenter": "من المركز"
   },
   "reviews": {
     "wonderful": "رائع",

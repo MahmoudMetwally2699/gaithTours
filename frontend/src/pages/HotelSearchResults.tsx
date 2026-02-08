@@ -146,10 +146,49 @@ const generateBudgetHistogram = (hotels: Hotel[], maxPrice: number) => {
   return histogram.map(count => (count / maxCount) * 100);
 };
 
+// Calculate distance between two coordinates using Haversine formula
+const calculateDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number => {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
+
+// Format distance for display
+const formatDistanceDisplay = (distanceKm: number, t: any): string => {
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)} ${t('common:hotels.units.m', 'م')}`;
+  }
+  return `${distanceKm.toFixed(1)} ${t('common:hotels.units.km', 'كم')}`;
+};
+
 // City coordinates for map centering
 const cityCoordinates: { [key: string]: [number, number] } = {
-  // Middle East
+  // Middle East - Egypt
   'cairo': [30.0444, 31.2357],
+  'القاهرة': [30.0444, 31.2357],
+  'القاهره': [30.0444, 31.2357],
+  'مدينة نصر': [30.0511, 31.3414], // Nasr City - northeast Cairo
+  'nasr city': [30.0511, 31.3414],
+  'المعادي': [29.9579, 31.2548],
+  'maadi': [29.9579, 31.2548],
+  'الجيزة': [30.0131, 31.2089],
+  'giza': [30.0131, 31.2089],
+  'heliopolis': [30.0876, 31.3235],
+  'مصر الجديدة': [30.0876, 31.3235],
+  // Middle East
   'mecca': [21.4225, 39.8262],
   'makkah': [21.4225, 39.8262],
   'medina': [24.4672, 39.6024],
@@ -263,6 +302,11 @@ export const HotelSearchResults: React.FC = () => {
   const [fullscreenMap, setFullscreenMap] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [editableDestination, setEditableDestination] = useState(searchQuery.destination);
+
+  // Scroll to top on mount/refresh
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Comparison State
   const [comparedHotels, setComparedHotels] = useState<Hotel[]>([]);
@@ -1444,7 +1488,7 @@ export const HotelSearchResults: React.FC = () => {
       </div>
 
       {/* Results Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b sticky top-0 z-30 transition-all duration-300">
         <div className="px-3 sm:px-6 py-3 sm:py-4">
           {/* Mobile Action Buttons - Only show when search is compact on mobile */}
           {!isSearchExpanded && (
@@ -1825,17 +1869,7 @@ export const HotelSearchResults: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Filter Button */}
-          {/* Mobile Filter Button */}
-          {!showMobileDateModal && (
-          <button
-            onClick={() => setShowMobileFilters(true)}
-            className="lg:hidden fixed bottom-4 left-4 right-4 bg-orange-500 text-white py-3 rounded-lg font-semibold shadow-xl z-40 flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-95 transition-all"
-          >
-            <FunnelIcon className="h-5 w-5" />
-            {t('common.filter', 'Filter')} ({filters.starRating.length + filters.facilities.length + (filters.guestRating > 0 ? 1 : 0)})
-          </button>
-          )}
+
 
           {/* Hotel Results */}
           <div className="flex-1">
@@ -1895,16 +1929,238 @@ export const HotelSearchResults: React.FC = () => {
                       initial={skipAnimations ? false : { opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={skipAnimations ? { duration: 0 } : { duration: 0.3, delay: Math.min(index, 10) * 0.03 }}
-                      className={`rounded-lg transition-all duration-300 relative ${
+                      className={`rounded-lg transition-all duration-300 relative cursor-pointer ${
                         (hotel as any).isSearchedHotel
                           ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
                           : 'bg-white shadow-sm hover:shadow-md border border-gray-200'
                       }`}
+                      onClick={() => handleHotelClick(hotel)}
                     >
                       <div className={(hotel as any).isSearchedHotel ? 'bg-white rounded-[6px]' : ''}>
-                      <div className="flex flex-row h-full">
+                      {/* Mobile Booking.com-Style Card Layout */}
+                      <div className="sm:hidden flex flex-row min-h-[160px] bg-white">
+                        {/* Image Section */}
+                        <div className="relative w-[120px] flex-shrink-0">
+                          {hotel.image ? (
+                            <img
+                              src={hotel.image}
+                              alt={hotel.name}
+                              loading="lazy"
+                              className="w-full h-full object-cover rounded-s-lg"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-s-lg">
+                              <BuildingOfficeIcon className="h-12 w-12 text-gray-300" />
+                            </div>
+                          )}
+                          {/* Heart Icon */}
+                          <button
+                            onClick={(e) => handleToggleFavorite(e, hotel)}
+                            className="absolute top-2 end-2 w-8 h-8 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors z-20"
+                          >
+                            {favoriteIds.has(String(hotel.id || hotel.hid)) ? (
+                              <HeartIconSolid className="w-5 h-5 text-red-500" />
+                            ) : (
+                              <HeartIcon className="w-5 h-5 text-gray-400" />
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="flex-1 p-3 flex flex-col min-w-0">
+                          {/* Hotel Name */}
+                          <h3 className="text-[15px] font-bold text-[#1a1a2e] leading-snug line-clamp-2 mb-1">
+                            {hotel.name}
+                          </h3>
+
+                          {/* Stars Row */}
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <div className="flex">
+                              {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
+                            </div>
+                          </div>
+
+                          {/* Rating & Reviews Row */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="bg-[#E67915] text-white text-xs font-bold px-1.5 py-1 rounded-tl-md rounded-tr-md rounded-br-md min-w-[28px] text-center">
+                              {Math.min(hotel.rating, 10).toFixed(1)}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-[#1a1a2e]">
+                                {getScoreText(hotel.rating, t)}
+                              </span>
+                              <span className="text-[10px] text-gray-500">
+                                {hotel.reviewCount?.toLocaleString() || '0'} {t('searchResults:hotelCard.reviews', 'reviews')}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Location with Distance */}
+                          <div className="flex items-center gap-1 text-[11px] text-[#006ce4] mb-2">
+                            <MapPinIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate">{hotel.city || searchQuery.destination}</span>
+                            {(() => {
+                              // Check for coordinates in different formats
+                              const lat = hotel.coordinates?.latitude || (hotel as any).latitude;
+                              const lng = hotel.coordinates?.longitude || (hotel as any).longitude;
+
+                              if (lat && lng) {
+                                const cityCenter = getCityCoordinates(searchQuery.destination);
+                                const distance = calculateDistance(lat, lng, cityCenter[0], cityCenter[1]);
+                                return (
+                                  <span className="text-gray-500">
+                                    • {formatDistanceDisplay(distance, t)} {t('searchResults:hotelCard.fromCenter', 'من المركز')}
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+
+                          {/* Key Amenity Icons */}
+                          {hotel.amenities && hotel.amenities.length > 0 && (
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              {/* WiFi */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('wifi') || a.toLowerCase().includes('internet') || a.toLowerCase().includes('wi-fi')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.wifi', 'واي فاي')}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                  </svg>
+                                </div>
+                              )}
+                              {/* Pool */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('pool') || a.toLowerCase().includes('swimming') || a.toLowerCase().includes('مسبح')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.pool', 'مسبح')}>
+                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M2 12h2a2 2 0 012 2c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 012 2c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 012 2c0 1.1.9 2 2 2h2M2 6h2a2 2 0 012 2c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 012 2c0 1.1.9 2 2 2a2 2 0 002-2 2 2 0 012 2c0 1.1.9 2 2 2h2" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"/>
+                                  </svg>
+                                </div>
+                              )}
+                              {/* Parking */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('parking') || a.toLowerCase().includes('موقف')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.parking', 'موقف سيارات')}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7v10M8 7h4a4 4 0 010 8H8" />
+                                  </svg>
+                                </div>
+                              )}
+                              {/* Restaurant */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('restaurant') || a.toLowerCase().includes('مطعم') || a.toLowerCase().includes('dining')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.restaurant', 'مطعم')}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                  </svg>
+                                </div>
+                              )}
+                              {/* Gym/Fitness */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('gym') || a.toLowerCase().includes('fitness') || a.toLowerCase().includes('رياضة')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.gym', 'صالة رياضية')}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12h4l3-9 4 18 3-9h4" />
+                                  </svg>
+                                </div>
+                              )}
+                              {/* Spa */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('spa') || a.toLowerCase().includes('wellness') || a.toLowerCase().includes('سبا')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.spa', 'سبا')}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                  </svg>
+                                </div>
+                              )}
+                              {/* AC */}
+                              {hotel.amenities.some((a: string) =>
+                                a.toLowerCase().includes('air condition') || a.toLowerCase().includes('ac') || a.toLowerCase().includes('تكييف')
+                              ) && (
+                                <div className="flex items-center gap-0.5 text-gray-500" title={t('searchResults:amenities.ac', 'تكييف')}>
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Features with Green Checkmarks */}
+                          <div className="flex flex-col gap-0.5 mb-2">
+                            {(hotel as any).free_cancellation && (
+                              <div className="flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="text-[11px] text-green-700 font-medium">{t('searchResults:filters.options.free_cancellation', 'إلغاء مجاني')}</span>
+                              </div>
+                            )}
+                            {(hotel as any).meal && (hotel as any).meal !== 'nomeal' && (
+                              <div className="flex items-center gap-1">
+                                <svg className="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span className="text-[11px] text-green-700 font-medium">{t('searchResults:filters.options.breakfast', 'شامل الإفطار')}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Price Section */}
+                          <div className="mt-auto pt-2 border-t border-gray-100">
+                            <div className="flex items-end justify-between">
+                              {/* Compare Checkbox */}
+                              <label className="flex items-center gap-1.5 cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 rounded border-gray-300 text-[#E67915] focus:ring-[#E67915]"
+                                  checked={comparedHotels.some(h => (h.id || h.hid) === (hotel.id || hotel.hid))}
+                                  onChange={() => handleToggleCompare(hotel)}
+                                />
+                                <span className="text-[11px] font-medium text-gray-600">{t('common:common.compare', 'مقارنة')}</span>
+                              </label>
+                              {/* Price */}
+                              <div className="flex flex-col items-end">
+                                {(hotel as any).noRatesAvailable ? (
+                                  <span className="text-xs font-bold text-red-600">{t('searchResults:hotelCard.noRates', 'لا توجد أسعار متاحة')}</span>
+                                ) : (
+                                  <>
+                                    <span className="text-[10px] text-gray-500 mb-0.5">
+                                      {(() => {
+                                        const checkIn = new Date(searchQuery.checkIn);
+                                        const checkOut = new Date(searchQuery.checkOut);
+                                        const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        return `${diffDays} ${diffDays === 1 ? t('searchResults:hotelCard.night', 'ليلة') : t('searchResults:hotelCard.nights', 'ليالٍ')}، ${searchQuery.adults} ${t('searchResults:searchBar.adults', 'بالغين')}`;
+                                      })()}
+                                    </span>
+                                    <div className="flex items-baseline gap-1">
+                                      <span className="text-lg font-bold text-[#1a1a2e] inter-700">
+                                        {formatPrice(hotel.price)}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-500">
+                                      <span className="inter-700">+{formatPrice(Math.round((hotel as any).booking_taxes || 0))}</span> {t('common:hotels.taxesAndFees', 'ضرائب ورسوم')}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Horizontal Card Layout (unchanged) */}
+                      <div className="hidden sm:flex flex-row h-full">
                         {/* Hotel Image with Heart Icon */}
-                        <div className="relative w-32 sm:w-48 md:w-56 lg:w-64 flex-shrink-0">
+                        <div className="relative w-48 md:w-56 lg:w-64 flex-shrink-0">
                           {hotel.image ? (
                             <img
                               src={hotel.image}
@@ -1930,20 +2186,13 @@ export const HotelSearchResults: React.FC = () => {
                           </button>
                         </div>
 
-                        {/* Content Container - Split into Info and Price columns for desktop */}
                         {/* Content Container */}
-                        {/* Content Container */}
-                        <div className="flex-1 flex flex-col sm:flex-row justify-between min-w-0 relative">
-                          {/* Heart Icon - Moved here for mobile z-index issues if needed, or keep in image */}
-
-                          {/* Top Section: Info */}
-                          <div className="p-3 sm:p-4 flex-1 flex flex-col gap-1 sm:gap-3">
+                        <div className="flex-1 flex flex-row justify-between min-w-0 relative">
+                          {/* Info Section */}
+                          <div className="p-4 flex-1 flex flex-col gap-3">
                             <div className="flex justify-between items-start gap-2">
                                 <div className="flex flex-col gap-0.5">
-                                    <h3
-                                        onClick={() => handleHotelClick(hotel)}
-                                        className="text-sm sm:text-lg font-bold text-[#1a1a1a] leading-tight line-clamp-2"
-                                    >
+                                    <h3 className="text-lg font-bold text-[#1a1a1a] leading-tight">
                                         {hotel.name}
                                     </h3>
                                     {/* Stars & Location Row */}
@@ -1951,35 +2200,18 @@ export const HotelSearchResults: React.FC = () => {
                                         <div className="flex">
                                             {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
                                         </div>
-                                        <span className="text-[10px] sm:text-xs text-gray-500">•</span>
-                                        <span className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[100px] sm:max-w-none">
+                                        <span className="text-xs text-gray-500">•</span>
+                                        <span className="text-xs text-gray-500 truncate">
                                             {hotel.city || searchQuery.destination}
                                         </span>
                                     </div>
                                 </div>
-
-                                {/* Mobile Rating Badge (Absolute top right or flex) */}
-                                <div className="flex flex-col items-end shrink-0 sm:hidden">
-                                   <div className="bg-[#F7871D] text-white text-xs font-bold px-1.5 py-1 rounded">
-                                       {Math.min(hotel.rating, 10).toFixed(1)}
-                                   </div>
-                                </div>
                             </div>
 
-                            {/* Mobile Only: Highlight Badges (Breakfast/Cancel) - One line */}
-                            <div className="flex flex-wrap gap-2 sm:hidden mt-1">
-                                {(hotel as any).free_cancellation && (
-                                     <span className="text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded">Free cancel</span>
-                                )}
-                                {(hotel as any).meal && (hotel as any).meal !== 'nomeal' && (
-                                     <span className="text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded">Breakfast</span>
-                                )}
-                            </div>
-
-                            {/* Desktop only: Room Info */}
-                            <div className="hidden sm:block border-l-2 border-gray-200 pl-3 mt-1">
+                            {/* Room Info */}
+                            <div className="border-l-2 border-gray-200 pl-3 mt-1">
                                 {(hotel as any).room_name && (
-                                    <div className="font-bold text-xs sm:text-sm text-gray-900 mb-1">
+                                    <div className="font-bold text-sm text-gray-900 mb-1">
                                         {(hotel as any).room_name}
                                     </div>
                                 )}
@@ -1987,8 +2219,6 @@ export const HotelSearchResults: React.FC = () => {
                                 {(() => {
                                   const amenities = (hotel as any).amenities_data || [];
                                   const roomName = ((hotel as any).room_name || '').toLowerCase();
-
-                                  // Check for bed types in amenities_data
                                   const bedTypes: { type: string; label: string; icon: 'king' | 'queen' | 'twin' | 'single' | 'double' }[] = [];
 
                                   if (amenities.includes('king-bed') || roomName.includes('king')) {
@@ -2027,7 +2257,7 @@ export const HotelSearchResults: React.FC = () => {
                                 })()}
                             </div>
 
-                            <div className="hidden sm:flex flex-wrap gap-2 mt-auto">
+                            <div className="flex flex-wrap gap-2 mt-auto">
                                 {(hotel as any).free_cancellation && (
                                     <div className="flex items-center gap-1 text-xs font-bold text-green-700">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2036,7 +2266,6 @@ export const HotelSearchResults: React.FC = () => {
                                         {t('searchResults:filters.options.free_cancellation', 'Free cancellation')}
                                     </div>
                                 )}
-                                {/* Meal type badge - ETG meal values: 'breakfast', 'halfboard', 'fullboard', 'allinclusive' */}
                                 {(hotel as any).meal && (hotel as any).meal !== 'nomeal' && (
                                     <div className="flex items-center gap-1 text-xs font-bold text-green-700">
                                         <FontAwesomeIcon icon={faUtensils} className="w-3 h-3" />
@@ -2050,7 +2279,7 @@ export const HotelSearchResults: React.FC = () => {
 
                             {/* Amenities Icons with Tooltips */}
                             {(hotel as any).amenities && (hotel as any).amenities.length > 0 && (
-                                <div className="hidden sm:flex flex-wrap items-center gap-1 mt-2">
+                                <div className="flex flex-wrap items-center gap-1 mt-2">
                                   {((hotel as any).amenities as string[])
                                     .map((amenity: string) => getAmenityIcon(amenity, t))
                                     .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
@@ -2062,7 +2291,6 @@ export const HotelSearchResults: React.FC = () => {
                                         title={amenityData.label}
                                       >
                                         {amenityData.icon}
-                                        {/* Tooltip */}
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                                           {amenityData.label}
                                         </div>
@@ -2079,14 +2307,9 @@ export const HotelSearchResults: React.FC = () => {
                                               .filter((result): result is { icon: React.ReactNode; label: string } => result !== null)
                                               .length - 5} {t('searchResults:amenities.more', 'more')}
                                           </span>
-                                          {/* Detailed Tooltip for extra amenities - Displayed ABOVE the text */}
                                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-auto">
-                                            {/* Invisible bridge to prevent closing when moving to tooltip */}
                                             <div className="absolute top-full left-0 w-full h-2 bg-transparent"></div>
-
-                                            {/* Arrow properly positioned at bottom of tooltip */}
                                             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-800"></div>
-
                                             <div className="font-semibold mb-1 border-b border-gray-600 pb-1">{t('searchResults:amenities.moreAmenities', 'More amenities')}:</div>
                                             <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                                               {((hotel as any).amenities as string[])
@@ -2108,11 +2331,9 @@ export const HotelSearchResults: React.FC = () => {
                           </div>
 
                           {/* Right: Price & Action */}
-                          {/* Right: Price & Action */}
-                          <div className="p-2 pt-0 sm:pt-4 sm:p-4 flex flex-col justify-end sm:justify-between items-end sm:border-l border-t-0 sm:border-t-0 border-gray-100 sm:w-48 lg:w-60 bg-transparent sm:bg-transparent mt-auto sm:mt-0">
-                            {/* Reviews */}
+                          <div className="p-4 flex flex-col justify-between items-end border-l border-gray-100 w-48 lg:w-60">
                             {/* Reviews - Desktop */}
-                            <div className="hidden sm:flex items-center gap-2 mb-auto order-1 sm:order-none">
+                            <div className="flex items-center gap-2 mb-auto">
                                 <div className="text-right">
                                     <div className="text-sm font-medium text-gray-900 leading-tight">
                                         {getScoreText(hotel.rating, t)}
@@ -2121,14 +2342,14 @@ export const HotelSearchResults: React.FC = () => {
                                         {hotel.reviewCount?.toLocaleString()} {t('searchResults:hotelCard.reviews', 'reviews')}
                                     </div>
                                 </div>
-                                <div className="bg-[#003580] text-white p-1.5 rounded-t-lg rounded-br-lg text-sm font-bold min-w-[2rem] text-center" style={{ backgroundColor: '#F7871D' }}>
+                                <div className="bg-[#F7871D] text-white p-1.5 rounded-t-lg rounded-br-lg text-sm font-bold min-w-[2rem] text-center">
                                     {Math.min(hotel.rating, 10).toFixed(1)}
                                 </div>
                             </div>
 
                             {/* Price Block */}
-                            <div className="flex flex-col items-end gap-1 sm:gap-2 mt-2 sm:mt-4 order-2 sm:order-none w-full sm:w-auto">
-                                <div className="hidden sm:block text-xs text-gray-500">
+                            <div className="flex flex-col items-end gap-2 mt-4 w-full">
+                                <div className="text-xs text-gray-500">
                                     {(() => {
                                         const checkIn = new Date(searchQuery.checkIn);
                                         const checkOut = new Date(searchQuery.checkOut);
@@ -2141,17 +2362,17 @@ export const HotelSearchResults: React.FC = () => {
                                     <div className="text-sm font-bold text-red-600">{t('searchResults:hotelCard.noRates', 'No rates data')}</div>
                                 ) : (
                                     <>
-                                        <div className="hidden sm:block text-lg sm:text-2xl font-bold text-gray-900 leading-none font-price inter-700">
+                                        <div className="text-2xl font-bold text-gray-900 leading-none font-price inter-700">
                                             {formatPrice(hotel.price)}
                                         </div>
-                                        <div className="hidden sm:block text-[10px] text-gray-500 font-medium mb-1 font-price">
+                                        <div className="text-[10px] text-gray-500 font-medium mb-1 font-price">
                                             {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).booking_taxes || 0)))}
                                         </div>
                                     </>
                                 )}
-                                {/* Compare Checkbox - Desktop & Mobile */}
+                                {/* Compare Checkbox */}
                                 <div className="flex w-full justify-end mb-2">
-                                  <label className="flex items-center gap-2 cursor-pointer select-none group">
+                                  <label className="flex items-center gap-2 cursor-pointer select-none group" onClick={(e) => e.stopPropagation()}>
                                     <input
                                       type="checkbox"
                                       className="rounded border-gray-300 text-orange-500 focus:ring-orange-500 transition-colors"
@@ -2162,33 +2383,9 @@ export const HotelSearchResults: React.FC = () => {
                                   </label>
                                 </div>
 
-                                {/* Mobile Bottom Row: Price & Action */}
-                                <div className="sm:hidden flex items-end justify-between w-full mt-2">
-                                    <div className="flex flex-col">
-                                         <div className="text-xs text-gray-500 font-medium">
-                                            {1} night, {searchQuery.adults} ad.
-                                         </div>
-                                         <div className="text-lg font-bold text-gray-900 leading-none inter-700">
-                                            {formatPrice(hotel.price)}
-                                         </div>
-                                         <div className="text-[10px] text-gray-500 font-medium leading-tight font-price">
-                                            + {formatPrice(Math.round((hotel as any).booking_taxes || 0))} taxes
-                                         </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleHotelClick(hotel)}
-                                        className="bg-[#E67915] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm"
-                                    >
-                                        View
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-                                </div>
-
                                 <button
                                     onClick={() => handleHotelClick(hotel)}
-                                    className="hidden sm:flex w-full sm:w-auto bg-[#F7871D] hover:bg-[#c5650f] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md font-bold text-xs sm:text-sm transition-colors items-center justify-center gap-2 shadow-sm"
+                                    className="w-full bg-[#F7871D] hover:bg-[#c5650f] text-white px-4 py-2 rounded-md font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
                                 >
                                     {t('searchResults:hotelCard.seeAvailability', 'See availability')}
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

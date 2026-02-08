@@ -913,8 +913,9 @@ class RateHawkService {
             try {
               // Query Local DB - OPTIMIZED: Only fetch fields we actually use
               // Added 'amenities' field for displaying amenity icons on search cards
+              // Added 'latitude' and 'longitude' for distance calculation
               const localHotels = await HotelContent.find({ hid: { $in: batch } })
-                .select('hid hotelId name address city country countryCode starRating mainImage images amenities')
+                .select('hid hotelId name address city country countryCode starRating mainImage images amenities latitude longitude')
                 .lean();
               console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
 
@@ -948,7 +949,9 @@ class RateHawkService {
                   star_rating: hotel.starRating,
                   kind: 'Hotel', // Default
                   hid: hotel.hid,
-                  amenities: hotel.amenities || [] // Include amenities for frontend display
+                  amenities: hotel.amenities || [], // Include amenities for frontend display
+                  latitude: hotel.latitude || null,
+                  longitude: hotel.longitude || null
                 });
 
                 // Update internal cache with proper data structure
@@ -963,7 +966,9 @@ class RateHawkService {
                     star_rating: hotel.starRating,
                     kind: 'Hotel',
                     hid: hotel.hid,
-                    amenities: hotel.amenities || [] // Include amenities for frontend display
+                    amenities: hotel.amenities || [], // Include amenities for frontend display
+                    latitude: hotel.latitude || null,
+                    longitude: hotel.longitude || null
                   },
                   timestamp: now
                 });
@@ -1004,6 +1009,10 @@ class RateHawkService {
             // Add amenities to the hotel object
             if (content.amenities) hotel.amenities = content.amenities;
             if (content.facilities) hotel.facilities = content.facilities;
+
+            // Add coordinates for distance calculation
+            if (content.latitude) hotel.latitude = content.latitude;
+            if (content.longitude) hotel.longitude = content.longitude;
 
             hotel.isEnriched = true; // Mark as successfully enriched
           } else {

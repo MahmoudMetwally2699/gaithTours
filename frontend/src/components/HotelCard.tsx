@@ -141,7 +141,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
           {hotel.total_taxes && hotel.total_taxes > 0 && (
             <div className="flex justify-end mt-0.5">
               <span className="text-gray-400 text-[9px] sm:text-[10px]">
-                + {formatPrice(hotel.total_taxes, hotel.taxes_currency || hotel.currency)} {t('common:taxesAndFees', 'taxes and fees')}
+                + {formatPrice(hotel.total_taxes, hotel.taxes_currency || hotel.currency)} {t('hotels.taxesAndFees', 'taxes and fees')}
               </span>
             </div>
           )}

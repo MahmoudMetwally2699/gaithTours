@@ -298,9 +298,18 @@ export const HotelDetails: React.FC = () => {
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
   const [selectedRates, setSelectedRates] = useState<Map<string, number>>(new Map()); // match_hash -> count
 
-  // Scroll to top when component mounts
+  // Scroll to top when component mounts and disable scroll restoration
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
     window.scrollTo(0, 0);
+
+    return () => {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto';
+      }
+    };
   }, []);
 
   const handleUpdateSearch = () => {
