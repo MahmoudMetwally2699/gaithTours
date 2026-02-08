@@ -167,12 +167,74 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     return <CheckIcon className="w-4 h-4" />;
   };
 
+  const renderTaxTooltip = (rate: RoomRate, isMobile = false) => {
+    if (!rate.total_taxes || rate.total_taxes <= 0) {
+      if (!rate.tax_data?.taxes?.length) {
+         return (
+            <div className={`text-[10px] md:text-xs text-gray-500 mt-1 ${isMobile ? 'text-right' : ''}`}>
+               {t('common:hotels.taxesIncluded', 'Taxes included')}
+            </div>
+         );
+      }
+    }
+
+    const allTaxes = rate.tax_data?.taxes || [];
+    const payAtHotelTaxes = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
+    const payAtHotelTotal = payAtHotelTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
+    const paidAtBookingTotal = (rate.total_taxes || 0) - payAtHotelTotal;
+
+    const isRTL = i18n.language === 'ar';
+    const tooltipPosition = isRTL ? 'left-0' : 'right-0';
+    const arrowPosition = isRTL ? 'left-4' : 'right-4';
+    const textAlign = isRTL ? 'text-right' : 'text-left';
+
+    return (
+      <div className={`text-[10px] md:text-xs text-gray-500 mt-1 relative group cursor-help w-fit ${isMobile ? 'ml-auto' : ''}`}>
+         <span className="border-b border-dotted border-gray-400">
+           +{formatPrice(Math.round(rate.total_taxes || 0))} {t('common:hotels.taxesAndFees', 'taxes')}
+         </span>
+
+         <div className={`absolute bottom-full mb-2 w-64 bg-white shadow-xl rounded-lg p-3 text-xs z-50 invisible group-hover:visible border border-gray-200 ${textAlign} ${tooltipPosition}`}>
+            <div className={`absolute top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white ${arrowPosition}`}></div>
+
+            <div className="font-bold text-gray-800 mb-2 border-b pb-1">{t('common:hotels.priceBreakdown', 'Price Breakdown')}</div>
+            <div className="space-y-1">
+               <div className="flex justify-between"><span>{t('common:hotels.basePrice', 'Base Price')}:</span> <span>{formatPrice(Number(rate.price))}</span></div>
+
+               {paidAtBookingTotal > 0 && (
+                   <div className="flex justify-between text-gray-600">
+                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes')} ({t('common:hotels.paidAtBooking', 'Paid at Booking')})</span>
+                       <span className="whitespace-nowrap">+{formatPrice(paidAtBookingTotal)}</span>
+                   </div>
+               )}
+
+               {payAtHotelTotal > 0 && (
+                   <div className="flex justify-between text-gray-600">
+                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes')} ({t('common:hotels.payAtHotel', 'Pay at Hotel')})</span>
+                       <span className="whitespace-nowrap">+{formatPrice(payAtHotelTotal)}</span>
+                   </div>
+               )}
+
+               {paidAtBookingTotal <= 0 && payAtHotelTotal <= 0 && (rate.total_taxes || 0) > 0 && (
+                   <div className="flex justify-between text-gray-600">
+                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes and fees')}</span>
+                       <span className="whitespace-nowrap">+{formatPrice(rate.total_taxes || 0)}</span>
+                   </div>
+               )}
+
+               <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>{t('common:hotels.total', 'Total')}:</span> <span>{formatPrice(Number(rate.price) + (rate.total_taxes || 0))}</span></div>
+            </div>
+         </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-lg border border-gray-200 mb-4 shadow-sm">
       {/* Desktop Table Layout */}
       <div className="hidden md:block">
         {/* Table Header */}
-        <div className="grid grid-cols-12 bg-orange-500 text-white text-sm font-semibold">
+        <div className="grid grid-cols-12 bg-orange-500 text-white text-sm font-semibold rounded-t-lg">
           <div className="col-span-4 p-3 border-r border-orange-400">{t('common:hotels.roomType', 'Room Type')}</div>
           <div className="col-span-3 p-3 border-r border-orange-400">{t('common:hotels.yourChoices', 'Your Choices')}</div>
           <div className="col-span-1 p-3 border-r border-orange-400 text-center">{t('common:hotels.sleeps', 'Sleeps')}</div>
@@ -314,11 +376,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                     <div className="text-sm text-red-500 line-through">{formatPrice(Number(rate.original_price))}</div>
                   )}
                   <div className="text-xl font-bold text-gray-900">{formatPrice(Number(rate.price))}</div>
-                  {rate.total_taxes && rate.total_taxes > 0 && (
-                    <div className="text-xs text-gray-500">
-                      +{formatPrice(rate.total_taxes)} {t('common:hotels.taxesAndFees', 'taxes')}
-                    </div>
-                  )}
+                  {renderTaxTooltip(rate, false)}
                   {nights > 1 && (
                     <div className="text-xs text-gray-500">
                       {formatPrice(Math.round(Number(rate.price) / nights))}/{t('common:hotels.night', 'night')}
@@ -459,9 +517,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                     <div className="text-sm text-red-500 line-through">{formatPrice(Number(rate.original_price))}</div>
                   )}
                   <div className="text-xl font-bold text-gray-900">{formatPrice(Number(rate.price))}</div>
-                  {rate.total_taxes && rate.total_taxes > 0 && (
-                    <div className="text-xs text-gray-500">+{formatPrice(rate.total_taxes)} {t('common:hotels.taxesAndFees', 'taxes')}</div>
-                  )}
+                  {renderTaxTooltip(rate, true)}
                 </div>
               </div>
 
