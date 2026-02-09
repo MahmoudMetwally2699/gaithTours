@@ -174,6 +174,30 @@ const formatDistanceDisplay = (distanceKm: number, t: any): string => {
   return `${distanceKm.toFixed(1)} ${t('common:hotels.units.km', 'كم')}`;
 };
 
+// Smart coordinate correction - detects and fixes swapped lat/lng
+// This is needed because some hotel data sources have lat/lng reversed
+const getCorrectCoordinates = (
+  hotelLat: number,
+  hotelLng: number,
+  cityCenter: [number, number]
+): { lat: number; lng: number } => {
+  const [cityLat, cityLng] = cityCenter;
+
+  // Calculate distances with original and swapped coordinates
+  const distanceOriginal = calculateDistance(hotelLat, hotelLng, cityLat, cityLng);
+  const distanceSwapped = calculateDistance(hotelLng, hotelLat, cityLat, cityLng);
+
+  // If swapping the coordinates gives a significantly shorter distance,
+  // the original coordinates were likely reversed
+  // Use 100km as threshold - hotels shouldn't be >100km from city center
+  if (distanceOriginal > 100 && distanceSwapped < distanceOriginal * 0.5) {
+    console.log(`📍 Correcting swapped coordinates for hotel: ${hotelLat},${hotelLng} → ${hotelLng},${hotelLat}`);
+    return { lat: hotelLng, lng: hotelLat };
+  }
+
+  return { lat: hotelLat, lng: hotelLng };
+};
+
 // City coordinates for map centering
 const cityCoordinates: { [key: string]: [number, number] } = {
   // Middle East - Egypt
@@ -1146,7 +1170,7 @@ export const HotelSearchResults: React.FC = () => {
                             onChange={() => setIsTravelingForWork(true)}
                             className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                           />
-                          <span className="ml-2 text-sm text-gray-700">{t('common:yes', 'Yes')}</span>
+                          <span className="ml-2 text-sm text-gray-700">{t('common:common.yes', 'Yes')}</span>
                         </label>
                         <label className="flex items-center cursor-pointer">
                           <input
@@ -1156,7 +1180,7 @@ export const HotelSearchResults: React.FC = () => {
                             onChange={() => setIsTravelingForWork(false)}
                             className="w-4 h-4 text-[#E67915] border-gray-300 focus:ring-orange-500"
                           />
-                          <span className="ml-2 text-sm text-gray-700">{t('common:no', 'No')}</span>
+                          <span className="ml-2 text-sm text-gray-700">{t('common:common.no', 'No')}</span>
                         </label>
                       </div>
                     </div>
@@ -2001,11 +2025,13 @@ export const HotelSearchResults: React.FC = () => {
                             <span className="truncate">{hotel.city || searchQuery.destination}</span>
                             {(() => {
                               // Check for coordinates in different formats
-                              const lat = hotel.coordinates?.latitude || (hotel as any).latitude;
-                              const lng = hotel.coordinates?.longitude || (hotel as any).longitude;
+                              const rawLat = hotel.coordinates?.latitude || (hotel as any).latitude;
+                              const rawLng = hotel.coordinates?.longitude || (hotel as any).longitude;
 
-                              if (lat && lng) {
+                              if (rawLat && rawLng) {
                                 const cityCenter = getCityCoordinates(searchQuery.destination);
+                                // Auto-correct swapped coordinates (common data quality issue)
+                                const { lat, lng } = getCorrectCoordinates(rawLat, rawLng, cityCenter);
                                 const distance = calculateDistance(lat, lng, cityCenter[0], cityCenter[1]);
                                 return (
                                   <span className="text-gray-500">

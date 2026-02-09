@@ -210,13 +210,13 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Close Button */}
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
+            className="absolute top-4 end-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors text-white"
             aria-label={t('common.close', 'Close')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,19 +226,19 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         )}
 
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-6 sm:px-8 sm:py-8 text-white text-center relative">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-6 sm:px-8 sm:py-8 text-white text-center relative flex-shrink-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
             {step === 'phone' ? (
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
             ) : (
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             )}
           </div>
-          <h2 className="text-2xl font-bold mb-2">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">
             {step === 'phone'
               ? t('auth.oneLastStep', 'One Last Step!')
               : t('auth.verifyPhone', 'Verify Your Phone')
@@ -257,10 +257,10 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 sm:p-8">
+        <div className="p-5 sm:p-8 overflow-y-auto">
           {step === 'phone' ? (
             <>
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 text-center mb-6 text-sm sm:text-base">
                 {t('auth.phoneModalDescription', 'To complete your registration and receive booking confirmations, please provide your phone number.')}
               </p>
 
@@ -275,10 +275,10 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                      className="flex items-center gap-2 px-3 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 hover:border-orange-300 transition-colors min-w-[100px]"
+                      className="flex items-center gap-2 px-3 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 hover:border-orange-300 transition-colors min-w-[90px] sm:min-w-[100px]"
                     >
                       <span>{selectedCountry?.flag}</span>
-                      <span className="font-medium">{countryCode}</span>
+                      <span className="font-medium text-sm sm:text-base">{countryCode}</span>
                       <svg className={`w-4 h-4 transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -289,7 +289,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50 max-h-60 overflow-y-auto"
+                        className="absolute top-full start-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 max-h-60 overflow-y-auto"
                       >
                         {countryCodes.map((country) => (
                           <button
@@ -299,13 +299,13 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                               setCountryCode(country.code);
                               setShowCountryDropdown(false);
                             }}
-                            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition-colors text-left ${
+                            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 transition-colors text-start ${
                               countryCode === country.code ? 'bg-orange-50 text-orange-600' : ''
                             }`}
                           >
                             <span>{country.flag}</span>
-                            <span className="flex-1">{country.country}</span>
-                            <span className="text-gray-500">{country.code}</span>
+                            <span className="flex-1 text-sm sm:text-base">{country.country}</span>
+                            <span className="text-gray-500 text-sm sm:text-base">{country.code}</span>
                           </button>
                         ))}
                       </motion.div>
@@ -321,7 +321,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                       setError('');
                     }}
                     placeholder="5XXXXXXXX"
-                    className={`flex-1 px-3 sm:px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                    className={`flex-1 px-3 sm:px-4 py-3 border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 text-sm sm:text-base ${
                       error
                         ? 'border-red-300 focus:border-red-500'
                         : 'border-gray-200 focus:border-orange-500'
@@ -346,7 +346,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
               <div className="bg-orange-50 rounded-xl p-4 mb-6">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-sm text-gray-700">
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
                       <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                         <path d="M12 2C6.478 2 2 6.478 2 12c0 1.89.525 3.66 1.438 5.168L2.546 22l4.985-.873A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
@@ -355,7 +355,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                     <span>{t('auth.verifyViaWhatsApp', 'Verification via WhatsApp')}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-700">
-                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -363,7 +363,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                     <span>{t('auth.benefit1', 'Receive instant booking confirmations')}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-700">
-                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -380,7 +380,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                 disabled={isLoading}
                 whileHover={{ scale: isLoading ? 1 : 1.02 }}
                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
@@ -401,12 +401,12 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
           ) : (
             <>
               {/* OTP Step */}
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 text-center mb-6 text-sm sm:text-base">
                 {t('auth.enterVerificationCode', 'Enter the 6-digit code we sent to your WhatsApp')}
               </p>
 
               {/* OTP Input */}
-              <div className="flex justify-center gap-2 mb-6" onPaste={handleOtpPaste}>
+              <div className="flex justify-center gap-1 sm:gap-2 mb-6" onPaste={handleOtpPaste} dir="ltr">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -417,7 +417,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
+                    className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 rounded-xl transition-colors focus:outline-none focus:ring-0 ${
                       error
                         ? 'border-red-300 focus:border-red-500'
                         : 'border-gray-200 focus:border-orange-500'
@@ -463,7 +463,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                 disabled={isLoading || otp.some(d => !d)}
                 whileHover={{ scale: isLoading ? 1 : 1.02 }}
                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">

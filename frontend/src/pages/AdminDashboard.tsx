@@ -18,6 +18,7 @@ import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
 import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalBannersTab';
 import { LoyaltyTab } from '../components/AdminDashboard/LoyaltyTab';
 import { PartnersTab } from '../components/AdminDashboard/PartnersTab';
+import { BlogTab } from '../components/AdminDashboard/BlogTab';
 import { HotelContactLookup } from '../components/admin/HotelContactLookup';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import { ClientDetailModal } from '../components/AdminDashboard/ClientDetailModal';
@@ -37,7 +38,8 @@ import {
   PhotoIcon,
   PhoneIcon,
   TrophyIcon,
-  UsersIcon
+  UsersIcon,
+  NewspaperIcon
 } from '@heroicons/react/24/outline';
 import { WhatsAppNotificationListener } from '../components/WhatsApp/WhatsAppNotificationListener';
 
@@ -482,6 +484,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'promotional_banners', name: t('admin:dashboard.tabs.promotional_banners'), icon: PhotoIcon },
     { id: 'loyalty', name: t('admin:dashboard.tabs.loyalty'), icon: TrophyIcon },
     { id: 'partners', name: t('admin:dashboard.tabs.partners', 'Partners'), icon: UsersIcon },
+    { id: 'blog', name: t('admin:dashboard.tabs.blog', 'Blog'), icon: NewspaperIcon },
     { id: 'whatsapp', name: t('admin:dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
     { id: 'admin_management', name: t('admin:dashboard.tabs.admin_management'), icon: ShieldExclamationIcon, superAdminOnly: true }
   ];
@@ -1021,6 +1024,10 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Partners Tab */}
           {activeTab === 'partners' && (
             <PartnersTab />
+          )}
+          {/* Blog Tab */}
+          {activeTab === 'blog' && (
+            <BlogTab />
           )}
         </div>
       </div>      {/* Approval Modal */}

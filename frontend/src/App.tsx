@@ -22,6 +22,8 @@ import { EmailVerification } from './pages/EmailVerification';
 import { Profile } from './pages/Profile';
 import { PaymentSuccess } from './pages/PaymentSuccess';
 import { PaymentFailure } from './pages/PaymentFailure';
+import { Blog } from './pages/Blog';
+import { BlogPostPage } from './pages/BlogPost';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AcceptInvitation } from './pages/AcceptInvitation';
@@ -94,6 +96,9 @@ const AppContent = () => {
           {/* Partner Routes */}
           <Route path="/partner/login" component={PartnerLogin} />
           <Route path="/partner/dashboard" component={PartnerDashboard} />
+          {/* Blog Routes */}
+          <Route exact path="/blog" component={Blog} />
+          <Route path="/blog/:slug" component={BlogPostPage} />
         </Switch>
       </main>
       {!isAdminDashboard && !isPartnerPage && <Footer />}

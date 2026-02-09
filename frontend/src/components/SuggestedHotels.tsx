@@ -166,8 +166,19 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
           console.log(`📍 Coordinates received: ${latitude}, ${longitude}`);
 
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+            {
+              headers: {
+                'User-Agent': 'GaithTours/1.0 (https://gaithtours.com)',
+                'Accept': 'application/json'
+              }
+            }
           );
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
           const geoData = await response.json();
           const city = geoData.address?.city || geoData.address?.town || geoData.address?.state || geoData.address?.country;
 
@@ -179,7 +190,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
             fetchSuggestions(DEFAULT_CITY, false);
           }
         } catch (error) {
-          console.error('❌ Reverse geocoding failed:', error);
+          console.log('Location detection unavailable, using default city');
           fetchSuggestions(DEFAULT_CITY, false);
         }
       },

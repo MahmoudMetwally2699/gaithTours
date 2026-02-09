@@ -1,0 +1,246 @@
+/**
+ * Test script to preview the Hotel Confirmation Email template
+ * Run: node backend/scripts/testHotelEmail.js
+ */
+
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
+// Set FRONTEND_URL if not set (for logo)
+process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+process.env.EMAIL_FROM = process.env.EMAIL_FROM || 'reservations@gaithtours.com';
+
+const fs = require('fs');
+const path = require('path');
+
+// Dummy data for testing
+const dummyData = {
+  hotelEmail: 'hotel@example.com',
+  hotelName: 'Grand Palace Hotel & Spa',
+  guestName: 'Ahmed Mohamed',
+  guestEmail: 'ahmed.mohamed@email.com',
+  guestPhone: '+201234567890',
+  nationality: 'Egyptian',
+  checkInDate: '2026-02-15',
+  checkOutDate: '2026-02-18',
+  roomType: 'Deluxe Double Room with Sea View',
+  numberOfGuests: 2,
+  numberOfRooms: 1,
+  meal: 'Breakfast Included',
+  specialRequests: 'Late check-in around 11 PM. Please prepare a room on a high floor with a nice view. Non-smoking room preferred.',
+  reservationId: 'GH-1707523456-abc123',
+  totalPrice: 450.00,
+  currency: 'USD'
+};
+
+// Helper date formatter
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// Calculate nights
+const start = new Date(dummyData.checkInDate);
+const end = new Date(dummyData.checkOutDate);
+const nights = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) || 1;
+
+// Generate HTML
+const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservation Confirmation - Preview</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #e5e5e5; padding: 20px; }
+  </style>
+</head>
+<body style="margin: 0; padding: 20px; background-color: #e5e5e5; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+
+  <!-- Main Container -->
+  <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+
+    <!-- Header with Logo -->
+    <div style="background: linear-gradient(135deg, #FF6B00 0%, #FF8A3D 100%); padding: 40px 30px; text-align: center;">
+      <div style="margin-bottom: 15px;">
+        <span style="color: #ffffff; font-size: 32px; font-weight: 800; letter-spacing: -1px;">✈️ Gaith Tours</span>
+      </div>
+      <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 12px 24px; display: inline-block; border: 1px solid rgba(255,255,255,0.3);">
+        <p style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0;">🏨 New Reservation Confirmation</p>
+      </div>
+    </div>
+
+    <!-- Orange Stripe -->
+    <div style="height: 4px; background: linear-gradient(90deg, #FF6B00 0%, #FFA500 50%, #FF6B00 100%);"></div>
+
+    <!-- Content -->
+    <div style="padding: 35px 30px;">
+
+      <!-- Greeting -->
+      <div style="margin-bottom: 30px;">
+        <h2 style="color: #1f2937; font-size: 22px; font-weight: 700; margin: 0 0 12px 0;">
+          Dear ${dummyData.hotelName} Team,
+        </h2>
+        <p style="color: #6b7280; font-size: 15px; line-height: 1.6; margin: 0;">
+          We are pleased to inform you about a new reservation made through <strong style="color: #FF6B00;">Gaith Tours</strong>.
+          Please confirm this booking at your earliest convenience.
+        </p>
+      </div>
+
+      <!-- Reservation ID Badge -->
+      <div style="background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); border: 2px solid #FF6B00; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; text-align: center;">
+        <p style="color: #9a3412; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 5px 0;">Reservation ID</p>
+        <p style="color: #FF6B00; font-size: 18px; font-weight: 800; font-family: monospace; margin: 0;">${dummyData.reservationId}</p>
+      </div>
+
+      <!-- Guest Information Card -->
+      <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #FF6B00;">
+          <span style="font-size: 24px; margin-right: 10px;">👤</span>
+          <h3 style="color: #1f2937; font-size: 18px; font-weight: 700; margin: 0;">Guest Information</h3>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; font-weight: 500; width: 140px;">Guest Name:</td>
+            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">${dummyData.guestName}</td>
+          </tr>
+          <tr style="background: #f9fafb;">
+            <td style="padding: 10px; color: #6b7280; font-size: 14px; font-weight: 500; border-radius: 6px 0 0 6px;">Email:</td>
+            <td style="padding: 10px; color: #FF6B00; font-size: 14px; font-weight: 600; border-radius: 0 6px 6px 0;">
+              <a href="mailto:${dummyData.guestEmail}" style="color: #FF6B00; text-decoration: none;">${dummyData.guestEmail}</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; font-weight: 500;">Phone:</td>
+            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">${dummyData.guestPhone}</td>
+          </tr>
+          <tr style="background: #f9fafb;">
+            <td style="padding: 10px; color: #6b7280; font-size: 14px; font-weight: 500; border-radius: 6px 0 0 6px;">Nationality:</td>
+            <td style="padding: 10px; color: #1f2937; font-size: 14px; font-weight: 600; border-radius: 0 6px 6px 0;">${dummyData.nationality}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; font-weight: 500;">Number of Guests:</td>
+            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">${dummyData.numberOfGuests} Guest(s)</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Booking Details Card -->
+      <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+        <div style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #FF6B00;">
+          <span style="font-size: 24px; margin-right: 10px;">📅</span>
+          <h3 style="color: #1f2937; font-size: 18px; font-weight: 700; margin: 0;">Booking Details</h3>
+        </div>
+
+        <!-- Check-in/Check-out Grid -->
+        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+          <div style="flex: 1; background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border-radius: 10px; padding: 15px; text-align: center; border: 1px solid #A7F3D0;">
+            <p style="color: #065F46; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0;">✅ Check-in</p>
+            <p style="color: #047857; font-size: 14px; font-weight: 700; margin: 0;">${formatDate(dummyData.checkInDate)}</p>
+          </div>
+          <div style="flex: 1; background: linear-gradient(135deg, #FEF2F2 0%, #FECACA 100%); border-radius: 10px; padding: 15px; text-align: center; border: 1px solid #FECACA;">
+            <p style="color: #991B1B; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px 0;">📤 Check-out</p>
+            <p style="color: #B91C1C; font-size: 14px; font-weight: 700; margin: 0;">${formatDate(dummyData.checkOutDate)}</p>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="background: #f9fafb;">
+            <td style="padding: 10px; color: #6b7280; font-size: 14px; font-weight: 500; border-radius: 6px 0 0 6px;">Duration:</td>
+            <td style="padding: 10px; color: #1f2937; font-size: 14px; font-weight: 600; border-radius: 0 6px 6px 0;">${nights} Night(s)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; font-weight: 500;">Room Type:</td>
+            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">${dummyData.roomType}</td>
+          </tr>
+          <tr style="background: #f9fafb;">
+            <td style="padding: 10px; color: #6b7280; font-size: 14px; font-weight: 500; border-radius: 6px 0 0 6px;">Number of Rooms:</td>
+            <td style="padding: 10px; color: #1f2937; font-size: 14px; font-weight: 600; border-radius: 0 6px 6px 0;">${dummyData.numberOfRooms} Room(s)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; color: #6b7280; font-size: 14px; font-weight: 500;">Meal Plan:</td>
+            <td style="padding: 10px 0; color: #1f2937; font-size: 14px; font-weight: 600;">${dummyData.meal}</td>
+          </tr>
+          <tr style="background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);">
+            <td style="padding: 12px; color: #9A3412; font-size: 14px; font-weight: 600; border-radius: 6px 0 0 6px;">💰 Total Amount:</td>
+            <td style="padding: 12px; color: #FF6B00; font-size: 16px; font-weight: 800; border-radius: 0 6px 6px 0;">${dummyData.currency} ${dummyData.totalPrice.toLocaleString()}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Special Requests -->
+      <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; border-left: 4px solid #F59E0B;">
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 20px; margin-right: 8px;">📝</span>
+          <h4 style="color: #92400E; font-size: 15px; font-weight: 700; margin: 0;">Special Requests</h4>
+        </div>
+        <p style="color: #78350F; font-size: 14px; line-height: 1.6; margin: 0;">${dummyData.specialRequests}</p>
+      </div>
+
+      <!-- Action Required -->
+      <div style="background: linear-gradient(135deg, #FF6B00 0%, #FF8A3D 100%); border-radius: 12px; padding: 25px; margin-bottom: 25px; text-align: center;">
+        <h3 style="color: #ffffff; font-size: 18px; font-weight: 700; margin: 0 0 10px 0;">⚡ Action Required</h3>
+        <p style="color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.6; margin: 0;">
+          Please confirm this reservation and ensure the room is ready for the guest's arrival.
+          If you have any questions, please contact us immediately.
+        </p>
+      </div>
+
+      <!-- Contact Information -->
+      <div style="background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center;">
+        <p style="color: #6b7280; font-size: 13px; margin: 0 0 10px 0;">For any inquiries, please contact Gaith Tours:</p>
+        <p style="margin: 0;">
+          <a href="mailto:${process.env.EMAIL_FROM}" style="color: #FF6B00; text-decoration: none; font-weight: 600; font-size: 14px;">📧 ${process.env.EMAIL_FROM}</a>
+          <span style="color: #d1d5db; margin: 0 10px;">|</span>
+          <span style="color: #1f2937; font-weight: 600; font-size: 14px;">📞 +966549412412</span>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #1f2937; padding: 25px 30px; text-align: center;">
+      <p style="color: rgba(255,255,255,0.6); font-size: 12px; margin: 0 0 5px 0;">
+        This is an automated message from Gaith Tours Booking System
+      </p>
+      <p style="color: rgba(255,255,255,0.4); font-size: 11px; margin: 0;">
+        © ${new Date().getFullYear()} Gaith Tours. All rights reserved.
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+`;
+
+// Write to file and open in browser
+const outputPath = path.join(__dirname, 'hotel-email-preview.html');
+fs.writeFileSync(outputPath, html);
+
+console.log('✅ Email preview generated!');
+console.log(`📄 File: ${outputPath}`);
+console.log('');
+console.log('Opening in browser...');
+
+// Open in default browser
+const { exec } = require('child_process');
+const command = process.platform === 'win32'
+  ? `start "" "${outputPath}"`
+  : process.platform === 'darwin'
+    ? `open "${outputPath}"`
+    : `xdg-open "${outputPath}"`;
+
+exec(command, (error) => {
+  if (error) {
+    console.log('⚠️ Could not open browser automatically.');
+    console.log('   Please open the file manually:', outputPath);
+  }
+});

@@ -120,15 +120,15 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ compact = false }) => 
           <div className="flex items-center gap-3">
             <TrophyIcon className={`w-8 h-8 ${tierStyle.icon}`} />
             <div>
-              <div className={`font-bold ${tierStyle.text}`}>{status.tier} Member</div>
+                          <div className={`font-bold ${tierStyle.text}`}>{t(`loyalty.tiers.${status.tier}`)} {t('loyalty.member')}</div>
               <div className={`text-sm ${tierStyle.text} opacity-80`}>
-                {status.points.toLocaleString()} points
+                {status.points.toLocaleString()} {t('loyalty.points')}
               </div>
             </div>
           </div>
           {status.nextTier && (
-            <div className={`text-right ${tierStyle.text}`}>
-              <div className="text-xs opacity-80">Next: {status.nextTier.name}</div>
+                        <div className={`text-right ${tierStyle.text}`}>
+              <div className="text-xs opacity-80">{t('loyalty.next')}: {t(`loyalty.tiers.${status.nextTier.name}`)}</div>
               <div className="w-20 h-2 bg-white/20 rounded-full overflow-hidden mt-1">
                 <div
                   className="h-full bg-white/60 rounded-full transition-all duration-500"
@@ -155,23 +155,23 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ compact = false }) => 
               <h3 className={`text-xl font-bold ${tierStyle.text}`}>
                 {status.programName || 'Loyalty Rewards'}
               </h3>
-              <p className={`text-sm ${tierStyle.text} opacity-80`}>
-                {status.tier} Member
+                            <p className={`text-sm ${tierStyle.text} opacity-80`}>
+                {t(`loyalty.tiers.${status.tier}`)} {t('loyalty.member')}
               </p>
             </div>
           </div>
           <div className={`text-right ${tierStyle.text}`}>
-            <div className="text-3xl font-bold">{status.points.toLocaleString()}</div>
-            <div className="text-sm opacity-80">points</div>
+                        <div className="text-3xl font-bold">{status.points.toLocaleString()}</div>
+            <div className="text-sm opacity-80">{t('loyalty.points')}</div>
           </div>
         </div>
 
         {/* Progress to Next Tier */}
         {status.nextTier && (
-          <div className={`${tierStyle.text}`}>
+                    <div className={`${tierStyle.text}`}>
             <div className="flex justify-between text-sm mb-2">
-              <span>Progress to {status.nextTier.name}</span>
-              <span>{status.nextTier.pointsNeeded.toLocaleString()} points needed</span>
+              <span>{t('loyalty.progressTo')} {t(`loyalty.tiers.${status.nextTier.name}`)}</span>
+              <span>{status.nextTier.pointsNeeded.toLocaleString()} {t('loyalty.pointsNeeded')}</span>
             </div>
             <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden">
               <div
@@ -185,37 +185,37 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ compact = false }) => 
 
       {/* Benefits Section */}
       <div className="p-6">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <GiftIcon className="w-5 h-5 text-orange-500" />
-          Your Benefits
+          {t('loyalty.yourBenefits')}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {status.benefits.discountPercent > 0 && (
             <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
               <SparklesIcon className="w-6 h-6 text-green-600" />
               <div>
-                <div className="font-medium text-green-800">
-                  {status.benefits.discountPercent}% Off
+                                <div className="font-medium text-green-800">
+                  {status.benefits.discountPercent}% {t('loyalty.discount')}
                 </div>
-                <div className="text-sm text-green-600">All bookings</div>
+                <div className="text-sm text-green-600">{t('loyalty.allBookings')}</div>
               </div>
             </div>
           )}
           {status.benefits.freeCancellation && (
             <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
               <CheckCircleIcon className="w-6 h-6 text-blue-600" />
-              <div>
-                <div className="font-medium text-blue-800">Free Cancellation</div>
-                <div className="text-sm text-blue-600">On eligible bookings</div>
+                            <div>
+                <div className="font-medium text-blue-800">{t('loyalty.freeCancellation')}</div>
+                <div className="text-sm text-blue-600">{t('loyalty.onEligibleBookings')}</div>
               </div>
             </div>
           )}
           {status.benefits.prioritySupport && (
             <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
               <StarIcon className="w-6 h-6 text-purple-600" />
-              <div>
-                <div className="font-medium text-purple-800">Priority Support</div>
-                <div className="text-sm text-purple-600">24/7 dedicated help</div>
+                            <div>
+                <div className="font-medium text-purple-800">{t('loyalty.prioritySupport')}</div>
+                <div className="text-sm text-purple-600">{t('loyalty.dedicatedHelp')}</div>
               </div>
             </div>
           )}
@@ -229,8 +229,8 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ compact = false }) => 
 
       {/* Stats Footer */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Total spent</span>
+                <div className="flex justify-between text-sm">
+          <span className="text-gray-500">{t('loyalty.totalSpent')}</span>
           <span className="font-semibold text-gray-700">${status.totalSpent.toLocaleString()}</span>
         </div>
       </div>

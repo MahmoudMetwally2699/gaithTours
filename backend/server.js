@@ -230,6 +230,29 @@ try {
   console.error('Error loading partner routes:', error);
 }
 
+// Price alerts routes (Price Watch feature)
+try {
+  app.use('/api/price-alerts', require('./routes/price-alerts'));
+  console.log('✅ Price alerts routes loaded');
+} catch (error) {
+  console.error('Error loading price alerts routes:', error);
+}
+
+// Blog routes (public)
+try {
+  app.use('/api/blog', require('./routes/blog'));
+  console.log('✅ Blog routes loaded');
+} catch (error) {
+  console.error('Error loading blog routes:', error);
+}
+
+// Blog admin routes
+try {
+  app.use('/api/admin/blog', require('./routes/blog-admin'));
+  console.log('✅ Blog admin routes loaded');
+} catch (error) {
+  console.error('Error loading blog admin routes:', error);
+}
 
 // Debug routes (development only)
 if (process.env.NODE_ENV !== 'production') {

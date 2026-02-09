@@ -72,8 +72,19 @@ export const MainSection: React.FC = () => {
             // Reverse geocode to get city name
             try {
               const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`,
+                {
+                  headers: {
+                    'User-Agent': 'GaithTours/1.0 (https://gaithtours.com)',
+                    'Accept': 'application/json'
+                  }
+                }
               );
+
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+
               const data = await response.json();
 
               const city = data.address?.city ||
@@ -87,7 +98,8 @@ export const MainSection: React.FC = () => {
                 setDestination(city);
               }
             } catch (error) {
-              console.error('Error getting location name:', error);
+              // Silently fail - geocoding is optional, user can type destination manually
+              console.log('Location detection unavailable, user can type destination manually');
             } finally {
               setIsDetectingLocation(false);
             }

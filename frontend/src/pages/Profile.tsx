@@ -18,12 +18,14 @@ import {
   HomeIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  SparklesIcon
+  SparklesIcon,
+  BellAlertIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { reservationsAPI, Reservation as APIReservation } from '../services/api';
 import paymentsAPI, { Invoice } from '../services/paymentsAPI';
+import { getPriceAlerts, deletePriceAlert, PriceAlert } from '../services/priceAlertService';
 import { toast } from 'react-hot-toast';
 import InvoiceDetailModal from '../components/InvoiceDetailModal';
 import { CancellationModal } from '../components/CancellationModal';
@@ -76,6 +78,8 @@ export const Profile: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [favorites, setFavorites] = useState<FavoriteHotel[]>(() => getFavoritesWithData());
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
+  const [priceAlertsLoading, setPriceAlertsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -174,7 +178,34 @@ export const Profile: React.FC = () => {
     if (activeTab === 'favorites' || activeTab === 'overview') {
       setFavorites(getFavoritesWithData());
     }
+    if (activeTab === 'priceAlerts') {
+      fetchPriceAlerts();
+    }
   }, [activeTab]);
+
+  const fetchPriceAlerts = async () => {
+    try {
+      setPriceAlertsLoading(true);
+      const alerts = await getPriceAlerts();
+      setPriceAlerts(alerts);
+    } catch (error) {
+      console.error('Error fetching price alerts:', error);
+      toast.error(t('profile.fetchAlertsFailed', 'Failed to load price alerts'));
+    } finally {
+      setPriceAlertsLoading(false);
+    }
+  };
+
+  const handleDeletePriceAlert = async (alertId: string) => {
+    try {
+      await deletePriceAlert(alertId);
+      setPriceAlerts(prev => prev.filter(a => a._id !== alertId));
+      toast.success(t('profile.alertDeleted', 'Price alert removed'));
+    } catch (error) {
+      console.error('Error deleting price alert:', error);
+      toast.error(t('profile.deleteAlertFailed', 'Failed to remove alert'));
+    }
+  };
 
   const handleViewInvoice = async (invoiceId: string) => {
     try {
@@ -260,6 +291,7 @@ export const Profile: React.FC = () => {
   const menuItems = [
     { id: 'overview', label: t('profile.overview', 'Overview'), icon: HomeIcon },
     { id: 'reservations', label: t('profile.reservations'), icon: BuildingOfficeIcon },
+    { id: 'priceAlerts', label: t('profile.priceAlerts', 'Price Alerts'), icon: BellAlertIcon },
     { id: 'favorites', label: t('profile.favorites'), icon: HeartIcon },
     { id: 'settings', label: t('profile.settings', 'Settings'), icon: Cog6ToothIcon },
   ];
@@ -707,6 +739,93 @@ export const Profile: React.FC = () => {
                         </div>
                       </motion.div>
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Price Alerts Tab */}
+            {activeTab === 'priceAlerts' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold text-gray-900">{t('profile.priceAlerts', 'Price Alerts')}</h2>
+                {priceAlertsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                  </div>
+                ) : priceAlerts.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+                    <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <BellAlertIcon className="h-8 w-8 text-orange-500" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('profile.noAlerts', 'No price alerts')}</h3>
+                    <p className="text-gray-500 mb-6">{t('profile.addAlerts', 'Watch hotel prices to get notified when they drop')}</p>
+                    <Link to="/" className="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-colors">
+                      {t('common.explore', 'Explore Hotels')}
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {priceAlerts.map((alert) => {
+                      const priceDiff = alert.initialPrice - alert.currentPrice;
+                      const priceDropPercent = alert.initialPrice > 0 ? Math.round((priceDiff / alert.initialPrice) * 100) : 0;
+                      const hasPriceDrop = priceDiff > 0;
+
+                      return (
+                        <motion.div
+                          key={alert._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex flex-col md:flex-row justify-between gap-4">
+                            <div className="flex gap-4">
+                              <div className="w-16 h-16 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center">
+                                {alert.hotelImage ? (
+                                  <img src={alert.hotelImage} alt={alert.hotelName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <BuildingOfficeIcon className="h-8 w-8 text-gray-400" />
+                                )}
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-bold text-gray-900">{alert.hotelName}</h3>
+                                <p className="text-sm text-gray-500">{alert.destination}</p>
+                                <div className="flex flex-wrap items-center gap-3 mt-2">
+                                  <div className="text-sm">
+                                    <span className="text-gray-500">{t('profile.currentPrice', 'Current')}:</span>{' '}
+                                    <span className="font-semibold text-gray-900">${alert.currentPrice}</span>
+                                  </div>
+                                  {hasPriceDrop && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      ↓ {priceDropPercent}% {t('profile.lower', 'lower')}
+                                    </span>
+                                  )}
+                                  {alert.lowestPrice < alert.currentPrice && (
+                                    <div className="text-sm">
+                                      <span className="text-gray-500">{t('profile.lowestSeen', 'Lowest')}:</span>{' '}
+                                      <span className="font-semibold text-green-600">${alert.lowestPrice}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <Link
+                                to={`/hotels/details/${alert.hotelId}`}
+                                className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+                              >
+                                {t('profile.viewHotel', 'View Hotel')}
+                              </Link>
+                              <button
+                                onClick={() => handleDeletePriceAlert(alert._id)}
+                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                              >
+                                {t('profile.stopWatching', 'Stop Watching')}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

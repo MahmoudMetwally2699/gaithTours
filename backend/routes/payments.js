@@ -7,7 +7,7 @@ const Payment = require('../models/Payment');
 const Invoice = require('../models/Invoice');
 const PromoCode = require('../models/PromoCode');
 const User = require('../models/User');
-const { sendPaymentConfirmationEmail } = require('../utils/emailService');
+const { sendPaymentConfirmationEmail, sendHotelConfirmationEmail } = require('../utils/emailService');
 const whatsappService = require('../utils/whatsappService');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -1288,6 +1288,33 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
             console.error('Email error:', emailError.message);
           }
 
+          // Send hotel confirmation email (sandbox)
+          if (reservation.hotel.email) {
+            try {
+              await sendHotelConfirmationEmail({
+                hotelEmail: reservation.hotel.email,
+                hotelName: reservation.hotel.name,
+                guestName: reservation.touristName,
+                guestEmail: reservation.email,
+                guestPhone: reservation.phone,
+                nationality: reservation.nationality,
+                checkInDate: reservation.checkInDate,
+                checkOutDate: reservation.checkOutDate,
+                roomType: reservation.roomType,
+                numberOfGuests: reservation.numberOfAdults,
+                numberOfRooms: reservation.numberOfRooms,
+                meal: reservation.meal,
+                specialRequests: reservation.specialRequests,
+                reservationId: reservation.kashierOrderId || reservation._id,
+                totalPrice: reservation.totalPrice,
+                currency: reservation.currency
+              });
+              console.log('📧 Hotel confirmation email sent (sandbox)');
+            } catch (hotelEmailError) {
+              console.error('Hotel email error (sandbox):', hotelEmailError.message);
+            }
+          }
+
           return res.json({ received: true, processed: true, booking: true, sandbox: true });
         }
 
@@ -1365,6 +1392,35 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
           });
         } catch (emailError) {
           console.error('Email error:', emailError.message);
+        }
+
+        // Send hotel confirmation email
+        if (reservation.hotel.email) {
+          try {
+            await sendHotelConfirmationEmail({
+              hotelEmail: reservation.hotel.email,
+              hotelName: reservation.hotel.name,
+              guestName: reservation.touristName,
+              guestEmail: reservation.email,
+              guestPhone: reservation.phone,
+              nationality: reservation.nationality,
+              checkInDate: reservation.checkInDate,
+              checkOutDate: reservation.checkOutDate,
+              roomType: reservation.roomType,
+              numberOfGuests: reservation.numberOfAdults,
+              numberOfRooms: reservation.numberOfRooms,
+              meal: reservation.meal,
+              specialRequests: reservation.specialRequests,
+              reservationId: reservation.kashierOrderId || reservation._id,
+              totalPrice: reservation.totalPrice,
+              currency: reservation.currency
+            });
+            console.log('📧 Hotel confirmation email sent successfully');
+          } catch (hotelEmailError) {
+            console.error('Hotel email error:', hotelEmailError.message);
+          }
+        } else {
+          console.log('⚠️ No hotel email available - skipping hotel confirmation');
         }
 
         // Send WhatsApp notification

@@ -73,6 +73,7 @@ import { GuestReviews } from '../components/GuestReviews';
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { CompareRooms } from '../components/CompareRooms';
+import { PriceWatchButton } from '../components/PriceWatchButton';
 
 // Fix for default marker icons in Leaflet with React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -1166,8 +1167,8 @@ export const HotelDetails: React.FC = () => {
                  )}
               </div>
 
-              {/* Share & Save Actions */}
-              <div className="mt-3">
+              {/* Share, Save & Price Watch Actions */}
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <ShareSaveActions
                   hotelId={hotelId || ''}
                   hotelName={hotel.name}
@@ -1177,6 +1178,20 @@ export const HotelDetails: React.FC = () => {
                     const newState = toggleFavoriteWithData(hotelId || '', hotel.name, hotel.images?.[0]);
                     setIsFavorite(newState);
                   }}
+                />
+                {/* Price Watch Button */}
+                <PriceWatchButton
+                  hotelId={hotelId || ''}
+                  hotelName={hotel.name}
+                  hotelImage={hotel.images?.[0]}
+                  destination={bookingParams.destination || hotel.city || ''}
+                  checkIn={bookingParams.checkIn}
+                  checkOut={bookingParams.checkOut}
+                  adults={bookingParams.adults}
+                  children={bookingParams.children}
+                  currentPrice={lowestPrice}
+                  currency={currency}
+                  size="md"
                 />
               </div>
            </div>

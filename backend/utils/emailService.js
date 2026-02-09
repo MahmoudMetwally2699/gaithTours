@@ -2,6 +2,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const InvoicePDFGenerator = require('./invoicePdfGenerator');
 const { getBookingConfirmationTemplate } = require('./emailTemplates');
+const logoBase64 = require('./logoBase64');
 require('dotenv').config();
 
 // Create email transporter
@@ -92,7 +93,11 @@ const sendAgencyNotification = async (reservationData) => {
             <!-- Alert Header -->
             <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 40px 30px; text-align: center; position: relative;">
               <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1);"></div>
-              <div style="position: relative; z-index: 1;">                <h1 style="color: #ffffff; font-size: 30px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: -0.5px;">🚨 NEW RESERVATION ALERT</h1>
+              <div style="position: relative; z-index: 1;">
+                <div style="margin-bottom: 20px;">
+                  <img src="${process.env.FRONTEND_URL}/logo-white.png" alt="Gaith Tours Logo" style="height: 60px; width: auto;" />
+                </div>
+                <h1 style="color: #ffffff; font-size: 30px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3); letter-spacing: -0.5px;">🚨 NEW RESERVATION ALERT</h1>
                 <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px; border: 1px solid rgba(255,255,255,0.3);">
                   <p style="color: #ffffff; font-size: 16px; font-weight: 600; margin: 0;">📝 Requires Immediate Attention</p>
                 </div>
@@ -1074,6 +1079,169 @@ const sendSubAdminInvitation = async (invitationData) => {
   }
 };
 
+// Send price alert email (price drop notification)
+const sendPriceAlertEmail = async (alertData) => {
+  try {
+    const transporter = createTransporter();
+
+    const {
+      email,
+      name,
+      hotelName,
+      hotelImage,
+      destination,
+      checkIn,
+      checkOut,
+      previousPrice,
+      newPrice,
+      lowestPrice,
+      currency,
+      priceDrop,
+      priceDropPercent,
+      hotelId
+    } = alertData;
+
+    const formatDate = (date) => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    };
+
+    const formatCurrency = (amount, curr = 'USD') => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: curr
+      }).format(amount);
+    };
+
+    const bookingUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/hotel/${hotelId}?checkIn=${new Date(checkIn).toISOString().split('T')[0]}&checkOut=${new Date(checkOut).toISOString().split('T')[0]}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: `🔔 Price Drop Alert! ${hotelName} is now ${formatCurrency(newPrice, currency)} - Save ${priceDropPercent}%!`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Price Drop Alert</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+          <div style="max-width: 650px; margin: 20px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.2);">
+
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 45px 30px; text-align: center; position: relative;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1);"></div>
+              <div style="position: relative; z-index: 1;">
+                <div style="margin-bottom: 20px;">
+                  <img src="${process.env.FRONTEND_URL}/logo-white.png" alt="Gaith Tours Logo" style="height: 50px; width: auto;" />
+                </div>
+                <h1 style="color: #ffffff; font-size: 34px; font-weight: 800; margin: 0 0 12px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2); letter-spacing: -0.5px;">🔔 PRICE DROP ALERT!</h1>
+                <div style="background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); border-radius: 50px; padding: 14px 28px; display: inline-block; margin-top: 12px; border: 1px solid rgba(255,255,255,0.3);">
+                  <p style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 0;">Save ${priceDropPercent}% on your watched hotel!</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+
+              <h2 style="color: #1f2937; font-size: 22px; font-weight: 700; margin: 0 0 15px 0;">Hi ${name}! 👋</h2>
+              <p style="color: #6b7280; font-size: 16px; line-height: 1.6; margin: 0 0 25px 0;">
+                Great news! The price for a hotel you're watching has dropped. Book now before prices go back up!
+              </p>
+
+              <!-- Hotel Card -->
+              <div style="background: #f8fafc; border-radius: 16px; overflow: hidden; margin: 25px 0; border: 1px solid #e2e8f0;">
+                ${hotelImage ? `<img src="${hotelImage}" alt="${hotelName}" style="width: 100%; height: 200px; object-fit: cover;" />` : ''}
+                <div style="padding: 20px;">
+                  <h3 style="color: #1f2937; font-size: 20px; font-weight: 700; margin: 0 0 10px 0;">${hotelName}</h3>
+                  <p style="color: #6b7280; font-size: 14px; margin: 0 0 15px 0;">📍 ${destination}</p>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; text-align: center;">
+                      <div style="color: #0369a1; font-size: 12px; font-weight: 600;">CHECK-IN</div>
+                      <div style="color: #0c4a6e; font-size: 14px; font-weight: 700; margin-top: 4px;">${formatDate(checkIn)}</div>
+                    </div>
+                    <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; text-align: center;">
+                      <div style="color: #0369a1; font-size: 12px; font-weight: 600;">CHECK-OUT</div>
+                      <div style="color: #0c4a6e; font-size: 14px; font-weight: 700; margin-top: 4px;">${formatDate(checkOut)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Price Comparison -->
+              <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border-radius: 16px; padding: 25px; margin: 25px 0; text-align: center;">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+                  <div>
+                    <div style="color: #6b7280; font-size: 14px; text-decoration: line-through;">${formatCurrency(previousPrice, currency)}</div>
+                    <div style="color: #9ca3af; font-size: 12px;">Was</div>
+                  </div>
+                  <div style="font-size: 28px;">→</div>
+                  <div>
+                    <div style="color: #059669; font-size: 32px; font-weight: 800;">${formatCurrency(newPrice, currency)}</div>
+                    <div style="color: #10b981; font-size: 14px; font-weight: 600;">Now!</div>
+                  </div>
+                </div>
+                <div style="background: #ffffff; display: inline-block; padding: 8px 20px; border-radius: 50px; margin-top: 15px;">
+                  <span style="color: #059669; font-weight: 700; font-size: 18px;">💰 You save ${formatCurrency(priceDrop, currency)} (${priceDropPercent}%)</span>
+                </div>
+                ${lowestPrice && lowestPrice < newPrice ? `
+                  <div style="margin-top: 15px; color: #6b7280; font-size: 13px;">
+                    📉 Lowest price seen: ${formatCurrency(lowestPrice, currency)}
+                  </div>
+                ` : `
+                  <div style="margin-top: 15px; color: #059669; font-size: 13px; font-weight: 600;">
+                    🎉 This is the lowest price we've seen!
+                  </div>
+                `}
+              </div>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="${bookingUrl}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 18px 45px; border-radius: 50px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);">
+                  🏨 Book Now at ${formatCurrency(newPrice, currency)}
+                </a>
+              </div>
+
+              <p style="color: #9ca3af; font-size: 13px; text-align: center; margin: 25px 0 0 0;">
+                You received this email because you're watching this hotel's price.<br>
+                <a href="${process.env.FRONTEND_URL}/profile?tab=alerts" style="color: #6b7280;">Manage your price alerts</a>
+              </p>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} Gaith Tours. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Price alert email error:', error);
+    throw new Error('Price alert email could not be sent: ' + error.message);
+  }
+};
+
 module.exports = {
   sendReservationConfirmation,
   sendAgencyNotification,
@@ -1084,5 +1252,178 @@ module.exports = {
   sendBookingConfirmationEmail,
   sendPaymentConfirmationEmail,
   sendVerificationEmail,
-  sendSubAdminInvitation
+  sendSubAdminInvitation,
+  sendPriceAlertEmail
+}
+
+// Send hotel confirmation email to hotel contact
+const sendHotelConfirmationEmail = async (hotelConfirmationData) => {
+  try {
+    const transporter = createTransporter();
+
+    const {
+      hotelEmail,
+      hotelName,
+      guestName,
+      guestEmail,
+      guestPhone,
+      nationality,
+      checkInDate,
+      checkOutDate,
+      roomType,
+      numberOfGuests,
+      numberOfRooms,
+      meal,
+      specialRequests,
+      reservationId,
+      totalPrice,
+      currency
+    } = hotelConfirmationData;
+
+    // Helper date formatter
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
+
+    // Calculate nights
+    const start = new Date(checkInDate);
+    const end = new Date(checkOutDate);
+    const nights = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) || 1;
+
+    console.log(`📧 Sending hotel confirmation email to: ${hotelEmail}`);
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: hotelEmail,
+      subject: `🏨 New Reservation Confirmation - ${guestName} | Gaith Tours`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Reservation Confirmation</title>
+        </head>
+        <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: Arial, sans-serif;">
+          <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+
+            <!-- Header -->
+            <div style="background: #ffffff; padding: 25px; text-align: center; border-bottom: 4px solid #FF6B00;">
+              <img src="cid:gaithtours-logo" alt="Gaith Tours" style="height: 200px; width: auto;" />
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 25px;">
+
+              <!-- Greeting -->
+              <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+                Dear Reservations Team at <strong>${hotelName}</strong>,<br/><br/>
+                Greetings from Gaith Tours. We are writing to confirm a new booking made through our platform. Below are the booking details for your reference.
+              </p>
+
+              <!-- Urgent Banner -->
+              <div style="background: #DC2626; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                <p style="color: #ffffff; font-size: 14px; font-weight: bold; margin: 0;">⚠️ Please reply with your Hotel Confirmation Number</p>
+              </div>
+
+              <!-- Reference -->
+              <div style="background: #FFF7ED; border: 1px solid #FF6B00; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                <span style="color: #9a3412; font-size: 12px;">Our Reference: </span>
+                <strong style="color: #FF6B00; font-size: 14px;">${reservationId}</strong>
+              </div>
+
+              <!-- Booking Details Table -->
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Guest Name</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${guestName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Phone</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${guestPhone}</td>
+                </tr>
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Nationality</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${nationality || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Check-in</td>
+                  <td style="padding: 10px; color: #047857; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${formatDate(checkInDate)}</td>
+                </tr>
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Check-out</td>
+                  <td style="padding: 10px; color: #DC2626; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${formatDate(checkOutDate)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Duration</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${nights} Night(s)</td>
+                </tr>
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Room</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${roomType || 'Standard Room'} × ${numberOfRooms || 1}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px; color: #6b7280; border-bottom: 1px solid #e5e7eb;">Guests</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600; border-bottom: 1px solid #e5e7eb;">${numberOfGuests || 1} Guest(s)</td>
+                </tr>
+                <tr style="background: #f9fafb;">
+                  <td style="padding: 10px; color: #6b7280;">Meal Plan</td>
+                  <td style="padding: 10px; color: #1f2937; font-weight: 600;">${meal || 'Room Only'}</td>
+                </tr>
+              </table>
+
+              ${specialRequests ? `
+              <!-- Special Requests -->
+              <div style="background: #FEF3C7; border-left: 3px solid #F59E0B; padding: 12px; margin-bottom: 20px; border-radius: 4px;">
+                <p style="color: #92400E; font-size: 12px; font-weight: bold; margin: 0 0 5px 0;">📝 Special Requests:</p>
+                <p style="color: #78350F; font-size: 13px; margin: 0;">${specialRequests}</p>
+              </div>
+              ` : ''}
+
+              <!-- Reply Button -->
+              <div style="text-align: center; margin-bottom: 15px;">
+                <a href="mailto:${process.env.EMAIL_FROM}?subject=Confirmation%20-%20${reservationId}&body=Dear%20Gaith%20Tours,%0A%0AWe%20confirm%20the%20booking%20for%20${encodeURIComponent(guestName)}.%0AOur%20Confirmation%20Number:%20" style="display: inline-block; background: #DC2626; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; font-size: 14px;">📧 Reply with Confirmation Number</a>
+              </div>
+
+              <!-- Contact -->
+              <p style="text-align: center; color: #6b7280; font-size: 12px; margin: 0;">
+                Questions? <a href="mailto:${process.env.EMAIL_FROM}" style="color: #FF6B00;">${process.env.EMAIL_FROM}</a> | 📞 +966549412412
+              </p>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #1f2937; padding: 15px; text-align: center;">
+              <p style="color: rgba(255,255,255,0.5); font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Gaith Tours</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      attachments: [
+        {
+          filename: 'logo.png',
+          path: path.join(__dirname, '../public/logo.png'),
+          cid: 'gaithtours-logo'
+        }
+      ]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Hotel confirmation email sent successfully to ${hotelEmail}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Hotel confirmation email error:', error);
+    throw new Error('Hotel confirmation email could not be sent: ' + error.message);
+  }
 };
+
+// Add the hotel confirmation email to exports
+module.exports.sendHotelConfirmationEmail = sendHotelConfirmationEmail;
