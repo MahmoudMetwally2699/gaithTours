@@ -33,7 +33,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@types/react-slick": "^0.23.13",
     "autoprefixer": "^10.4.21",
-    "axios": "^1.9.0",
+    "axios": "^1.13.5",
     "caniuse-lite": "^1.0.30001766",
     "country-list": "^2.3.0",
     "date-fns": "^2.30.0",
