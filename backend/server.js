@@ -54,7 +54,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-guest-id'],
   preflightContinue: false,
   optionsSuccessStatus: 200
 }));
@@ -252,6 +252,25 @@ try {
   console.log('✅ Blog admin routes loaded');
 } catch (error) {
   console.error('Error loading blog admin routes:', error);
+}
+
+// Support chat routes
+try {
+  app.use('/api/support-chat', require('./routes/support-chat'));
+  console.log('✅ Support chat routes loaded');
+} catch (error) {
+  console.error('Error loading support chat routes:', error);
+}
+
+// Push notification routes
+try {
+  app.use('/api/push', require('./routes/push-notifications'));
+  console.log('✅ Push notification routes loaded');
+  // Initialize web-push VAPID
+  const { initializeWebPush } = require('./utils/pushService');
+  initializeWebPush();
+} catch (error) {
+  console.error('Error loading push notification routes:', error);
 }
 
 // Debug routes (development only)

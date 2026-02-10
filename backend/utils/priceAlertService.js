@@ -7,6 +7,7 @@ const PriceAlert = require('../models/PriceAlert');
 const User = require('../models/User');
 const rateHawkService = require('./RateHawkService');
 const { sendPriceAlertEmail } = require('./emailService');
+const { sendPushNotification } = require('./pushService');
 
 // Minimum price drop percentage to trigger notification
 const MIN_PRICE_DROP_PERCENT = 5;
@@ -172,6 +173,18 @@ async function checkSingleAlert(alert) {
         } catch (emailError) {
           console.error(`❌ Failed to send price alert email:`, emailError.message);
         }
+      }
+
+      // Also send push notification
+      try {
+        await sendPushNotification(alert.userId, {
+          title: `📉 Price Drop: ${alert.hotelName}`,
+          body: `Price dropped ${priceDropPercent}%! Now ${alert.currency} ${newPrice} (was ${previousPrice})`,
+          url: `/hotel/${alert.hotelId}?checkIn=${searchParams.checkIn}&checkOut=${searchParams.checkOut}`,
+          tag: `price-drop-${alert._id}`
+        });
+      } catch (pushError) {
+        console.error(`Failed to send push notification:`, pushError.message);
       }
     }
 

@@ -32,6 +32,8 @@ import { PartnerDashboard } from './pages/PartnerDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { useReferralCapture } from './hooks/useReferralCapture';
+import ChatWidget from './components/ChatWidget';
+import NotificationPrompt from './components/NotificationPrompt';
 import './i18n';
 
 // Google OAuth Client ID - Replace with your actual client ID from Google Cloud Console
@@ -102,6 +104,8 @@ const AppContent = () => {
         </Switch>
       </main>
       {!isAdminDashboard && !isPartnerPage && <Footer />}
+      {!isAdminDashboard && !isPartnerPage && <ChatWidget />}
+      {!isAdminDashboard && !isPartnerPage && <NotificationPrompt />}
       <Toaster
         position="top-right"
         toastOptions={{

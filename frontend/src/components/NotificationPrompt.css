@@ -1,0 +1,117 @@
+.notification-prompt-overlay {
+  position: fixed;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.notification-prompt-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  pointer-events: all;
+}
+
+.notification-prompt-icon {
+  font-size: 36px;
+  line-height: 1;
+  animation: bellShake 1.5s ease-in-out infinite;
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-14deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-6deg); }
+  50% { transform: rotate(0deg); }
+}
+
+.notification-prompt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-prompt-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.notification-prompt-text {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.notification-prompt-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.notification-prompt-accept {
+  flex: 1;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.notification-prompt-accept:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
+}
+
+.notification-prompt-accept:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.notification-prompt-dismiss {
+  flex: 1;
+  padding: 10px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-prompt-dismiss:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* RTL */
+[dir="rtl"] .notification-prompt-card {
+  direction: rtl;
+}

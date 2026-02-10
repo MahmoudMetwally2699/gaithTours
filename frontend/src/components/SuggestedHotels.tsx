@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useUserLocation } from '../hooks/useUserLocation';
 import { HotelCard } from './HotelCard';
 import { useHistory } from 'react-router-dom';
 import { MapPinIcon } from '@heroicons/react/24/outline';
@@ -33,6 +34,9 @@ interface SuggestedHotelsProps {
   onLoaded?: () => void;
 }
 
+// Default city to show immediately (no waiting for geolocation)
+const DEFAULT_CITY = 'Makkah';
+
 export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) => {
   const { t, i18n } = useTranslation('home');
   const { isAuthenticated } = useAuth();
@@ -45,7 +49,11 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   const [lastLocationQuery, setLastLocationQuery] = useState<string | undefined>(undefined);
   const [searchDates, setSearchDates] = useState<{ checkIn: string; checkOut: string } | null>(null);
 
-  const fetchSuggestions = async (locationQuery?: string, keepLoading: boolean = false) => {
+  // Shared location detection — no more race conditions or duplicate API calls
+  const { city: detectedCity, isDetecting } = useUserLocation(i18n.language);
+  const hasFetchedWithCity = useRef(false);
+
+  const fetchSuggestions = useCallback(async (locationQuery?: string) => {
     try {
       setLoading(true);
       const headers: HeadersInit = {
@@ -92,11 +100,9 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
     } catch (error) {
       console.error('Error fetching suggestions:', error);
     } finally {
-      if (!keepLoading) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  };
+  }, [currency, i18n.language]);
 
   // Notify parent when hotels are actually loaded and ready to display
   useEffect(() => {
@@ -108,107 +114,46 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
     }
   }, [loading, hotels.length, onLoaded]);
 
-  // Default city to show immediately (no waiting for geolocation)
-  const DEFAULT_CITY = 'Makkah';
-  const locationDetectedRef = React.useRef(false);
-
+  // Initial fetch: load DEFAULT_CITY immediately, then upgrade to detected city
   useEffect(() => {
-    // Reset on mount
-    locationDetectedRef.current = false;
-    const locationDenied = localStorage.getItem('locationDenied');
+    hasFetchedWithCity.current = false;
 
-    if (locationDenied) {
-      // Location denied - just show default city
-      console.log(`🚀 Location denied - loading ${DEFAULT_CITY} hotels...`);
-      fetchSuggestions(DEFAULT_CITY, false);
+    if (detectedCity) {
+      // City already cached from a previous visit — use it immediately
+      console.log(`📍 Using cached location: ${detectedCity}`);
+      hasFetchedWithCity.current = true;
+      fetchSuggestions(detectedCity);
     } else {
-      // Try to get location first, with a quick timeout fallback to default city
-      console.log('🌍 Attempting to get user location...');
-      setLoading(true);
-
-      // Set a timeout - if location not detected in 1.2 seconds, show Makkah
-      const fallbackTimer = setTimeout(() => {
-        if (!locationDetectedRef.current) {
-          console.log(`⏱️ Location timeout - showing ${DEFAULT_CITY} as fallback...`);
-          fetchSuggestions(DEFAULT_CITY, false);
-        }
-      }, 1200);
-
-      getUserLocationBackground(fallbackTimer);
+      // No city yet — show default city while detection runs
+      console.log(`🚀 Loading ${DEFAULT_CITY} hotels while detecting location...`);
+      fetchSuggestions(DEFAULT_CITY);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When location detection completes, re-fetch with the real city
+  useEffect(() => {
+    if (detectedCity && !hasFetchedWithCity.current) {
+      console.log(`✅ Location detected: ${detectedCity} — refreshing hotels...`);
+      hasFetchedWithCity.current = true;
+      fetchSuggestions(detectedCity);
+    }
+  }, [detectedCity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fetch with same location when currency or language changes
   useEffect(() => {
     if (!loading && (hotels.length > 0 || lastLocationQuery)) {
-      fetchSuggestions(lastLocationQuery || DEFAULT_CITY, false);
+      fetchSuggestions(lastLocationQuery || DEFAULT_CITY);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency, i18n.language]);
 
-  // Background location detection
-  const getUserLocationBackground = (fallbackTimer?: NodeJS.Timeout) => {
-    if (!navigator.geolocation) {
-      console.log('❌ Geolocation not supported');
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-      fetchSuggestions(DEFAULT_CITY, false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        // Clear the fallback timer since we got location
-        if (fallbackTimer) clearTimeout(fallbackTimer);
-        locationDetectedRef.current = true;
-
-        try {
-          const { latitude, longitude } = position.coords;
-          console.log(`📍 Coordinates received: ${latitude}, ${longitude}`);
-
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            {
-              headers: {
-                'User-Agent': 'GaithTours/1.0 (https://gaithtours.com)',
-                'Accept': 'application/json'
-              }
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          const geoData = await response.json();
-          const city = geoData.address?.city || geoData.address?.town || geoData.address?.state || geoData.address?.country;
-
-          if (city) {
-            console.log(`✅ User location detected: ${city} - fetching hotels...`);
-            fetchSuggestions(city, false);
-          } else {
-            console.warn('⚠️ Could not determine city - using default');
-            fetchSuggestions(DEFAULT_CITY, false);
-          }
-        } catch (error) {
-          console.log('Location detection unavailable, using default city');
-          fetchSuggestions(DEFAULT_CITY, false);
-        }
-      },
-      (error) => {
-        console.log('📍 Location denied:', error.message);
-        if (fallbackTimer) clearTimeout(fallbackTimer);
-        localStorage.setItem('locationDenied', 'true');
-        // Only fetch if we haven't already shown the fallback
-        if (!locationDetectedRef.current) {
-          fetchSuggestions(DEFAULT_CITY, false);
-        }
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 2000,
-        maximumAge: 300000
-      }
-    );
+  // Handle "Use my location" button click
+  const handleUseMyLocation = () => {
+    localStorage.removeItem('locationDenied');
+    sessionStorage.removeItem('userDetectedCity');
+    setLoading(true);
+    // Reload to re-trigger location detection
+    window.location.reload();
   };
 
   if (loading) {
@@ -282,11 +227,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
             </h2>
             {source === 'fallback' && (
               <button
-                onClick={() => {
-                  localStorage.removeItem('locationDenied');
-                  setLoading(true);
-                  getUserLocationBackground();
-                }}
+                onClick={handleUseMyLocation}
                 className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition text-sm whitespace-nowrap"
               >
                 <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

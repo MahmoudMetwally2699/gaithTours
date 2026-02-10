@@ -3,6 +3,7 @@ import { Link, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
+import { useUserLocation } from '../hooks/useUserLocation';
 import { motion } from 'framer-motion';
 import {
   MapPinIcon,
@@ -38,6 +39,9 @@ export const MainSection: React.FC = () => {
   const { isRTL } = useDirection();
   const history = useHistory();
 
+  // Shared location detection
+  const { city: detectedCity, isDetecting: isDetectingLocation } = useUserLocation(i18n.language);
+
   // Search State
   const [destination, setDestination] = useState('');
   const [checkInDate, setCheckInDate] = useState<Date | null>(dayjs().toDate());
@@ -46,8 +50,6 @@ export const MainSection: React.FC = () => {
   const [isWorkTravel, setIsWorkTravel] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGuestPicker, setShowGuestPicker] = useState(false);
-  const [userLocation, setUserLocation] = useState<string>('');
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   // Refs
   const datePickerRef = useRef<HTMLDivElement>(null);
@@ -60,65 +62,12 @@ export const MainSection: React.FC = () => {
   const [isLoadingAutocomplete, setIsLoadingAutocomplete] = useState(false);
   const hasUserTyped = useRef(false); // Track if user has manually typed
 
-  // Request user's location on mount
+  // Set destination from detected city (only if user hasn't typed anything)
   useEffect(() => {
-    const requestLocation = () => {
-      if ('geolocation' in navigator) {
-        setIsDetectingLocation(true);
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-
-            // Reverse geocode to get city name
-            try {
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${i18n.language}`,
-                {
-                  headers: {
-                    'User-Agent': 'GaithTours/1.0 (https://gaithtours.com)',
-                    'Accept': 'application/json'
-                  }
-                }
-              );
-
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-              }
-
-              const data = await response.json();
-
-              const city = data.address?.city ||
-                          data.address?.town ||
-                          data.address?.village ||
-                          data.address?.state ||
-                          '';
-
-              if (city) {
-                setUserLocation(city);
-                setDestination(city);
-              }
-            } catch (error) {
-              // Silently fail - geocoding is optional, user can type destination manually
-              console.log('Location detection unavailable, user can type destination manually');
-            } finally {
-              setIsDetectingLocation(false);
-            }
-          },
-          (error) => {
-            console.log('Location access denied or unavailable:', error);
-            setIsDetectingLocation(false);
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 5000,
-            maximumAge: 300000 // Cache location for 5 minutes
-          }
-        );
-      }
-    };
-
-    requestLocation();
-  }, [i18n.language]);
+    if (detectedCity && !hasUserTyped.current && !destination) {
+      setDestination(detectedCity);
+    }
+  }, [detectedCity]);
 
   // Close date picker when clicking outside
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
   Bars3Icon,
   XMarkIcon,
@@ -110,6 +111,8 @@ export const Navbar: React.FC = () => {
               </span>
             </button>
 
+
+
             {/* User Menu / Auth Buttons */}
             {user ? (
               <div className={`relative ${isRTL ? 'mr-4' : 'ml-4'}`}>
@@ -200,7 +203,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center gap-2">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-2 rounded-xl bg-gray-50 text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-colors"

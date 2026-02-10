@@ -152,6 +152,95 @@ const initializeSocket = (server) => {
     });
   });
 
+  // ==========================================
+  // SUPPORT CHAT NAMESPACE (for regular users)
+  // ==========================================
+  const supportNsp = io.of('/support');
+
+  supportNsp.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+      const guestId = socket.handshake.auth.guestId;
+
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+
+        if (user) {
+          socket.userId = user._id.toString();
+          socket.user = user;
+          socket.userRole = user.role;
+          socket.isGuest = false;
+          return next();
+        }
+      }
+
+      // Allow guest connections
+      if (guestId) {
+        socket.guestId = guestId;
+        socket.userId = guestId;
+        socket.user = { name: 'Guest' };
+        socket.userRole = 'guest';
+        socket.isGuest = true;
+        return next();
+      }
+
+      return next(new Error('Authentication token or guest ID required'));
+    } catch (error) {
+      // If token verification fails, check for guestId
+      const guestId = socket.handshake.auth.guestId;
+      if (guestId) {
+        socket.guestId = guestId;
+        socket.userId = guestId;
+        socket.user = { name: 'Guest' };
+        socket.userRole = 'guest';
+        socket.isGuest = true;
+        return next();
+      }
+      next(new Error('Authentication failed: ' + error.message));
+    }
+  });
+
+  supportNsp.on('connection', (socket) => {
+    console.log('💬 Support chat connection:', socket.id, 'User:', socket.user?.name, 'Role:', socket.userRole, socket.isGuest ? '(Guest)' : '');
+
+    const adminRoles = ['admin', 'super_admin', 'sub_admin'];
+    if (adminRoles.includes(socket.userRole)) {
+      socket.join('support-admins');
+      console.log('👥 Admin joined support-admins room:', socket.user?.name);
+    } else if (socket.isGuest) {
+      socket.join(`support-guest-${socket.guestId}`);
+      console.log('👤 Guest joined support room:', socket.guestId);
+    } else {
+      socket.join(`support-user-${socket.userId}`);
+      console.log('👤 User joined support room:', socket.user?.name);
+    }
+
+    // Handle joining a specific chat room
+    socket.on('joinChat', (chatId) => {
+      socket.join(`support-chat-${chatId}`);
+    });
+
+    socket.on('leaveChat', (chatId) => {
+      socket.leave(`support-chat-${chatId}`);
+    });
+
+    // Handle typing indicators
+    socket.on('supportTyping', (data) => {
+      socket.to(`support-chat-${data.chatId}`).emit('supportUserTyping', {
+        userId: socket.userId,
+        userName: socket.user.name,
+        chatId: data.chatId,
+        isTyping: data.isTyping,
+        sender: adminRoles.includes(socket.userRole) ? 'admin' : 'user'
+      });
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('💬 Support chat disconnection:', socket.id, 'Reason:', reason);
+    });
+  });
+
   return io;
 };
 
@@ -186,10 +275,25 @@ const emitToUser = (userId, event, data) => {
   }
 };
 
+// Support chat helper functions - room can be 'support-user-{id}' or 'support-guest-{id}'
+const emitToSupportUser = (room, event, data) => {
+  if (io) {
+    io.of('/support').to(room).emit(event, data);
+  }
+};
+
+const emitToSupportAdmins = (event, data) => {
+  if (io) {
+    io.of('/support').to('support-admins').emit(event, data);
+  }
+};
+
 module.exports = {
   initializeSocket,
   getIO,
   emitToAdmins,
   emitToConversation,
-  emitToUser
+  emitToUser,
+  emitToSupportUser,
+  emitToSupportAdmins
 };

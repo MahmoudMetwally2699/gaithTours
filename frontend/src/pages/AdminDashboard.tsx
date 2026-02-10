@@ -19,6 +19,7 @@ import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalB
 import { LoyaltyTab } from '../components/AdminDashboard/LoyaltyTab';
 import { PartnersTab } from '../components/AdminDashboard/PartnersTab';
 import { BlogTab } from '../components/AdminDashboard/BlogTab';
+import SupportChatTab from '../components/AdminDashboard/SupportChatTab';
 import { HotelContactLookup } from '../components/admin/HotelContactLookup';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import { ClientDetailModal } from '../components/AdminDashboard/ClientDetailModal';
@@ -42,6 +43,7 @@ import {
   NewspaperIcon
 } from '@heroicons/react/24/outline';
 import { WhatsAppNotificationListener } from '../components/WhatsApp/WhatsAppNotificationListener';
+import NotificationBell from '../components/NotificationBell';
 
 interface DashboardStats {
   totalClients: number;
@@ -486,6 +488,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'partners', name: t('admin:dashboard.tabs.partners', 'Partners'), icon: UsersIcon },
     { id: 'blog', name: t('admin:dashboard.tabs.blog', 'Blog'), icon: NewspaperIcon },
     { id: 'whatsapp', name: t('admin:dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
+    { id: 'support_chat', name: t('admin:dashboard.tabs.support_chat', 'Support Chat'), icon: ChatBubbleLeftRightIcon },
     { id: 'admin_management', name: t('admin:dashboard.tabs.admin_management'), icon: ShieldExclamationIcon, superAdminOnly: true }
   ];
 
@@ -608,7 +611,8 @@ export const AdminDashboard: React.FC = () => {
                 'text-orange-600'
               ];
 
-              return (                <button
+              return (
+                <button
                   key={tab.id}
                   onClick={() => {
                     setActiveTab(tab.id);
@@ -638,8 +642,18 @@ export const AdminDashboard: React.FC = () => {
             })}
           </nav>
 
-          {/* Logout Button */}
-          <div className="border-t border-gray-200/50 p-3 sm:p-4">
+          {/* Notification Bell & Logout Section */}
+          <div className="border-t border-gray-200/50 p-3 sm:p-4 space-y-2">
+
+            {/* Notification Bell embedded in sidebar */}
+            <div className={`w-full flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-xl ${isRTL ? 'flex-row-reverse' : ''}`}>
+               <span className="flex-1 text-sm font-medium text-gray-600">
+                  {t('notifications.title', 'Notifications')}
+               </span>
+               <div className="relative">
+                  <NotificationBell position="top" isSidebar={true} />
+               </div>
+            </div>
             <button
               onClick={handleLogout}
               className={`w-full flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-300 rounded-xl group ${isRTL ? 'text-right' : 'text-left'}`}
@@ -1012,6 +1026,9 @@ export const AdminDashboard: React.FC = () => {
           )}{/* WhatsApp Messages Tab */}
           {activeTab === 'whatsapp' && (
             <WhatsAppTab />
+          )}{/* Support Chat Tab */}
+          {activeTab === 'support_chat' && (
+            <SupportChatTab />
           )}{/* Admin Management Tab - Super Admin Only */}
           {activeTab === 'admin_management' && isSuperAdmin && (
             <AdminManagementTab isRTL={isRTL} />

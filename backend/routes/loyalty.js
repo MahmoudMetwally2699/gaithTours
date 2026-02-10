@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/User');
 const LoyaltySettings = require('../models/LoyaltySettings');
 const jwt = require('jsonwebtoken');
+const { sendPushNotification } = require('../utils/pushService');
 
 // Auth middleware
 const authenticate = async (req, res, next) => {
@@ -316,6 +317,7 @@ router.post('/adjust/:userId', authenticate, requireAdmin, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const oldTier = user.loyaltyTier;
     const oldPoints = user.loyaltyPoints;
     user.loyaltyPoints = Math.max(0, user.loyaltyPoints + points);
 
@@ -324,6 +326,21 @@ router.post('/adjust/:userId', authenticate, requireAdmin, async (req, res) => {
     user.loyaltyTier = newTier;
 
     await user.save();
+
+    // Send push notification if tier upgraded
+    const tierOrder = ['Bronze', 'Silver', 'Gold', 'Platinum'];
+    if (tierOrder.indexOf(newTier) > tierOrder.indexOf(oldTier)) {
+      try {
+        await sendPushNotification(user._id, {
+          title: `🏆 Tier Upgrade: ${newTier}!`,
+          body: `Congratulations! You've been upgraded to ${newTier} tier. Enjoy your new benefits!`,
+          url: '/profile',
+          tag: `tier-upgrade-${newTier}`
+        });
+      } catch (pushError) {
+        console.error('Failed to send tier upgrade push:', pushError.message);
+      }
+    }
 
     console.log(`Admin ${req.user.email} adjusted ${user.email}'s points: ${oldPoints} -> ${user.loyaltyPoints} (${points > 0 ? '+' : ''}${points}). Reason: ${reason || 'No reason provided'}`);
 

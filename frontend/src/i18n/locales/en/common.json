@@ -422,5 +422,57 @@
       "Gold": "Gold",
       "Platinum": "Platinum"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "pushNotifications": "Push Notifications",
+    "subscribed": "Notifications enabled! 🔔",
+    "unsubscribed": "Notifications turned off",
+    "blocked": "Notifications are blocked. Please enable them in your browser settings.",
+    "enabledDesc": "You'll receive alerts for price drops, bookings, and promotions.",
+    "disabledDesc": "Enable to get notified about price drops, booking updates, and special offers.",
+    "sendTest": "Send Test Notification",
+    "testSent": "Test notification sent!",
+    "testFailed": "Failed to send test notification",
+    "promptTitle": "Stay Updated!",
+    "promptText": "Get notified about support replies, booking updates, and special offers.",
+    "enable": "Enable",
+    "enabling": "Enabling...",
+    "notNow": "Not Now"
+  },
+  "supportChat": {
+    "title": "Support Chat",
+    "newChat": "New Conversation",
+    "yourChats": "Your Conversations",
+    "noChats": "No conversations yet",
+    "startChat": "Start a new conversation to get help",
+    "subject": "Subject",
+    "subjectPlaceholder": "Brief description of your issue",
+    "topic": "Topic",
+    "topics": {
+      "general": "General",
+      "booking": "Booking Help",
+      "payment": "Payment Issue",
+      "technical": "Technical Support",
+      "other": "Other"
+    },
+    "start": "Start Chat",
+    "guestName": "Your Name",
+    "guestNamePlaceholder": "Enter your name",
+    "closeChat": "Close Chat",
+    "message": "Message",
+    "messagePlaceholder": "How can we help you?",
+    "typeMessage": "Type a message...",
+    "send": "Send",
+    "resolved": "This conversation has been resolved",
+    "chatClosed": "Chat closed",
+    "you": "You",
+    "admin": "Support Agent",
+    "status": {
+      "open": "Open",
+      "assigned": "Assigned",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    }
   }
 }
