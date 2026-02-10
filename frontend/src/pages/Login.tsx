@@ -86,18 +86,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleFacebookSuccess = async (accessToken: string, userInfo: any) => {
-    try {
-      setIsLoading(true);
-      setError('');
-      await socialLogin('facebook', accessToken, userInfo);
-      history.push(getRedirectUrl());
-    } catch (err: any) {
-      setError(err.message || 'Facebook login failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Floating particles for background
   const particles = Array.from({ length: 20 }, (_, i) => ({
@@ -344,7 +332,6 @@ export const Login: React.FC = () => {
             >
               <SocialLoginButtons
                 onGoogleSuccess={handleGoogleSuccess}
-                onFacebookSuccess={handleFacebookSuccess}
                 isLoading={isLoading}
                 mode="login"
               />

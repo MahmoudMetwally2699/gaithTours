@@ -267,10 +267,10 @@ export const BlogTab: React.FC = () => {
   const openEditPost = (post: BlogPost) => {
     setEditingPost(post);
     setPostForm({
-      title: post.title,
+      title: post.title || { en: '', ar: '' },
       slug: post.slug,
-      excerpt: post.excerpt,
-      content: post.content,
+      excerpt: post.excerpt || { en: '', ar: '' },
+      content: post.content || { en: '', ar: '' },
       featuredImage: post.featuredImage,
       category: post.category?._id || '',
       status: post.status === 'archived' ? 'draft' : post.status,
@@ -419,7 +419,7 @@ export const BlogTab: React.FC = () => {
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>{cat.name[lang]}</option>
+                <option key={cat._id} value={cat._id}>{cat.name?.[lang] || cat.name?.en || ''}</option>
               ))}
             </select>
           </div>
@@ -462,15 +462,15 @@ export const BlogTab: React.FC = () => {
                               />
                             )}
                             <div>
-                              <p className="font-medium text-gray-900 line-clamp-1">{post.title[lang]}</p>
-                              <p className="text-sm text-gray-500 line-clamp-1">{post.excerpt[lang]}</p>
+                              <p className="font-medium text-gray-900 line-clamp-1">{post.title?.[lang] || post.title?.en || ''}</p>
+                              <p className="text-sm text-gray-500 line-clamp-1">{post.excerpt?.[lang] || post.excerpt?.en || ''}</p>
                             </div>
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           {post.category && (
                             <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg">
-                              {post.category.name[lang]}
+                              {post.category.name?.[lang] || post.category.name?.en || ''}
                             </span>
                           )}
                         </td>
@@ -592,8 +592,8 @@ export const BlogTab: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{category.icon || '📝'}</span>
                           <div>
-                            <p className="font-medium text-gray-900">{category.name[lang]}</p>
-                            {category.name.ar && lang === 'en' && (
+                            <p className="font-medium text-gray-900">{category.name?.[lang] || category.name?.en || ''}</p>
+                            {category.name?.ar && lang === 'en' && (
                               <p className="text-sm text-gray-500" dir="rtl">{category.name.ar}</p>
                             )}
                           </div>
@@ -787,7 +787,7 @@ export const BlogTab: React.FC = () => {
                   >
                     <option value="">Select category</option>
                     {categories.map((cat) => (
-                      <option key={cat._id} value={cat._id}>{cat.name[lang]}</option>
+                      <option key={cat._id} value={cat._id}>{cat.name?.[lang] || cat.name?.en || ''}</option>
                     ))}
                   </select>
                 </div>

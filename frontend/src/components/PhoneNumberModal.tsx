@@ -401,8 +401,11 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
           ) : (
             <>
               {/* OTP Step */}
-              <p className="text-gray-600 text-center mb-6 text-sm sm:text-base">
+              <p className="text-gray-600 text-center mb-2 text-sm sm:text-base">
                 {t('auth.enterVerificationCode', 'Enter the 6-digit code we sent to your WhatsApp')}
+              </p>
+              <p className="text-gray-400 text-center mb-6 text-xs sm:text-sm">
+                💡 {t('auth.checkEmailForCode', "Didn't receive it on WhatsApp? Check your email too!")}
               </p>
 
               {/* OTP Input */}

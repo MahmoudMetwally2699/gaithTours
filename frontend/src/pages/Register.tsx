@@ -141,18 +141,6 @@ export const Register: React.FC = () => {
     }
   };
 
-  const handleFacebookSuccess = async (accessToken: string, userInfo: any) => {
-    try {
-      setIsLoading(true);
-      setError('');
-      await socialLogin('facebook', accessToken, userInfo);
-      history.push('/');
-    } catch (err: any) {
-      setError(err.message || 'Facebook signup failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Floating particles
   const particles = Array.from({ length: 15 }, (_, i) => ({
@@ -362,7 +350,6 @@ export const Register: React.FC = () => {
             >
               <SocialLoginButtons
                 onGoogleSuccess={handleGoogleSuccess}
-                onFacebookSuccess={handleFacebookSuccess}
                 isLoading={isLoading}
                 mode="register"
               />

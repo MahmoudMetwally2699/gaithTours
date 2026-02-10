@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useFacebookSDK, isFacebookConfigured } from '../hooks/useFacebookSDK';
 
 interface SocialLoginButtonsProps {
   onGoogleSuccess: (credential: string, userInfo: any) => Promise<void>;
-  onFacebookSuccess: (accessToken: string, userInfo: any) => Promise<void>;
   isLoading?: boolean;
   mode?: 'login' | 'register';
 }
@@ -124,41 +122,9 @@ const GoogleLoginButtonDisabled: React.FC<{ mode: 'login' | 'register' }> = ({ m
 
 export const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
   onGoogleSuccess,
-  onFacebookSuccess,
   isLoading = false,
   mode = 'login'
 }) => {
-  const { t } = useTranslation();
-  const [facebookLoading, setFacebookLoading] = useState(false);
-
-  // Initialize Facebook SDK and get login function
-  const { isReady: isFacebookReady, login: facebookLogin } = useFacebookSDK();
-
-  // Facebook Login handler using the hook's login function
-  const handleFacebookLogin = async () => {
-    if (!isFacebookReady) {
-      console.error('Facebook SDK not ready');
-      return;
-    }
-
-    setFacebookLoading(true);
-    try {
-      const { accessToken, userInfo } = await facebookLogin();
-      await onFacebookSuccess(accessToken, userInfo);
-    } catch (error) {
-      console.error('Facebook login error:', error);
-    } finally {
-      setFacebookLoading(false);
-    }
-  };
-
-  const buttonBaseClass = `
-    group relative w-full flex items-center justify-center gap-3 px-6 py-4
-    rounded-2xl font-semibold text-base transition-all duration-300
-    transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50
-    disabled:cursor-not-allowed disabled:transform-none
-  `;
-
   return (
     <div className="space-y-4">
       {/* Google Button - conditionally render based on configuration */}
@@ -167,34 +133,11 @@ export const SocialLoginButtons: React.FC<SocialLoginButtonsProps> = ({
           onSuccess={onGoogleSuccess}
           isLoading={isLoading}
           mode={mode}
-          disabled={facebookLoading}
+          disabled={false}
         />
       ) : (
         <GoogleLoginButtonDisabled mode={mode} />
       )}
-
-      {/* Facebook Button */}
-      <motion.button
-        type="button"
-        onClick={handleFacebookLogin}
-        disabled={isLoading || facebookLoading || !isFacebookReady || !isFacebookConfigured()}
-        whileHover={{ scale: (isLoading || !isFacebookReady) ? 1 : 1.02 }}
-        whileTap={{ scale: (isLoading || !isFacebookReady) ? 1 : 0.98 }}
-        className={`${buttonBaseClass} bg-[#1877F2] text-white hover:bg-[#166FE5] ${!isFacebookConfigured() ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={!isFacebookConfigured() ? 'Facebook login not configured' : !isFacebookReady ? 'Loading Facebook...' : ''}
-      >
-        {facebookLoading ? (
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-        ) : (
-          <>
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-            <span>{mode === 'login' ? t('auth.social.continueWithFacebook', 'Continue with Facebook') : t('auth.social.signUpWithFacebook', 'Sign up with Facebook')}</span>
-          </>
-        )}
-        <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </motion.button>
     </div>
   );
 };

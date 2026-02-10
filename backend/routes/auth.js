@@ -499,6 +499,35 @@ router.post('/send-phone-code', [
       return errorResponse(res, 'Failed to send verification code. Please check your WhatsApp number.', 500);
     }
 
+    // Also send code via email (fire-and-forget, don't block on failure)
+    if (user.email) {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your Verification Code - Gaith Tours',
+          html: `
+            <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #fff8f0; padding: 40px 20px;">
+              <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h2 style="color: #f97316; margin: 0;">Gaith Tours</h2>
+                </div>
+                <h3 style="color: #1f2937; text-align: center;">Your Verification Code</h3>
+                <div style="background: linear-gradient(135deg, #f97316, #f59e0b); border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                  <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: white; letter-spacing: 8px;">${code}</span>
+                </div>
+                <p style="color: #6b7280; text-align: center; font-size: 14px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+                <p style="color: #9ca3af; text-align: center; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+              </div>
+            </div>
+          `
+        });
+        console.log('📧 Verification code also sent to email:', user.email);
+      } catch (emailError) {
+        console.error('Email send error (non-blocking):', emailError);
+      }
+    }
+
     successResponse(res, {
       codeSent: true,
       expiresIn: 600 // 10 minutes in seconds
@@ -566,6 +595,35 @@ router.post('/send-phone-code-auth', protect, [
       user.phoneVerificationLastSent = undefined;
       await user.save();
       return errorResponse(res, 'Failed to send verification code. Please check your WhatsApp number.', 500);
+    }
+
+    // Also send code via email (fire-and-forget, don't block on failure)
+    if (user.email) {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your Verification Code - Gaith Tours',
+          html: `
+            <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #fff8f0; padding: 40px 20px;">
+              <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h2 style="color: #f97316; margin: 0;">Gaith Tours</h2>
+                </div>
+                <h3 style="color: #1f2937; text-align: center;">Your Verification Code</h3>
+                <div style="background: linear-gradient(135deg, #f97316, #f59e0b); border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                  <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: white; letter-spacing: 8px;">${code}</span>
+                </div>
+                <p style="color: #6b7280; text-align: center; font-size: 14px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+                <p style="color: #9ca3af; text-align: center; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+              </div>
+            </div>
+          `
+        });
+        console.log('📧 Verification code also sent to email:', user.email);
+      } catch (emailError) {
+        console.error('Email send error (non-blocking):', emailError);
+      }
     }
 
     successResponse(res, {
