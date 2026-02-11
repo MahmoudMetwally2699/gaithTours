@@ -429,8 +429,9 @@ const ChatWidget: React.FC = () => {
                                         className="chat-input-send"
                                         onClick={handleSend}
                                         disabled={!newMessage.trim() || sending}
+                                        title={t('supportChat.send', 'Send')}
                                     >
-                                        {t('supportChat.send', 'Send')}
+                                        ➤
                                     </button>
                                 </div>
                             )}

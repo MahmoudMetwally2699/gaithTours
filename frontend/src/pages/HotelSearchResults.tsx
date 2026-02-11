@@ -30,7 +30,7 @@ import { faBed, faBedPulse, faUtensils, faWifi, faPersonSwimming, faSquareParkin
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import "../components/DateRangePicker.css";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { searchHotels } from '../services/hotelService';
 import { Hotel } from '../types/hotel';
@@ -272,6 +272,50 @@ const getCityCoordinates = (destination: string): [number, number] => {
   return cityCoordinates['default'];
 };
 
+/**
+ * Helper to compute a hotel's map position (same logic used for markers).
+ */
+const getHotelPosition = (hotel: Hotel, index: number, cityCenter: [number, number]): [number, number] => {
+  const coords = (hotel as any).coordinates;
+  const angle = (index * 137.5) * (Math.PI / 180);
+  const radius = 0.01 + (index % 10) * 0.003;
+  const lat = coords?.latitude || cityCenter[0] + Math.cos(angle) * radius;
+  const lng = coords?.longitude || cityCenter[1] + Math.sin(angle) * radius;
+  return [lat, lng];
+};
+
+/**
+ * MapController – lives inside MapContainer and flies to the selected hotel + opens its popup.
+ */
+const MapController: React.FC<{
+  selectedHotel: Hotel | null;
+  filteredHotels: Hotel[];
+  cityCenter: [number, number];
+  markerRefs: React.MutableRefObject<Record<string, L.Marker>>;
+}> = ({ selectedHotel, filteredHotels, cityCenter, markerRefs }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedHotel) return;
+    const idx = filteredHotels.findIndex(h => h.id === selectedHotel.id);
+    if (idx === -1) return;
+    const [lat, lng] = getHotelPosition(selectedHotel, idx, cityCenter);
+    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
+
+    // Open the popup after the fly animation completes
+    const hotelKey = String(selectedHotel.id);
+    const timer = setTimeout(() => {
+      const marker = markerRefs.current[hotelKey];
+      if (marker) {
+        marker.openPopup();
+      }
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [selectedHotel, filteredHotels, cityCenter, map, markerRefs]);
+
+  return null;
+};
+
 export const HotelSearchResults: React.FC = () => {
   const { t, i18n } = useTranslation(['searchResults', 'common']);
   const { direction } = useDirection();
@@ -325,6 +369,19 @@ export const HotelSearchResults: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [fullscreenMap, setFullscreenMap] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+  const mapCarouselRef = useRef<HTMLDivElement>(null);
+  const markerRefs = useRef<Record<string, L.Marker>>({});
+
+  // Toggle body class for fullscreen map (hides chat button)
+  useEffect(() => {
+    if (fullscreenMap) {
+      document.body.classList.add('fullscreen-map-open');
+    } else {
+      document.body.classList.remove('fullscreen-map-open');
+    }
+    return () => document.body.classList.remove('fullscreen-map-open');
+  }, [fullscreenMap]);
+
   const [editableDestination, setEditableDestination] = useState(searchQuery.destination);
 
   // Scroll to top on mount/refresh
@@ -787,6 +844,36 @@ export const HotelSearchResults: React.FC = () => {
     return filtered;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotels, filters]);
+
+  // IntersectionObserver: sync carousel scroll with selectedHotel
+  useEffect(() => {
+    if (!fullscreenMap || !mapCarouselRef.current) return;
+    const container = mapCarouselRef.current;
+    const cards = container.querySelectorAll<HTMLElement>('[data-hotel-id]');
+    if (cards.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            const hotelId = (entry.target as HTMLElement).dataset.hotelId;
+            if (hotelId) {
+              setSelectedHotel(prev => {
+                if (prev && String(prev.id) === hotelId) return prev;
+                const found = filteredHotels.find(h => String(h.id) === hotelId);
+                return found || prev;
+              });
+            }
+          }
+        }
+      },
+      { root: container, threshold: 0.6 }
+    );
+
+    cards.forEach(card => observer.observe(card));
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullscreenMap, filteredHotels]);
 
   // Check if any filters are active (for UI decisions like showing skeletons)
   const hasActiveFilters = useMemo(() => {
@@ -2792,6 +2879,12 @@ export const HotelSearchResults: React.FC = () => {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 />
+                <MapController
+                  selectedHotel={selectedHotel}
+                  filteredHotels={filteredHotels}
+                  cityCenter={getCityCoordinates(searchQuery.destination)}
+                  markerRefs={markerRefs}
+                />
                 {filteredHotels.map((hotel, index) => {
                   const coords = (hotel as any).coordinates;
                   // If no coordinates, generate stable fake ones based on hotel index
@@ -2821,6 +2914,9 @@ export const HotelSearchResults: React.FC = () => {
                       key={hotel.id}
                       position={[lat, lng]}
                       icon={priceIcon}
+                      ref={(ref: any) => {
+                        if (ref) markerRefs.current[String(hotel.id)] = ref;
+                      }}
                       eventHandlers={{
                         click: () => {
                           setSelectedHotel(hotel);
@@ -2867,13 +2963,13 @@ export const HotelSearchResults: React.FC = () => {
               </MapContainer>
 
               {/* Mobile Hotel Carousel */}
-              <div className="md:hidden absolute bottom-4 left-0 right-0 z-[1000] flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory safe-area-bottom">
+              <div ref={mapCarouselRef} className="md:hidden absolute bottom-4 left-0 right-0 z-[1000] flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory safe-area-bottom">
                   {filteredHotels.map((hotel) => (
                     <div
                       key={hotel.id}
+                      data-hotel-id={String(hotel.id)}
                       onClick={() => {
                         setSelectedHotel(hotel);
-                        // handleHotelClick(hotel); // Optional: go to details on click or just select? Standard map behavior is select first click, details second. Keeping simple select for now.
                       }}
                       className={`min-w-[85%] sm:min-w-[300px] bg-white rounded-xl shadow-xl snap-center flex overflow-hidden border transition-all ${
                         selectedHotel?.id === hotel.id ? 'border-orange-500 ring-2 ring-orange-500 ring-opacity-50' : 'border-gray-200'

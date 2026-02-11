@@ -39,8 +39,8 @@ const sendPushNotification = async (userId, payload) => {
     const notificationPayload = JSON.stringify({
       title: payload.title || 'Gaith Tours',
       body: payload.body || '',
-      icon: payload.icon || '/logo192.png',
-      badge: '/logo192.png',
+      icon: payload.icon || '/logo-no-background.png',
+      badge: '/logo-no-background.png',
       url: payload.url || '/',
       tag: payload.tag || 'default',
       data: payload.data || {}
@@ -89,8 +89,8 @@ const sendPushToAll = async (payload) => {
     const notificationPayload = JSON.stringify({
       title: payload.title || 'Gaith Tours',
       body: payload.body || '',
-      icon: payload.icon || '/logo192.png',
-      badge: '/logo192.png',
+      icon: payload.icon || '/logo-no-background.png',
+      badge: '/logo-no-background.png',
       url: payload.url || '/',
       tag: payload.tag || 'broadcast',
       data: payload.data || {}
@@ -145,8 +145,8 @@ const sendPushToAdmins = async (payload) => {
     const notificationPayload = JSON.stringify({
       title: payload.title || 'Gaith Tours - Support',
       body: payload.body || '',
-      icon: payload.icon || '/logo192.png',
-      badge: '/logo192.png',
+      icon: payload.icon || '/logo-no-background.png',
+      badge: '/logo-no-background.png',
       url: payload.url || '/admin/support',
       tag: payload.tag || 'support-chat',
       data: payload.data || {}
@@ -193,8 +193,8 @@ const sendPushToGuest = async (guestId, payload) => {
     const notificationPayload = JSON.stringify({
       title: payload.title || 'Gaith Tours',
       body: payload.body || '',
-      icon: payload.icon || '/logo192.png',
-      badge: '/logo192.png',
+      icon: payload.icon || '/logo-no-background.png',
+      badge: '/logo-no-background.png',
       url: payload.url || '/',
       tag: payload.tag || 'default',
       data: payload.data || {}

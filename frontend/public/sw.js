@@ -10,8 +10,8 @@ self.addEventListener('push', (event) => {
 
     const options = {
       body: data.body || '',
-      icon: data.icon || '/logo192.png',
-      badge: '/logo192.png',
+      icon: data.icon || '/logo-no-background.png',
+      badge: '/logo-no-background.png',
       tag: data.tag || 'default',
       data: {
         url: data.url || '/',

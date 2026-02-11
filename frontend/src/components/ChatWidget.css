@@ -464,9 +464,10 @@
         bottom: 0;
         right: 0;
         left: 0;
+        top: 0;
         width: 100%;
-        max-height: 100vh;
-        height: 100vh;
+        max-height: 100dvh;
+        height: 100dvh;
         border-radius: 0;
     }
 
@@ -476,10 +477,23 @@
     }
 
     .chat-messages {
-        max-height: calc(100vh - 160px);
+        max-height: calc(100dvh - 160px);
     }
 
     .chat-list {
-        max-height: calc(100vh - 120px);
+        max-height: calc(100dvh - 120px);
+    }
+}
+
+/* Hide chat trigger when fullscreen map is open */
+body.fullscreen-map-open .chat-widget-trigger,
+body.fullscreen-map-open .notification-prompt-overlay {
+    display: none !important;
+}
+
+/* Move chat trigger above fixed bottom action bars on mobile */
+@media (max-width: 768px) {
+    .chat-widget-trigger {
+        bottom: 80px;
     }
 }
