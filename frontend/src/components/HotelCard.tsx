@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { Hotel } from '../services/api';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { TripAdvisorRating } from '../services/tripadvisorService';
 
 interface HotelCardProps {
   hotel: Hotel & {
@@ -17,10 +18,11 @@ interface HotelCardProps {
     reviewCount?: number;
     reviewScoreWord?: string;
   };
+  taRating?: TripAdvisorRating | null;
   onBook: () => void;
 }
 
-export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
+export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook }) => {
   const { t, i18n } = useTranslation();
   const { currency: globalCurrency } = useCurrency();
   const isRTL = i18n.language === 'ar';
@@ -75,7 +77,17 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, onBook }) => {
             </span>
           </div>
         )}
-      </div>
+
+        {/* TripAdvisor Badge */}
+        {taRating && taRating.rating && (
+          <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm rounded-lg px-1.5 py-1 flex items-center gap-1 shadow-sm z-10">
+            <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 flex-shrink-0">
+              <circle cx="10" cy="10" r="10" fill="#34E0A1" />
+              <text x="10" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">T</text>
+            </svg>
+            <span className="text-[10px] sm:text-xs font-bold text-gray-800">{taRating.rating.toFixed(1)}</span>
+          </div>
+        )}      </div>
 
       {/* Content */}
       <div className="pt-5 md:pt-6 pb-3 md:pb-4 px-3 md:px-4 flex flex-col flex-grow">

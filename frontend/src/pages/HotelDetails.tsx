@@ -70,6 +70,7 @@ import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { GuestReviews } from '../components/GuestReviews';
+import { TripAdvisorReviews } from '../components/TripAdvisorReviews';
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { CompareRooms } from '../components/CompareRooms';
@@ -1607,6 +1608,12 @@ export const HotelDetails: React.FC = () => {
           reviewCount={hotel.reviewCount || 0}
           detailedRatings={(hotel as any).detailed_ratings}
           reviews={(hotel as any).reviews}
+        />
+
+        {/* TripAdvisor Reviews Section */}
+        <TripAdvisorReviews
+          hotelName={hotel.name}
+          city={hotel.city || bookingParams.destination}
         />
 
         {/* Hotel Policies Section */}

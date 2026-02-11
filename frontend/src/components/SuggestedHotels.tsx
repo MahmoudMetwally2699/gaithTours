@@ -7,6 +7,7 @@ import { HotelCard } from './HotelCard';
 import { useHistory } from 'react-router-dom';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
+import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
 
 // Extend the base Hotel interface to include properties specific to suggestions
 interface ExtendedHotel extends Hotel {
@@ -48,6 +49,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   const [destinationName, setDestinationName] = useState<string>('');
   const [lastLocationQuery, setLastLocationQuery] = useState<string | undefined>(undefined);
   const [searchDates, setSearchDates] = useState<{ checkIn: string; checkOut: string } | null>(null);
+  const [taRatings, setTaRatings] = useState<Record<string, TripAdvisorRating>>({});
 
   // Shared location detection — no more race conditions or duplicate API calls
   const { city: detectedCity, isDetecting } = useUserLocation(i18n.language);
@@ -104,6 +106,18 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       setLoading(false);
     }
   }, [currency, i18n.language]);
+
+  // Fetch TripAdvisor ratings when hotels load
+  useEffect(() => {
+    if (hotels.length > 0 && destinationName) {
+      const hotelNames = hotels.filter(h => h.price && h.price > 0).slice(0, 8).map(h => h.name);
+      if (hotelNames.length > 0) {
+        getTripAdvisorRatings(hotelNames, destinationName)
+          .then(ratings => setTaRatings(ratings))
+          .catch(err => console.error('TripAdvisor ratings error:', err));
+      }
+    }
+  }, [hotels, destinationName]);
 
   // Notify parent when content has finished loading (first time only)
   useEffect(() => {
@@ -270,6 +284,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
                 <HotelCard
                   key={hotel.id}
                   hotel={hotel}
+                  taRating={taRatings[hotel.name] || null}
                   onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&adults=2`)}
                 />
               );

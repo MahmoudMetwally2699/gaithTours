@@ -198,6 +198,14 @@ try {
   console.error('Error loading reviews routes:', error);
 }
 
+// TripAdvisor routes
+try {
+  app.use('/api/tripadvisor', require('./routes/tripadvisor'));
+  console.log('✅ TripAdvisor routes loaded');
+} catch (error) {
+  console.error('Error loading TripAdvisor routes:', error);
+}
+
 // Promotional banners routes
 try {
   app.use('/api/promotional-banners', require('./routes/promotional-banners'));

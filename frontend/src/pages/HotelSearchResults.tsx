@@ -41,6 +41,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { CompareHotels, CompareBar } from '../components/CompareHotels';
 import { isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { Link } from 'react-router-dom';
+import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
 
 // Fix for default marker icons in Leaflet with React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -396,6 +397,9 @@ export const HotelSearchResults: React.FC = () => {
   // Favorites State
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
+  // TripAdvisor Ratings State
+  const [taRatings, setTaRatings] = useState<Record<string, TripAdvisorRating>>({});
+
   // Initialize favorites from local storage
   useEffect(() => {
     // Helper to load favorites from localStorage
@@ -416,6 +420,18 @@ export const HotelSearchResults: React.FC = () => {
     window.addEventListener('storage', loadFavorites);
     return () => window.removeEventListener('storage', loadFavorites);
   }, []);
+
+  // Fetch TripAdvisor ratings when search results load
+  useEffect(() => {
+    if (hotels.length > 0 && searchQuery.destination) {
+      const hotelNames = hotels.slice(0, 20).map(h => h.name);
+      if (hotelNames.length > 0) {
+        getTripAdvisorRatings(hotelNames, searchQuery.destination)
+          .then(ratings => setTaRatings(prev => ({ ...prev, ...ratings })))
+          .catch(err => console.error('TripAdvisor ratings error:', err));
+      }
+    }
+  }, [hotels, searchQuery.destination]);
 
   const handleToggleFavorite = (e: React.MouseEvent, hotel: Hotel) => {
     e.stopPropagation();
@@ -2106,6 +2122,20 @@ export const HotelSearchResults: React.FC = () => {
                             </div>
                           </div>
 
+                          {/* TripAdvisor Badge - Mobile */}
+                          {taRatings[hotel.name] && taRatings[hotel.name].rating && (
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <div className="flex items-center gap-1 bg-[#f2fcf6] border border-[#34E0A1]/30 rounded px-1.5 py-0.5">
+                                <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 flex-shrink-0">
+                                  <circle cx="10" cy="10" r="10" fill="#34E0A1" />
+                                  <text x="10" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">T</text>
+                                </svg>
+                                <span className="text-[10px] font-bold text-gray-700">{taRatings[hotel.name].rating!.toFixed(1)}</span>
+                                <span className="text-[9px] text-gray-500">({taRatings[hotel.name].num_reviews})</span>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Location with Distance */}
                           <div className="flex items-center gap-1 text-[11px] text-[#006ce4] mb-2">
                             <MapPinIcon className="w-3.5 h-3.5 flex-shrink-0" />
@@ -2459,6 +2489,20 @@ export const HotelSearchResults: React.FC = () => {
                                     {Math.min(hotel.rating, 10).toFixed(1)}
                                 </div>
                             </div>
+
+                            {/* TripAdvisor Badge - Desktop */}
+                            {taRatings[hotel.name] && taRatings[hotel.name].rating && (
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <div className="flex items-center gap-1 bg-[#f2fcf6] border border-[#34E0A1]/30 rounded px-1.5 py-0.5">
+                                  <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 flex-shrink-0">
+                                    <circle cx="10" cy="10" r="10" fill="#34E0A1" />
+                                    <text x="10" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">T</text>
+                                  </svg>
+                                  <span className="text-xs font-bold text-gray-700">{taRatings[hotel.name].rating!.toFixed(1)}</span>
+                                  <span className="text-[10px] text-gray-500">({taRatings[hotel.name].num_reviews})</span>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Price Block */}
                             <div className="flex flex-col items-end gap-2 mt-4 w-full">
