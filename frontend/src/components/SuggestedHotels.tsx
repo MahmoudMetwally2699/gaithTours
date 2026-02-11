@@ -52,6 +52,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   // Shared location detection — no more race conditions or duplicate API calls
   const { city: detectedCity, isDetecting } = useUserLocation(i18n.language);
   const hasFetchedWithCity = useRef(false);
+  const hasNotifiedLoaded = useRef(false);
 
   const fetchSuggestions = useCallback(async (locationQuery?: string) => {
     try {
@@ -104,15 +105,16 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
     }
   }, [currency, i18n.language]);
 
-  // Notify parent when hotels are actually loaded and ready to display
+  // Notify parent when content has finished loading (first time only)
   useEffect(() => {
-    if (!loading && hotels.length > 0 && onLoaded) {
+    if (!loading && !hasNotifiedLoaded.current && onLoaded) {
+      hasNotifiedLoaded.current = true;
       // Small delay to ensure React has finished rendering
       requestAnimationFrame(() => {
         onLoaded();
       });
     }
-  }, [loading, hotels.length, onLoaded]);
+  }, [loading, onLoaded]);
 
   // Initial fetch: load DEFAULT_CITY immediately, then upgrade to detected city
   useEffect(() => {

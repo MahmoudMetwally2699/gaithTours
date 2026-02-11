@@ -14,7 +14,7 @@ const AnimatePresenceWithChildren = AnimatePresence as React.FC<React.PropsWithC
 export const Preloader: React.FC<PreloaderProps> = ({
   isLoading,
   minDisplayTime = 1500,
-  maxDisplayTime = 8000 // Maximum time to show preloader (failsafe)
+  maxDisplayTime = 15000 // Maximum time to show preloader (failsafe)
 }) => {
   const { t: translate } = useTranslation();
   const [showPreloader, setShowPreloader] = useState(true);

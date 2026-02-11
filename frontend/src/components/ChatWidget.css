@@ -495,5 +495,18 @@ body.fullscreen-map-open .notification-prompt-overlay {
 @media (max-width: 768px) {
     .chat-widget-trigger {
         bottom: 80px;
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+        box-shadow: 0 3px 12px rgba(249, 115, 22, 0.35);
+    }
+
+    .chat-widget-trigger .chat-badge {
+        top: -3px;
+        right: -3px;
+        min-width: 16px;
+        height: 16px;
+        font-size: 9px;
+        border-radius: 8px;
     }
 }
