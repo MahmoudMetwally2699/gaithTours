@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useParams, useHistory, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,10 +54,6 @@ import { registerLocale } from "react-datepicker";
 import { format } from "date-fns";
 import ar from 'date-fns/locale/ar-SA';
 import en from 'date-fns/locale/en-US';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
 import { Hotel } from '../types/hotel';
 import { getHotelDetails } from '../services/hotelService';
 import { RoomCard } from '../components/RoomCard';
@@ -65,6 +61,7 @@ import { PriceBreakdownCard } from '../components/PriceBreakdownCard';
 import { CancellationPolicyCard } from '../components/CancellationPolicyCard';
 import { HotelPoliciesCard } from '../components/HotelPoliciesCard';
 import { HotelAreaInfo } from '../components/HotelAreaInfo';
+import { LazySection } from '../components/LazySection';
 import { LazyImage } from '../components/LazyImage';
 import { smartPreload, clearPreloadLinks } from '../utils/imagePreloader';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -74,16 +71,36 @@ import { TripAdvisorReviews } from '../components/TripAdvisorReviews';
 import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
-import { CompareRooms } from '../components/CompareRooms';
 import { PriceWatchButton } from '../components/PriceWatchButton';
 
-// Fix for default marker icons in Leaflet with React
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// Lazy-loaded components — only downloaded when actually needed
+const LazyMapContainer = React.lazy(() => import('react-leaflet').then(m => ({ default: m.MapContainer })));
+const LazyTileLayer = React.lazy(() => import('react-leaflet').then(m => ({ default: m.TileLayer })));
+const LazyMarker = React.lazy(() => import('react-leaflet').then(m => ({ default: m.Marker })));
+const LazyPopup = React.lazy(() => import('react-leaflet').then(m => ({ default: m.Popup })));
+const CompareRooms = React.lazy(() => import('../components/CompareRooms').then(m => ({ default: m.CompareRooms })));
+
+// Leaflet icon fix and CSS are deferred until map actually renders
+let leafletInitialized = false;
+const initLeaflet = () => {
+  if (leafletInitialized) return;
+  leafletInitialized = true;
+  // Inject Leaflet CSS on demand
+  if (!document.querySelector('link[href*="leaflet"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+  }
+  import('leaflet').then(L => {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+  });
+};
 
 
 registerLocale('ar', ar);
@@ -241,7 +258,7 @@ export const HotelDetails: React.FC = () => {
       }
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 150);
+    const debounceTimer = setTimeout(fetchSuggestions, 350);
     return () => clearTimeout(debounceTimer);
   }, [editableDestination, i18n.language]);
 
@@ -1408,13 +1425,15 @@ export const HotelDetails: React.FC = () => {
            </div>
         )}
 
-        {/* Hotel Area Info - Nearby POI */}
+        {/* Hotel Area Info - Nearby POI (lazy-loaded, below fold) */}
         {(hotel as any).poi_data && (
-          <HotelAreaInfo
-            poiData={(hotel as any).poi_data}
-            neighborhoodDescription={t('hotels.neighborhoodInfo', 'Guests loved walking around the neighborhood!')}
-            onShowMap={() => setShowMapModal(true)}
-          />
+          <LazySection height="200px" skeleton="simple">
+            <HotelAreaInfo
+              poiData={(hotel as any).poi_data}
+              neighborhoodDescription={t('hotels.neighborhoodInfo', 'Guests loved walking around the neighborhood!')}
+              onShowMap={() => setShowMapModal(true)}
+            />
+          </LazySection>
         )}
 
         {/* Active Search Bar for Availability (Updates content in place) */}
@@ -1632,19 +1651,23 @@ export const HotelDetails: React.FC = () => {
            )}
         </div>
 
-        {/* Guest Reviews Section */}
-        <GuestReviews
-          rating={hotel.reviewScore || hotel.rating || null}
-          reviewCount={hotel.reviewCount || 0}
-          detailedRatings={(hotel as any).detailed_ratings}
-          reviews={(hotel as any).reviews}
-        />
+        {/* Guest Reviews Section (lazy — below fold) */}
+        <LazySection height="300px" skeleton="simple">
+          <GuestReviews
+            rating={hotel.reviewScore || hotel.rating || null}
+            reviewCount={hotel.reviewCount || 0}
+            detailedRatings={(hotel as any).detailed_ratings}
+            reviews={(hotel as any).reviews}
+          />
+        </LazySection>
 
-        {/* TripAdvisor Reviews Section */}
-        <TripAdvisorReviews
-          hotelName={hotel.name}
-          city={hotel.city || bookingParams.destination}
-        />
+        {/* TripAdvisor Reviews Section (lazy — defers API call until visible) */}
+        <LazySection height="300px" skeleton="simple">
+          <TripAdvisorReviews
+            hotelName={hotel.name}
+            city={hotel.city || bookingParams.destination}
+          />
+        </LazySection>
 
         {/* Hotel Policies Section */}
         <div className="mb-12">
@@ -1657,17 +1680,19 @@ export const HotelDetails: React.FC = () => {
           />
         </div>
 
-        {/* Similar Hotels Section */}
-        <div className="mb-12">
-          <SimilarHotels
-            city={hotel.city || bookingParams.destination}
-            currentHotelId={hotelId || ''}
-            checkIn={bookingParams.checkIn}
-            checkOut={bookingParams.checkOut}
-            adults={bookingParams.adults}
-            children={bookingParams.children}
-          />
-        </div>
+        {/* Similar Hotels Section (lazy — defers API call until visible) */}
+        <LazySection height="250px" skeleton="hotel-cards">
+          <div className="mb-12">
+            <SimilarHotels
+              city={hotel.city || bookingParams.destination}
+              currentHotelId={hotelId || ''}
+              checkIn={bookingParams.checkIn}
+              checkOut={bookingParams.checkOut}
+              adults={bookingParams.adults}
+              children={bookingParams.children}
+            />
+          </div>
+        </LazySection>
 
         {/* Sticky Mobile Book Button */}
         {selectedRates.size > 0 && (
@@ -1820,22 +1845,23 @@ export const HotelDetails: React.FC = () => {
         </div>
       )}
 
-      {/* Comparison Modal */}
+      {/* Comparison Modal (lazy-loaded — only downloaded when user clicks Compare) */}
       {showCompareRooms && (
-        <CompareRooms
-            rooms={Array.from(comparedRooms.values())}
-            onClose={() => setShowCompareRooms(false)}
-            onSelect={(room) => {
-              handleRateSelect(room, 1);
-              setShowCompareRooms(false);
-              // Scroll to room card?
-            }}
-            currencySymbol={currencySymbol}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"><div className="animate-spin h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full" /></div>}>
+          <CompareRooms
+              rooms={Array.from(comparedRooms.values())}
+              onClose={() => setShowCompareRooms(false)}
+              onSelect={(room) => {
+                handleRateSelect(room, 1);
+                setShowCompareRooms(false);
+              }}
+              currencySymbol={currencySymbol}
+          />
+        </Suspense>
       )}
 
       {/* Map Modal */}
-      {showMapModal && (
+      {showMapModal && (() => { initLeaflet(); return true; })() && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col relative overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
             {/* Header */}
@@ -1852,25 +1878,27 @@ export const HotelDetails: React.FC = () => {
               </button>
             </div>
 
-            {/* Map */}
+            {/* Map — Leaflet loaded on demand */}
             <div className="flex-1 relative">
-               <MapContainer
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full" /></div>}>
+               <LazyMapContainer
                  center={[hotel.coordinates.latitude, hotel.coordinates.longitude]}
                  zoom={15}
                  scrollWheelZoom={true}
                  style={{ height: '100%', width: '100%' }}
                >
-                 <TileLayer
+                 <LazyTileLayer
                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                  />
-                 <Marker position={[hotel.coordinates.latitude, hotel.coordinates.longitude]}>
-                   <Popup>
+                 <LazyMarker position={[hotel.coordinates.latitude, hotel.coordinates.longitude]}>
+                   <LazyPopup>
                      <div className="font-bold text-sm">{hotel.name}</div>
                      <div className="text-xs text-gray-600">{hotel.address}</div>
-                   </Popup>
-                 </Marker>
-               </MapContainer>
+                   </LazyPopup>
+                 </LazyMarker>
+               </LazyMapContainer>
+              </Suspense>
             </div>
           </div>
         </div>

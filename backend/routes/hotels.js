@@ -32,6 +32,107 @@ function setCachedResults(key, data) {
 }
 
 /**
+ * Get popular 5-star properties (aggregated from multiple Saudi cities)
+ * GET /api/hotels/popular-properties?currency=USD&language=en
+ *
+ * Dedicated endpoint to avoid 3 separate /suggested calls from the frontend.
+ * Uses a longer cache (30 min) since popular properties change infrequently.
+ */
+const popularPropertiesCache = new Map();
+const POPULAR_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+router.get('/popular-properties', async (req, res) => {
+  try {
+    const currency = req.query.currency || 'USD';
+    const language = req.query.language || 'en';
+    const cacheKey = `popular:${currency}:${language}`;
+
+    // Check cache first
+    const cached = popularPropertiesCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < POPULAR_CACHE_TTL) {
+      console.log(`♻️  Serving cached popular properties (${cached.data.hotels.length} hotels)`);
+      return successResponse(res, cached.data, 'Popular properties from cache');
+    }
+
+    console.log(`🏨 Fetching popular 5-star properties (currency: ${currency}, language: ${language})`);
+
+    const cities = ['Riyadh', 'Jeddah', 'Makkah'];
+
+    // Reuse existing suggestion cache if available, otherwise fetch
+    const cityPromises = cities.map(async (city) => {
+      try {
+        // Check the main suggestion cache first
+        const suggCacheKey = `suggestions:${city}:${currency}:${language}`;
+        const cachedSugg = getCachedResults(suggCacheKey);
+        if (cachedSugg) {
+          console.log(`   ♻️  Reusing suggestion cache for ${city}`);
+          return cachedSugg.hotels || [];
+        }
+
+        // Not cached — do a full suggestion fetch (will also populate the suggestion cache)
+        const suggestions = await rateHawkService.suggest(city, language);
+        if (!suggestions.regions.length && !suggestions.hotels.length) return [];
+
+        const target = suggestions.regions[0] || suggestions.hotels[0];
+        const regionId = target.region_id || target.id;
+
+        const now = new Date();
+        const daysOffset = now.getHours() >= 22 ? 1 : 0;
+        const dates = rateHawkService.constructor.getDefaultDates(daysOffset, 1);
+
+        const searchResults = await rateHawkService.searchByRegion(regionId, {
+          ...dates,
+          adults: 2,
+          currency,
+          language,
+          enrichmentLimit: 0,
+          refreshPrices: 0
+        });
+
+        // Filter for enriched hotels
+        const enriched = (searchResults.hotels || []).filter(h => {
+          return h.price && h.price > 0 && h.image && !h.image.includes('placeholder') && h.name && h.isEnriched !== false;
+        });
+
+        // Also populate the suggestion cache so /suggested calls can reuse it
+        const suggData = { hotels: enriched.slice(0, 9), source: 'location', destination: city, searchDates: { checkIn: dates.checkin, checkOut: dates.checkout } };
+        setCachedResults(suggCacheKey, suggData);
+
+        return enriched;
+      } catch (error) {
+        console.error(`   ❌ Error fetching popular hotels from ${city}:`, error.message);
+        return [];
+      }
+    });
+
+    const cityResults = await Promise.all(cityPromises);
+    const allHotels = cityResults.flat();
+
+    // Filter for 5-star hotels, sort, and limit
+    const popularHotels = allHotels
+      .filter(h => h.price && h.price > 0 && h.star_rating && h.star_rating >= 5)
+      .sort((a, b) => {
+        const ratingDiff = (b.star_rating || 0) - (a.star_rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return (a.price || 0) - (b.price || 0);
+      })
+      .slice(0, 15);
+
+    console.log(`✅ Popular properties: ${popularHotels.length} 5-star hotels from ${allHotels.length} total`);
+
+    const responseData = { hotels: popularHotels };
+
+    // Cache for 30 minutes
+    popularPropertiesCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+
+    successResponse(res, responseData, 'Popular properties retrieved successfully');
+  } catch (error) {
+    console.error('Popular properties error:', error);
+    errorResponse(res, 'Failed to get popular properties', 500);
+  }
+});
+
+/**
  * Get available filter values (languages, amenities, etc.)
  * GET /api/hotels/filters
  */

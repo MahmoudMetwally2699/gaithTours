@@ -143,7 +143,7 @@ export const MainSection: React.FC = () => {
       }
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 150);
+    const debounceTimer = setTimeout(fetchSuggestions, 350);
     return () => clearTimeout(debounceTimer);
   }, [destination, i18n.language]);
 

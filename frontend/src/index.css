@@ -169,6 +169,22 @@ body {
   animation: float 6s ease-in-out infinite;
 }
 
+/* Hotel card fade-in-up animation (replaces framer-motion) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.3s ease-out both;
+}
+
 /* Toast customization */
 .Toastify__toast {
   @apply rounded-xl border-0 shadow-2xl backdrop-blur-md;

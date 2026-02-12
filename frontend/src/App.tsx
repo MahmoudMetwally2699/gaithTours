@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Route, Switch, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -8,33 +8,35 @@ import { CurrencyProvider } from './contexts/CurrencyContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
-import { Hotels } from './pages/Hotels';
-import { HotelSearchResults } from './pages/HotelSearchResults';
-import { HotelDetails } from './pages/HotelDetails';
-import { BookingPage } from './pages/BookingPage';
-import { PaymentCallbackPage } from './pages/PaymentCallbackPage';
-import { HotelBookingFlow } from './pages/HotelBookingFlow';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { ResetPassword } from './pages/ResetPassword';
-import { EmailVerification } from './pages/EmailVerification';
-import { Profile } from './pages/Profile';
-import { PaymentSuccess } from './pages/PaymentSuccess';
-import { PaymentFailure } from './pages/PaymentFailure';
-import { Blog } from './pages/Blog';
-import { BlogPostPage } from './pages/BlogPost';
-import { AdminLogin } from './pages/AdminLogin';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { AcceptInvitation } from './pages/AcceptInvitation';
-import { PartnerLogin } from './pages/PartnerLogin';
-import { PartnerDashboard } from './pages/PartnerDashboard';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { useReferralCapture } from './hooks/useReferralCapture';
 import ChatWidget from './components/ChatWidget';
 import NotificationPrompt from './components/NotificationPrompt';
 import './i18n';
+
+// Lazy-loaded pages — only downloaded when the route is visited
+const Hotels = React.lazy(() => import('./pages/Hotels').then(m => ({ default: m.Hotels })));
+const HotelSearchResults = React.lazy(() => import('./pages/HotelSearchResults').then(m => ({ default: m.HotelSearchResults })));
+const HotelDetails = React.lazy(() => import('./pages/HotelDetails').then(m => ({ default: m.HotelDetails })));
+const BookingPage = React.lazy(() => import('./pages/BookingPage').then(m => ({ default: m.BookingPage })));
+const PaymentCallbackPage = React.lazy(() => import('./pages/PaymentCallbackPage').then(m => ({ default: m.PaymentCallbackPage })));
+const HotelBookingFlow = React.lazy(() => import('./pages/HotelBookingFlow').then(m => ({ default: m.HotelBookingFlow })));
+const Login = React.lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Register = React.lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
+const EmailVerification = React.lazy(() => import('./pages/EmailVerification').then(m => ({ default: m.EmailVerification })));
+const Profile = React.lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const PaymentSuccess = React.lazy(() => import('./pages/PaymentSuccess').then(m => ({ default: m.PaymentSuccess })));
+const PaymentFailure = React.lazy(() => import('./pages/PaymentFailure').then(m => ({ default: m.PaymentFailure })));
+const Blog = React.lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })));
+const BlogPostPage = React.lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPostPage })));
+const AdminLogin = React.lazy(() => import('./pages/AdminLogin').then(m => ({ default: m.AdminLogin })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const AcceptInvitation = React.lazy(() => import('./pages/AcceptInvitation').then(m => ({ default: m.AcceptInvitation })));
+const PartnerLogin = React.lazy(() => import('./pages/PartnerLogin').then(m => ({ default: m.PartnerLogin })));
+const PartnerDashboard = React.lazy(() => import('./pages/PartnerDashboard').then(m => ({ default: m.PartnerDashboard })));
 
 // Google OAuth Client ID - Replace with your actual client ID from Google Cloud Console
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
@@ -63,6 +65,11 @@ const AppContent = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {!isAdminDashboard && !isPartnerPage && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && !isLogin && !isRegister && !isForgotPassword && !isResetPassword && !isEmailVerification && <Navbar />}
       <main className="flex-grow">
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="animate-spin h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full" />
+          </div>
+        }>
         <Switch>
           <Route exact path="/" component={Home} />
           <Route path="/hotels/search" component={HotelSearchResults} />
@@ -102,6 +109,7 @@ const AppContent = () => {
           <Route exact path="/blog" component={Blog} />
           <Route path="/blog/:slug" component={BlogPostPage} />
         </Switch>
+        </Suspense>
       </main>
       {!isAdminDashboard && !isPartnerPage && <Footer />}
       {!isAdminDashboard && !isPartnerPage && <ChatWidget />}

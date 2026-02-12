@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
-import { motion } from 'framer-motion';
 import {
   FunnelIcon,
   MapPinIcon,
@@ -38,10 +37,13 @@ import { useDirection } from '../hooks/useDirection';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { useAuth } from '../contexts/AuthContext';
-import { CompareHotels, CompareBar } from '../components/CompareHotels';
+import { CompareBar } from '../components/CompareHotels';
 import { isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { Link } from 'react-router-dom';
 import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
+
+// Lazy-loaded components — only downloaded when actually needed
+const CompareHotels = React.lazy(() => import('../components/CompareHotels').then(m => ({ default: m.CompareHotels })));
 
 // Fix for default marker icons in Leaflet with React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -421,13 +423,36 @@ export const HotelSearchResults: React.FC = () => {
     return () => window.removeEventListener('storage', loadFavorites);
   }, []);
 
-  // Fetch TripAdvisor ratings when search results load
+  // Fetch TripAdvisor ratings when search results load (with sessionStorage cache)
   useEffect(() => {
     if (hotels.length > 0 && searchQuery.destination) {
       const hotelNames = hotels.slice(0, 20).map(h => h.name);
       if (hotelNames.length > 0) {
+        // Check sessionStorage cache first
+        const cacheKey = `ta_ratings_${searchQuery.destination}`;
+        try {
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            // Check if all requested hotels are already cached
+            const allCached = hotelNames.every(name => parsed[name]);
+            if (allCached) {
+              setTaRatings(prev => ({ ...prev, ...parsed }));
+              return;
+            }
+          }
+        } catch (e) { /* ignore cache errors */ }
+
         getTripAdvisorRatings(hotelNames, searchQuery.destination)
-          .then(ratings => setTaRatings(prev => ({ ...prev, ...ratings })))
+          .then(ratings => {
+            setTaRatings(prev => ({ ...prev, ...ratings }));
+            // Cache the ratings
+            try {
+              const existing = sessionStorage.getItem(cacheKey);
+              const merged = existing ? { ...JSON.parse(existing), ...ratings } : ratings;
+              sessionStorage.setItem(cacheKey, JSON.stringify(merged));
+            } catch (e) { /* ignore cache errors */ }
+          })
           .catch(err => console.error('TripAdvisor ratings error:', err));
       }
     }
@@ -502,8 +527,6 @@ export const HotelSearchResults: React.FC = () => {
     document.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
-  // Performance optimization: skip animations when many hotels need to render
-  const [skipAnimations, setSkipAnimations] = useState(false);
   const prevFilteredCountRef = useRef<number>(0);
 
   // Autocomplete state
@@ -632,7 +655,7 @@ export const HotelSearchResults: React.FC = () => {
       }
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 150);
+    const debounceTimer = setTimeout(fetchSuggestions, 350);
     return () => clearTimeout(debounceTimer);
   }, [editableDestination, i18n.language]);
 
@@ -900,20 +923,9 @@ export const HotelSearchResults: React.FC = () => {
            filters.cancellationPolicy !== 'any';
   }, [filters.starRating, filters.facilities, filters.guestRating, filters.mealPlan, filters.cancellationPolicy]);
 
-  // Performance optimization: skip animations when filter change causes many hotels to appear at once
+  // Track filtered hotel count changes
   useEffect(() => {
-    const currentCount = filteredHotels.length;
-    const prevCount = prevFilteredCountRef.current;
-
-    // If going from few hotels to many (filter removed), skip animations
-    if (currentCount > 30 && currentCount > prevCount * 2) {
-      setSkipAnimations(true);
-      // Re-enable animations after a short delay
-      const timer = setTimeout(() => setSkipAnimations(false), 500);
-      return () => clearTimeout(timer);
-    }
-
-    prevFilteredCountRef.current = currentCount;
+    prevFilteredCountRef.current = filteredHotels.length;
   }, [filteredHotels.length]);
 
   // Optimized star rating toggle handler
@@ -2051,16 +2063,14 @@ export const HotelSearchResults: React.FC = () => {
                   </div>
                 ) : (
                   filteredHotels.map((hotel, index) => (
-                    <motion.div
+                    <div
                       key={hotel.id}
-                      initial={skipAnimations ? false : { opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={skipAnimations ? { duration: 0 } : { duration: 0.3, delay: Math.min(index, 10) * 0.03 }}
-                      className={`rounded-lg transition-all duration-300 relative cursor-pointer ${
+                      className={`animate-fadeInUp rounded-lg transition-all duration-300 relative cursor-pointer ${
                         (hotel as any).isSearchedHotel
                           ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
                           : 'bg-white shadow-sm hover:shadow-md border border-gray-200'
                       }`}
+                      style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}
                       onClick={() => handleHotelClick(hotel)}
                     >
                       <div className={(hotel as any).isSearchedHotel ? 'bg-white rounded-[6px]' : ''}>
@@ -2544,7 +2554,7 @@ export const HotelSearchResults: React.FC = () => {
                         </div>
                       </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))
                 )}
 
@@ -3103,16 +3113,18 @@ export const HotelSearchResults: React.FC = () => {
       />
 
       {showCompare && (
-        <CompareHotels
-          hotels={comparedHotels}
-          onClose={() => setShowCompare(false)}
-          onRemove={(hotelId) => setComparedHotels(prev => prev.filter(h => (h.id || String(h.hid)) !== hotelId))}
-          currencySymbol={currencySymbol}
-          checkIn={searchQuery.checkIn}
-          checkOut={searchQuery.checkOut}
-          adults={searchQuery.adults}
-          children={searchQuery.children}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"><div className="animate-spin h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full" /></div>}>
+          <CompareHotels
+            hotels={comparedHotels}
+            onClose={() => setShowCompare(false)}
+            onRemove={(hotelId) => setComparedHotels(prev => prev.filter(h => (h.id || String(h.hid)) !== hotelId))}
+            currencySymbol={currencySymbol}
+            checkIn={searchQuery.checkIn}
+            checkOut={searchQuery.checkOut}
+            adults={searchQuery.adults}
+            children={searchQuery.children}
+          />
+        </Suspense>
       )}
     </div>
   );

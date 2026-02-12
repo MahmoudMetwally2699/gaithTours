@@ -33,58 +33,16 @@ export const PopularProperties: React.FC = () => {
         setLoading(true);
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
-        // Fetch from multiple major Saudi cities to get more 5-star hotels
-        // Using Promise.all for PARALLEL fetching (3x faster than sequential)
-        const cities = ['Riyadh', 'Jeddah', 'Makkah'];
+        // Single API call to dedicated endpoint (replaces 3 parallel /suggested calls)
+        const response = await fetch(
+          `${API_URL}/hotels/popular-properties?currency=${currency}&language=${i18n.language}`
+        );
+        const data = await response.json();
 
-        const cityPromises = cities.map(async (city) => {
-          try {
-            const response = await fetch(`${API_URL}/hotels/suggested?location=${city}&currency=${currency}&language=${i18n.language}`);
-            const data = await response.json();
-            return data.success && data.data.hotels ? data.data.hotels : [];
-          } catch (error) {
-            console.error(`Error fetching hotels from ${city}:`, error);
-            return [];
-          }
-        });
-
-        const cityResults = await Promise.all(cityPromises);
-        const allHotels: ExtendedHotel[] = cityResults.flat();
-
-        // Debug: Log all hotels before filtering
-        console.log(`📊 Total hotels fetched: ${allHotels.length}`);
-        console.log('Hotel data:', allHotels.map(h => ({
-          name: h.name,
-          star_rating: h.star_rating,
-          rating: h.rating,
-          price: h.price
-        })));
-
-        // Filter for 5-star hotels using star_rating field (1-5 scale)
-        const popularHotels = allHotels
-          .filter((h: ExtendedHotel) => {
-            const hasPrice = h.price && h.price > 0;
-            const isFiveStar = h.star_rating && h.star_rating >= 5; // Only 5-star hotels
-            return hasPrice && isFiveStar;
-          })
-          .sort((a: ExtendedHotel, b: ExtendedHotel) => {
-            // Primary sort: star_rating (highest first)
-            const ratingDiff = (b.star_rating || 0) - (a.star_rating || 0);
-            if (ratingDiff !== 0) return ratingDiff;
-
-            // Secondary sort: price (lower first for same rating)
-            return (a.price || 0) - (b.price || 0);
-          })
-          .slice(0, 15); // Limit to top 15 properties
-
-        console.log(`✅ Filtered to ${popularHotels.length} 5-star hotels`);
-        console.log('Filtered hotels:', popularHotels.map(h => ({
-          name: h.name,
-          star_rating: h.star_rating,
-          price: h.price
-        })));
-
-        setHotels(popularHotels);
+        if (data.success && data.data.hotels) {
+          console.log(`✅ Popular properties: ${data.data.hotels.length} 5-star hotels`);
+          setHotels(data.data.hotels);
+        }
       } catch (error) {
         console.error('Error fetching popular 5-star properties:', error);
       } finally {

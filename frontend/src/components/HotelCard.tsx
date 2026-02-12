@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { Hotel } from '../services/api';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -22,7 +21,7 @@ interface HotelCardProps {
   onBook: () => void;
 }
 
-export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook }) => {
+export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating, onBook }) => {
   const { t, i18n } = useTranslation();
   const { currency: globalCurrency } = useCurrency();
   const isRTL = i18n.language === 'ar';
@@ -62,10 +61,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook })
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.2 }}
-      className="bg-white rounded-2xl md:rounded-[2rem] overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col h-full group cursor-pointer"
+    <div
+      className="bg-white rounded-2xl md:rounded-[2rem] overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col h-full group cursor-pointer hover:-translate-y-1"
       onClick={onBook}
     >
       {/* Image Container */}
@@ -73,6 +70,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook })
         <img
           src={hotel.image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={hotel.name}
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -164,6 +162,6 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook })
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
-};
+});

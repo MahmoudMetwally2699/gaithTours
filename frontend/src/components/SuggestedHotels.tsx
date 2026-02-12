@@ -56,8 +56,35 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   const hasFetchedWithCity = useRef(false);
   const hasNotifiedLoaded = useRef(false);
 
-  const fetchSuggestions = useCallback(async (locationQuery?: string) => {
+  const fetchSuggestions = useCallback(async (locationQuery?: string, options?: { skipCache?: boolean }) => {
     try {
+      const cacheKey = `suggestedHotels:${locationQuery || 'default'}:${currency}:${i18n.language}`;
+
+      // Stale-while-revalidate: serve cached data immediately
+      if (!options?.skipCache) {
+        try {
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            const cachedData = JSON.parse(cached);
+            const age = Date.now() - (cachedData._ts || 0);
+            // Use cache if less than 10 minutes old
+            if (age < 10 * 60 * 1000) {
+              console.log('⚡ SuggestedHotels: serving from sessionStorage cache');
+              setHotels(cachedData.hotels);
+              setSource(cachedData.source);
+              setDestinationName(cachedData.destination);
+              if (cachedData.searchDates) setSearchDates(cachedData.searchDates);
+              setLoading(false);
+              // Still re-fetch in background if cache > 5 min old
+              if (age > 5 * 60 * 1000) {
+                fetchSuggestions(locationQuery, { skipCache: true });
+              }
+              return cachedData;
+            }
+          }
+        } catch { /* sessionStorage unavailable or parse error */ }
+      }
+
       setLoading(true);
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -80,17 +107,6 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       const data = await response.json();
 
       if (data.success) {
-        // Debug: Log first hotel to verify margin-adjusted prices
-        if (data.data.hotels.length > 0) {
-          const firstHotel = data.data.hotels[0];
-          console.log('🏨 SuggestedHotels API response - first hotel:', {
-            name: firstHotel.name,
-            price: firstHotel.price,
-            pricePerNight: firstHotel.pricePerNight,
-            total_taxes: firstHotel.total_taxes,
-            marginApplied: firstHotel.marginApplied
-          });
-        }
         setHotels(data.data.hotels);
         setSource(data.data.source);
         setDestinationName(data.data.destination);
@@ -98,6 +114,15 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
         if (data.data.searchDates) {
           setSearchDates(data.data.searchDates);
         }
+
+        // Cache to sessionStorage for instant re-visits
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            ...data.data,
+            _ts: Date.now()
+          }));
+        } catch { /* quota exceeded or unavailable */ }
+
         return data.data; // Return for chaining
       }
     } catch (error) {

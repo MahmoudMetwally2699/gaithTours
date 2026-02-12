@@ -8,6 +8,7 @@ import { PopularCities } from '../components/PopularCities';
 import { PopularCitiesWorldwide } from '../components/PopularCitiesWorldwide';
 import { PaymentMethods } from '../components/PaymentMethods';
 import { Preloader } from '../components/Preloader';
+import { LazySection } from '../components/LazySection';
 
 export const Home: React.FC = () => {
   const [isContentLoaded, setIsContentLoaded] = useState(false);
@@ -25,10 +26,18 @@ export const Home: React.FC = () => {
         <ForNewUsers />
         <SuggestedHotels onLoaded={handleContentLoaded} />
         <OffersBanner />
-        <PopularProperties />
-        <PopularCities />
-        <PopularCitiesWorldwide />
-        <PaymentMethods />
+        <LazySection height="400px" skeleton="hotel-cards">
+          <PopularProperties />
+        </LazySection>
+        <LazySection height="350px" skeleton="city-cards">
+          <PopularCities />
+        </LazySection>
+        <LazySection height="350px" skeleton="city-cards">
+          <PopularCitiesWorldwide />
+        </LazySection>
+        <LazySection height="300px" skeleton="simple">
+          <PaymentMethods />
+        </LazySection>
       </div>
     </>
   );

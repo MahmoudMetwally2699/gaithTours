@@ -195,6 +195,7 @@ export const PopularCities: React.FC = () => {
                 <img
                   src={city.image}
                   alt={city.name}
+                  loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
