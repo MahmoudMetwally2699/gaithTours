@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Switch, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -64,12 +64,20 @@ const AppContent = () => {
   const isResetPassword = location.pathname === '/reset-password';
   const isEmailVerification = location.pathname.startsWith('/verify-email/');
 
+  // Hide footer during route transitions, show after content renders
+  const [showFooter, setShowFooter] = useState(false);
+  useEffect(() => {
+    setShowFooter(false);
+    const timer = setTimeout(() => setShowFooter(true), 500);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {!isAdminDashboard && !isPartnerPage && !isHome && !isHotelSearch && !isHotelDetails && !isBookingPage && !isLogin && !isRegister && !isForgotPassword && !isResetPassword && !isEmailVerification && <Navbar />}
-      <main className="flex-grow">
+      <main className="flex-grow min-h-screen">
         <Suspense fallback={
-          <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex items-center justify-center min-h-screen">
             <div className="animate-spin h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full" />
           </div>
         }>
@@ -114,11 +122,13 @@ const AppContent = () => {
         </Switch>
         </Suspense>
       </main>
-      <Suspense fallback={null}>
-        {!isAdminDashboard && !isPartnerPage && <Footer />}
-        {!isAdminDashboard && !isPartnerPage && <ChatWidget />}
-        {!isAdminDashboard && !isPartnerPage && <NotificationPrompt />}
-      </Suspense>
+      {showFooter && (
+        <Suspense fallback={null}>
+          {!isAdminDashboard && !isPartnerPage && <Footer />}
+          {!isAdminDashboard && !isPartnerPage && <ChatWidget />}
+          {!isAdminDashboard && !isPartnerPage && <NotificationPrompt />}
+        </Suspense>
+      )}
       <Toaster
         position="top-right"
         toastOptions={{
