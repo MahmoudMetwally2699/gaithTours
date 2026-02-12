@@ -5,6 +5,7 @@ import { HotelCard } from './HotelCard';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
 
 interface ExtendedHotel extends Hotel {
   hid?: string;
@@ -24,6 +25,7 @@ export const PopularProperties: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hotels, setHotels] = useState<ExtendedHotel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [taRatings, setTaRatings] = useState<Record<string, TripAdvisorRating>>({});
 
   useEffect(() => {
     const fetchPopularHotels = async () => {
@@ -93,6 +95,24 @@ export const PopularProperties: React.FC = () => {
     fetchPopularHotels();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency, i18n.language]); // Re-fetch when currency or language changes
+
+  // Fetch TripAdvisor ratings when hotels load
+  useEffect(() => {
+    if (hotels.length > 0) {
+      // Collect hotels from all cities and fetch TA ratings per city
+      const hotelNames = hotels.map(h => h.name);
+      const cities = ['Riyadh', 'Jeddah', 'Makkah'];
+      cities.forEach(city => {
+        getTripAdvisorRatings(hotelNames, city)
+          .then(ratings => {
+            if (Object.keys(ratings).length > 0) {
+              setTaRatings(prev => ({ ...prev, ...ratings }));
+            }
+          })
+          .catch(err => console.error('TripAdvisor ratings error:', err));
+      });
+    }
+  }, [hotels]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -212,6 +232,7 @@ export const PopularProperties: React.FC = () => {
             >
               <HotelCard
                 hotel={hotel}
+                taRating={taRatings[hotel.name] || null}
                 onBook={() => history.push(`/hotels/details/${hotel.hid || hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&adults=2`)}
               />
             </div>

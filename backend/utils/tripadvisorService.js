@@ -169,10 +169,42 @@ class TripAdvisorService {
       return results;
     }
 
-    console.log(`   🌐 Need to fetch ${hotelsToFetch.length} hotels from TripAdvisor API`);
+    // Step 1b: Try individual fuzzy match for hotels not found in batch
+    const stillToFetch = [];
+    for (const name of hotelsToFetch) {
+      try {
+        const found = await TripAdvisorHotel.findByNameAndCity(name, city);
+        if (found) {
+          results[name] = {
+            location_id: found.location_id,
+            name: found.name,
+            rating: found.rating,
+            num_reviews: found.num_reviews,
+            ranking: found.ranking,
+            price_level: found.price_level,
+            web_url: found.web_url,
+            rating_image_url: found.rating_image_url,
+            reviews: found.reviews || [],
+            from_cache: true
+          };
+          console.log(`   📦 Fuzzy match: "${name}" → "${found.name}" (rating ${found.rating}/5, ${found.num_reviews} reviews)`);
+        } else {
+          stillToFetch.push(name);
+        }
+      } catch (err) {
+        stillToFetch.push(name);
+      }
+    }
+
+    if (stillToFetch.length === 0) {
+      console.log(`   ✅ All hotels resolved from DB (batch + fuzzy)`);
+      return results;
+    }
+
+    console.log(`   🌐 Need to fetch ${stillToFetch.length} hotels from TripAdvisor API`);
 
     // Step 2: Fetch missing hotels from TripAdvisor (with rate limiting)
-    for (const hotelName of hotelsToFetch) {
+    for (const hotelName of stillToFetch) {
       try {
         // Search for the hotel
         const searchQuery = `${hotelName} ${city}`;

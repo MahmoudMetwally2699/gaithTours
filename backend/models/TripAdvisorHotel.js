@@ -154,27 +154,64 @@ TripAdvisorHotelSchema.index({ name_normalized: 1, city_normalized: 1 });
 // Text index for fuzzy searching
 TripAdvisorHotelSchema.index({ name: 'text' });
 
+// Common city name aliases for matching
+const CITY_ALIASES = {
+  'mecca': ['makkah', 'makkah al mukarramah', 'mekka'],
+  'makkah': ['mecca', 'makkah al mukarramah', 'mekka'],
+  'medina': ['madinah', 'al madinah', 'al-madinah'],
+  'madinah': ['medina', 'al madinah', 'al-madinah'],
+  'jeddah': ['jidda', 'jiddah', 'jedda'],
+  'jidda': ['jeddah', 'jiddah', 'jedda'],
+  'riyadh': ['riad', 'ar-riyad'],
+  'cairo': ['al qahirah', 'al-qahira'],
+};
+
+function getCityVariants(city) {
+  const cityNorm = city.toLowerCase().trim();
+  const variants = [cityNorm];
+  if (CITY_ALIASES[cityNorm]) {
+    variants.push(...CITY_ALIASES[cityNorm]);
+  }
+  return variants;
+}
+
 /**
  * Static method to find a TripAdvisor hotel by name and city
  */
 TripAdvisorHotelSchema.statics.findByNameAndCity = async function(hotelName, city) {
   const nameNorm = hotelName.toLowerCase().trim();
-  const cityNorm = city.toLowerCase().trim();
+  const cityVariants = getCityVariants(city);
 
-  // Try exact match first
+  // Try exact name match with city aliases
   let result = await this.findOne({
     name_normalized: nameNorm,
-    city_normalized: cityNorm
+    city_normalized: { $in: cityVariants }
   });
 
   if (result) return result;
 
   // Try partial match (hotel name contains or is contained by the search)
+  const nameEscaped = nameNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const nameKeywords = nameNorm.split(' ').slice(0, 3).join('.*');
   result = await this.findOne({
-    city_normalized: cityNorm,
+    city_normalized: { $in: cityVariants },
     $or: [
-      { name_normalized: { $regex: nameNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
-      { name_normalized: { $regex: nameNorm.split(' ').slice(0, 3).join('.*'), $options: 'i' } }
+      { name_normalized: { $regex: nameEscaped, $options: 'i' } },
+      { name_normalized: { $regex: nameKeywords, $options: 'i' } }
+    ]
+  });
+
+  if (result) return result;
+
+  // Last resort: try name-only match (ignore city) with exact name
+  result = await this.findOne({ name_normalized: nameNorm });
+  if (result) return result;
+
+  // Last resort: regex on name only
+  result = await this.findOne({
+    $or: [
+      { name_normalized: { $regex: nameEscaped, $options: 'i' } },
+      { name_normalized: { $regex: nameKeywords, $options: 'i' } }
     ]
   });
 
@@ -185,12 +222,12 @@ TripAdvisorHotelSchema.statics.findByNameAndCity = async function(hotelName, cit
  * Static method to find multiple hotels by names and city
  */
 TripAdvisorHotelSchema.statics.findByNamesAndCity = async function(hotelNames, city) {
-  const cityNorm = city.toLowerCase().trim();
+  const cityVariants = getCityVariants(city);
   const namesNorm = hotelNames.map(n => n.toLowerCase().trim());
 
   return this.find({
     name_normalized: { $in: namesNorm },
-    city_normalized: cityNorm
+    city_normalized: { $in: cityVariants }
   });
 };
 

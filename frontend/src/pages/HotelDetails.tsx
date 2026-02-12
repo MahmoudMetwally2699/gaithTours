@@ -71,6 +71,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { GuestReviews } from '../components/GuestReviews';
 import { TripAdvisorReviews } from '../components/TripAdvisorReviews';
+import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { CompareRooms } from '../components/CompareRooms';
@@ -299,6 +300,7 @@ export const HotelDetails: React.FC = () => {
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
   const [selectedRates, setSelectedRates] = useState<Map<string, number>>(new Map()); // match_hash -> count
+  const [taHeaderRating, setTaHeaderRating] = useState<TripAdvisorRating | null>(null);
 
   // Scroll to top when component mounts and disable scroll restoration
   useEffect(() => {
@@ -491,6 +493,19 @@ export const HotelDetails: React.FC = () => {
 
     fetchHotelDetails();
   }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination, currency, i18n.language]);
+
+  // Fetch TripAdvisor rating for header display
+  useEffect(() => {
+    if (hotel?.name && hotel?.city) {
+      getTripAdvisorRatings([hotel.name], hotel.city)
+        .then(ratings => {
+          if (ratings[hotel.name]) {
+            setTaHeaderRating(ratings[hotel.name]);
+          }
+        })
+        .catch(err => console.error('TripAdvisor header rating error:', err));
+    }
+  }, [hotel?.name, hotel?.city]);
 
   // Helper to clean room name for grouping
   const normalizeRoomName = (name: string) => {
@@ -1143,29 +1158,44 @@ export const HotelDetails: React.FC = () => {
 
               <div className="flex items-center gap-4">
                  {/* Only show rating if there are actual reviews */}
-                 {(hotel.reviewScore || hotel.rating) && (
-                   <>
-                     <span className="bg-orange-500 text-white px-2 py-1 rounded text-sm font-bold">
-                        {hotel.reviewScore || hotel.rating}
-                     </span>
-                     <span className="font-bold text-gray-800">
-                        {hotel.reviewScoreWord || (hotel.reviewScore >= 9 ? 'Excellent' : hotel.reviewScore >= 8 ? 'Very Good' : hotel.reviewScore >= 7 ? 'Good' : 'Pleasant')}
-                     </span>
-                     <span className="text-gray-500 text-sm">
-                        {hotel.reviewCount} {t('common:hotels.reviews', 'reviews')}
-                     </span>
-                     <div className="h-4 w-px bg-gray-300 mx-2"></div>
-                   </>
-                 )}
-                 {/* Show "No reviews yet" if hotel has no reviews */}
-                 {!hotel.reviewScore && !hotel.rating && (
-                   <>
-                     <span className="text-gray-500 text-sm italic">
-                        {t('common:hotels.noReviews', 'No reviews yet')}
-                     </span>
-                     <div className="h-4 w-px bg-gray-300 mx-2"></div>
-                   </>
-                 )}
+                 {(() => {
+                   const taRating = taHeaderRating?.rating;
+                   const taReviews = taHeaderRating?.num_reviews ? Number(taHeaderRating.num_reviews) : 0;
+                   const displayScore = taRating ? taRating.toFixed(1) : (hotel.reviewScore || hotel.rating);
+                   const displayReviews = taReviews > 0 ? taReviews : hotel.reviewCount;
+                   const hasRating = taRating || hotel.reviewScore || hotel.rating;
+
+                   if (hasRating) {
+                     // Get score word for TA (1-5 scale) or native (1-10 scale)
+                     const scoreWord = taRating
+                       ? (taRating >= 4.5 ? 'Excellent' : taRating >= 4 ? 'Very Good' : taRating >= 3 ? 'Good' : 'Pleasant')
+                       : (hotel.reviewScoreWord || (hotel.reviewScore >= 9 ? 'Excellent' : hotel.reviewScore >= 8 ? 'Very Good' : hotel.reviewScore >= 7 ? 'Good' : 'Pleasant'));
+
+                     return (
+                       <>
+                         <span className="bg-orange-500 text-white px-2 py-1 rounded text-sm font-bold">
+                           {displayScore}
+                         </span>
+                         <span className="font-bold text-gray-800">
+                           {scoreWord}
+                         </span>
+                         <span className="text-gray-500 text-sm">
+                           {displayReviews} {t('common:hotels.reviews', 'reviews')}
+                         </span>
+                         <div className="h-4 w-px bg-gray-300 mx-2"></div>
+                       </>
+                     );
+                   }
+
+                   return (
+                     <>
+                       <span className="text-gray-500 text-sm italic">
+                         {t('common:hotels.noReviews', 'No reviews yet')}
+                       </span>
+                       <div className="h-4 w-px bg-gray-300 mx-2"></div>
+                     </>
+                   );
+                 })()}
               </div>
 
               {/* Share, Save & Price Watch Actions */}

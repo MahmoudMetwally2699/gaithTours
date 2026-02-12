@@ -40,9 +40,21 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook })
     }).format(price);
   };
 
-  // Helper for score word - translated
+  // Use TripAdvisor rating if available, fallback to hotel.rating
+  const displayRating = taRating?.rating ? taRating.rating : hotel.rating;
+  const displayReviewCount = taRating?.num_reviews ? Number(taRating.num_reviews) : hotel.reviewCount;
+
+  // Helper for score word - translated (TripAdvisor uses 1-5, hotel uses 1-10)
   const getScoreWord = (rating?: number) => {
     if (!rating) return '';
+    // TripAdvisor scale (1-5)
+    if (taRating?.rating) {
+      if (rating >= 4.5) return t('hotels.wonderful', 'Wonderful');
+      if (rating >= 4) return t('hotels.veryGood', 'Very Good');
+      if (rating >= 3) return t('hotels.good', 'Good');
+      return t('hotels.pleasant', 'Pleasant');
+    }
+    // Original scale (1-10)
     if (rating >= 9) return t('hotels.wonderful', 'Wonderful');
     if (rating >= 8) return t('hotels.veryGood', 'Very Good');
     if (rating >= 7) return t('hotels.good', 'Good');
@@ -69,25 +81,18 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook })
           }}
         />
 
-        {/* Rating Badge */}
-        {typeof hotel.rating === 'number' && hotel.rating > 0 && (
+        {/* Rating Badge - uses TripAdvisor rating when available */}
+        {typeof displayRating === 'number' && displayRating > 0 && (
           <div className="absolute -bottom-4 md:-bottom-5 right-3 md:right-4 bg-[#FF8C00] text-white rounded-xl w-9 h-9 md:w-11 md:h-11 flex flex-col items-center justify-center shadow-md z-10">
             <span className="text-sm md:text-base font-bold leading-none">
-              {Math.min(hotel.rating, 10).toFixed(1)}
+              {taRating?.rating
+                ? taRating.rating.toFixed(1)
+                : Math.min(hotel.rating || 0, 10).toFixed(1)
+              }
             </span>
           </div>
         )}
-
-        {/* TripAdvisor Badge */}
-        {taRating && taRating.rating && (
-          <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm rounded-lg px-1.5 py-1 flex items-center gap-1 shadow-sm z-10">
-            <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 flex-shrink-0">
-              <circle cx="10" cy="10" r="10" fill="#34E0A1" />
-              <text x="10" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">T</text>
-            </svg>
-            <span className="text-[10px] sm:text-xs font-bold text-gray-800">{taRating.rating.toFixed(1)}</span>
-          </div>
-        )}      </div>
+      </div>
 
       {/* Content */}
       <div className="pt-5 md:pt-6 pb-3 md:pb-4 px-3 md:px-4 flex flex-col flex-grow">
@@ -96,8 +101,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, taRating, onBook })
              {/* Review info - positioned for LTR always to stay near rating badge */}
              <div className="flex justify-end mb-1">
                 <div className="text-[10px] sm:text-xs text-gray-500 flex flex-col items-end ltr:mr-0.5 ltr:md:mr-1 rtl:ml-0.5 rtl:md:ml-1" style={{ direction: 'ltr', textAlign: 'right' }}>
-                    {hotel.reviewCount && <span className="truncate">{t('hotels.reviewCount', '{{count}} reviews', { count: hotel.reviewCount })}</span>}
-                    <span className="font-medium truncate">{getScoreWord(hotel.rating)}</span>
+                    {displayReviewCount && <span className="truncate">{t('hotels.reviewCount', '{{count}} reviews', { count: displayReviewCount })}</span>}
+                    <span className="font-medium truncate">{getScoreWord(displayRating)}</span>
                  </div>
              </div>
 

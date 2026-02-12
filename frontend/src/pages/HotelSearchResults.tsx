@@ -2110,31 +2110,26 @@ export const HotelSearchResults: React.FC = () => {
                           {/* Rating & Reviews Row */}
                           <div className="flex items-center gap-2 mb-2">
                             <div className="bg-[#E67915] text-white text-xs font-bold px-1.5 py-1 rounded-tl-md rounded-tr-md rounded-br-md min-w-[28px] text-center">
-                              {Math.min(hotel.rating, 10).toFixed(1)}
+                              {taRatings[hotel.name]?.rating
+                                ? taRatings[hotel.name].rating!.toFixed(1)
+                                : Math.min(hotel.rating, 10).toFixed(1)
+                              }
                             </div>
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-[#1a1a2e]">
-                                {getScoreText(hotel.rating, t)}
+                                {taRatings[hotel.name]?.rating
+                                  ? getScoreText(taRatings[hotel.name].rating! * 2, t)
+                                  : getScoreText(hotel.rating, t)
+                                }
                               </span>
                               <span className="text-[10px] text-gray-500">
-                                {hotel.reviewCount?.toLocaleString() || '0'} {t('searchResults:hotelCard.reviews', 'reviews')}
+                                {taRatings[hotel.name]?.num_reviews
+                                  ? `${Number(taRatings[hotel.name].num_reviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                  : `${hotel.reviewCount?.toLocaleString() || '0'} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                }
                               </span>
                             </div>
                           </div>
-
-                          {/* TripAdvisor Badge - Mobile */}
-                          {taRatings[hotel.name] && taRatings[hotel.name].rating && (
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <div className="flex items-center gap-1 bg-[#f2fcf6] border border-[#34E0A1]/30 rounded px-1.5 py-0.5">
-                                <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 flex-shrink-0">
-                                  <circle cx="10" cy="10" r="10" fill="#34E0A1" />
-                                  <text x="10" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">T</text>
-                                </svg>
-                                <span className="text-[10px] font-bold text-gray-700">{taRatings[hotel.name].rating!.toFixed(1)}</span>
-                                <span className="text-[9px] text-gray-500">({taRatings[hotel.name].num_reviews})</span>
-                              </div>
-                            </div>
-                          )}
 
                           {/* Location with Distance */}
                           <div className="flex items-center gap-1 text-[11px] text-[#006ce4] mb-2">
@@ -2479,30 +2474,25 @@ export const HotelSearchResults: React.FC = () => {
                             <div className="flex items-center gap-2 mb-auto">
                                 <div className="text-right">
                                     <div className="text-sm font-medium text-gray-900 leading-tight">
-                                        {getScoreText(hotel.rating, t)}
+                                        {taRatings[hotel.name]?.rating
+                                          ? getScoreText(taRatings[hotel.name].rating! * 2, t)
+                                          : getScoreText(hotel.rating, t)
+                                        }
                                     </div>
                                     <div className="text-xs text-gray-500">
-                                        {hotel.reviewCount?.toLocaleString()} {t('searchResults:hotelCard.reviews', 'reviews')}
+                                        {taRatings[hotel.name]?.num_reviews
+                                          ? `${Number(taRatings[hotel.name].num_reviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                          : `${hotel.reviewCount?.toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                        }
                                     </div>
                                 </div>
                                 <div className="bg-[#F7871D] text-white p-1.5 rounded-t-lg rounded-br-lg text-sm font-bold min-w-[2rem] text-center">
-                                    {Math.min(hotel.rating, 10).toFixed(1)}
+                                    {taRatings[hotel.name]?.rating
+                                      ? taRatings[hotel.name].rating!.toFixed(1)
+                                      : Math.min(hotel.rating, 10).toFixed(1)
+                                    }
                                 </div>
                             </div>
-
-                            {/* TripAdvisor Badge - Desktop */}
-                            {taRatings[hotel.name] && taRatings[hotel.name].rating && (
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <div className="flex items-center gap-1 bg-[#f2fcf6] border border-[#34E0A1]/30 rounded px-1.5 py-0.5">
-                                  <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 flex-shrink-0">
-                                    <circle cx="10" cy="10" r="10" fill="#34E0A1" />
-                                    <text x="10" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">T</text>
-                                  </svg>
-                                  <span className="text-xs font-bold text-gray-700">{taRatings[hotel.name].rating!.toFixed(1)}</span>
-                                  <span className="text-[10px] text-gray-500">({taRatings[hotel.name].num_reviews})</span>
-                                </div>
-                              </div>
-                            )}
 
                             {/* Price Block */}
                             <div className="flex flex-col items-end gap-2 mt-4 w-full">
