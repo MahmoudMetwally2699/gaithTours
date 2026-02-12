@@ -443,7 +443,7 @@ export const HotelDetails: React.FC = () => {
           reviewCount: hotelData.reviewCount || 0,
           amenities: hotelData.amenities || [],
           facilities: hotelData.facilities || [],
-          propertyClass: hotelData.propertyClass || 0,
+          propertyClass: hotelData.star_rating || hotelData.propertyClass || 0,
           reviewScoreWord: hotelData.reviewScoreWord || null,
           isPreferred: hotelData.isPreferred || false,
           checkIn: hotelData.check_in_time || hotelData.checkInTime || null,
@@ -1134,7 +1134,7 @@ export const HotelDetails: React.FC = () => {
            <div className="flex-1">
               <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 mb-2 md:mb-1">
                  <h1 className="text-2xl md:text-3xl font-bold text-orange-500 leading-tight">{hotel.name}</h1>
-                 <div className="flex items-center mt-1 md:mt-0">{renderStars(hotel.rating)}</div>
+                 <div className="flex items-center mt-1 md:mt-0">{renderStars((hotel as any).propertyClass || Math.round((hotel.rating || 0) / 2))}</div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 mb-2">

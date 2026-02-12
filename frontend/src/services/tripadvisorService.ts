@@ -72,7 +72,7 @@ export const getTripAdvisorRatings = async (
 
         for (let i = 0; i < hotelNames.length; i += batchSize) {
             const batch = hotelNames.slice(i, i + batchSize);
-            const namesParam = batch.join(',');
+            const namesParam = batch.join('||');
 
             const response = await axios.get(`${API_URL}/tripadvisor/ratings`, {
                 params: {

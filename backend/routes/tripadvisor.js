@@ -19,8 +19,8 @@ router.get('/ratings', async (req, res) => {
       return errorResponse(res, 'hotelNames and city are required', 400);
     }
 
-    // Parse hotel names (comma-separated)
-    const names = hotelNames.split(',').map(n => n.trim()).filter(Boolean);
+    // Parse hotel names (pipe-separated to avoid breaking names with commas)
+    const names = hotelNames.split('||').map(n => n.trim()).filter(Boolean);
 
     if (names.length === 0) {
       return errorResponse(res, 'At least one hotel name is required', 400);

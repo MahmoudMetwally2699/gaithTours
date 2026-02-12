@@ -99,11 +99,18 @@ export const PopularProperties: React.FC = () => {
   // Fetch TripAdvisor ratings when hotels load
   useEffect(() => {
     if (hotels.length > 0) {
-      // Collect hotels from all cities and fetch TA ratings per city
-      const hotelNames = hotels.map(h => h.name);
-      const cities = ['Riyadh', 'Jeddah', 'Makkah'];
-      cities.forEach(city => {
-        getTripAdvisorRatings(hotelNames, city)
+      // Group hotels by their actual city
+      const hotelsByCity: Record<string, string[]> = {};
+      hotels.forEach(h => {
+        // Extract city from address or use a default
+        const hotelCity = h.address?.split(',').pop()?.trim() || 'Saudi Arabia';
+        if (!hotelsByCity[hotelCity]) hotelsByCity[hotelCity] = [];
+        hotelsByCity[hotelCity].push(h.name);
+      });
+
+      // Fetch TA ratings per city group
+      Object.entries(hotelsByCity).forEach(([city, names]) => {
+        getTripAdvisorRatings(names, city)
           .then(ratings => {
             if (Object.keys(ratings).length > 0) {
               setTaRatings(prev => ({ ...prev, ...ratings }));
