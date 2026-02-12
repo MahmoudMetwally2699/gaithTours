@@ -2119,26 +2119,39 @@ export const HotelSearchResults: React.FC = () => {
 
                           {/* Rating & Reviews Row */}
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="bg-[#E67915] text-white text-xs font-bold px-1.5 py-1 rounded-tl-md rounded-tr-md rounded-br-md min-w-[28px] text-center">
-                              {taRatings[hotel.name]?.rating
-                                ? taRatings[hotel.name].rating!.toFixed(1)
-                                : Math.min(hotel.rating, 10).toFixed(1)
-                              }
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-semibold text-[#1a1a2e]">
-                                {taRatings[hotel.name]?.rating
-                                  ? getScoreText(taRatings[hotel.name].rating! * 2, t)
-                                  : getScoreText(hotel.rating, t)
-                                }
-                              </span>
-                              <span className="text-[10px] text-gray-500">
-                                {taRatings[hotel.name]?.num_reviews
-                                  ? `${Number(taRatings[hotel.name].num_reviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
-                                  : `${hotel.reviewCount?.toLocaleString() || '0'} ${t('searchResults:hotelCard.reviews', 'reviews')}`
-                                }
-                              </span>
-                            </div>
+                            {(() => {
+                              const taR = taRatings[hotel.name];
+                              const backendTA = (hotel as any).tripadvisor_rating;
+                              const backendTAReviews = (hotel as any).tripadvisor_num_reviews;
+                              // Priority: frontend TripAdvisor > backend TripAdvisor > RateHawk reviews
+                              const displayRating = taR?.rating || backendTA || null;
+                              const displayReviews = taR?.num_reviews || backendTAReviews || null;
+                              const isTripAdvisor = !!displayRating;
+                              return (
+                                <>
+                                  <div className="bg-[#E67915] text-white text-xs font-bold px-1.5 py-1 rounded-tl-md rounded-tr-md rounded-br-md min-w-[28px] text-center">
+                                    {isTripAdvisor
+                                      ? displayRating!.toFixed(1)
+                                      : Math.min(hotel.rating, 10).toFixed(1)
+                                    }
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-xs font-semibold text-[#1a1a2e]">
+                                      {isTripAdvisor
+                                        ? getScoreText(displayRating! * 2, t)
+                                        : getScoreText(hotel.rating, t)
+                                      }
+                                    </span>
+                                    <span className="text-[10px] text-gray-500">
+                                      {displayReviews
+                                        ? `${Number(displayReviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                        : `${hotel.reviewCount?.toLocaleString() || '0'} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                      }
+                                    </span>
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
 
                           {/* Location with Distance */}
@@ -2282,10 +2295,13 @@ export const HotelSearchResults: React.FC = () => {
                                   <>
                                     <span className="text-[10px] text-gray-500 mb-0.5">
                                       {(() => {
-                                        const checkIn = new Date(searchQuery.checkIn);
-                                        const checkOut = new Date(searchQuery.checkOut);
-                                        const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        const checkIn = searchQuery.checkIn ? new Date(searchQuery.checkIn) : null;
+                                        const checkOut = searchQuery.checkOut ? new Date(searchQuery.checkOut) : null;
+                                        let diffDays = 1;
+                                        if (checkIn && checkOut && !isNaN(checkIn.getTime()) && !isNaN(checkOut.getTime())) {
+                                          const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                                          diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+                                        }
                                         return `${diffDays} ${diffDays === 1 ? t('searchResults:hotelCard.night', 'ليلة') : t('searchResults:hotelCard.nights', 'ليالٍ')}، ${searchQuery.adults} ${t('searchResults:searchBar.adults', 'بالغين')}`;
                                       })()}
                                     </span>
@@ -2483,24 +2499,40 @@ export const HotelSearchResults: React.FC = () => {
                             {/* Reviews - Desktop */}
                             <div className="flex items-center gap-2 mb-auto">
                                 <div className="text-right">
-                                    <div className="text-sm font-medium text-gray-900 leading-tight">
-                                        {taRatings[hotel.name]?.rating
-                                          ? getScoreText(taRatings[hotel.name].rating! * 2, t)
-                                          : getScoreText(hotel.rating, t)
-                                        }
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                        {taRatings[hotel.name]?.num_reviews
-                                          ? `${Number(taRatings[hotel.name].num_reviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
-                                          : `${hotel.reviewCount?.toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
-                                        }
-                                    </div>
+                                    {(() => {
+                                      const taR = taRatings[hotel.name];
+                                      const backendTA = (hotel as any).tripadvisor_rating;
+                                      const backendTAReviews = (hotel as any).tripadvisor_num_reviews;
+                                      const displayRating = taR?.rating || backendTA || null;
+                                      const displayReviews = taR?.num_reviews || backendTAReviews || null;
+                                      const isTripAdvisor = !!displayRating;
+                                      return (
+                                        <>
+                                          <div className="text-sm font-medium text-gray-900 leading-tight">
+                                            {isTripAdvisor
+                                              ? getScoreText(displayRating! * 2, t)
+                                              : getScoreText(hotel.rating, t)
+                                            }
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            {displayReviews
+                                              ? `${Number(displayReviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                              : `${hotel.reviewCount?.toLocaleString() || '0'} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                            }
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
                                 </div>
                                 <div className="bg-[#F7871D] text-white p-1.5 rounded-t-lg rounded-br-lg text-sm font-bold min-w-[2rem] text-center">
-                                    {taRatings[hotel.name]?.rating
-                                      ? taRatings[hotel.name].rating!.toFixed(1)
-                                      : Math.min(hotel.rating, 10).toFixed(1)
-                                    }
+                                    {(() => {
+                                      const taR = taRatings[hotel.name];
+                                      const backendTA = (hotel as any).tripadvisor_rating;
+                                      const displayRating = taR?.rating || backendTA || null;
+                                      return displayRating
+                                        ? displayRating.toFixed(1)
+                                        : Math.min(hotel.rating, 10).toFixed(1);
+                                    })()}
                                 </div>
                             </div>
 
@@ -2508,10 +2540,13 @@ export const HotelSearchResults: React.FC = () => {
                             <div className="flex flex-col items-end gap-2 mt-4 w-full">
                                 <div className="text-xs text-gray-500">
                                     {(() => {
-                                        const checkIn = new Date(searchQuery.checkIn);
-                                        const checkOut = new Date(searchQuery.checkOut);
-                                        const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        const checkIn = searchQuery.checkIn ? new Date(searchQuery.checkIn) : null;
+                                        const checkOut = searchQuery.checkOut ? new Date(searchQuery.checkOut) : null;
+                                        let diffDays = 1;
+                                        if (checkIn && checkOut && !isNaN(checkIn.getTime()) && !isNaN(checkOut.getTime())) {
+                                          const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                                          diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+                                        }
                                         return `${diffDays} ${t('searchResults:hotelCard.perNight', 'night').replace('/', '').trim()}${diffDays !== 1 ? 's' : ''}, ${searchQuery.adults} ${t('searchResults:searchBar.adults', 'adults')}`;
                                     })()}
                                 </div>

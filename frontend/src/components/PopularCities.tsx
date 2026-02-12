@@ -188,7 +188,22 @@ export const PopularCities: React.FC = () => {
             <div
               key={city.id}
               className="w-[78%] max-w-[280px] sm:w-auto min-w-[180px] sm:min-w-[200px] md:min-w-[240px] lg:min-w-[280px] cursor-pointer group flex-shrink-0 snap-start"
-              onClick={() => history.push(`/hotels/search?destination=${city.name}`)}
+              onClick={() => {
+                const today = new Date();
+                const checkIn = new Date(today);
+                checkIn.setDate(today.getDate() + 1);
+                const checkOut = new Date(today);
+                checkOut.setDate(today.getDate() + 2);
+                const params = new URLSearchParams({
+                  destination: city.name,
+                  checkIn: checkIn.toISOString().split('T')[0],
+                  checkOut: checkOut.toISOString().split('T')[0],
+                  rooms: '1',
+                  adults: '2',
+                  children: '0'
+                });
+                history.push(`/hotels/search?${params.toString()}`);
+              }}
             >
             <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border-b-4 border-[#FCAE61] h-[240px] sm:h-[280px] md:h-[300px] lg:h-[320px] flex flex-col">
               <div className="h-[70%] sm:h-[75%] overflow-hidden relative">

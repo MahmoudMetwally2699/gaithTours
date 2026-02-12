@@ -1166,6 +1166,38 @@ class RateHawkService {
       // Continue without review data - not critical
     }
 
+    // TRIPADVISOR ENRICHMENT: Add TripAdvisor ratings from DB (no API calls, fast)
+    try {
+      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+      const hotelNames = hotels.filter(h => h.name).map(h => h.name);
+      // Use the city from the first enriched hotel
+      const cityForTA = hotels.find(h => h.city)?.city || '';
+
+      if (hotelNames.length > 0 && cityForTA) {
+        // Batch lookup by normalized names + city
+        const taHotels = await TripAdvisorHotel.findByNamesAndCity(hotelNames, cityForTA);
+        const taMap = new Map();
+        taHotels.forEach(ta => taMap.set(ta.name_normalized, ta));
+
+        let taEnrichedCount = 0;
+        hotels.forEach(hotel => {
+          const nameNorm = hotel.name?.toLowerCase().trim();
+          const ta = taMap.get(nameNorm);
+          if (ta && ta.rating) {
+            hotel.tripadvisor_rating = ta.rating;           // 1-5 scale (TripAdvisor bubble rating)
+            hotel.tripadvisor_num_reviews = ta.num_reviews;  // String, e.g. "3946"
+            hotel.tripadvisor_location_id = ta.location_id;
+            taEnrichedCount++;
+          }
+        });
+
+        console.log(`   🏆 TripAdvisor: enriched ${taEnrichedCount}/${hotels.length} hotels from DB`);
+      }
+    } catch (taError) {
+      console.error('⚠️ TripAdvisor enrichment error:', taError.message);
+      // Continue without TripAdvisor data - not critical
+    }
+
     // Refresh prices from hotel details API for top hotels (if requested)
     if (refreshPrices > 0 && hotels.length > 0) {
       console.log(`💲 Refreshing accurate prices for top ${Math.min(refreshPrices, hotels.length)} hotels from Hotel Details API...`);
