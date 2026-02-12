@@ -48,9 +48,10 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
     if (!rating) return '';
     // TripAdvisor scale (1-5)
     if (taRating?.rating) {
-      if (rating >= 4.5) return t('hotels.wonderful', 'Wonderful');
-      if (rating >= 4) return t('hotels.veryGood', 'Very Good');
-      if (rating >= 3) return t('hotels.good', 'Good');
+      // TA rating already converted to 10-point scale
+      if (rating >= 9) return t('hotels.wonderful', 'Wonderful');
+      if (rating >= 8) return t('hotels.veryGood', 'Very Good');
+      if (rating >= 7) return t('hotels.good', 'Good');
       return t('hotels.pleasant', 'Pleasant');
     }
     // Original scale (1-10)
@@ -84,7 +85,7 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
           <div className="absolute -bottom-4 md:-bottom-5 right-3 md:right-4 bg-[#FF8C00] text-white rounded-xl w-9 h-9 md:w-11 md:h-11 flex flex-col items-center justify-center shadow-md z-10">
             <span className="text-sm md:text-base font-bold leading-none">
               {taRating?.rating
-                ? taRating.rating.toFixed(1)
+                ? (taRating.rating * 2).toFixed(1)
                 : Math.min(hotel.rating || 0, 10).toFixed(1)
               }
             </span>

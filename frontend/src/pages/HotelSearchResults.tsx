@@ -2131,7 +2131,7 @@ export const HotelSearchResults: React.FC = () => {
                                 <>
                                   <div className="bg-[#E67915] text-white text-xs font-bold px-1.5 py-1 rounded-tl-md rounded-tr-md rounded-br-md min-w-[28px] text-center">
                                     {isTripAdvisor
-                                      ? displayRating!.toFixed(1)
+                                      ? (displayRating! * 2).toFixed(1)
                                       : Math.min(hotel.rating, 10).toFixed(1)
                                     }
                                   </div>
@@ -2530,7 +2530,7 @@ export const HotelSearchResults: React.FC = () => {
                                       const backendTA = (hotel as any).tripadvisor_rating;
                                       const displayRating = taR?.rating || backendTA || null;
                                       return displayRating
-                                        ? displayRating.toFixed(1)
+                                        ? (displayRating * 2).toFixed(1)
                                         : Math.min(hotel.rating, 10).toFixed(1);
                                     })()}
                                 </div>

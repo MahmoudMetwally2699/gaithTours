@@ -1178,15 +1178,14 @@ export const HotelDetails: React.FC = () => {
                  {(() => {
                    const taRating = taHeaderRating?.rating;
                    const taReviews = taHeaderRating?.num_reviews ? Number(taHeaderRating.num_reviews) : 0;
-                   const displayScore = taRating ? taRating.toFixed(1) : (hotel.reviewScore || hotel.rating);
+                   const displayScore = taRating ? (taRating * 2).toFixed(1) : (hotel.reviewScore || hotel.rating);
                    const displayReviews = taReviews > 0 ? taReviews : hotel.reviewCount;
                    const hasRating = taRating || hotel.reviewScore || hotel.rating;
 
                    if (hasRating) {
-                     // Get score word for TA (1-5 scale) or native (1-10 scale)
-                     const scoreWord = taRating
-                       ? (taRating >= 4.5 ? 'Excellent' : taRating >= 4 ? 'Very Good' : taRating >= 3 ? 'Good' : 'Pleasant')
-                       : (hotel.reviewScoreWord || (hotel.reviewScore >= 9 ? 'Excellent' : hotel.reviewScore >= 8 ? 'Very Good' : hotel.reviewScore >= 7 ? 'Good' : 'Pleasant'));
+                     // Score word on 10-point scale for both TA and native
+                     const ratingOn10 = taRating ? taRating * 2 : (hotel.reviewScore || hotel.rating || 0);
+                     const scoreWord = hotel.reviewScoreWord || (ratingOn10 >= 9 ? 'Excellent' : ratingOn10 >= 8 ? 'Very Good' : ratingOn10 >= 7 ? 'Good' : 'Pleasant');
 
                      return (
                        <>
