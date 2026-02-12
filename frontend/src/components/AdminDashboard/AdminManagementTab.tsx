@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import {
@@ -211,10 +210,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+      <div
         className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
         <div>
@@ -232,7 +228,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
           <UserPlusIcon className="w-5 h-5 mr-2" />
           {t('admin:dashboard.admin_management.inviteButton')}
         </button>
-      </motion.div>
+      </div>
 
       {/* Tabs */}
       <div className="flex space-x-4 border-b border-gray-200">
@@ -260,11 +256,8 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
 
       {/* Content */}
       {activeTab === 'admins' && (
-        <motion.div
+        <div
           key="admins"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
           className="grid gap-4"
         >
           {loading && subAdmins.length === 0 ? (
@@ -280,10 +273,8 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
             </div>
           ) : (
             subAdmins.map((admin) => (
-              <motion.div
+              <div
                 key={admin._id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
                 className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -320,18 +311,15 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                 <div className="mt-4 flex flex-wrap">
                   {getPermissionBadges(admin.adminPermissions)}
                 </div>
-              </motion.div>
+              </div>
             ))
           )}
-        </motion.div>
+        </div>
       )}
 
       {activeTab === 'invitations' && (
-        <motion.div
+        <div
           key="invitations"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
           className="grid gap-4"
         >
           {invitations.filter(i => i.status === 'pending').length === 0 ? (
@@ -344,10 +332,8 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
             invitations
               .filter(i => i.status === 'pending')
               .map((invitation) => (
-                <motion.div
+                <div
                   key={invitation._id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
                   className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -377,18 +363,16 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                   <div className="mt-4 flex flex-wrap">
                     {getPermissionBadges(invitation.permissions)}
                   </div>
-                </motion.div>
+                </div>
               ))
           )}
-        </motion.div>
+        </div>
       )}
 
       {/* Invite Modal */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -462,16 +446,14 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                 {loading ? t('admin:dashboard.admin_management.modal.sending') : t('admin:dashboard.admin_management.modal.send')}
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
 
       {/* Edit Permissions Modal */}
       {showEditModal && selectedSubAdmin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -528,7 +510,7 @@ export const AdminManagementTab: React.FC<AdminManagementTabProps> = ({ isRTL })
                 {loading ? t('admin:dashboard.admin_management.modal.saving') : t('admin:dashboard.admin_management.modal.save')}
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>

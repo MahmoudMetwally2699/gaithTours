@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
 import { useUserLocation } from '../hooks/useUserLocation';
-import { motion } from 'framer-motion';
 import {
   MapPinIcon,
   CalendarIcon,
@@ -342,16 +341,14 @@ export const MainSection: React.FC = () => {
         <main className="flex-grow flex flex-col justify-center max-w-7xl mx-auto w-full px-1 sm:px-0">
 
            {/* Heading */}
-           <motion.div
-             initial={{ opacity: 0, y: 30 }}
-             animate={{ opacity: 1, y: 0 }}
+           <div
               className="mb-2 md:mb-3 text-center md:text-left rtl:text-right"
             >
                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-white drop-shadow-md px-2 md:px-0 flex flex-col gap-3 md:gap-5">
                 <span>{t('mainSection.tagline')}</span>
                 <span className="font-medium">{t('mainSection.subtitle')}</span>
               </h1>
-           </motion.div>
+           </div>
 
             {/* Tabs */}
             <div className="flex space-x-3 sm:space-x-4 rtl:space-x-reverse mb-2 justify-center md:justify-start rtl:justify-start px-2 md:px-0">
@@ -378,10 +375,7 @@ export const MainSection: React.FC = () => {
            </div>
 
            {/* Search Bar - Responsive Layout */}
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.2 }}
+           <div
              className="relative z-[100] w-full bg-white rounded-2xl md:rounded-[2rem] p-1.5 md:p-2 shadow-2xl border-2 md:border-4 border-white/50 backdrop-blur-sm mx-auto max-w-full"
            >
               <form onSubmit={handleSearch} className="flex flex-col md:flex-row items-stretch md:items-center divide-y md:divide-y-0 md:divide-x rtl:divide-x-reverse divide-gray-200">
@@ -697,9 +691,7 @@ export const MainSection: React.FC = () => {
                     </button>
                  </div>
               </form>
-           </motion.div>
-
-
+           </div>
 
         </main>
       </div>

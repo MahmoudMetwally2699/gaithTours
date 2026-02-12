@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { Redirect, useHistory } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import adminAPI from '../services/adminAPI';
 import toast from 'react-hot-toast';
 import {
@@ -297,7 +296,6 @@ export const AdminDashboard: React.FC = () => {
       setIsDeletingClient(false);
     }
   };
-
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -674,54 +672,35 @@ export const AdminDashboard: React.FC = () => {
         }`}>          {/* Dashboard Stats */}
           {activeTab === 'dashboard' && (            <div className="space-y-6">
               {/* Modern Header */}
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+              <div
                 className="text-center py-8"
               >
-                <motion.h1
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
+                <h1
                   className="text-5xl md:text-6xl font-black mb-4"
                 >                  <span className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 bg-clip-text text-transparent">
                     {t('admin:dashboard.header.title').split(' ')[0]}
                   </span>
                   <span className="text-gray-800 ml-3">{t('admin:dashboard.header.title').split(' ')[1]}</span>
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
+                </h1>
+                <p
                   className="text-xl text-gray-600 max-w-2xl mx-auto"
                 >
                   {t('admin:dashboard.header.subtitle')}
-                </motion.p>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8, delay: 0.6, type: "spring", stiffness: 200 }}
+                </p>
+                <div
                   className="mt-6"
                 >
                   <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-3 rounded-full border border-orange-200">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-gray-700 font-medium">{t('admin:dashboard.header.systemOnline')}</span>
                   </div>
-                </motion.div>
-              </motion.div>              {/* Modern Stats Grid */}
-              {stats && (                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.3, staggerChildren: 0.1 }}
+                </div>
+              </div>              {/* Modern Stats Grid */}
+              {stats && (                <div
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
                   {/* Total Clients - Minimalist Card */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                  <div
                     className="group cursor-pointer"
                   >
                     <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200">
@@ -741,14 +720,10 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Failed Bookings - Error Style */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.5 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                  <div
                     className="group cursor-pointer"
                   >
                     <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200">
@@ -768,14 +743,10 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Total Revenue - Featured Card */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.7 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                  <div
                     className="group cursor-pointer"
                   >
                     <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 text-white">
@@ -794,14 +765,10 @@ export const AdminDashboard: React.FC = () => {
                           {t('admin:dashboard.stats.live')}
                         </div>
                       </div>
-                    </div>                  </motion.div>
+                    </div>                  </div>
 
                   {/* Total WhatsApp Messages */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.8 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                  <div
                     className="group cursor-pointer"
                   >
                     <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200">
@@ -822,14 +789,10 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
 
                   {/* Unread WhatsApp Messages */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.9 }}
-                    whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                  <div
                     className="group cursor-pointer"
                   >
                     <div className="bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-orange-200">
@@ -850,29 +813,18 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                </motion.div>
-              )}{/* Modern Quick Actions */}              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
+                  </div>
+                </div>
+              )}{/* Modern Quick Actions */}              <div
                 className="mt-12"
               >                <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('admin:dashboard.quickActions.title')}</h2>
                   <p className="text-gray-600">{t('admin:dashboard.quickActions.subtitle')}</p>
                 </div>
 
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.7, staggerChildren: 0.1 }}
+                <div
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-                >                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.8 }}
-                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                    whileTap={{ scale: 0.98 }}
+                >                  <button
                     onClick={() => {
                       setActiveTab('bookings');
                       setIsMobileMenuOpen(false);
@@ -887,12 +839,7 @@ export const AdminDashboard: React.FC = () => {
                       <p className="text-sm text-gray-600">{t('admin:dashboard.quickActions.manageBookings.description')}</p>
                       <div className="mt-4 text-xs text-orange-600 font-medium">{t('admin:dashboard.quickActions.manageBookings.action')}</div>
                     </div>
-                  </motion.button>                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.9 }}
-                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                    whileTap={{ scale: 0.98 }}
+                  </button>                  <button
                     onClick={() => {
                       setActiveTab('clients');
                       setIsMobileMenuOpen(false);
@@ -907,12 +854,7 @@ export const AdminDashboard: React.FC = () => {
                       <p className="text-sm text-gray-600">{t('admin:dashboard.quickActions.clientDatabase.description')}</p>
                       <div className="mt-4 text-xs text-orange-600 font-medium">{t('admin:dashboard.quickActions.clientDatabase.action')}</div>
                     </div>
-                  </motion.button>                  <motion.button
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 1.0 }}
-                    whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                    whileTap={{ scale: 0.98 }}
+                  </button>                  <button
                     onClick={() => {
                       setActiveTab('payments');
                       setIsMobileMenuOpen(false);
@@ -927,14 +869,11 @@ export const AdminDashboard: React.FC = () => {
                       <p className="text-sm text-gray-600">{t('admin:dashboard.quickActions.paymentTracking.description')}</p>
                       <div className="mt-4 text-xs text-orange-600 font-medium">{t('admin:dashboard.quickActions.paymentTracking.action')}</div>
                     </div>
-                  </motion.button>
-                </motion.div>
+                  </button>
+                </div>
 
                 {/* Additional Summary Info */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 1.0 }}
+                <div
                   className="mt-8 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6"
                 >                  <div className="flex items-center justify-between">
                     <div>
@@ -956,8 +895,8 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              </motion.div>
+                </div>
+              </div>
             </div>
           )}{/* Clients Tab */}          {activeTab === 'clients' && (
             <ClientsTab

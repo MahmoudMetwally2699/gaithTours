@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import {
@@ -90,10 +89,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
     : bookings;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+    <div
       className="space-y-8"
     >
       {/* Header Section */}
@@ -179,11 +175,8 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-200/50">
               {filteredBookings.map((booking, index) => (
-                <motion.tr
+                <tr
                   key={booking._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-indigo-50/30 transition-all duration-300 group"
                 >
                   <td className="px-8 py-6">
@@ -258,7 +251,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                       )}
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -267,11 +260,8 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-4 p-4">
           {filteredBookings.map((booking, index) => (
-            <motion.div
+            <div
               key={booking._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
               className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 backdrop-blur-sm rounded-2xl p-4 border border-blue-200/50 hover:border-blue-300/50 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex items-start justify-between mb-3">
@@ -348,7 +338,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   </>
                 )}
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
@@ -378,6 +368,6 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
         clients={clients}
         isLoading={isCreatingBooking}
       />
-    </motion.div>
+    </div>
   );
 };

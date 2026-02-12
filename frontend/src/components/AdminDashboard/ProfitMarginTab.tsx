@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
@@ -95,8 +94,6 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
     priority: 0,
     conditions: { ...initialConditions },
   });
-
-
 
   // Fetch rules and stats
   const fetchData = async () => {
@@ -226,8 +223,6 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
     }
   };
 
-
-
   // Add condition
   const addCountry = (country: string) => {
     if (country && !formData.conditions.countries.includes(country)) {
@@ -311,18 +306,14 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 </div>
               </div>
 
-
-
               {/* Add Rule Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={() => openModal()}
                 className="flex items-center space-x-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-3 rounded-xl font-medium shadow-lg"
               >
                 <PlusIcon className="w-5 h-5" />
                 <span>{t('admin:dashboard.margins.actions.addRule')}</span>
-              </motion.button>
+              </button>
             </div>
           </div>
         </div>
@@ -331,9 +322,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl"
           >
             <div className="flex items-center justify-between">
@@ -345,12 +334,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 <ChartBarIcon className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+          <div
             className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl"
           >
             <div className="flex items-center justify-between">
@@ -362,12 +348,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 <ArrowPathIcon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+          <div
             className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl"
           >
             <div className="flex items-center justify-between">
@@ -379,12 +362,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 <CurrencyDollarIcon className="w-6 h-6 text-green-600" />
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+          <div
             className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl"
           >
             <div className="flex items-center justify-between">
@@ -396,7 +376,7 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                 <ChartBarIcon className="w-6 h-6 text-purple-600" />
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
 
@@ -442,11 +422,8 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
               </thead>
               <tbody className="divide-y divide-gray-200/50">
                 {rules.map((rule, index) => (
-                  <motion.tr
+                  <tr
                     key={rule._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.05 }}
                     className="hover:bg-gradient-to-r hover:from-emerald-50/30 hover:to-teal-50/30 transition-all duration-300"
                   >
                     <td className="px-6 py-5">
@@ -539,25 +516,21 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center space-x-2">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        <button
                           onClick={() => openModal(rule)}
                           className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
                         >
                           <PencilIcon className="w-4 h-4" />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        </button>
+                        <button
                           onClick={() => handleDelete(rule._id)}
                           className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                         >
                           <TrashIcon className="w-4 h-4" />
-                        </motion.button>
+                        </button>
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -567,17 +540,11 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={() => setShowModal(false)}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+            <div
               className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -919,10 +886,9 @@ export const ProfitMarginTab: React.FC<ProfitMarginTabProps> = ({ isRTL }) => {
                   <span>{editingRule ? t('admin:dashboard.margins.modal.update') : t('admin:dashboard.margins.modal.create')}</span>
                 </button>
               </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-
 
     </div>
   );

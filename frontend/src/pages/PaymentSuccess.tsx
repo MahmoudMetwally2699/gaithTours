@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { CheckCircleIcon, DocumentTextIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import paymentsAPI from '../services/paymentsAPI';
 import { toast } from 'react-hot-toast';
@@ -54,44 +53,29 @@ export const PaymentSuccess: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center"
       >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
+        <div
           className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-6"
         >
           <CheckCircleIcon className="h-12 w-12 text-green-600" />
-        </motion.div>
+        </div>
 
-        <motion.h2
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
+        <h2
           className="text-2xl font-bold text-gray-900 mb-4"
         >
           {t('payment.success.title')}
-        </motion.h2>
+        </h2>
 
-        <motion.p
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
+        <p
           className="text-gray-600 mb-6"
         >
           {t('payment.success.description')}
-        </motion.p>
+        </p>
 
         {paymentDetails && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+          <div
             className="bg-gray-50 rounded-lg p-4 mb-6 text-left"
           >
             <h3 className="font-semibold text-gray-900 mb-2">{t('payment.details')}</h3>
@@ -110,13 +94,10 @@ export const PaymentSuccess: React.FC = () => {
                 <span>{new Date().toLocaleDateString()}</span>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+        <div
           className="space-y-3"
         >
           <button
@@ -134,8 +115,8 @@ export const PaymentSuccess: React.FC = () => {
             <ArrowLeftIcon className="h-5 w-5" />
             <span>{t('payment.backToHome')}</span>
           </button>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };

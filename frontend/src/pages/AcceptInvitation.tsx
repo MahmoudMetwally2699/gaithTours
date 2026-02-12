@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useHistory } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
   ShieldCheckIcon,
@@ -115,9 +114,7 @@ export const AcceptInvitation: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center"
         >
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -131,16 +128,14 @@ export const AcceptInvitation: React.FC = () => {
           >
             Go to Homepage
           </button>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden"
       >
         {/* Header */}
@@ -279,7 +274,7 @@ export const AcceptInvitation: React.FC = () => {
             )}
           </button>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 };

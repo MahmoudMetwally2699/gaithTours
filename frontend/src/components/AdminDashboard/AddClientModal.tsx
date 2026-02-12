@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   XMarkIcon,
   UserIcon,
@@ -113,11 +112,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.3 }}
+      <div
         className="relative top-4 lg:top-8 mx-auto p-0 border w-full max-w-2xl shadow-2xl rounded-3xl bg-white"
       >
         {/* Header */}
@@ -315,7 +310,7 @@ export const AddClientModal: React.FC<AddClientModalProps> = ({
             </button>
           </div>
         </form>
-      </motion.div>
+      </div>
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
 import './NotificationPrompt.css';
 
 const PROMPT_DISMISSED_KEY = 'notification_prompt_dismissed';
@@ -50,52 +49,45 @@ const NotificationPrompt: React.FC = () => {
     setVisible(false);
   };
 
+  if (!visible) return null;
+
   return (
-    // @ts-ignore
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          key="notification-prompt"
-          initial={{ opacity: 0, y: 60, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 60, scale: 0.95 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="notification-prompt-overlay"
-        >
-          <div className="notification-prompt-card">
-            <div className="notification-prompt-icon">
-              🔔
-            </div>
-            <div className="notification-prompt-content">
-              <h3 className="notification-prompt-title">
-                {t('notifications.promptTitle', 'Stay Updated!')}
-              </h3>
-              <p className="notification-prompt-text">
-                {t('notifications.promptText', 'Get notified about support replies, booking updates, and special offers.')}
-              </p>
-            </div>
-            <div className="notification-prompt-actions">
-              <button
-                className="notification-prompt-accept"
-                onClick={handleAccept}
-                disabled={isLoading}
-              >
-                {isLoading
-                  ? t('notifications.enabling', 'Enabling...')
-                  : t('notifications.enable', 'Enable')
-                }
-              </button>
-              <button
-                className="notification-prompt-dismiss"
-                onClick={handleDismiss}
-              >
-                {t('notifications.notNow', 'Not Now')}
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div
+      key="notification-prompt"
+      className="notification-prompt-overlay"
+    >
+      <div className="notification-prompt-card">
+        <div className="notification-prompt-icon">
+          🔔
+        </div>
+        <div className="notification-prompt-content">
+          <h3 className="notification-prompt-title">
+            {t('notifications.promptTitle', 'Stay Updated!')}
+          </h3>
+          <p className="notification-prompt-text">
+            {t('notifications.promptText', 'Get notified about support replies, booking updates, and special offers.')}
+          </p>
+        </div>
+        <div className="notification-prompt-actions">
+          <button
+            className="notification-prompt-accept"
+            onClick={handleAccept}
+            disabled={isLoading}
+          >
+            {isLoading
+              ? t('notifications.enabling', 'Enabling...')
+              : t('notifications.enable', 'Enable')
+            }
+          </button>
+          <button
+            className="notification-prompt-dismiss"
+            onClick={handleDismiss}
+          >
+            {t('notifications.notNow', 'Not Now')}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

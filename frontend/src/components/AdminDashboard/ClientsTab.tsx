@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   UserGroupIcon,
@@ -105,10 +104,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+    <div
       className="space-y-8"
     >
       {/* Header Section */}
@@ -193,11 +189,8 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-200/50">
               {filteredClients.map((client, index) => (
-                <motion.tr
+                <tr
                   key={client._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="hover:bg-gradient-to-r hover:from-amber-50/30 hover:to-orange-50/30 transition-all duration-300 group"
                 >
                   <td className="px-8 py-6">
@@ -250,7 +243,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                       </button>
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -259,11 +252,8 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-4 p-4">
           {filteredClients.map((client, index) => (
-            <motion.div
+            <div
               key={client._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
               className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 backdrop-blur-sm rounded-2xl p-4 border border-amber-200/50 hover:border-amber-300/50 transition-all duration-300 hover:shadow-lg"
             >
               <div className="flex items-start justify-between mb-3">
@@ -320,7 +310,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                   {t('admin:dashboard.clients.registrationDate')}: {new Date(client.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                 </p>
               </div>
-            </motion.div>          ))}
+            </div>          ))}
         </div>
 
         {/* Pagination */}
@@ -349,10 +339,7 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmModal && clientToDelete && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+          <div
             className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
@@ -386,9 +373,9 @@ export const ClientsTab: React.FC<ClientsTabProps> = ({
                 {isDeletingClient ? t('admin:dashboard.clients.modal.deleting') : t('admin:dashboard.clients.modal.delete')}
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };

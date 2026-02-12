@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   ShieldCheckIcon,
   CurrencyDollarIcon,
@@ -115,10 +114,7 @@ export const WhyChooseUsModern: React.FC = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8 }}
+        <div
           className="text-center mb-16"
         >
           <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-full text-sm font-medium text-blue-800 mb-6">
@@ -133,21 +129,17 @@ export const WhyChooseUsModern: React.FC = () => {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             {t('whyChooseUs.description')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Features Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
         >
           {features.map((feature, index) => {
             const IconComponent = feature.icon;
             return (
-              <motion.div
+              <div
                 key={index}
-                variants={itemVariants}
                 className="group relative"
               >
                 <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
@@ -165,16 +157,13 @@ export const WhyChooseUsModern: React.FC = () => {
                     {t(feature.descriptionKey)}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
 
         {/* Stats Section */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+        <div
           className="bg-primary-600 rounded-3xl p-12 text-white mb-16"
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
@@ -199,13 +188,10 @@ export const WhyChooseUsModern: React.FC = () => {
               );
             })}
           </div>
-        </motion.div>
+        </div>
 
         {/* CTA Section */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+        <div
           className="text-center"
         >
           <div className="bg-white rounded-3xl p-12 shadow-xl border border-gray-100">
@@ -218,24 +204,20 @@ export const WhyChooseUsModern: React.FC = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 className="px-8 py-4 bg-primary-600 text-white font-semibold rounded-xl shadow-lg hover:bg-primary-700 transition-colors duration-300"
               >
                 {t('whyChooseUs.cta.primaryButton')}
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 className="px-8 py-4 bg-white text-gray-900 font-semibold rounded-xl border-2 border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-all duration-300"
               >
                 {t('whyChooseUs.cta.secondaryButton')}
-              </motion.button>
+              </button>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

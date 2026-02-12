@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -642,15 +641,11 @@ export const BlogTab: React.FC = () => {
 
       {/* Post Modal */}
       {showPostModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowPostModal(false)}
         >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
           >
@@ -833,21 +828,17 @@ export const BlogTab: React.FC = () => {
                 </button>
               </div>
             </form>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
 
       {/* Category Modal */}
       {showCategoryModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+        <div
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowCategoryModal(false)}
         >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+          <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-2xl shadow-2xl max-w-md w-full"
           >
@@ -952,8 +943,8 @@ export const BlogTab: React.FC = () => {
                 </button>
               </div>
             </form>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
     </div>
   );

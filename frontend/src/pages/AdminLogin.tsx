@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -67,21 +66,15 @@ export const AdminLogin: React.FC = () => {
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+      <div
         className="max-w-md w-full space-y-8"
       >
         <div className="text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+          <div
             className="mx-auto h-16 w-16 bg-indigo-600 rounded-full flex items-center justify-center"
           >
             <ShieldCheckIcon className="h-8 w-8 text-white" />
-          </motion.div>
+          </div>
           <h2 className="mt-6 text-3xl font-bold text-white">
             Admin Access
           </h2>
@@ -93,13 +86,11 @@ export const AdminLogin: React.FC = () => {
         <div className="mt-8 bg-white/10 backdrop-blur-lg py-8 px-6 shadow-2xl rounded-xl border border-white/20">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
                 className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-lg backdrop-blur-sm"
               >
                 {error}
-              </motion.div>
+              </div>
             )}
 
             <div>
@@ -209,7 +200,7 @@ export const AdminLogin: React.FC = () => {
             This area is restricted to authorized administrators only
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

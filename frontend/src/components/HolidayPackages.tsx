@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { StarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -126,10 +125,7 @@ export const HolidayPackages: React.FC = () => {
   return (
     <section className="py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">        {/* Section Header */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6 }}
+        <div
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -138,18 +134,14 @@ export const HolidayPackages: React.FC = () => {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             {t('packages.subtitle')}
           </p>
-        </motion.div>
+        </div>
 
-        {/* Packages Grid */}        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        {/* Packages Grid */}        <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
         >
           {packages.map((pkg) => (
-            <motion.div
+            <div
               key={pkg.id}
-              variants={itemVariants}
               className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
             >
               {/* Package Image */}
@@ -211,13 +203,10 @@ export const HolidayPackages: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>        {/* View All Packages Button */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+        </div>        {/* View All Packages Button */}
+        <div
           className="text-center mt-12"
         >
           <button
@@ -226,7 +215,7 @@ export const HolidayPackages: React.FC = () => {
           >
             {t('packages.viewAll')}
           </button>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

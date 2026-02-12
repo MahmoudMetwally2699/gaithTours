@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { HotelSelectionModal } from '../components/HotelSelectionModal';
 import { HotelBookingModal } from '../components/HotelBookingModal';
 import { FileUpload, UploadedFile } from '../components/FileUpload';
@@ -29,8 +28,6 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/solid';
 import ReactCountryDropdown from 'react-country-dropdown';
-
-
 
 // Helper function to get country code from phone number
 const getCountryFromPhone = (phone: string): string => {
@@ -248,10 +245,7 @@ export const Hotels: React.FC = () => {
              }}></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8 }}
+          <div
             className="text-center"
           >            <div className={`flex justify-center mb-6`}>              <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 bg-white/20 backdrop-blur-md rounded-full px-6 py-3 border border-white/30`}>
                 <SparklesIcon className="h-5 w-5 text-amber-400" />
@@ -277,16 +271,13 @@ export const Hotels: React.FC = () => {
                 <span>{t('common.instantConfirmation', 'Instant Confirmation')}</span>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
       {/* Modern Form Section */}
       <div className="relative -mt-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <motion.div
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+        <div
           className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
         >          {/* Form Header */}          <div className={`bg-gradient-to-r from-orange-50/50 to-amber-50/50 px-8 py-6 border-b border-orange-100/50`}>
             <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
@@ -701,26 +692,21 @@ export const Hotels: React.FC = () => {
                   </div>                  <h3 className="text-lg font-semibold text-gray-900">{t('hotels.additionalGuests', 'Additional Guests')}</h3>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{t('common.optional', 'Optional')}</span>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   type="button"
                   onClick={() => setShowGuestForm(true)}
                   className={`w-full sm:w-auto bg-green-500 text-white px-4 py-2.5 sm:py-2 rounded-xl hover:bg-green-600 transition-all duration-200 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 shadow-lg hover:shadow-xl text-sm sm:text-base`}
                 >                  <PlusIcon className="h-4 w-4" />
                   <span>{t('hotels.addGuest', 'Add Guest')}</span>
-                </motion.button>
+                </button>
               </div>
 
               {/* Existing Guests List */}
               {formData.guests_list.length > 0 && (
                 <div className="space-y-3 mb-6">
                   {formData.guests_list.map((guest, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}                      className={`flex items-center justify-between bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-green-200 shadow-sm`}
+                    <div
+                      key={index}                      className={`flex items-center justify-between bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-green-200 shadow-sm`}
                     >
                       <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-4`}>
                         <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -734,26 +720,21 @@ export const Hotels: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
                         type="button"
                         onClick={() => handleRemoveGuest(index)}
                         className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl transition-all duration-200 flex items-center justify-center"
                       >
                         <XMarkIcon className="h-4 w-4" />
-                      </motion.button>
-                    </motion.div>
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
 
               {/* Add Guest Form */}
               {showGuestForm && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
+                <div
                   className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-green-200 space-y-4"
                 >                  <div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 mb-4`}>
                     <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
@@ -810,19 +791,15 @@ export const Hotels: React.FC = () => {
                       </div>
                     </div>
                   </div>                  <div className={`flex flex-col sm:flex-row ${isRTL ? 'sm:space-x-reverse' : ''} sm:space-x-3 gap-3 pt-4`}>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                    <button
                       type="button"
                       onClick={handleAddGuest}
                       className={`w-full sm:w-auto bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl hover:bg-green-700 transition-all duration-200 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2 shadow-lg text-sm sm:text-base`}
                     >
                       <CheckCircleIcon className="h-4 w-4" />
                       <span>{t('common.addGuest', 'Add Guest')}</span>
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                    </button>
+                    <button
                       type="button"
                       onClick={() => {
                         setShowGuestForm(false);
@@ -832,9 +809,9 @@ export const Hotels: React.FC = () => {
                     >
                       <XMarkIcon className="h-4 w-4" />
                       <span>{t('common.cancel', 'Cancel')}</span>
-                    </motion.button>
+                    </button>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {formData.guests_list.length === 0 && !showGuestForm && (
@@ -916,9 +893,7 @@ export const Hotels: React.FC = () => {
                 />
               </div>
             </div>            {/* Error Message */}
-            {error && (              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+            {error && (              <div
                 className={`bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}
               >
                 <div className="w-8 h-8 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -927,12 +902,10 @@ export const Hotels: React.FC = () => {
                   </svg>
                 </div>
                 <p className="text-red-700 font-medium">{error}</p>
-              </motion.div>
+              </div>
             )}            {/* Submit Button */}
             <div className="pt-6">
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 text-white py-4 px-8 rounded-2xl font-bold text-lg focus:ring-4 focus:ring-orange-200 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl relative overflow-hidden group"
@@ -953,7 +926,7 @@ export const Hotels: React.FC = () => {
                     </>
                   )}
                 </div>
-              </motion.button>
+              </button>
 
               <div className="mt-4 text-center">                <p className={`text-sm text-gray-500 flex items-center justify-center ${isRTL ? 'space-x-reverse' : ''} space-x-2`}>
                   <svg className="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -964,7 +937,7 @@ export const Hotels: React.FC = () => {
               </div>
             </div>
           </form>
-        </motion.div>
+        </div>
       </div>      {/* Hotel Selection Modal */}
       {showHotelSelection && (
         <HotelSelectionModal

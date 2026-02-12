@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useHistory, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
@@ -92,9 +91,7 @@ export const EmailVerification: React.FC = () => {
     switch (status) {
       case 'loading':
         return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="text-center"
           >
             <div className="w-20 h-20 mx-auto mb-6 relative">
@@ -109,14 +106,12 @@ export const EmailVerification: React.FC = () => {
             <p className="text-gray-600">
               {t('Please wait while we verify your email address.')}
             </p>
-          </motion.div>
+          </div>
         );
 
       case 'success':
         return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="text-center"
           >
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
@@ -142,14 +137,12 @@ export const EmailVerification: React.FC = () => {
                 {t('Go to Homepage')}
               </Link>
             </div>
-          </motion.div>
+          </div>
         );
 
       case 'expired':
         return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="text-center"
           >
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30">
@@ -175,15 +168,13 @@ export const EmailVerification: React.FC = () => {
                 {t('Back to Login')}
               </Link>
             </div>
-          </motion.div>
+          </div>
         );
 
       case 'error':
       default:
         return (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+          <div
             className="text-center"
           >
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
@@ -209,7 +200,7 @@ export const EmailVerification: React.FC = () => {
                 {t('Create New Account')}
               </Link>
             </div>
-          </motion.div>
+          </div>
         );
     }
   };
@@ -222,10 +213,7 @@ export const EmailVerification: React.FC = () => {
         <div className="absolute top-40 left-40 w-80 h-80 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
         className="relative z-10 w-full max-w-md"
       >
         {/* Logo */}
@@ -249,7 +237,7 @@ export const EmailVerification: React.FC = () => {
             {t('Contact Support')}
           </a>
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 interface InfographicItem {
@@ -55,14 +54,10 @@ export const InfographicSection: React.FC = () => {
       style={{ backgroundColor: '#E1FAFF' }}
       dir="rtl"
     >      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        <div
           className="space-y-0 w-full"
         >
-          {infographicData.map((item, index) => (            <React.Fragment key={item.id}>              <motion.div
-                variants={itemVariants}
+          {infographicData.map((item, index) => (            <React.Fragment key={item.id}>              <div
                 className={`grid grid-cols-1 lg:grid-cols-2 ${index === 0 ? 'gap-1 lg:gap-2' : 'gap-4 lg:gap-6'} items-center justify-items-center py-8 sm:py-12 lg:py-20 max-w-5xl mx-auto`}
               >{/* Text Content - Right Side in RTL (Left side visually) */}                <div className={`order-2 lg:order-1 text-center lg:text-right w-full flex flex-col justify-center items-center lg:items-end ${index === 0 ? 'px-4 lg:pl-8 lg:pr-0 lg:-ml-48' : 'px-4 lg:px-2'}`}>                  <h2
                     className={`font-bold mb-2 sm:mb-3 lg:mb-6 ${index === 0 ? 'whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl' : index === 2 ? 'text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-24' : 'whitespace-nowrap text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl text-center lg:text-right lg:-ml-16'}`}
@@ -95,12 +90,9 @@ export const InfographicSection: React.FC = () => {
                     />
                   </div>
                 </div>
-              </motion.div>{/* Orange Separator Line */}
+              </div>{/* Orange Separator Line */}
               {index < infographicData.length - 1 && (
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.8, delay: index * 0.3 + 0.6 }}
+                <div
                   className="flex justify-center py-4 sm:py-6 lg:py-8"
                 >
                   <div
@@ -111,11 +103,11 @@ export const InfographicSection: React.FC = () => {
                       maxWidth: '800px'
                     }}
                   />
-                </motion.div>
+                </div>
               )}
             </React.Fragment>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* Background decorative elements */}

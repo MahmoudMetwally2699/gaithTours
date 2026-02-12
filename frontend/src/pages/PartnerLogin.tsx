@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -72,7 +71,7 @@ export const PartnerLogin: React.FC = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Partner Branding */}
-      <motion.div
+      <div
         className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 overflow-hidden sticky top-0 h-screen"
       >
         {/* Background Pattern */}
@@ -80,16 +79,10 @@ export const PartnerLogin: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-700/90 via-teal-600/80 to-cyan-500/70" />
 
           {/* Decorative Circles */}
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.1 }}
-            transition={{ duration: 2, delay: 0.5 }}
+          <div
             className="absolute -top-20 -left-20 w-96 h-96 rounded-full border-[40px] border-white/20"
           />
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.1 }}
-            transition={{ duration: 2, delay: 0.8 }}
+          <div
             className="absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full border-[60px] border-white/10"
           />
         </div>
@@ -97,49 +90,34 @@ export const PartnerLogin: React.FC = () => {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center items-center p-12 text-white text-center">
           {/* Logo */}
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
+          <div
             className="mb-8"
           >
             <div className="w-32 h-32 flex items-center justify-center p-4 bg-white/10 backdrop-blur-sm rounded-3xl border border-white/20">
               <img src="/Group.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
             </div>
-          </motion.div>
+          </div>
 
           {/* Main Heading */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+          <h1
             className="text-4xl font-bold mb-2"
           >
             Partner Portal
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+          <p
             className="text-xl text-white/90 mb-8 max-w-md"
           >
             Grow your business with Gaith Tours
-          </motion.p>
+          </p>
 
           {/* Features List */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+          <div
             className="space-y-4 w-full max-w-sm"
           >
             {features.map((feature, index) => (
-              <motion.div
+              <div
                 key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.7 + index * 0.1 }}
                 className="flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/10"
               >
                 <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
@@ -149,11 +127,11 @@ export const PartnerLogin: React.FC = () => {
                   <h3 className="font-semibold">{feature.title}</h3>
                   <p className="text-sm text-white/70">{feature.desc}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Right Side - Login Form */}
       <div className="w-full lg:w-1/2 relative overflow-hidden">
@@ -164,30 +142,21 @@ export const PartnerLogin: React.FC = () => {
 
         {/* Form Container */}
         <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-6 sm:px-12 lg:px-16">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
             className="w-full max-w-md"
           >
             {/* Mobile Logo */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
+            <div
               className="lg:hidden flex flex-col items-center mb-8"
             >
               <div className="w-24 h-24 flex items-center justify-center p-3 bg-emerald-100 rounded-2xl mb-4">
                 <img src="/Group.svg" alt="Gaith Tours" className="w-full h-full object-contain" />
               </div>
               <span className="text-emerald-600 font-semibold text-lg">Partner Portal</span>
-            </motion.div>
+            </div>
 
             {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            <div
               className="text-center mb-8"
             >
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -196,26 +165,21 @@ export const PartnerLogin: React.FC = () => {
               <p className="text-gray-600">
                 Sign in to access your dashboard
               </p>
-            </motion.div>
+            </div>
 
             {/* Login Form */}
-            <motion.form
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+            <form
               onSubmit={handleSubmit}
               className="space-y-5"
             >
               {/* Error Message */}
               {error && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                <div
                   className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3"
                 >
                   <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
                   <span className="text-sm font-medium">{error}</span>
-                </motion.div>
+                </div>
               )}
 
               {/* Email Field */}
@@ -266,23 +230,21 @@ export const PartnerLogin: React.FC = () => {
                     className="absolute inset-y-0 right-0 pr-4 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                    <div>
                       {showPassword ? (
                         <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-emerald-500 transition-colors" />
                       ) : (
                         <EyeIcon className="h-5 w-5 text-gray-400 hover:text-emerald-500 transition-colors" />
                       )}
-                    </motion.div>
+                    </div>
                   </button>
                 </div>
               </div>
 
               {/* Login Button */}
-              <motion.button
+              <button
                 type="submit"
                 disabled={isLoading}
-                whileHover={{ scale: isLoading ? 1 : 1.01 }}
-                whileTap={{ scale: isLoading ? 1 : 0.99 }}
                 className="group relative w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl text-base font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
               >
                 {isLoading ? (
@@ -296,14 +258,11 @@ export const PartnerLogin: React.FC = () => {
                     <ArrowRightIcon className={`h-5 w-5 transform group-hover:translate-x-1 transition-transform ${isRTL ? 'rotate-180' : ''}`} />
                   </div>
                 )}
-              </motion.button>
-            </motion.form>
+              </button>
+            </form>
 
             {/* Customer Login Link */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
+            <div
               className="mt-8 text-center"
             >
               <p className="text-gray-600">
@@ -315,13 +274,10 @@ export const PartnerLogin: React.FC = () => {
                   Customer Login
                 </Link>
               </p>
-            </motion.div>
+            </div>
 
             {/* Contact Admin */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
+            <div
               className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100 text-center"
             >
               <p className="text-sm text-emerald-700">
@@ -330,8 +286,8 @@ export const PartnerLogin: React.FC = () => {
                   partners@gaithtours.com
                 </a>
               </p>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

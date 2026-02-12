@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -196,17 +195,11 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
 
       <div className="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">        {/* Modern Search Form */}{/* Mobile: Compact Stacked Design */}
         <div className="sm:hidden">
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+          <div
             className="space-y-3"
           >            <form onSubmit={handleSubmit} className="space-y-3 relative">
               {/* Single Compact Card */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
+              <div
                 className="relative group z-20"
               >
                 <div className="relative bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-[#F7871D] shadow-md hover:shadow-lg transition-all duration-300">                  {/* Destination Field */}
@@ -235,18 +228,12 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                       )}
                     </div>                    {/* Autocomplete Dropdown */}
                     {showSuggestions && hotels.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}                        className="absolute top-full left-0 right-0 z-[99999] mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-2xl max-h-64 overflow-y-auto"
+                      <div                        className="absolute top-full left-0 right-0 z-[99999] mt-1 bg-white border-2 border-gray-300 rounded-lg shadow-2xl max-h-64 overflow-y-auto"
                         style={{ zIndex: 99999 }}
                       >
                         {hotels.map((hotel, index) => (
-                          <motion.div
+                          <div
                             key={hotel.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
                             onClick={() => handleHotelSelect(hotel)}
                             className="flex items-start p-3 hover:bg-orange-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
                           >                            <div className={`w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} flex-shrink-0 mt-0.5`}>
@@ -256,9 +243,9 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                               <div className="font-medium text-gray-900 text-xs leading-tight break-words">{hotel.name}</div>
                               {/* Location hidden - not available in suggest API */}
                             </div>
-                          </motion.div>
+                          </div>
                         ))}
-                      </motion.div>
+                      </div>
                     )}
                   </div>
 
@@ -353,11 +340,8 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     </div>
                   )}
                 </div>
-              </motion.div>              {/* Compact Search Button */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
+              </div>              {/* Compact Search Button */}
+              <div
                 className="pt-2 relative z-0"
               >
                 <button
@@ -370,23 +354,17 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     <span className="font-bold">{t('hotels.search.button', 'Search Hotels')}</span>
                   </div>
                 </button>
-              </motion.div>
+              </div>
             </form>
-          </motion.div>
+          </div>
         </div>        {/* Desktop: Modern Design */}
-        <motion.div
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+        <div
           className="relative hidden sm:block"
         >          {/* Modern clean container */}
           <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl p-8 border-2 border-[#F7871D] shadow-2xl hover:shadow-3xl transition-all duration-300">
             <form onSubmit={handleSubmit} className="relative space-y-8">
               {/* Destination Search */}
-              <motion.div
-                initial={{ x: -30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
+              <div
                 className="space-y-3 relative z-50"
               >
                 <label className={`flex items-center text-gray-700 font-semibold text-lg ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}`} style={{ fontFamily: 'SFArabic-Regular, sans-serif' }}>
@@ -423,17 +401,11 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                   </div>
                 </div>                {/* Desktop Autocomplete Dropdown */}
                 {showSuggestions && hotels.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}                    className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
+                  <div                    className="absolute top-full left-0 right-0 z-[100] mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-xl max-h-80 overflow-y-auto"
                   >
                     {hotels.map((hotel, index) => (
-                      <motion.div
+                      <div
                         key={hotel.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
                         onClick={() => handleHotelSelect(hotel)}
                         className="flex items-center p-4 hover:bg-orange-50 cursor-pointer transition-all duration-200 border-b border-gray-100 last:border-b-0 group"
                       >
@@ -457,15 +429,12 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                         <div className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           →
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
-                  </motion.div>
+                  </div>
                 )}
-              </motion.div>              {/* Date Selection */}
-              <motion.div
-                initial={{ x: 30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
+              </div>              {/* Date Selection */}
+              <div
                 className="grid grid-cols-2 gap-6"
               >
                 {/* Check-in Date */}
@@ -505,11 +474,8 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     </div>
                   </div>
                 </div>
-              </motion.div>              {/* Guest Configuration */}
-              <motion.div
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
+              </div>              {/* Guest Configuration */}
+              <div
                 className="grid grid-cols-1 md:grid-cols-3 gap-6"
               >
                 {/* Rooms */}
@@ -594,13 +560,10 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
 
               {/* Search Button */}
-              <motion.div
-                initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
+              <div
                 className="pt-6"
               >                <button
                   type="submit"
@@ -616,9 +579,9 @@ export const HotelSearchSection: React.FC<HotelSearchSectionProps> = ({ onSearch
                     <SparklesIcon className="h-6 w-6 group-hover:scale-125 transition-transform duration-300" />
                   </div>
                 </button>
-              </motion.div>
+              </div>
             </form>
-          </div>        </motion.div>
+          </div>        </div>
       </div>
     </section>
   );

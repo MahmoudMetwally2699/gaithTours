@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   CreditCardIcon,
@@ -149,11 +148,8 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-200/50">
               {filteredPayments.map((payment, index) => (
-                <motion.tr
+                <tr
                   key={payment._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-pink-50/30 transition-all duration-300 group"
                 >
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
@@ -191,9 +187,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                     {payment.processedAt ? new Date(payment.processedAt).toLocaleDateString() : '-'}
                   </td>
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => {
                         setSelectedPayment(payment);
                         setShowPaymentDetailsModal(true);
@@ -202,9 +196,9 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                     >
                       <EyeIcon className="w-4 h-4" />
                       <span>{t('admin:dashboard.bookings.details.view')}</span>
-                    </motion.button>
+                    </button>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -213,11 +207,8 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
         {/* Mobile Cards */}
         <div className="lg:hidden">
           {filteredPayments.map((payment, index) => (
-            <motion.div
+            <div
               key={payment._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
               className="border-b border-gray-200/50 p-4 hover:bg-gradient-to-r hover:from-purple-50/30 hover:to-pink-50/30 transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-3">
@@ -256,9 +247,7 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
               </div>
 
               <div className="flex justify-end">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => {
                     setSelectedPayment(payment);
                     setShowPaymentDetailsModal(true);
@@ -267,9 +256,9 @@ export const PaymentsTab: React.FC<PaymentsTabProps> = ({
                 >
                   <EyeIcon className="w-4 h-4" />
                   <span>{t('admin:dashboard.bookings.details.view')}</span>
-                </motion.button>
+                </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 

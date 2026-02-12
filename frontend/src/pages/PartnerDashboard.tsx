@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   ArrowRightOnRectangleIcon,
   CurrencyDollarIcon,
@@ -191,22 +190,17 @@ export const PartnerDashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
           >
             {error}
-          </motion.div>
+          </div>
         )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Earnings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+          <div
             className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center gap-4">
@@ -220,13 +214,10 @@ export const PartnerDashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Pending Commission */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+          <div
             className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center gap-4">
@@ -240,13 +231,10 @@ export const PartnerDashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Paid Commission */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+          <div
             className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center gap-4">
@@ -260,13 +248,10 @@ export const PartnerDashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Total Referrals */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+          <div
             className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center gap-4">
@@ -278,15 +263,12 @@ export const PartnerDashboard: React.FC = () => {
                 <p className="text-2xl font-bold text-gray-900">{stats?.totalBookings || 0}</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* QR Code Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+          <div
             className="lg:col-span-1 bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -358,13 +340,10 @@ export const PartnerDashboard: React.FC = () => {
                 <p>No QR code available</p>
               </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Recent Referrals */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+          <div
             className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -426,7 +405,7 @@ export const PartnerDashboard: React.FC = () => {
                 <p className="text-sm">Share your QR code to start earning commissions!</p>
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
       </main>
     </div>

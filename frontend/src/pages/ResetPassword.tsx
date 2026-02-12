@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -125,17 +124,11 @@ export const ResetPassword: React.FC = () => {
       </div>
 
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+        <div
           className="max-w-md w-full space-y-8"
         >
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
+          <div
             className="text-center"
           >
             <div className="mx-auto h-16 w-16 bg-gradient-to-r from-orange-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -147,14 +140,11 @@ export const ResetPassword: React.FC = () => {
             <p className="mt-2 text-sm text-gray-600">
               {isSuccess ? t('auth.resetPassword.success') : t('auth.resetPassword.subtitle')}
             </p>
-          </motion.div>
+          </div>
 
           {/* Success State */}
           {isSuccess ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="bg-green-50 border border-green-200 rounded-2xl p-6"
             >
               <div className="flex items-center justify-center mb-4">
@@ -171,26 +161,21 @@ export const ResetPassword: React.FC = () => {
                   {t('auth.login.signIn')}
                 </Link>
               </div>
-            </motion.div>
+            </div>
           ) : (
             /* Form */
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
+            <div
               className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8"
             >
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Error Message */}
                 {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                  <div
                     className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3"
                   >
                     <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mt-0.5" />
                     <div className="text-sm text-red-800">{error}</div>
-                  </motion.div>
+                  </div>
                 )}
 
                 {/* Password Field */}
@@ -260,11 +245,9 @@ export const ResetPassword: React.FC = () => {
                 </div>
 
                 {/* Submit Button */}
-                <motion.button
+                <button
                   type="submit"
                   disabled={isLoading || !token}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-orange-500 to-blue-600 hover:from-orange-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   {isLoading ? (
@@ -291,14 +274,11 @@ export const ResetPassword: React.FC = () => {
                   ) : (
                     t('auth.resetPassword.button')
                   )}
-                </motion.button>
+                </button>
               </form>
 
               {/* Back to Login Link */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.8 }}
+              <div
                 className="mt-6 text-center"
               >
                 <Link
@@ -307,22 +287,19 @@ export const ResetPassword: React.FC = () => {
                 >
                   {t('auth.forgotPassword.backToLogin')}
                 </Link>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           )}
 
           {/* Security Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1 }}
+          <div
             className="mt-8 flex items-center justify-center space-x-3 text-sm text-gray-500"
           >
             <ShieldCheckIcon className="h-5 w-5 text-green-500" />
             <span>{t('auth.secureEncryption')}</span>
             <GlobeAltIcon className="h-5 w-5 text-blue-500" />
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );

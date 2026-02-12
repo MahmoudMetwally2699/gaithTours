@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 interface SocialLoginButtonsProps {
@@ -54,12 +53,10 @@ const GoogleLoginButton: React.FC<{
   `;
 
   return (
-    <motion.button
+    <button
       type="button"
       onClick={() => googleLogin()}
       disabled={isLoading || loading || disabled}
-      whileHover={{ scale: isLoading ? 1 : 1.02 }}
-      whileTap={{ scale: isLoading ? 1 : 0.98 }}
       className={`${buttonBaseClass} bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50`}
     >
       {loading ? (
@@ -88,7 +85,7 @@ const GoogleLoginButton: React.FC<{
         </>
       )}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-    </motion.button>
+    </button>
   );
 };
 

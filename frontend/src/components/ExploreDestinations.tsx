@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useDirection } from '../hooks/useDirection';
 
@@ -139,10 +138,7 @@ export const ExploreDestinations: React.FC = () => {
       {/* Heading Area - White/Light Neutral Background */}
       <div className="bg-white py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+          <div
             className="text-center"
           >
             {/* Main Title */}
@@ -154,7 +150,7 @@ export const ExploreDestinations: React.FC = () => {
             <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto">
               {isRTL ? 'المدن الأكثر شعبية للزيارة' : 'Discover popular cities to visit'}
             </p>
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -167,21 +163,15 @@ export const ExploreDestinations: React.FC = () => {
         </div>        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">          {/* Mobile Layout - 2 cards in a row with swipe */}
           <div className="block md:hidden">
             {/* City Cards for Mobile */}
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+            <div
               className="grid grid-cols-2 gap-4 mb-6"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
               {visibleCities.map((city, index) => (
-                <motion.div
+                <div
                   key={city.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -5, scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleCityClick(city)}
                   className="group cursor-pointer"
                 >
@@ -218,13 +208,11 @@ export const ExploreDestinations: React.FC = () => {
                       {i18n.language === 'ar' ? city.arabicName : city.englishName}
                     </h3>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>            {/* Navigation Arrows for Mobile */}
+            </div>            {/* Navigation Arrows for Mobile */}
             <div className={`flex items-center justify-center ${isRTL ? 'space-x-reverse space-x-4' : 'space-x-4'}`}>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={handlePrevious}
                 disabled={isRTL ? currentIndex >= maxIndex : currentIndex === 0}
                 className="w-10 h-10 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
@@ -235,11 +223,9 @@ export const ExploreDestinations: React.FC = () => {
                 ) : (
                   <ChevronLeftIcon className="w-5 h-5" />
                 )}
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={handleNext}
                 disabled={isRTL ? currentIndex === 0 : currentIndex >= maxIndex}
                 className="w-10 h-10 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300"
@@ -250,15 +236,13 @@ export const ExploreDestinations: React.FC = () => {
                 ) : (
                   <ChevronRightIcon className="w-5 h-5" />
                 )}
-              </motion.button>
+              </button>
             </div>
           </div>
 
           {/* Desktop Layout - Inline */}
           <div className="hidden md:flex items-center justify-center">            {/* Left Arrow */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+            <button
               onClick={handlePrevious}              disabled={isRTL ? currentIndex >= maxIndex : currentIndex === 0}
               className={`flex-shrink-0 w-12 h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isRTL ? 'order-3' : 'order-1'} ${isRTL ? 'ms-4' : 'me-4'}`}
               aria-label={isRTL ? 'السابق' : 'Previous'}
@@ -268,19 +252,13 @@ export const ExploreDestinations: React.FC = () => {
               ) : (
                 <ChevronLeftIcon className="w-6 h-6" />
               )}
-            </motion.button>            {/* City Cards Row */}
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+            </button>            {/* City Cards Row */}
+            <div
               className={`flex-1 grid grid-cols-2 gap-8 max-w-3xl ${isRTL ? 'order-2' : 'order-2'}`}
             >
               {visibleCities.map((city, index) => (
-                <motion.div
+                <div
                   key={city.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -10, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleCityClick(city)}
                   className="group cursor-pointer"
                 >
@@ -317,12 +295,10 @@ export const ExploreDestinations: React.FC = () => {
                       {i18n.language === 'ar' ? city.arabicName : city.englishName}
                     </h3>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>            {/* Right Arrow */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+            </div>            {/* Right Arrow */}
+            <button
               onClick={handleNext}
               disabled={isRTL ? currentIndex === 0 : currentIndex >= maxIndex}
               className={`flex-shrink-0 w-12 h-12 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${isRTL ? 'order-1' : 'order-3'} ${isRTL ? 'me-4' : 'ms-4'}`}
@@ -332,7 +308,7 @@ export const ExploreDestinations: React.FC = () => {
                 <ChevronLeftIcon className="w-6 h-6" />
               ) : (
                 <ChevronRightIcon className="w-6 h-6" />
-              )}            </motion.button>
+              )}            </button>
           </div>
         </div>
       </div>

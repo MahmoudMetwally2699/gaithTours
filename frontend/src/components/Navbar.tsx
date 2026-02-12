@@ -3,7 +3,6 @@ import { Link, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
-import { motion, AnimatePresence } from 'framer-motion';
 
 import {
   Bars3Icon,
@@ -57,10 +56,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+    <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100'
@@ -70,11 +66,8 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="flex justify-between items-center h-20">
           {/* Logo Section */}
-          <motion.div
+          <div
             className="flex-shrink-0"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
           >
             <Link to="/" className="flex items-center">
               <img
@@ -83,7 +76,7 @@ export const Navbar: React.FC = () => {
                 className="h-12 w-auto object-contain"
               />
             </Link>
-          </motion.div>
+          </div>
 
           {/* Desktop Navigation */}
           <div className={`hidden md:flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-8`}>
@@ -111,8 +104,6 @@ export const Navbar: React.FC = () => {
               </span>
             </button>
 
-
-
             {/* User Menu / Auth Buttons */}
             {user ? (
               <div className={`relative ${isRTL ? 'mr-4' : 'ml-4'}`}>
@@ -136,14 +127,9 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* @ts-ignore */}
-                <AnimatePresence>
                   {isProfileMenuOpen ? (
-                    <motion.div
+                    <div
                       key="profile-menu"
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
                       className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden py-1 z-50`}
                     >
                       <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
@@ -180,9 +166,8 @@ export const Navbar: React.FC = () => {
                           {t('nav.logout')}
                         </button>
                       </div>
-                    </motion.div>
+                    </div>
                   ) : null}
-                </AnimatePresence>
               </div>
             ) : (
               <div className={`flex items-center space-x-4 ${isRTL ? 'space-x-reverse mr-4' : 'ml-4'}`}>
@@ -220,13 +205,9 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Menu */}
       {/* @ts-ignore */}
-      <AnimatePresence>
         {isMenuOpen ? (
-          <motion.div
+          <div
             key="mobile-menu"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
             className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 overflow-hidden"
           >
             <div className="px-4 pt-2 pb-6 space-y-2">
@@ -308,10 +289,9 @@ export const Navbar: React.FC = () => {
                 )}
               </div>
             </div>
-          </motion.div>
+          </div>
         ) : null}
-      </AnimatePresence>
 
-    </motion.nav>
+    </nav>
   );
 };

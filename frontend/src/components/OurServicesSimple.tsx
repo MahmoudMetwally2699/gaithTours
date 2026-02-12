@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   BuildingOffice2Icon,
   MapIcon,
@@ -134,40 +133,29 @@ export const OurServicesSimple: React.FC = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Section Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+        <div
           className="text-center max-w-4xl mx-auto mb-16"
         >
-          <motion.span
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+          <span
             className="inline-block text-primary-400 font-semibold text-lg mb-4 tracking-wide uppercase"
           >
             {t('services.sectionTitle')}
-          </motion.span>          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 leading-tight whitespace-nowrap text-center">
+          </span>          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 leading-tight whitespace-nowrap text-center">
             {t('services.title')}
           </h2>
 
           <p className="text-xl text-gray-300 leading-relaxed">
             {t('services.description')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Services Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+        <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {services.map((service, index) => (
-            <motion.div
+            <div
               key={service.id}
-              variants={itemVariants}
-              whileHover={{ y: -10 }}
               className="group"
             >
               <div className="bg-gray-800 rounded-3xl p-8 h-full border border-gray-700 hover:border-gray-600 transition-all duration-300 relative overflow-hidden">
@@ -206,15 +194,12 @@ export const OurServicesSimple: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Call to Action */}
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+        <div
           className="mt-20 text-center"
         >
           <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-3xl p-12">
@@ -224,15 +209,13 @@ export const OurServicesSimple: React.FC = () => {
             <p className="text-xl text-white opacity-90 mb-8 max-w-3xl mx-auto">
               {t('services.cta.description')}
             </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               className="bg-white text-primary-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors duration-300 shadow-lg"
             >
               {t('services.cta.button')}
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

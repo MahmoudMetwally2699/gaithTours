@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
   XMarkIcon,
@@ -790,10 +789,7 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
       <div className="flex items-center justify-center min-h-full">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+        <div
           className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
         >
           {/* Header */}
@@ -850,15 +846,11 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
               })}
             </div>          </div>          {/* Content */}
           <div className="p-6 overflow-y-auto max-h-[60vh]">
-            <motion.div
+            <div
               key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
             >
               {renderStepContent()}
-            </motion.div>
+            </div>
           </div>
 
           {/* Footer */}
@@ -891,7 +883,7 @@ export const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                 </button>
               )}
             </div>
-          </div>        </motion.div>
+          </div>        </div>
       </div>
 
       {/* Hotel Selection Modal */}

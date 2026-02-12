@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   XMarkIcon,
@@ -152,19 +151,13 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto">
         <div className="flex min-h-screen items-center justify-center p-4">
           {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             onClick={onClose}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm"
           />
 
           {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          <div
             className={`relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden ${isRTL ? 'rtl' : 'ltr'}`}
           >
             {/* Header */}
@@ -394,7 +387,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
   );

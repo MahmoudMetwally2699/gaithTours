@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   XMarkIcon,
   MagnifyingGlassIcon,
@@ -121,19 +120,12 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />      {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+        <div
           className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden mx-2 sm:mx-0"
           onClick={(e) => e.stopPropagation()}
         >          {/* Header with Gradient */}
@@ -158,22 +150,17 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                 </div>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={onClose}
                 className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/30 transition-all duration-200"
               >
                 <XMarkIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </motion.button>
+              </button>
             </div>
           </div>          {/* Search Section */}
           <div className="p-4 sm:p-8 bg-gradient-to-b from-orange-50/30 to-white">
             <div className="relative">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+              <div
                 className="absolute inset-0 bg-gradient-to-r from-orange-100/50 to-amber-100/50 rounded-2xl"
               />
               <div className="relative flex items-center">
@@ -192,26 +179,19 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                 />
 
                 {searchQuery && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={() => setSearchQuery('')}
                     className={`absolute ${isRTL ? 'left-3 sm:left-4' : 'right-3 sm:right-4'} w-6 h-6 sm:w-8 sm:h-8 bg-gray-400 hover:bg-gray-500 rounded-lg flex items-center justify-center transition-all duration-200`}
                   >
                     <XMarkIcon className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                  </motion.button>
+                  </button>
                 )}
               </div>
             </div>
           </div>          {/* Results Section */}
           <div className="px-4 sm:px-8 pb-4 sm:pb-8">
             <div className="max-h-[40vh] sm:max-h-[50vh] overflow-y-auto">{loading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                <div
                   className="flex flex-col items-center justify-center py-16"
                 >
                   <div className="relative">
@@ -224,14 +204,11 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                     <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                     <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                <div
                   className="text-center py-16"
                 >
                   <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -239,14 +216,11 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-2">Search Error</h4>
                   <p className="text-red-600">{error}</p>
-                </motion.div>
+                </div>
               )}
 
               {!loading && !error && searchQuery.length >= 2 && hotels.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                <div
                   className="text-center py-16"
                 >
                   <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -254,14 +228,11 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-2">No Hotels Found</h4>
                   <p className="text-gray-600">Try searching with different keywords or location</p>
-                </motion.div>
+                </div>
               )}
 
               {!loading && searchQuery.length < 2 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                <div
                   className="text-center py-16"
                 >
                   <div className="w-20 h-20 bg-gradient-to-r from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -269,19 +240,14 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-2">Start Your Search</h4>
                   <p className="text-gray-600">Type at least 2 characters to discover amazing hotels</p>
-                </motion.div>
+                </div>
               )}
 
               {/* Hotel Results */}
               <div className="space-y-4">
                 {hotels.map((hotel, index) => (
-                  <motion.div
+                  <div
                     key={hotel.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelectHotel(hotel)}
                     className="group relative bg-gradient-to-r from-white to-orange-50/30 border-2 border-orange-100/60 rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-orange-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
                   >
@@ -355,12 +321,10 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                         {/* Select Button */}
                         <div className="flex-shrink-0">
                           <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-amber-400 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-110">
-                            <motion.div
-                              whileHover={{ rotate: 180 }}
-                              transition={{ duration: 0.3 }}
+                            <div
                             >
                               <SparklesIcon className="h-6 w-6 text-white" />
-                            </motion.div>
+                            </div>
                           </div>
                         </div>
                       </div>                      {/* Mobile layout - RTL Aware */}
@@ -430,60 +394,51 @@ export const HotelSelectionModal: React.FC<HotelSelectionModalProps> = ({
                             {/* Select Button - Mobile RTL Aware */}
                             <div className={`flex ${isRTL ? 'justify-start' : 'justify-end'}`}>
                               <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-amber-400 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-110">
-                                <motion.div
-                                  whileHover={{ rotate: 180 }}
-                                  transition={{ duration: 0.3 }}
+                                <div
                                 >
                                   <SparklesIcon className="h-4 w-4 text-white" />
-                                </motion.div>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                <div
                   className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-orange-100"
                 >                  <div className="text-xs sm:text-sm text-gray-600 bg-orange-50/50 px-3 sm:px-4 py-2 rounded-xl text-center sm:text-left">
                     Showing {hotels.length} of {totalHotels} hotels (Page {currentPage} of {totalPages})
                   </div><div className={`flex items-center ${isRTL ? 'space-x-reverse' : ''} space-x-3`}>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage <= 1 || loading}
                       className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl flex items-center justify-center shadow-lg disabled:shadow-none transition-all duration-200 disabled:cursor-not-allowed"
                     >
                       <ChevronLeftIcon className={`h-5 w-5 ${isRTL ? 'rotate-180' : ''}`} />
-                    </motion.button>
+                    </button>
 
                     <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-4 py-2 rounded-xl font-bold min-w-[3rem] text-center shadow-lg">
                       {currentPage}
                     </div>
 
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => handlePageChange(currentPage + 1)}                      disabled={currentPage >= totalPages || loading}
                       className="w-10 h-10 bg-gradient-to-r from-orange-400 to-amber-400 hover:from-orange-500 hover:to-amber-500 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl flex items-center justify-center shadow-lg disabled:shadow-none transition-all duration-200 disabled:cursor-not-allowed"
                     >
                       <ChevronRightIcon className={`h-5 w-5 ${isRTL ? 'rotate-180' : ''}`} />
-                    </motion.button>
+                    </button>
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

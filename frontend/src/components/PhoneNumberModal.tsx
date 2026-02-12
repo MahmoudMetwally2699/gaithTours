@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { authAPI } from '../services/api';
 
@@ -199,17 +198,12 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
 
       {/* Modal */}
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      <div
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Close Button */}
@@ -286,9 +280,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
 
                     {/* Dropdown */}
                     {showCountryDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                      <div
                         className="absolute top-full start-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 max-h-60 overflow-y-auto"
                       >
                         {countryCodes.map((country) => (
@@ -308,7 +300,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                             <span className="text-gray-500 text-sm sm:text-base">{country.code}</span>
                           </button>
                         ))}
-                      </motion.div>
+                      </div>
                     )}
                   </div>
 
@@ -332,13 +324,11 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
 
                 {/* Error Message */}
                 {error && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
+                  <p
                     className="mt-2 text-sm text-red-500"
                   >
                     {error}
-                  </motion.p>
+                  </p>
                 )}
               </div>
 
@@ -374,12 +364,10 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
               </div>
 
               {/* Submit Button */}
-              <motion.button
+              <button
                 type="button"
                 onClick={handleSendCode}
                 disabled={isLoading}
-                whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -396,7 +384,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                     <span>{t('auth.sendCodeViaWhatsApp', 'Send Code via WhatsApp')}</span>
                   </div>
                 )}
-              </motion.button>
+              </button>
             </>
           ) : (
             <>
@@ -432,13 +420,11 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
 
               {/* Error Message */}
               {error && (
-                <motion.p
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
+                <p
                   className="text-center mb-4 text-sm text-red-500"
                 >
                   {error}
-                </motion.p>
+                </p>
               )}
 
               {/* Resend Code */}
@@ -460,12 +446,10 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
               </div>
 
               {/* Verify Button */}
-              <motion.button
+              <button
                 type="button"
                 onClick={() => handleVerifyCode(otp.join(''))}
                 disabled={isLoading || otp.some(d => !d)}
-                whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 className="w-full py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-3"
               >
                 {isLoading ? (
@@ -476,7 +460,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
                 ) : (
                   t('auth.verifyAndContinue', 'Verify & Continue')
                 )}
-              </motion.button>
+              </button>
 
               {/* Back Button */}
               <button
@@ -489,7 +473,7 @@ export const PhoneNumberModal: React.FC<PhoneNumberModalProps> = ({
             </>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   UserIcon,
@@ -450,8 +449,7 @@ export const Profile: React.FC = () => {
                 <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-orange-500'}`} />
                 <span className="font-medium">{item.label}</span>
                 {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
+                  <div
                     className={`absolute w-1 h-8 bg-orange-500 rounded-full ${isRTL ? 'right-0' : 'left-0'}`}
                   />
                 )}
@@ -506,11 +504,8 @@ export const Profile: React.FC = () => {
             <p className="text-gray-500">{t('profile.manageAccount', 'Manage your account and view your trips')}</p>
           </header>
 
-          <motion.div
+          <div
             key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
           >
             {activeTab === 'overview' && (
               <div className="space-y-6">
@@ -527,8 +522,6 @@ export const Profile: React.FC = () => {
                     <p className="text-gray-500 font-medium text-sm">{t('profile.totalTrips', 'Total Trips')}</p>
                     <h3 className="text-3xl font-bold text-gray-900">{reservations.length}</h3>
                   </div>
-
-
 
                   {/* Favorites */}
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
@@ -707,10 +700,8 @@ export const Profile: React.FC = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {favorites.map((hotel) => (
-                      <motion.div
+                      <div
                         key={hotel.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
                         className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all group"
                       >
                         <div className="relative h-48 bg-gray-200">
@@ -737,7 +728,7 @@ export const Profile: React.FC = () => {
                             </Link>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -771,10 +762,8 @@ export const Profile: React.FC = () => {
                       const hasPriceDrop = priceDiff > 0;
 
                       return (
-                        <motion.div
+                        <div
                           key={alert._id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
                           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
                         >
                           <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -823,7 +812,7 @@ export const Profile: React.FC = () => {
                               </button>
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       );
                     })}
                   </div>
@@ -919,7 +908,7 @@ export const Profile: React.FC = () => {
                  </div>
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
       </main>
 

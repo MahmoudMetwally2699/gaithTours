@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -111,10 +110,7 @@ export const HotelSearch: React.FC<HotelSearchProps> = ({ onSearch }) => {
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
   return (
-    <motion.div
-      initial={{ y: 30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, delay: 0.2 }}
+    <div
       className="bg-white rounded-xl shadow-lg p-6"
     >
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-0 md:flex md:items-end md:space-x-4">
@@ -220,6 +216,6 @@ export const HotelSearch: React.FC<HotelSearchProps> = ({ onSearch }) => {
           </button>
         </div>
       </form>
-    </motion.div>
+    </div>
   );
 };

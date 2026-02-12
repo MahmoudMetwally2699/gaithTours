@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   DocumentTextIcon,
@@ -145,11 +144,8 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
             </thead>
             <tbody className="divide-y divide-gray-200/50">
               {filteredInvoices.map((invoice, index) => (
-                <motion.tr
+                <tr
                   key={invoice._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="hover:bg-gradient-to-r hover:from-emerald-50/30 hover:to-teal-50/30 transition-all duration-300 group"
                 >
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
@@ -188,9 +184,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                     {new Date(invoice.issuedAt || invoice.createdAt).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US')}
                   </td>
                   <td className="px-4 lg:px-8 py-4 lg:py-6">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => {
                         setSelectedInvoice(invoice);
                         setShowInvoiceDetailsModal(true);
@@ -199,9 +193,9 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                     >
                       <EyeIcon className="w-4 h-4" />
                       <span>{t('admin:dashboard.bookings.details.view')}</span>
-                    </motion.button>
+                    </button>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -210,11 +204,8 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
         {/* Mobile Cards */}
         <div className="lg:hidden">
           {filteredInvoices.map((invoice, index) => (
-            <motion.div
+            <div
               key={invoice._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
               className="border-b border-gray-200/50 p-4 hover:bg-gradient-to-r hover:from-emerald-50/30 hover:to-teal-50/30 transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-3">
@@ -257,9 +248,7 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
               </div>
 
               <div className="flex justify-end">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => {
                     setSelectedInvoice(invoice);
                     setShowInvoiceDetailsModal(true);
@@ -268,9 +257,9 @@ export const InvoicesTab: React.FC<InvoicesTabProps> = ({
                 >
                   <EyeIcon className="w-4 h-4" />
                   <span>{t('admin:dashboard.bookings.details.view')}</span>
-                </motion.button>
+                </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -92,9 +91,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       {/* Page navigation */}
       <div className="flex items-center gap-1">
         {/* First page button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
           className={`p-2 rounded-lg transition-all duration-200 ${
@@ -105,12 +102,10 @@ export const Pagination: React.FC<PaginationProps> = ({
           title="First page"
         >
           <ChevronDoubleLeftIcon className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-        </motion.button>
+        </button>
 
         {/* Previous page button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className={`p-2 rounded-lg transition-all duration-200 ${
@@ -121,16 +116,14 @@ export const Pagination: React.FC<PaginationProps> = ({
           title="Previous page"
         >
           <ChevronLeftIcon className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-        </motion.button>
+        </button>
 
         {/* Page numbers */}
         <div className="flex items-center gap-1 mx-2">
           {pageNumbers.map((page, index) => (
             typeof page === 'number' ? (
-              <motion.button
+              <button
                 key={page}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => onPageChange(page)}
                 className={`min-w-[36px] h-9 px-3 rounded-lg font-medium text-sm transition-all duration-200 ${
                   currentPage === page
@@ -139,7 +132,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                 }`}
               >
                 {page}
-              </motion.button>
+              </button>
             ) : (
               <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
                 {page}
@@ -149,9 +142,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         </div>
 
         {/* Next page button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className={`p-2 rounded-lg transition-all duration-200 ${
@@ -162,12 +153,10 @@ export const Pagination: React.FC<PaginationProps> = ({
           title="Next page"
         >
           <ChevronRightIcon className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-        </motion.button>
+        </button>
 
         {/* Last page button */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
           className={`p-2 rounded-lg transition-all duration-200 ${
@@ -178,7 +167,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           title="Last page"
         >
           <ChevronDoubleRightIcon className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
-        </motion.button>
+        </button>
       </div>
 
       {/* Items per page selector */}

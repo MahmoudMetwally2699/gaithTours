@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   ClockIcon,
   CreditCardIcon,
@@ -812,14 +811,11 @@ export const HotelBookingFlow: React.FC = () => {
           </div>
         </div>        {/* Step Content */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-3 sm:p-8 lg:p-10 mb-[200px] sm:mb-4 hover:shadow-xl transition-shadow duration-300">
-          <motion.div
+          <div
             key={currentStep}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
           >
             {renderStepContent()}
-          </motion.div>
+          </div>
         </div>
 
         {/* Progress Steps and Navigation - Hidden on mobile (shown in sticky footer) */}

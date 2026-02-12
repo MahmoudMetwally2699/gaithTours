@@ -6,14 +6,17 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { Navbar } from './components/Navbar';
-import { Footer } from './components/Footer';
+
 import { Home } from './pages/Home';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { useReferralCapture } from './hooks/useReferralCapture';
-import ChatWidget from './components/ChatWidget';
-import NotificationPrompt from './components/NotificationPrompt';
 import './i18n';
+
+// Lazy-loaded components — only downloaded when needed
+const ChatWidget = React.lazy(() => import('./components/ChatWidget'));
+const NotificationPrompt = React.lazy(() => import('./components/NotificationPrompt'));
+const Footer = React.lazy(() => import('./components/Footer').then(module => ({ default: module.Footer })));
 
 // Lazy-loaded pages — only downloaded when the route is visited
 const Hotels = React.lazy(() => import('./pages/Hotels').then(m => ({ default: m.Hotels })));
@@ -111,9 +114,11 @@ const AppContent = () => {
         </Switch>
         </Suspense>
       </main>
-      {!isAdminDashboard && !isPartnerPage && <Footer />}
-      {!isAdminDashboard && !isPartnerPage && <ChatWidget />}
-      {!isAdminDashboard && !isPartnerPage && <NotificationPrompt />}
+      <Suspense fallback={null}>
+        {!isAdminDashboard && !isPartnerPage && <Footer />}
+        {!isAdminDashboard && !isPartnerPage && <ChatWidget />}
+        {!isAdminDashboard && !isPartnerPage && <NotificationPrompt />}
+      </Suspense>
       <Toaster
         position="top-right"
         toastOptions={{

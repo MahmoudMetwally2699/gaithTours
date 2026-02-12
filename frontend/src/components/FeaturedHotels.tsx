@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { StarIcon, MapPinIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -55,10 +54,7 @@ export const FeaturedHotels: React.FC = () => {
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{/* Section Header */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6 }}
+        <div
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -67,20 +63,14 @@ export const FeaturedHotels: React.FC = () => {
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             {t('hotels.featured.subtitle')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Hotels Grid */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+        <div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >          {featuredHotels.map((hotel, index) => (
-            <motion.div
+            <div
               key={hotel.id}
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
               className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
             >
               {/* Hotel Image */}              <div className="relative h-56 overflow-hidden">
@@ -128,13 +118,10 @@ export const FeaturedHotels: React.FC = () => {
                   {t('hotels.bookNow')}
                 </button>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>        {/* View All Hotels Button */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+        </div>        {/* View All Hotels Button */}
+        <div
           className="text-center mt-12"
         >
           <button
@@ -143,7 +130,7 @@ export const FeaturedHotels: React.FC = () => {
           >
             {t('hotels.viewAll')}
           </button>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

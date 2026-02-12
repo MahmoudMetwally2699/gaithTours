@@ -51,6 +51,7 @@ router.get('/popular-properties', async (req, res) => {
     const cached = popularPropertiesCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < POPULAR_CACHE_TTL) {
       console.log(`♻️  Serving cached popular properties (${cached.data.hotels.length} hotels)`);
+      res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
       return successResponse(res, cached.data, 'Popular properties from cache');
     }
 
@@ -125,6 +126,7 @@ router.get('/popular-properties', async (req, res) => {
     // Cache for 30 minutes
     popularPropertiesCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
 
+    res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
     successResponse(res, responseData, 'Popular properties retrieved successfully');
   } catch (error) {
     console.error('Popular properties error:', error);
@@ -140,6 +142,7 @@ router.get('/filters', async (req, res) => {
   try {
     const filters = await rateHawkService.getFilterValues();
     if (filters) {
+      res.set('Cache-Control', 'public, max-age=86400'); // 24 hours
       successResponse(res, filters, 'Filter values retrieved successfully');
     } else {
       errorResponse(res, 'Failed to retrieve filter values', 500);
@@ -202,6 +205,7 @@ router.get('/suggested', async (req, res) => {
 
     if (cachedData) {
       console.log(`♻️  Serving cached results for ${destination}`);
+      res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
       return successResponse(res, cachedData, 'Suggestions retrieved from cache');
     }
 
@@ -252,6 +256,7 @@ router.get('/suggested', async (req, res) => {
         const staleCached = hotelSearchCache.get(cacheKey);
         if (staleCached && Date.now() - staleCached.timestamp < 60 * 60 * 1000) {
           console.log(`✅ Serving stale cache for ${destination} (${Math.round((Date.now() - staleCached.timestamp) / 60000)} min old)`);
+          res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
           return successResponse(res, staleCached.data, 'Suggestions retrieved from cache (rate limited)');
         }
 
@@ -291,6 +296,7 @@ router.get('/suggested', async (req, res) => {
     // Cache the successful result
     setCachedResults(cacheKey, responseData);
 
+    res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
     successResponse(res, responseData, 'Suggestions retrieved successfully');
 
   } catch (error) {

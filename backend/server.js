@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
 const { initializeSocket } = require('./socket');
@@ -14,6 +15,7 @@ const server = http.createServer(app);
 // Trust proxy - required for Vercel and other reverse proxies
 // Security middleware
 app.use(helmet());
+app.use(compression()); // Gzip compress all responses (~60-80% smaller)
 app.set('trust proxy', 1);
 
 

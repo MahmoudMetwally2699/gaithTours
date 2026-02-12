@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import {
   XMarkIcon,
   ExclamationTriangleIcon,
@@ -156,18 +155,13 @@ export const CancellationModal: React.FC<CancellationModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
         {/* Modal */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        <div
           className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
         >
           {/* Header */}
@@ -208,13 +202,11 @@ export const CancellationModal: React.FC<CancellationModalProps> = ({
               </div>
             ) : step === 'success' ? (
               <div className="text-center py-8">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                <div
                   className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center"
                 >
                   <CheckCircleIcon className="w-12 h-12 text-green-500" />
-                </motion.div>
+                </div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {t('Booking Cancelled')}
                 </h3>
@@ -406,7 +398,7 @@ export const CancellationModal: React.FC<CancellationModalProps> = ({
               </>
             )}
           </div>
-        </motion.div>
+        </div>
     </div>
   );
 };
