@@ -1340,18 +1340,44 @@ class RateHawkService {
     // OPTIMIZATION: Fetch pricing, static content, AND reviews in PARALLEL (saves ~5-10s)
     const HotelContent = require('../models/HotelContent');
 
-    const [response, staticContent, reviewData] = await Promise.all([
+    // When language is not English, fetch English rates in parallel
+    // so we can map room images using English room names (room_groups in DB are English)
+    const needsEnglishLookup = language !== 'en';
+    const enPayload = needsEnglishLookup ? { ...payload, language: 'en' } : null;
+
+    const parallelPromises = [
       // 1. Get pricing and availability from RateHawk API
       this.makeRequest('/search/hp/', 'POST', payload),
       // 2. Get static content from local DB (faster)
       HotelContent.findOne({ hid }).lean(),
       // 3. Get review data with hybrid approach (DB first, API fallback)
-      this.getOrFetchReviews(hid, 'en', 7) // 7 days max age
-    ]);
+      this.getOrFetchReviews(hid, 'en', 7), // 7 days max age
+      // 4. (optional) English rates for room image matching when language != 'en'
+      needsEnglishLookup ? this.makeRequest('/search/hp/', 'POST', enPayload).catch(err => {
+        console.log(`⚠️ English room name lookup failed (non-critical): ${err.message}`);
+        return null;
+      }) : Promise.resolve(null)
+    ];
+
+    const [response, staticContent, reviewData, enResponse] = await Promise.all(parallelPromises);
 
     const hotelData = response.data?.hotels?.[0];
     if (!hotelData) {
       throw new Error('Hotel not found');
+    }
+
+    // Build match_hash → English room name map for cross-language image matching
+    const matchHashToEnName = new Map();
+    if (enResponse) {
+      const enHotelData = enResponse.data?.hotels?.[0];
+      if (enHotelData?.rates) {
+        enHotelData.rates.forEach(rate => {
+          if (rate.match_hash && rate.room_name) {
+            matchHashToEnName.set(rate.match_hash, rate.room_name);
+          }
+        });
+        console.log(`🌐 Built English room name map: ${matchHashToEnName.size} entries (for ${language} image matching)`);
+      }
     }
 
     // Log static content results
@@ -1690,8 +1716,11 @@ class RateHawkService {
         max_occupancy: rate.room_data?.max_occupancy || null,
 
         // Room amenities from Content API room_groups (with fuzzy matching)
+        // FIX: Use English room name (via match_hash) for matching when language != 'en'
         room_amenities: (() => {
-          const roomKey = normalizeRoomName(rate.room_name);
+          // Use English room name for matching if available (room_groups in DB are English)
+          const enRoomName = matchHashToEnName.get(rate.match_hash);
+          const roomKey = normalizeRoomName(enRoomName || rate.room_name);
           let matchedAmenities = roomAmenitiesMap.get(roomKey);
 
           // Fuzzy matching fallback: try to find a room group that this rate starts with
@@ -1710,8 +1739,11 @@ class RateHawkService {
         })(),
 
         // Room images from Content API room_groups
+        // FIX: Use English room name (via match_hash) for matching when language != 'en'
         room_images: (() => {
-          const roomKey = normalizeRoomName(rate.room_name);
+          // Use English room name for matching if available (room_groups in DB are English)
+          const enRoomName = matchHashToEnName.get(rate.match_hash);
+          const roomKey = normalizeRoomName(enRoomName || rate.room_name);
           let matchedImages = roomImagesMap.get(roomKey);
 
           // Fuzzy matching fallback: try to find a room group that this rate starts with
@@ -1719,24 +1751,26 @@ class RateHawkService {
             for (const [groupName, imgs] of roomImagesMap.entries()) {
               if (roomKey.startsWith(groupName)) {
                 matchedImages = imgs;
-                console.log(`      🔍 Fuzzy matched: "${rate.room_name}" → "${groupName}" (${imgs.length} images)`);
+                console.log(`      🔍 Fuzzy matched: "${enRoomName || rate.room_name}" → "${groupName}" (${imgs.length} images)`);
                 break;
               }
             }
           }
 
-          // Debug logging for exact matches or no matches
+          // Debug logging
           if (!matchedImages) {
-            console.log(`      ⚠️  No match for rate: "${rate.room_name}" → "${roomKey}"`);
-          } else if (roomImagesMap.get(roomKey)) {
-            console.log(`      ✅ Exact match: "${rate.room_name}" → "${roomKey}" (${matchedImages.length} images)`);
+            console.log(`      ⚠️  No match for rate: "${rate.room_name}"${enRoomName ? ` (EN: "${enRoomName}")` : ''} → "${roomKey}"`);
+          } else {
+            console.log(`      ✅ Matched: "${rate.room_name}"${enRoomName ? ` (via EN: "${enRoomName}")` : ''} → ${matchedImages.length} images`);
           }
 
           // Fallback to hotel images if no room-specific images
           return matchedImages || (images.length > 0 ? [images[0].replace('1024x768', '170x154')] : []);
         })(),
         room_image_count: (() => {
-          const roomKey = normalizeRoomName(rate.room_name);
+          // Use English room name for matching if available
+          const enRoomName = matchHashToEnName.get(rate.match_hash);
+          const roomKey = normalizeRoomName(enRoomName || rate.room_name);
           let matchedImages = roomImagesMap.get(roomKey);
 
           // Fuzzy matching fallback
