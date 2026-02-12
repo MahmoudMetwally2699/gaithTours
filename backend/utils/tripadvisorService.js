@@ -241,8 +241,8 @@ class TripAdvisorService {
         // Get full details
         const details = await this.getLocationDetails(locationId);
 
-        // Get reviews
-        const reviews = await this.getLocationReviews(locationId);
+        // Get reviews (Arabic)
+        const reviews = await this.getLocationReviews(locationId, 'ar');
 
         // Save to DB
         const hotelData = {
