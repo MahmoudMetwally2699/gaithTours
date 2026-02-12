@@ -6,6 +6,7 @@ import { useHistory } from 'react-router-dom';
 interface City {
   id: number;
   name: string;
+  englishName: string;
   count: number;
   image: string;
 }
@@ -19,36 +20,42 @@ export const PopularCitiesWorldwide: React.FC = () => {
     {
       id: 1,
       name: t('popularCitiesWorldwide.cities.dubai'),
+      englishName: 'Dubai',
       count: 523,
       image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 2,
       name: t('popularCitiesWorldwide.cities.paris'),
+      englishName: 'Paris',
       count: 1247,
       image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 3,
       name: t('popularCitiesWorldwide.cities.london'),
+      englishName: 'London',
       count: 1089,
       image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 4,
       name: t('popularCitiesWorldwide.cities.newYork'),
+      englishName: 'New York',
       count: 876,
       image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 5,
       name: t('popularCitiesWorldwide.cities.tokyo'),
+      englishName: 'Tokyo',
       count: 654,
       image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     },
     {
       id: 6,
       name: t('popularCitiesWorldwide.cities.istanbul'),
+      englishName: 'Istanbul',
       count: 432,
       image: 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
     }
@@ -129,7 +136,7 @@ export const PopularCitiesWorldwide: React.FC = () => {
                 const checkOut = new Date(today);
                 checkOut.setDate(today.getDate() + 2);
                 const params = new URLSearchParams({
-                  destination: city.name,
+                  destination: city.englishName,
                   checkIn: checkIn.toISOString().split('T')[0],
                   checkOut: checkOut.toISOString().split('T')[0],
                   rooms: '1',

@@ -6,6 +6,7 @@ import { useHistory } from 'react-router-dom';
 interface City {
   id: number;
   name: string;
+  englishName: string;
   count: number;
   image: string;
 }
@@ -19,102 +20,119 @@ export const PopularCities: React.FC = () => {
     {
       id: 1,
       name: t('popularCities.cities.jeddah'),
+      englishName: 'Jeddah',
       count: 245,
       image: '/مدن السعودية/جدة.jpg'
     },
     {
       id: 2,
       name: t('popularCities.cities.riyadh'),
+      englishName: 'Riyadh',
       count: 312,
       image: '/مدن السعودية/الرياض.jpg'
     },
     {
       id: 3,
       name: t('popularCities.cities.alKhobar'),
+      englishName: 'Al Khobar',
       count: 128,
       image: '/مدن السعودية/الخبر.jpg'
     },
     {
       id: 4,
       name: t('popularCities.cities.makkah'),
+      englishName: 'Makkah',
       count: 487,
       image: '/مدن السعودية/مكة المكرمة.jpg'
     },
     {
       id: 5,
       name: t('popularCities.cities.madinah'),
+      englishName: 'Madinah',
       count: 356,
       image: '/مدن السعودية/المدينة المنورة.png'
     },
     {
       id: 6,
       name: t('popularCities.cities.dammam'),
+      englishName: 'Dammam',
       count: 189,
       image: '/مدن السعودية/مدينة الدمام.jpg'
     },
     {
       id: 7,
       name: t('popularCities.cities.taif'),
+      englishName: 'Taif',
       count: 142,
       image: '/مدن السعودية/الطائف.jpg'
     },
     {
       id: 8,
       name: t('popularCities.cities.alUla'),
+      englishName: 'Al Ula',
       count: 67,
       image: '/مدن السعودية/مدينة العلا.jpg'
     },
     {
       id: 9,
       name: t('popularCities.cities.abha'),
+      englishName: 'Abha',
       count: 98,
       image: '/مدن السعودية/أبها.jpg'
     },
     {
       id: 10,
       name: t('popularCities.cities.tabuk'),
+      englishName: 'Tabuk',
       count: 76,
       image: '/مدن السعودية/مدينة تبوك.jpeg'
     },
     {
       id: 11,
       name: t('popularCities.cities.hail'),
+      englishName: 'Hail',
       count: 54,
       image: '/مدن السعودية/حائل.jpg'
     },
     {
       id: 12,
       name: t('popularCities.cities.jazan'),
+      englishName: 'Jazan',
       count: 63,
       image: '/مدن السعودية/جازان.jpg'
     },
     {
       id: 13,
       name: t('popularCities.cities.jubail'),
+      englishName: 'Jubail',
       count: 82,
       image: '/مدن السعودية/مدينة الجبيل.jpg'
     },
     {
       id: 14,
       name: t('popularCities.cities.buraydah'),
+      englishName: 'Buraydah',
       count: 71,
       image: '/مدن السعودية/مدينة بريدة.jpeg'
     },
     {
       id: 15,
       name: t('popularCities.cities.khamisMushait'),
+      englishName: 'Khamis Mushait',
       count: 59,
       image: '/مدن السعودية/مدينة خميس مشيط.jpg'
     },
     {
       id: 16,
       name: t('popularCities.cities.najran'),
+      englishName: 'Najran',
       count: 45,
       image: '/مدن السعودية/نجران.jpg'
     },
     {
       id: 17,
       name: t('popularCities.cities.yanbu'),
+      englishName: 'Yanbu',
       count: 88,
       image: '/مدن السعودية/ينبع.jpg'
     }
@@ -195,7 +213,7 @@ export const PopularCities: React.FC = () => {
                 const checkOut = new Date(today);
                 checkOut.setDate(today.getDate() + 2);
                 const params = new URLSearchParams({
-                  destination: city.name,
+                  destination: city.englishName,
                   checkIn: checkIn.toISOString().split('T')[0],
                   checkOut: checkOut.toISOString().split('T')[0],
                   rooms: '1',
