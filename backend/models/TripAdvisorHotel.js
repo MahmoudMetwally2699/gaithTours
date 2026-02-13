@@ -191,11 +191,12 @@ TripAdvisorHotelSchema.statics.findByNameAndCity = async function(hotelName, cit
   const nameNorm = hotelName.toLowerCase().trim();
   const cityVariants = getCityVariants(city);
 
-  // Try exact name match (name_normalized OR search_names) with city aliases
+  // Try exact name match (name_normalized OR search_names OR raw name) with city aliases
   let result = await this.findOne({
     $or: [
       { name_normalized: nameNorm },
-      { search_names: nameNorm }
+      { search_names: nameNorm },
+      { name: hotelName } // Check raw name exactly
     ],
     city_normalized: { $in: cityVariants }
   });
@@ -211,7 +212,8 @@ TripAdvisorHotelSchema.statics.findByNameAndCity = async function(hotelName, cit
       { name_normalized: { $regex: nameEscaped, $options: 'i' } },
       { name_normalized: { $regex: nameKeywords, $options: 'i' } },
       { search_names: { $regex: nameEscaped, $options: 'i' } },
-      { search_names: { $regex: nameKeywords, $options: 'i' } }
+      { search_names: { $regex: nameKeywords, $options: 'i' } },
+      { name: { $regex: nameEscaped, $options: 'i' } } // Check raw name regex
     ]
   });
 
@@ -221,7 +223,8 @@ TripAdvisorHotelSchema.statics.findByNameAndCity = async function(hotelName, cit
   result = await this.findOne({
     $or: [
       { name_normalized: nameNorm },
-      { search_names: nameNorm }
+      { search_names: nameNorm },
+      { name: { $regex: nameEscaped, $options: 'i' } } // Check raw name regex
     ]
   });
   if (result) return result;
@@ -249,7 +252,8 @@ TripAdvisorHotelSchema.statics.findByNamesAndCity = async function(hotelNames, c
   return this.find({
     $or: [
       { name_normalized: { $in: namesNorm } },
-      { search_names: { $in: namesNorm } }
+      { search_names: { $in: namesNorm } },
+      { name: { $in: hotelNames } } // Check raw names exactly
     ],
     city_normalized: { $in: cityVariants }
   });

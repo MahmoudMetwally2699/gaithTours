@@ -44,14 +44,27 @@ const POPULAR_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 router.get('/popular-properties', async (req, res) => {
   try {
     const currency = req.query.currency || 'USD';
-    const language = req.query.language || 'en';
+    const language = (req.query.language || 'en').split('-')[0]; // 'en-US' → 'en'
     const cacheKey = `popular:${currency}:${language}`;
 
-    // Check cache first
+    // 1. Check MongoDB cache first (populated by background cron job)
+    try {
+      const CachedHomePage = require('../models/CachedHomePage');
+      const dbCached = await CachedHomePage.getFreshCache('popular', cacheKey);
+      if (dbCached && dbCached.hotels.length > 0) {
+        console.log(`📦 Serving popular properties from MongoDB (${dbCached.hotels.length} hotels)`);
+        res.set('Cache-Control', 'public, max-age=3600');
+        return successResponse(res, { hotels: dbCached.hotels }, 'Popular properties from MongoDB cache');
+      }
+    } catch (dbErr) {
+      console.log('   ⚠️ MongoDB cache check failed (non-fatal):', dbErr.message);
+    }
+
+    // 2. Check in-memory cache
     const cached = popularPropertiesCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < POPULAR_CACHE_TTL) {
       console.log(`♻️  Serving cached popular properties (${cached.data.hotels.length} hotels)`);
-      res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
+      res.set('Cache-Control', 'public, max-age=3600');
       return successResponse(res, cached.data, 'Popular properties from cache');
     }
 
@@ -205,7 +218,7 @@ router.get('/suggested', async (req, res) => {
     let destination = null;
     let source = 'fallback'; // history, location, fallback
     const currency = req.query.currency || 'USD';
-    const language = req.query.language || 'en';
+    const language = (req.query.language || 'en').split('-')[0]; // 'en-US' → 'en'
 
     // 1. Try to get user from token
     let token;
@@ -242,11 +255,31 @@ router.get('/suggested', async (req, res) => {
 
     // Check cache first (include currency and language in cache key)
     const cacheKey = `suggestions:${destination}:${currency}:${language}`;
-    const cachedData = getCachedResults(cacheKey);
 
+    // 1. Check MongoDB cache first (populated by background cron job)
+    try {
+      const CachedHomePage = require('../models/CachedHomePage');
+      const dbKey = `${destination}:${currency}:${language}`;
+      const dbCached = await CachedHomePage.getFreshCache('suggested', dbKey);
+      if (dbCached && dbCached.hotels.length > 0) {
+        console.log(`📦 Serving suggestions from MongoDB for ${destination} (${dbCached.hotels.length} hotels)`);
+        res.set('Cache-Control', 'public, max-age=3600');
+        return successResponse(res, {
+          hotels: dbCached.hotels,
+          source: dbCached.metadata.source || source,
+          destination: dbCached.metadata.destination || destination,
+          searchDates: dbCached.metadata.searchDates
+        }, 'Suggestions from MongoDB cache');
+      }
+    } catch (dbErr) {
+      console.log('   ⚠️ MongoDB cache check failed (non-fatal):', dbErr.message);
+    }
+
+    // 2. Check in-memory cache
+    const cachedData = getCachedResults(cacheKey);
     if (cachedData) {
       console.log(`♻️  Serving cached results for ${destination}`);
-      res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
+      res.set('Cache-Control', 'public, max-age=3600');
       return successResponse(res, cachedData, 'Suggestions retrieved from cache');
     }
 
@@ -1318,6 +1351,70 @@ router.get('/search', async (req, res) => {
           console.error('❌ Error checking local DB for searched hotel:', error.message);
         }
       }
+    }
+
+    // Enrich with TripAdvisor data from DB before caching
+    try {
+      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+      // Group hotels by city for efficient batch lookup
+      const hotelsByCity = {};
+      allHotels.forEach(h => {
+        const city = h.city || destination || 'Unknown';
+        if (!hotelsByCity[city]) hotelsByCity[city] = [];
+        hotelsByCity[city].push(h);
+      });
+
+      let taEnrichedCount = 0;
+      for (const [city, cityHotels] of Object.entries(hotelsByCity)) {
+        const names = cityHotels.map(h => h.name);
+        if (cityHotels.length > 0) {
+           console.log(`🔎 Enriching ${cityHotels.length} hotels in city: "${city}" (First: "${names[0]}")`);
+        }
+
+        const taResults = await TripAdvisorHotel.findByNamesAndCity(names, city);
+        console.log(`   Found ${taResults.length} matching TA records for city "${city}"`);
+
+        if (taResults.length > 0) {
+          // Build lookup map by name_normalized, search_names, and raw name
+          const taMap = {};
+          taResults.forEach(ta => {
+            if (ta.name_normalized) taMap[ta.name_normalized] = ta;
+            if (ta.name) taMap[ta.name.toLowerCase().trim()] = ta; // Map by raw name too
+            if (ta.search_names) {
+              ta.search_names.forEach(alias => { taMap[alias] = ta; });
+            }
+          });
+
+          // Attach TA data to each hotel
+          cityHotels.forEach(h => {
+            const nameNorm = h.name.toLowerCase().trim();
+            const ta = taMap[nameNorm];
+            if (ta) {
+              h.tripadvisor_rating = ta.rating;
+              h.tripadvisor_num_reviews = ta.num_reviews;
+              h.tripadvisor_location_id = ta.location_id;
+              taEnrichedCount++;
+            } else {
+               // Debug check for the specific problematic hotel
+               if (h.name.includes('voco Makkah')) {
+                   console.log(`⚠️ FAILED TO MATCH: "${h.name}" (norm: "${nameNorm}")`);
+                   console.log(`   Keys in TA Map: ${Object.keys(taMap).filter(k => k.includes('voco')).join(', ')}`);
+               }
+            }
+          });
+        } else {
+            // Debug check if no results found at all
+            if (city.toLowerCase().includes('mecca') || city.toLowerCase().includes('makkah')) {
+                console.log(`⚠️ Partial/No TA results for ${city}. Names: ${names.slice(0, 3).join(', ')}...`);
+            }
+        }
+      }
+
+      if (taEnrichedCount > 0) {
+        console.log(`   🏷️  TripAdvisor enriched ${taEnrichedCount}/${allHotels.length} search result hotels`);
+      }
+    } catch (taError) {
+      console.error('   ⚠️ TripAdvisor enrichment error (non-fatal):', taError.message);
     }
 
     // Cache ALL results (not batches)
