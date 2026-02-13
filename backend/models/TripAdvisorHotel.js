@@ -249,7 +249,8 @@ TripAdvisorHotelSchema.statics.findByNamesAndCity = async function(hotelNames, c
   const cityVariants = getCityVariants(city);
   const namesNorm = hotelNames.map(n => n.toLowerCase().trim());
 
-  return this.find({
+  // First try with city constraint
+  const withCity = await this.find({
     $or: [
       { name_normalized: { $in: namesNorm } },
       { search_names: { $in: namesNorm } },
@@ -257,6 +258,33 @@ TripAdvisorHotelSchema.statics.findByNamesAndCity = async function(hotelNames, c
     ],
     city_normalized: { $in: cityVariants }
   });
+
+  // Check which names were NOT matched
+  const matchedNames = new Set();
+  withCity.forEach(ta => {
+    matchedNames.add(ta.name_normalized);
+    if (ta.search_names) {
+      ta.search_names.forEach(alias => matchedNames.add(alias));
+    }
+    if (ta.name) {
+      matchedNames.add(ta.name.toLowerCase().trim());
+    }
+  });
+  const unmatchedNorms = namesNorm.filter(n => !matchedNames.has(n));
+  const unmatchedRaw = hotelNames.filter(n => !matchedNames.has(n.toLowerCase().trim()));
+
+  if (unmatchedNorms.length === 0) return withCity;
+
+  // Try unmatched names WITHOUT city constraint (fallback for city mismatches)
+  const withoutCity = await this.find({
+    $or: [
+      { name_normalized: { $in: unmatchedNorms } },
+      { search_names: { $in: unmatchedNorms } },
+      { name: { $in: unmatchedRaw } }
+    ]
+  });
+
+  return [...withCity, ...withoutCity];
 };
 
 const TripAdvisorHotel = mongoose.model('TripAdvisorHotel', TripAdvisorHotelSchema);

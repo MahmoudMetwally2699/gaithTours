@@ -424,69 +424,110 @@ export const HotelSearchResults: React.FC = () => {
   }, []);
 
   // Fetch TripAdvisor ratings when search results load (with sessionStorage cache)
-  // Tracks which hotel names have already been fetched to avoid re-fetching on scroll
+  // Hotels already enriched by backend (with tripadvisor_rating) are used directly.
+  // This useEffect fetches TA data for hotels NOT yet in the backend DB,
+  // which also triggers the TripAdvisor API fetch on the server and saves to DB.
   const fetchedTaHotelNamesRef = useRef<Set<string>>(new Set());
+  const taFetchInProgressRef = useRef<boolean>(false);
 
   useEffect(() => {
-    if (hotels.length > 0 && searchQuery.destination) {
-      // Find hotel names that haven't been fetched yet
-      const allHotelNames = hotels.map(h => h.name).filter(Boolean);
-      const unfetchedNames = allHotelNames.filter(name => !fetchedTaHotelNamesRef.current.has(name));
+    if (hotels.length === 0 || !searchQuery.destination) return;
 
-      if (unfetchedNames.length === 0) return;
-
-      // Check sessionStorage cache first for unfetched names
-      const cacheKey = `ta_ratings_${searchQuery.destination}`;
-      let cachedRatings: Record<string, TripAdvisorRating> = {};
+    // First, populate taRatings from backend-provided tripadvisor_rating (instant, no API call)
+    const backendRatings: Record<string, TripAdvisorRating> = {};
+    hotels.forEach(h => {
+      const ta = (h as any).tripadvisor_rating;
+      if (ta && h.name && !fetchedTaHotelNamesRef.current.has(h.name)) {
+        backendRatings[h.name] = {
+          location_id: (h as any).tripadvisor_location_id || '',
+          name: h.name,
+          rating: ta,
+          num_reviews: (h as any).tripadvisor_num_reviews || '0',
+          ranking: null,
+          price_level: null,
+          web_url: null,
+          rating_image_url: null,
+          reviews: [],
+          from_cache: true
+        };
+        fetchedTaHotelNamesRef.current.add(h.name);
+      }
+    });
+    if (Object.keys(backendRatings).length > 0) {
+      setTaRatings(prev => ({ ...prev, ...backendRatings }));
+      // Also cache these in sessionStorage
       try {
-        const cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          cachedRatings = JSON.parse(cached);
-        }
-      } catch (e) { /* ignore cache errors */ }
+        const cacheKey = `ta_ratings_${searchQuery.destination}`;
+        const existing = sessionStorage.getItem(cacheKey);
+        const merged = existing ? { ...JSON.parse(existing), ...backendRatings } : backendRatings;
+        sessionStorage.setItem(cacheKey, JSON.stringify(merged));
+      } catch (e) { /* ignore */ }
+    }
 
-      // Separate: names found in sessionStorage cache vs. names that need API fetch
-      const fromCache: Record<string, TripAdvisorRating> = {};
-      const needFetch: string[] = [];
-      for (const name of unfetchedNames) {
-        if (cachedRatings[name]) {
-          fromCache[name] = cachedRatings[name];
-        } else {
-          needFetch.push(name);
-        }
+    // Now find hotels WITHOUT backend TA data that need API fetch
+    const allHotelNames = hotels.map(h => h.name).filter(Boolean);
+    const unfetchedNames = allHotelNames.filter(name => !fetchedTaHotelNamesRef.current.has(name));
+
+    if (unfetchedNames.length === 0 || taFetchInProgressRef.current) return;
+
+    // Check sessionStorage cache first
+    const cacheKey = `ta_ratings_${searchQuery.destination}`;
+    let cachedRatings: Record<string, TripAdvisorRating> = {};
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        cachedRatings = JSON.parse(cached);
       }
+    } catch (e) { /* ignore */ }
 
-      // Apply cached results immediately
-      if (Object.keys(fromCache).length > 0) {
-        setTaRatings(prev => ({ ...prev, ...fromCache }));
-        Object.keys(fromCache).forEach(name => fetchedTaHotelNamesRef.current.add(name));
+    const fromCache: Record<string, TripAdvisorRating> = {};
+    const needFetch: string[] = [];
+    for (const name of unfetchedNames) {
+      if (cachedRatings[name]) {
+        fromCache[name] = cachedRatings[name];
+      } else {
+        needFetch.push(name);
       }
+    }
 
-      // Fetch remaining from API (batch up to 20 at a time, the API limit)
-      if (needFetch.length > 0) {
-        getTripAdvisorRatings(needFetch.slice(0, 20), searchQuery.destination)
-          .then(ratings => {
+    // Apply cached results immediately
+    if (Object.keys(fromCache).length > 0) {
+      setTaRatings(prev => ({ ...prev, ...fromCache }));
+      Object.keys(fromCache).forEach(name => fetchedTaHotelNamesRef.current.add(name));
+    }
+
+    // Fetch remaining from TripAdvisor API in sequential batches of 20
+    if (needFetch.length > 0) {
+      taFetchInProgressRef.current = true;
+      const fetchBatches = async () => {
+        for (let i = 0; i < needFetch.length; i += 20) {
+          const batch = needFetch.slice(i, i + 20);
+          try {
+            const ratings = await getTripAdvisorRatings(batch, searchQuery.destination);
             setTaRatings(prev => ({ ...prev, ...ratings }));
-            // Mark ALL names from this batch as fetched (even if API returned no data for them)
-            needFetch.slice(0, 20).forEach(name => fetchedTaHotelNamesRef.current.add(name));
-            // Cache the ratings in sessionStorage
+            batch.forEach(name => fetchedTaHotelNamesRef.current.add(name));
+            // Cache in sessionStorage
             try {
               const existing = sessionStorage.getItem(cacheKey);
               const merged = existing ? { ...JSON.parse(existing), ...ratings } : ratings;
               sessionStorage.setItem(cacheKey, JSON.stringify(merged));
-            } catch (e) { /* ignore cache errors */ }
-          })
-          .catch(err => console.error('TripAdvisor ratings error:', err));
-      } else {
-        // Mark all unfetched names as fetched (they were all in cache)
-        unfetchedNames.forEach(name => fetchedTaHotelNamesRef.current.add(name));
-      }
+            } catch (e) { /* ignore */ }
+          } catch (err) {
+            console.error('TripAdvisor ratings batch error:', err);
+            // Mark as fetched anyway to avoid retry loop
+            batch.forEach(name => fetchedTaHotelNamesRef.current.add(name));
+          }
+        }
+        taFetchInProgressRef.current = false;
+      };
+      fetchBatches();
     }
   }, [hotels, searchQuery.destination]);
 
   // Reset fetched TA names when destination changes
   useEffect(() => {
     fetchedTaHotelNamesRef.current = new Set();
+    taFetchInProgressRef.current = false;
     setTaRatings({});
   }, [searchQuery.destination]);
 

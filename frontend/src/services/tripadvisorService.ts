@@ -79,7 +79,7 @@ export const getTripAdvisorRatings = async (
                     hotelNames: namesParam,
                     city: city
                 },
-                timeout: 30000
+                timeout: 60000
             });
 
             if (response.data?.success && response.data?.data) {
