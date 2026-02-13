@@ -88,7 +88,7 @@ router.get('/popular-properties', async (req, res) => {
           language,
           enrichmentLimit: 0,
           refreshPrices: 0,
-          maxResults: 50 // Only enrich top 50 per city (we need ~5 five-star per city)
+          maxResults: 25 // Only enrich top 25 per city (we need ~5 five-star per city)
         });
 
         // Filter for enriched hotels
@@ -121,6 +121,46 @@ router.get('/popular-properties', async (req, res) => {
       .slice(0, 15);
 
     console.log(`✅ Popular properties: ${popularHotels.length} 5-star hotels from ${allHotels.length} total`);
+
+    // Enrich with TripAdvisor data from DB
+    try {
+      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+      // Group by city for efficient lookup
+      const hotelsByCity = {};
+      popularHotels.forEach(h => {
+        const city = h.city || 'Saudi Arabia';
+        if (!hotelsByCity[city]) hotelsByCity[city] = [];
+        hotelsByCity[city].push(h);
+      });
+
+      for (const [city, cityHotels] of Object.entries(hotelsByCity)) {
+        const names = cityHotels.map(h => h.name);
+        const taResults = await TripAdvisorHotel.findByNamesAndCity(names, city);
+
+        // Build lookup map by name_normalized and search_names
+        const taMap = {};
+        taResults.forEach(ta => {
+          taMap[ta.name_normalized] = ta;
+          if (ta.search_names) {
+            ta.search_names.forEach(alias => { taMap[alias] = ta; });
+          }
+        });
+
+        // Attach TA data to each hotel
+        cityHotels.forEach(h => {
+          const nameNorm = h.name.toLowerCase().trim();
+          const ta = taMap[nameNorm];
+          if (ta) {
+            h.tripadvisor_rating = ta.rating;
+            h.tripadvisor_num_reviews = ta.num_reviews;
+            h.tripadvisor_location_id = ta.location_id;
+            console.log(`   🏷️  TA enriched: "${h.name}" → ${ta.rating}/5, ${ta.num_reviews} reviews`);
+          }
+        });
+      }
+    } catch (taError) {
+      console.error('   ⚠️ TripAdvisor enrichment error (non-fatal):', taError.message);
+    }
 
     const responseData = { hotels: popularHotels };
 
@@ -283,6 +323,40 @@ router.get('/suggested', async (req, res) => {
 
     // Returns top 9 fully enriched hotels (frontend will show best 6 with prices)
     const suggestedHotels = enrichedHotels.slice(0, 9);
+
+    // Enrich with TripAdvisor data from DB
+    try {
+      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+      const hotelsByCity = {};
+      suggestedHotels.forEach(h => {
+        const c = h.city || destination || 'Saudi Arabia';
+        if (!hotelsByCity[c]) hotelsByCity[c] = [];
+        hotelsByCity[c].push(h);
+      });
+
+      for (const [c, cityHotels] of Object.entries(hotelsByCity)) {
+        const names = cityHotels.map(h => h.name);
+        const taResults = await TripAdvisorHotel.findByNamesAndCity(names, c);
+        const taMap = {};
+        taResults.forEach(ta => {
+          taMap[ta.name_normalized] = ta;
+          if (ta.search_names) {
+            ta.search_names.forEach(alias => { taMap[alias] = ta; });
+          }
+        });
+        cityHotels.forEach(h => {
+          const nameNorm = h.name.toLowerCase().trim();
+          const ta = taMap[nameNorm];
+          if (ta) {
+            h.tripadvisor_rating = ta.rating;
+            h.tripadvisor_num_reviews = ta.num_reviews;
+            h.tripadvisor_location_id = ta.location_id;
+          }
+        });
+      }
+    } catch (taError) {
+      console.error('   ⚠️ TripAdvisor enrichment error (non-fatal):', taError.message);
+    }
 
     const responseData = {
       hotels: suggestedHotels,

@@ -136,7 +136,14 @@ class TripAdvisorService {
     const existingHotels = await TripAdvisorHotel.findByNamesAndCity(hotelNames, city);
     const existingMap = {};
     existingHotels.forEach(h => {
+      // Index by name_normalized
       existingMap[h.name_normalized] = h;
+      // Also index by all search name aliases
+      if (h.search_names && h.search_names.length > 0) {
+        h.search_names.forEach(alias => {
+          existingMap[alias] = h;
+        });
+      }
     });
 
     const hotelsToFetch = [];
@@ -159,6 +166,14 @@ class TripAdvisorService {
           from_cache: true
         };
         console.log(`   📦 Cache hit: "${name}" → rating ${cached.rating}/5, ${cached.num_reviews} reviews`);
+
+        // Add this search name as alias if not already there
+        if (!cached.search_names || !cached.search_names.includes(nameNorm)) {
+          TripAdvisorHotel.updateOne(
+            { _id: cached._id },
+            { $addToSet: { search_names: nameNorm } }
+          ).catch(() => {});
+        }
       } else {
         hotelsToFetch.push(name);
       }
@@ -188,6 +203,11 @@ class TripAdvisorService {
             from_cache: true
           };
           console.log(`   📦 Fuzzy match: "${name}" → "${found.name}" (rating ${found.rating}/5, ${found.num_reviews} reviews)`);
+          // Save this name as alias for future lookups
+          TripAdvisorHotel.updateOne(
+            { _id: found._id },
+            { $addToSet: { search_names: name.toLowerCase().trim() } }
+          ).catch(() => {});
         } else {
           stillToFetch.push(name);
         }
@@ -284,7 +304,14 @@ class TripAdvisorService {
           }))
         };
 
-        const saved = await TripAdvisorHotel.create(hotelData);
+        const saved = await TripAdvisorHotel.findOneAndUpdate(
+          { location_id: locationId },
+          {
+            $set: hotelData,
+            $addToSet: { search_names: hotelName.toLowerCase().trim() }
+          },
+          { upsert: true, new: true }
+        );
         console.log(`   💾 Saved: "${hotelName}" → location_id=${locationId}, rating=${saved.rating}/5, ${saved.num_reviews} reviews`);
 
         results[hotelName] = {

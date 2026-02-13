@@ -7,7 +7,7 @@ import { HotelCard } from './HotelCard';
 import { useHistory } from 'react-router-dom';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
-import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
+import { TripAdvisorRating, getTripAdvisorRatings } from '../services/tripadvisorService';
 
 // Extend the base Hotel interface to include properties specific to suggestions
 interface ExtendedHotel extends Hotel {
@@ -19,6 +19,9 @@ interface ExtendedHotel extends Hotel {
   total_taxes?: number;
   taxes_currency?: string;
   isSearchedHotel?: boolean;
+  tripadvisor_rating?: number;
+  tripadvisor_num_reviews?: string;
+  tripadvisor_location_id?: string;
 }
 
 interface SuggestionResponse {
@@ -37,6 +40,28 @@ interface SuggestedHotelsProps {
 
 // Default city to show immediately (no waiting for geolocation)
 const DEFAULT_CITY = 'Makkah';
+
+// Build TripAdvisor ratings map from backend-enriched data (no extra API calls!)
+const buildTaRatingsFromBackend = (hotelList: ExtendedHotel[]): Record<string, TripAdvisorRating> => {
+  const ratings: Record<string, TripAdvisorRating> = {};
+  hotelList.forEach(h => {
+    if (h.tripadvisor_rating && h.name) {
+      ratings[h.name] = {
+        location_id: h.tripadvisor_location_id || '',
+        name: h.name,
+        rating: h.tripadvisor_rating,
+        num_reviews: h.tripadvisor_num_reviews || '0',
+        ranking: null,
+        price_level: null,
+        web_url: null,
+        rating_image_url: null,
+        reviews: [],
+        from_cache: true,
+      };
+    }
+  });
+  return ratings;
+};
 
 export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) => {
   const { t, i18n } = useTranslation('home');
@@ -74,6 +99,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
               setSource(cachedData.source);
               setDestinationName(cachedData.destination);
               if (cachedData.searchDates) setSearchDates(cachedData.searchDates);
+              setTaRatings(buildTaRatingsFromBackend(cachedData.hotels));
               setLoading(false);
               // Still re-fetch in background if cache > 5 min old
               if (age > 5 * 60 * 1000) {
@@ -115,6 +141,9 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
           setSearchDates(data.data.searchDates);
         }
 
+        // Build TA ratings from backend-enriched data (no extra API calls!)
+        setTaRatings(buildTaRatingsFromBackend(data.data.hotels));
+
         // Cache to sessionStorage for instant re-visits
         try {
           sessionStorage.setItem(cacheKey, JSON.stringify({
@@ -131,18 +160,6 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       setLoading(false);
     }
   }, [currency, i18n.language]);
-
-  // Fetch TripAdvisor ratings when hotels load
-  useEffect(() => {
-    if (hotels.length > 0 && destinationName) {
-      const hotelNames = hotels.filter(h => h.price && h.price > 0).slice(0, 8).map(h => h.name);
-      if (hotelNames.length > 0) {
-        getTripAdvisorRatings(hotelNames, destinationName)
-          .then(ratings => setTaRatings(ratings))
-          .catch(err => console.error('TripAdvisor ratings error:', err));
-      }
-    }
-  }, [hotels, destinationName]);
 
   // Notify parent when content has finished loading (first time only)
   useEffect(() => {
@@ -179,6 +196,32 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       fetchSuggestions(detectedCity);
     }
   }, [detectedCity]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fallback: fetch TripAdvisor ratings for hotels not enriched by backend
+  useEffect(() => {
+    if (hotels.length > 0) {
+      const unenriched = hotels.filter(h => !taRatings[h.name]);
+      if (unenriched.length === 0) return;
+
+      const hotelsByCity: Record<string, string[]> = {};
+      unenriched.forEach(h => {
+        const hotelCity = h.address?.split(',').pop()?.trim() || destinationName || 'Saudi Arabia';
+        if (!hotelsByCity[hotelCity]) hotelsByCity[hotelCity] = [];
+        hotelsByCity[hotelCity].push(h.name);
+      });
+
+      Object.entries(hotelsByCity).forEach(([city, names]) => {
+        getTripAdvisorRatings(names, city)
+          .then(ratings => {
+            if (Object.keys(ratings).length > 0) {
+              setTaRatings(prev => ({ ...prev, ...ratings }));
+            }
+          })
+          .catch(err => console.error('TripAdvisor fallback error:', err));
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotels]);
 
   // Re-fetch with same location when currency or language changes
   useEffect(() => {
