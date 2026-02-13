@@ -43,6 +43,8 @@ i18n
     .init({
         resources,
         fallbackLng: 'en',
+        supportedLngs: ['en', 'ar'],
+        nonExplicitSupportedLngs: true, // Maps "en-US", "en-GB" etc. → "en"
         defaultNS: 'common',
         ns: ['common', 'home', 'admin', 'searchResults', 'hotelDetails', 'booking'],
 

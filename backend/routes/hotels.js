@@ -87,7 +87,8 @@ router.get('/popular-properties', async (req, res) => {
           currency,
           language,
           enrichmentLimit: 0,
-          refreshPrices: 0
+          refreshPrices: 0,
+          maxResults: 50 // Only enrich top 50 per city (we need ~5 five-star per city)
         });
 
         // Filter for enriched hotels
@@ -244,7 +245,8 @@ router.get('/suggested', async (req, res) => {
           currency: currency,
           language: language,
           enrichmentLimit: 0, // Local DB enrichment - no limit needed
-          refreshPrices: 0 // DISABLED: Causes rate limiting with 20 parallel calls
+          refreshPrices: 0, // DISABLED: Causes rate limiting with 20 parallel calls
+          maxResults: 20 // Only enrich top 20 hotels (we return 9 max)
         });
       }
     } catch (error) {
