@@ -203,10 +203,16 @@ class TripAdvisorService {
             from_cache: true
           };
           console.log(`   📦 Fuzzy match: "${name}" → "${found.name}" (rating ${found.rating}/5, ${found.num_reviews} reviews)`);
-          // Save this name as alias for future lookups
+          // Update search_names AND city if needed (self-healing)
+          const updates = { $addToSet: { search_names: name.toLowerCase().trim() } };
+          if (found.city_normalized !== cityNorm) {
+            updates.$set = { city: city, city_normalized: cityNorm };
+            console.log(`   🔧 Auto-healing city for "${found.name}": "${found.city}" → "${city}"`);
+          }
+
           TripAdvisorHotel.updateOne(
             { _id: found._id },
-            { $addToSet: { search_names: name.toLowerCase().trim() } }
+            updates
           ).catch(() => {});
         } else {
           stillToFetch.push(name);
@@ -255,6 +261,19 @@ class TripAdvisorService {
             from_cache: true
           };
           console.log(`   📦 Location ID already in DB: "${hotelName}" → ${locationId}`);
+
+          // Self-healing: Update city and alias if they differ
+          const updates = { $addToSet: { search_names: hotelName.toLowerCase().trim() } };
+          if (existingByLocationId.city_normalized !== cityNorm) {
+            updates.$set = { city: city, city_normalized: cityNorm };
+            console.log(`   🔧 Auto-healing city for "${existingByLocationId.name}": "${existingByLocationId.city}" → "${city}"`);
+          }
+
+          TripAdvisorHotel.updateOne(
+            { _id: existingByLocationId._id },
+            updates
+          ).catch(() => {});
+
           continue;
         }
 
