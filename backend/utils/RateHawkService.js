@@ -1177,7 +1177,13 @@ class RateHawkService {
         // Batch lookup by normalized names + city
         const taHotels = await TripAdvisorHotel.findByNamesAndCity(hotelNames, cityForTA);
         const taMap = new Map();
-        taHotels.forEach(ta => taMap.set(ta.name_normalized, ta));
+        taHotels.forEach(ta => {
+          taMap.set(ta.name_normalized, ta);
+          // Also index by search name aliases for better matching
+          if (ta.search_names) {
+            ta.search_names.forEach(alias => taMap.set(alias, ta));
+          }
+        });
 
         let taEnrichedCount = 0;
         hotels.forEach(hotel => {

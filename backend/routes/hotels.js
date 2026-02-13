@@ -1320,6 +1320,44 @@ router.get('/search', async (req, res) => {
       }
     }
 
+    // Enrich ALL hotels with TripAdvisor data from DB (fast lookup, no API calls)
+    try {
+      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+      const hotelsByCity = {};
+      allHotels.forEach(h => {
+        const c = h.city || destination || 'Saudi Arabia';
+        if (!hotelsByCity[c]) hotelsByCity[c] = [];
+        hotelsByCity[c].push(h);
+      });
+
+      for (const [c, cityHotels] of Object.entries(hotelsByCity)) {
+        const names = cityHotels.map(h => h.name).filter(Boolean);
+        if (names.length === 0) continue;
+        const taResults = await TripAdvisorHotel.findByNamesAndCity(names, c);
+        const taMap = {};
+        taResults.forEach(ta => {
+          taMap[ta.name_normalized] = ta;
+          if (ta.search_names) {
+            ta.search_names.forEach(alias => { taMap[alias] = ta; });
+          }
+        });
+        cityHotels.forEach(h => {
+          if (!h.name) return;
+          const nameNorm = h.name.toLowerCase().trim();
+          const ta = taMap[nameNorm];
+          if (ta) {
+            h.tripadvisor_rating = ta.rating;
+            h.tripadvisor_num_reviews = ta.num_reviews;
+            h.tripadvisor_location_id = ta.location_id;
+          }
+        });
+      }
+      const enrichedCount = allHotels.filter(h => h.tripadvisor_rating).length;
+      console.log(`   🏷️ TripAdvisor enriched ${enrichedCount}/${allHotels.length} hotels from DB`);
+    } catch (taError) {
+      console.error('   ⚠️ TripAdvisor enrichment error (non-fatal):', taError.message);
+    }
+
     // Cache ALL results (not batches)
     hotelSearchCache.set(cacheKey, {
       hotels: allHotels,

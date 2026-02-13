@@ -424,29 +424,52 @@ export const HotelSearchResults: React.FC = () => {
   }, []);
 
   // Fetch TripAdvisor ratings when search results load (with sessionStorage cache)
+  // Tracks which hotel names have already been fetched to avoid re-fetching on scroll
+  const fetchedTaHotelNamesRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (hotels.length > 0 && searchQuery.destination) {
-      const hotelNames = hotels.slice(0, 20).map(h => h.name);
-      if (hotelNames.length > 0) {
-        // Check sessionStorage cache first
-        const cacheKey = `ta_ratings_${searchQuery.destination}`;
-        try {
-          const cached = sessionStorage.getItem(cacheKey);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            // Check if all requested hotels are already cached
-            const allCached = hotelNames.every(name => parsed[name]);
-            if (allCached) {
-              setTaRatings(prev => ({ ...prev, ...parsed }));
-              return;
-            }
-          }
-        } catch (e) { /* ignore cache errors */ }
+      // Find hotel names that haven't been fetched yet
+      const allHotelNames = hotels.map(h => h.name).filter(Boolean);
+      const unfetchedNames = allHotelNames.filter(name => !fetchedTaHotelNamesRef.current.has(name));
 
-        getTripAdvisorRatings(hotelNames, searchQuery.destination)
+      if (unfetchedNames.length === 0) return;
+
+      // Check sessionStorage cache first for unfetched names
+      const cacheKey = `ta_ratings_${searchQuery.destination}`;
+      let cachedRatings: Record<string, TripAdvisorRating> = {};
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          cachedRatings = JSON.parse(cached);
+        }
+      } catch (e) { /* ignore cache errors */ }
+
+      // Separate: names found in sessionStorage cache vs. names that need API fetch
+      const fromCache: Record<string, TripAdvisorRating> = {};
+      const needFetch: string[] = [];
+      for (const name of unfetchedNames) {
+        if (cachedRatings[name]) {
+          fromCache[name] = cachedRatings[name];
+        } else {
+          needFetch.push(name);
+        }
+      }
+
+      // Apply cached results immediately
+      if (Object.keys(fromCache).length > 0) {
+        setTaRatings(prev => ({ ...prev, ...fromCache }));
+        Object.keys(fromCache).forEach(name => fetchedTaHotelNamesRef.current.add(name));
+      }
+
+      // Fetch remaining from API (batch up to 20 at a time, the API limit)
+      if (needFetch.length > 0) {
+        getTripAdvisorRatings(needFetch.slice(0, 20), searchQuery.destination)
           .then(ratings => {
             setTaRatings(prev => ({ ...prev, ...ratings }));
-            // Cache the ratings
+            // Mark ALL names from this batch as fetched (even if API returned no data for them)
+            needFetch.slice(0, 20).forEach(name => fetchedTaHotelNamesRef.current.add(name));
+            // Cache the ratings in sessionStorage
             try {
               const existing = sessionStorage.getItem(cacheKey);
               const merged = existing ? { ...JSON.parse(existing), ...ratings } : ratings;
@@ -454,9 +477,18 @@ export const HotelSearchResults: React.FC = () => {
             } catch (e) { /* ignore cache errors */ }
           })
           .catch(err => console.error('TripAdvisor ratings error:', err));
+      } else {
+        // Mark all unfetched names as fetched (they were all in cache)
+        unfetchedNames.forEach(name => fetchedTaHotelNamesRef.current.add(name));
       }
     }
   }, [hotels, searchQuery.destination]);
+
+  // Reset fetched TA names when destination changes
+  useEffect(() => {
+    fetchedTaHotelNamesRef.current = new Set();
+    setTaRatings({});
+  }, [searchQuery.destination]);
 
   const handleToggleFavorite = (e: React.MouseEvent, hotel: Hotel) => {
     e.stopPropagation();
@@ -2925,12 +2957,24 @@ export const HotelSearchResults: React.FC = () => {
                         {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
-                          {Math.min(hotel.rating, 10).toFixed(1)}
-                        </span>
-                        <span className="text-xs text-gray-600">
-                          {getScoreText(hotel.rating, t)}
-                        </span>
+                        {(() => {
+                          const taR = taRatings[hotel.name];
+                          const backendTA = (hotel as any).tripadvisor_rating;
+                          const displayRating = taR?.rating || backendTA || null;
+                          const displayReviews = taR?.num_reviews || (hotel as any).tripadvisor_num_reviews || null;
+                          const effectiveRating = displayRating ? displayRating * 2 : hotel.rating;
+                          return (
+                            <>
+                              <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                                {Math.min(effectiveRating, 10).toFixed(1)}
+                              </span>
+                              <span className="text-xs text-gray-600">
+                                {getScoreText(effectiveRating, t)}
+                                {displayReviews ? ` (${Number(displayReviews).toLocaleString()})` : ''}
+                              </span>
+                            </>
+                          );
+                        })()}
                       </div>
                       {hotel.price && hotel.price > 0 && (
                         <div className="mt-1.5">
@@ -3017,10 +3061,20 @@ export const HotelSearchResults: React.FC = () => {
                           <div className="p-2">
                             <h4 className="font-bold text-sm text-blue-700">{hotel.name}</h4>
                             <div className="flex items-center gap-1 mt-1">
-                              <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
-                                {Math.min(hotel.rating, 10).toFixed(1)}
-                              </span>
-                              <span className="text-xs text-gray-600">{getScoreText(hotel.rating, t)}</span>
+                              {(() => {
+                                const taR = taRatings[hotel.name];
+                                const backendTA = (hotel as any).tripadvisor_rating;
+                                const displayRating = taR?.rating || backendTA || null;
+                                const effectiveRating = displayRating ? displayRating * 2 : hotel.rating;
+                                return (
+                                  <>
+                                    <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
+                                      {Math.min(effectiveRating, 10).toFixed(1)}
+                                    </span>
+                                    <span className="text-xs text-gray-600">{getScoreText(effectiveRating, t)}</span>
+                                  </>
+                                );
+                              })()}
                             </div>
                             {hotel.price && hotel.price > 0 && (
                               <div className="mt-2 font-bold">
@@ -3064,8 +3118,18 @@ export const HotelSearchResults: React.FC = () => {
                       <div className="p-3 flex-1 min-w-0 flex flex-col justify-center relative">
                          <h4 className="font-bold text-sm text-gray-900 truncate mb-1">{hotel.name}</h4>
                          <div className="flex items-center gap-1 mb-1">
-                            <span className="bg-blue-900 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{Math.min(hotel.rating, 10).toFixed(1)}</span>
-                            <span className="text-xs text-gray-500 truncate">{getScoreText(hotel.rating, t)}</span>
+                            {(() => {
+                              const taR = taRatings[hotel.name];
+                              const backendTA = (hotel as any).tripadvisor_rating;
+                              const displayRating = taR?.rating || backendTA || null;
+                              const effectiveRating = displayRating ? displayRating * 2 : hotel.rating;
+                              return (
+                                <>
+                                  <span className="bg-blue-900 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{Math.min(effectiveRating, 10).toFixed(1)}</span>
+                                  <span className="text-xs text-gray-500 truncate">{getScoreText(effectiveRating, t)}</span>
+                                </>
+                              );
+                            })()}
                          </div>
                          <div className="flex items-center justify-between mt-auto">
                             <div className="font-bold text-[#E67915] text-lg leading-none">
