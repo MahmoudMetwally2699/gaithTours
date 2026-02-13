@@ -21,7 +21,11 @@ interface ExtendedHotel extends Hotel {
   tripadvisor_location_id?: string;
 }
 
-export const PopularProperties: React.FC = () => {
+interface PopularPropertiesProps {
+  onLoaded?: () => void;
+}
+
+export const PopularProperties: React.FC<PopularPropertiesProps> = ({ onLoaded }) => {
   const { t, i18n } = useTranslation('home');
   const history = useHistory();
   const { currency } = useCurrency();
@@ -29,6 +33,7 @@ export const PopularProperties: React.FC = () => {
   const [hotels, setHotels] = useState<ExtendedHotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [taRatings, setTaRatings] = useState<Record<string, TripAdvisorRating>>({});
+  const hasNotifiedLoaded = useRef(false);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -115,6 +120,16 @@ export const PopularProperties: React.FC = () => {
     return () => abortController.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency, i18n.language]);
+
+  // Notify parent when content has finished loading
+  useEffect(() => {
+    if (!loading && !hasNotifiedLoaded.current && onLoaded) {
+      hasNotifiedLoaded.current = true;
+      requestAnimationFrame(() => {
+        onLoaded();
+      });
+    }
+  }, [loading, onLoaded]);
 
   // Fallback: fetch TripAdvisor ratings for hotels not enriched by backend
   useEffect(() => {
