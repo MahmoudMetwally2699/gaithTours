@@ -11,18 +11,11 @@ import { Preloader } from '../components/Preloader';
 import { LazySection } from '../components/LazySection';
 
 export const Home: React.FC = () => {
-  const [suggestedLoaded, setSuggestedLoaded] = useState(false);
-  const [popularLoaded, setPopularLoaded] = useState(false);
+  const [isContentLoaded, setIsContentLoaded] = useState(false);
 
-  const isContentLoaded = suggestedLoaded && popularLoaded;
-
-  // Callbacks for each section
-  const handleSuggestedLoaded = useCallback(() => {
-    setSuggestedLoaded(true);
-  }, []);
-
-  const handlePopularLoaded = useCallback(() => {
-    setPopularLoaded(true);
+  // Callback to be called when SuggestedHotels finishes loading
+  const handleContentLoaded = useCallback(() => {
+    setIsContentLoaded(true);
   }, []);
 
   return (
@@ -31,9 +24,11 @@ export const Home: React.FC = () => {
       <div className="flex flex-col min-h-screen overflow-x-clip">
         <MainSection />
         <ForNewUsers />
-        <SuggestedHotels onLoaded={handleSuggestedLoaded} />
+        <SuggestedHotels onLoaded={handleContentLoaded} />
         <OffersBanner />
-        <PopularProperties onLoaded={handlePopularLoaded} />
+        <LazySection height="400px" skeleton="hotel-cards">
+          <PopularProperties />
+        </LazySection>
         <LazySection height="350px" skeleton="city-cards">
           <PopularCities />
         </LazySection>

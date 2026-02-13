@@ -6,7 +6,6 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
 const { initializeSocket } = require('./socket');
-const cacheWarmer = require('./utils/cacheWarmer');
 require('dotenv').config();
 
 const app = express();
@@ -421,9 +420,5 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
       console.log('🌡️  Starting cache warmer...');
       cacheWarmer.startPeriodicWarmup();
     }
-
-    // Always start home page cache warmup (persists to MongoDB)
-    console.log('🏠 Starting home page cache warmer...');
-    cacheWarmer.startHomePageWarmup();
   });
 }
