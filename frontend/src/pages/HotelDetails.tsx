@@ -129,6 +129,14 @@ interface RoomRate {
   taxes?: any[];
   cancellation_details?: any;
   daily_prices?: string[];
+  amenities_data?: string[];
+  room_data_trans?: {
+    main_room_type?: string;
+    main_name?: string;
+    bathroom?: string | null;
+    bedding_type?: string | null;
+    misc_room_type?: string | null;
+  };
 }
 
 const getResizedImageUrl = (url: string, size: string = '1024x768') => {

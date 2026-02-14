@@ -84,12 +84,21 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
                  </div>
              </div>
 
-            {/* Hotel name - fix RTL truncation */}
+            {/* Hotel name */}
             <h3
-              className="text-sm sm:text-base font-bold text-[#FF8C00] truncate pr-1 md:pr-2"
-              style={{ direction: 'ltr', textAlign: 'start' }}
+              className="text-sm sm:text-base font-bold text-[#FF8C00] pr-1 md:pr-2 overflow-hidden"
+              style={{
+                direction: isRTL && (hotel as any).nameAr ? 'rtl' : 'ltr',
+                textAlign: isRTL && (hotel as any).nameAr ? 'right' : 'left',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical' as const,
+                lineHeight: '1.3',
+                maxHeight: '2.6em',
+              }}
+              title={(isRTL && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}
             >
-              {(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}
+              {(isRTL && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}
             </h3>
 
             {/* Stars */}

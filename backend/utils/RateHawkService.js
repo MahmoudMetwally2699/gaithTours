@@ -1675,15 +1675,27 @@ class RateHawkService {
          MarginRule.updateOne({ _id: matchingRule._id }, { $inc: { appliedCount: 1 } }).catch(() => {});
       }
 
-      // Apply the same margin percentage to taxes for display
+      // Apply the same margin percentage to BOOKING taxes only (NOT pay-at-hotel taxes)
       const marginMultiplier = marginBase > 0 ? priceResult.finalPrice / marginBase : 1;
-      const displayTaxes = totalTaxes > 0 ? Math.round(totalTaxes * marginMultiplier) : 0;
+
+      // Separate pay-at-hotel taxes (no margin) from booking taxes (margin applied)
+      const payAtHotelTaxesTotal = taxData?.taxes
+        ? taxData.taxes
+            .filter(tax => !tax.included_by_supplier)
+            .reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0)
+        : 0;
+      const bookingTaxesTotal = totalTaxes - payAtHotelTaxesTotal;
+      // Display taxes = margin-adjusted booking taxes + original pay-at-hotel taxes
+      const displayTaxes = (bookingTaxesTotal > 0 ? Math.round(bookingTaxesTotal * marginMultiplier) : 0) + Math.round(payAtHotelTaxesTotal);
 
       // Debug: Log tax transformation for first rate
       if (hotelData.rates.indexOf(rate) === 0) {
-        console.log(`   🧾 Tax margin: marginMultiplier=${marginMultiplier.toFixed(4)}, originalTaxes=${totalTaxes}, displayTaxes=${displayTaxes}`);
+        console.log(`   🧾 Tax margin: marginMultiplier=${marginMultiplier.toFixed(4)}, originalTaxes=${totalTaxes}, bookingTaxes=${bookingTaxesTotal}, payAtHotelTaxes=${payAtHotelTaxesTotal}, displayTaxes=${displayTaxes}`);
         if (taxData?.taxes) {
-          taxData.taxes.forEach(t => console.log(`      ${t.name}: $${t.amount} → $${(parseFloat(t.amount) * marginMultiplier).toFixed(2)}`));
+          taxData.taxes.forEach(t => {
+            const isPayAtHotel = !t.included_by_supplier;
+            console.log(`      ${t.name}: $${t.amount} → $${isPayAtHotel ? t.amount + ' (pay-at-hotel, no margin)' : (parseFloat(t.amount) * marginMultiplier).toFixed(2)}`);
+          });
         }
       }
 
@@ -1709,24 +1721,28 @@ class RateHawkService {
           isDefault: marginInfo.isDefault
         },
 
-        // Tax Data - ensure each tax has the correct currency AND margin applied
+        // Tax Data - ensure each tax has the correct currency AND margin applied (only to booking taxes)
         total_taxes: displayTaxes,
         taxes_currency: paymentType?.show_currency_code || currency,
-        // Map taxes to use the correct currency for display AND apply margin to amounts
+        // Map taxes to use the correct currency for display AND apply margin ONLY to booking taxes
         tax_data: taxData ? (() => {
           const mappedTaxes = taxData.taxes?.map(tax => {
             const originalAmount = parseFloat(tax.amount || 0);
-            const adjustedAmount = Math.round(originalAmount * marginMultiplier * 100) / 100;
+            const isPayAtHotel = !tax.included_by_supplier;
+            // Only apply margin to booking taxes, NOT pay-at-hotel taxes
+            const adjustedAmount = isPayAtHotel
+              ? Math.round(originalAmount * 100) / 100
+              : Math.round(originalAmount * marginMultiplier * 100) / 100;
 
             // Debug log for first rate
             if (hotelData.rates.indexOf(rate) === 0) {
-              console.log(`      📊 Tax mapping: ${tax.name}: original=${originalAmount} → adjusted=${adjustedAmount} (multiplier=${marginMultiplier.toFixed(4)})`);
+              console.log(`      📊 Tax mapping: ${tax.name}: original=${originalAmount} → adjusted=${adjustedAmount} (${isPayAtHotel ? 'pay-at-hotel, NO margin' : `multiplier=${marginMultiplier.toFixed(4)}`})`);
             }
 
             return {
               ...tax,
               amount: adjustedAmount, // Return as number, not string
-              currency: paymentType?.currency_code || currency
+              currency: isPayAtHotel ? (tax.currency_code || tax.currency || paymentType?.currency_code || currency) : (paymentType?.currency_code || currency)
             };
           }) || [];
 
@@ -1735,13 +1751,18 @@ class RateHawkService {
             taxes: mappedTaxes
           };
         })() : null,
-        // Also provide a simplified taxes array with margin applied
-        taxes: taxData?.taxes?.map(tax => ({
-          name: tax.name,
-          amount: Math.round(parseFloat(tax.amount || 0) * marginMultiplier * 100) / 100,
-          currency: paymentType?.currency_code || currency,
-          included: tax.included_by_supplier || false
-        })) || [],
+        // Also provide a simplified taxes array with margin applied only to booking taxes
+        taxes: taxData?.taxes?.map(tax => {
+          const isPayAtHotel = !tax.included_by_supplier;
+          return {
+            name: tax.name,
+            amount: isPayAtHotel
+              ? Math.round(parseFloat(tax.amount || 0) * 100) / 100
+              : Math.round(parseFloat(tax.amount || 0) * marginMultiplier * 100) / 100,
+            currency: isPayAtHotel ? (tax.currency_code || tax.currency || paymentType?.currency_code || currency) : (paymentType?.currency_code || currency),
+            included: tax.included_by_supplier || false
+          };
+        }) || [],
 
         // Policies
         is_free_cancellation: isFreeCancellation,
@@ -1870,6 +1891,10 @@ class RateHawkService {
         requires_prepayment: paymentType?.type === 'now',
         requires_credit_card: paymentType?.is_need_credit_card_data || false,
         requires_cvc: paymentType?.is_need_cvc || false,
+
+        // Room distinguishing attributes (smoking, accessible, bed type guarantee, etc.)
+        amenities_data: rate.amenities_data || [],
+        room_data_trans: rate.room_data_trans || null,
 
         // Legacy amenities field
         amenities: rate.amenities_data || []

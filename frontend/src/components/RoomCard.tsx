@@ -63,6 +63,14 @@ interface RoomRate {
   };
   cancellation_details?: any;
   daily_prices?: string[];
+  amenities_data?: string[];
+  room_data_trans?: {
+    main_room_type?: string;
+    main_name?: string;
+    bathroom?: string | null;
+    bedding_type?: string | null;
+    misc_room_type?: string | null;
+  };
 }
 
 interface RoomCardProps {
@@ -115,6 +123,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       meal: rate.meal,
       cancellation: rate.is_free_cancellation,
       prepayment: rate.requires_prepayment,
+      amenities_data: (rate.amenities_data || []).sort(),
     });
   };
 
@@ -167,6 +176,68 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     return <CheckIcon className="w-4 h-4" />;
   };
 
+  /**
+   * Get room attribute tags from amenities_data and room_data_trans
+   * These distinguish rooms: non-smoking, smoking, handicap accessible, bedding type, etc.
+   */
+  const getRoomTags = (rate: RoomRate): Array<{ label: string; icon: 'no-smoking' | 'smoking' | 'accessible' | 'bed' | 'info'; color: string }> => {
+    const tags: Array<{ label: string; icon: 'no-smoking' | 'smoking' | 'accessible' | 'bed' | 'info'; color: string }> = [];
+    const amenities = rate.amenities_data || [];
+    const trans = rate.room_data_trans;
+
+    // Smoking / Non-smoking
+    if (amenities.includes('non-smoking')) {
+      tags.push({ label: t('common:hotels.nonSmoking', 'Non-smoking'), icon: 'no-smoking', color: 'text-green-700' });
+    } else if (amenities.includes('smoking')) {
+      tags.push({ label: t('common:hotels.smokingRoom', 'Smoking'), icon: 'smoking', color: 'text-amber-600' });
+    }
+
+    // Handicap accessible
+    if (amenities.includes('accessible')) {
+      tags.push({ label: t('common:hotels.handicapAccessible', 'Handicap accessible'), icon: 'accessible', color: 'text-blue-600' });
+    }
+
+    // Bed type not guaranteed
+    if (amenities.includes('not-guaranteed')) {
+      tags.push({ label: t('common:hotels.bedTypeNotGuaranteed', 'Bed type is subject to availability'), icon: 'info', color: 'text-gray-500' });
+    }
+
+    // Bedding type from room_data_trans
+    if (trans?.bedding_type) {
+      const beddingLabel = trans.bedding_type.charAt(0).toUpperCase() + trans.bedding_type.slice(1);
+      tags.push({ label: beddingLabel, icon: 'bed', color: 'text-gray-600' });
+    }
+
+    return tags;
+  };
+
+  const renderTagIcon = (icon: string) => {
+    switch (icon) {
+      case 'no-smoking':
+        return <NoSymbolIcon className="w-3.5 h-3.5 flex-shrink-0" />;
+      case 'smoking':
+        return (
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 3v4m0 4v10M7 3v4m0 4v10M3 21h18M3 7h18" />
+          </svg>
+        );
+      case 'accessible':
+        return (
+          <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2a2 2 0 100 4 2 2 0 000-4zm-1 6a1 1 0 00-1 1v3H7a1 1 0 000 2h3v2.586l-2.707 2.707a1 1 0 001.414 1.414L12 17.414l3.293 3.293a1 1 0 001.414-1.414L14 16.586V14h3a1 1 0 000-2h-3V9a1 1 0 00-1-1h-2z" />
+          </svg>
+        );
+      case 'bed':
+        return (
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10M21 7v10M3 12h18M7 7v5m10-5v5" />
+          </svg>
+        );
+      default:
+        return <InformationCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />;
+    }
+  };
+
   const renderTaxTooltip = (rate: RoomRate, isMobile = false) => {
     if (!rate.total_taxes || rate.total_taxes <= 0) {
       if (!rate.tax_data?.taxes?.length) {
@@ -181,7 +252,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     const allTaxes = rate.tax_data?.taxes || [];
     const payAtHotelTaxes = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
     const payAtHotelTotal = payAtHotelTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
+    const payAtHotelCurrency = payAtHotelTaxes.length > 0 ? (payAtHotelTaxes[0].currency_code || payAtHotelTaxes[0].currency) : undefined;
     const paidAtBookingTotal = (rate.total_taxes || 0) - payAtHotelTotal;
+    // Taxes shown on the summary line and total should EXCLUDE pay-at-hotel taxes
+    const displayTaxes = Math.round(paidAtBookingTotal > 0 ? paidAtBookingTotal : (rate.total_taxes || 0) - payAtHotelTotal);
 
     const isRTL = i18n.language === 'ar';
     const tooltipPosition = isRTL ? 'left-0' : 'right-0';
@@ -191,7 +265,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
     return (
       <div className={`text-[10px] md:text-xs text-gray-500 mt-1 relative group cursor-help w-fit ${isMobile ? 'ml-auto' : ''}`}>
          <span className="border-b border-dotted border-gray-400">
-           +{formatPrice(Math.round(rate.total_taxes || 0))} {t('common:hotels.taxesAndFees', 'taxes')}
+           +{formatPrice(displayTaxes)} {t('common:hotels.taxesAndFees', 'taxes')}
          </span>
 
          <div className={`absolute bottom-full mb-2 w-64 bg-white shadow-xl rounded-lg p-3 text-xs z-50 invisible group-hover:visible border border-gray-200 ${textAlign} ${tooltipPosition}`}>
@@ -209,9 +283,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                )}
 
                {payAtHotelTotal > 0 && (
-                   <div className="flex justify-between text-gray-600">
+                   <div className="flex justify-between text-orange-600">
                        <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes')} ({t('common:hotels.payAtHotel', 'Pay at Hotel')})</span>
-                       <span className="whitespace-nowrap">+{formatPrice(payAtHotelTotal)}</span>
+                       <span className="whitespace-nowrap">+{formatPrice(payAtHotelTotal, payAtHotelCurrency)}</span>
                    </div>
                )}
 
@@ -222,7 +296,12 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                    </div>
                )}
 
-               <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>{t('common:hotels.total', 'Total')}:</span> <span>{formatPrice(Number(rate.price) + (rate.total_taxes || 0))}</span></div>
+               <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>{t('common:hotels.total', 'Total')}:</span> <span>{formatPrice(Number(rate.price) + displayTaxes)}</span></div>
+               {payAtHotelTotal > 0 && (
+                   <div className="flex justify-between text-[10px] text-orange-500 italic">
+                       <span>+ {formatPrice(payAtHotelTotal, payAtHotelCurrency)} {t('common:hotels.payAtHotel', 'Pay at Hotel')}</span>
+                   </div>
+               )}
             </div>
          </div>
       </div>
@@ -354,6 +433,27 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                     <div className="flex items-center text-sm text-green-700 mb-1.5">
                       <CheckCircleIcon className="w-4 h-4 mr-1.5 flex-shrink-0" />
                       <span>{t('common:hotels.payAtProperty', 'No prepayment needed')}</span>
+                    </div>
+                  )}
+
+                  {/* Room attribute tags: smoking, accessible, bed type, etc. */}
+                  {getRoomTags(rate).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                      {getRoomTags(rate).map((tag, tagIdx) => (
+                        <span
+                          key={tagIdx}
+                          className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${
+                            tag.icon === 'accessible' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                            tag.icon === 'smoking' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                            tag.icon === 'no-smoking' ? 'bg-green-50 border-green-200 text-green-700' :
+                            tag.icon === 'bed' ? 'bg-gray-50 border-gray-200 text-gray-600' :
+                            'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {renderTagIcon(tag.icon)}
+                          {tag.label}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -508,6 +608,27 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                     <div className="flex items-center text-sm text-gray-500">
                       <InformationCircleIcon className="w-4 h-4 mr-1" />
                       {t('common:hotels.nonRefundable', 'Non-refundable')}
+                    </div>
+                  )}
+
+                  {/* Room attribute tags (mobile) */}
+                  {getRoomTags(rate).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {getRoomTags(rate).map((tag, tagIdx) => (
+                        <span
+                          key={tagIdx}
+                          className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full border ${
+                            tag.icon === 'accessible' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                            tag.icon === 'smoking' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                            tag.icon === 'no-smoking' ? 'bg-green-50 border-green-200 text-green-700' :
+                            tag.icon === 'bed' ? 'bg-gray-50 border-gray-200 text-gray-600' :
+                            'bg-gray-50 border-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {renderTagIcon(tag.icon)}
+                          {tag.label}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
