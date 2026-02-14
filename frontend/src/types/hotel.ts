@@ -4,6 +4,7 @@ export interface Hotel {
     id: string;
     hid?: number; // Numeric hotel ID from RateHawk
     name: string;
+    nameAr?: string; // Arabic name (set by admin)
     address: string;
     city?: string; // Optional - from Content API region.name
     country?: string; // Optional - not reliable in Content API

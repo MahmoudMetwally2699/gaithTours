@@ -195,6 +195,7 @@ export const HotelDetails: React.FC = () => {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const hasUserTyped = useRef(false);
+  const searchNameRef = useRef<string>(''); // English name for search when Arabic is displayed
   const [editableDestination, setEditableDestination] = useState('');
 
   // Mobile Date Modal State
@@ -276,7 +277,9 @@ export const HotelDetails: React.FC = () => {
   }, [showAutocomplete]);
 
   const handleSelectSuggestion = (suggestion: any) => {
-    setEditableDestination(suggestion.name);
+    const displayName = (i18n.language === 'ar' && suggestion.nameAr) ? suggestion.nameAr : suggestion.name;
+    setEditableDestination(displayName);
+    searchNameRef.current = suggestion.name; // Store English name for search
     setShowAutocomplete(false);
   };
 
@@ -340,8 +343,10 @@ export const HotelDetails: React.FC = () => {
     const params = new URLSearchParams();
 
     // Update destination if changed in editable field
-    if (editableDestination) {
-      params.set('destination', editableDestination);
+    const searchDest = searchNameRef.current || editableDestination;
+    searchNameRef.current = ''; // Reset after use
+    if (searchDest) {
+      params.set('destination', searchDest);
     } else {
         params.set('destination', bookingParams.destination || '');
     }
@@ -447,6 +452,7 @@ export const HotelDetails: React.FC = () => {
           id: hotelData.id || hotelId,
           hid: hotelData.hid, // Numeric hotel ID for API calls (fetching contact info, etc.)
           name: hotelData.name || t('hotelDetails:hotel.nameUnavailable', 'Hotel Name Not Available'),
+          nameAr: hotelData.nameAr || null,
           address: hotelData.address || t('hotelDetails:location.addressUnavailable', 'Address not available'),
           city: hotelData.city || bookingParams.destination || '',
           country: hotelData.country || t('hotelDetails:location.saudiArabia', 'Saudi Arabia'),
@@ -775,7 +781,7 @@ export const HotelDetails: React.FC = () => {
                                       <div className="px-3 py-1 text-xs font-bold text-gray-400 uppercase mt-2">{t('hotelDetails:location.hotels', 'Hotels')}</div>
                                       {autocompleteResults.hotels.map(h => (
                                         <button key={h.id} onClick={() => handleSelectSuggestion(h)} className="w-full text-left px-3 py-2 hover:bg-orange-50 rounded-lg text-gray-800 text-sm font-medium flex items-center gap-2">
-                                          <BuildingOffice2Icon className="w-4 h-4 text-gray-500" /> {h.name}
+                                          <BuildingOffice2Icon className="w-4 h-4 text-gray-500" /> {(i18n.language === 'ar' && h.nameAr) ? h.nameAr : h.name}
                                         </button>
                                       ))}
                                     </>
@@ -1028,7 +1034,7 @@ export const HotelDetails: React.FC = () => {
                                     {autocompleteResults.hotels.map(h => (
                                        <div key={h.id} onClick={() => handleSelectSuggestion(h)} className="p-3 border-b border-gray-100 flex items-center gap-3 active:bg-orange-50">
                                           <BuildingOffice2Icon className="w-5 h-5 text-gray-400" />
-                                          <div className="text-sm font-bold text-gray-900">{h.name}</div>
+                                          <div className="text-sm font-bold text-gray-900">{(i18n.language === 'ar' && h.nameAr) ? h.nameAr : h.name}</div>
                                        </div>
                                     ))}
                                   </div>
@@ -1150,7 +1156,7 @@ export const HotelDetails: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start mb-4 md:mb-6">
            <div className="flex-1">
               <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 mb-2 md:mb-1">
-                 <h1 className="text-2xl md:text-3xl font-bold text-orange-500 leading-tight">{hotel.name}</h1>
+                 <h1 className="text-2xl md:text-3xl font-bold text-orange-500 leading-tight">{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</h1>
                  <div className="flex items-center mt-1 md:mt-0">{renderStars((hotel as any).propertyClass || Math.round((hotel.rating || 0) / 2))}</div>
               </div>
 
@@ -1866,7 +1872,7 @@ export const HotelDetails: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <div>
-                 <h3 className="text-xl font-bold text-gray-900">{hotel.name}</h3>
+                 <h3 className="text-xl font-bold text-gray-900">{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</h3>
                  <p className="text-sm text-gray-500">{hotel.address}</p>
               </div>
               <button

@@ -89,7 +89,7 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
               className="text-sm sm:text-base font-bold text-[#FF8C00] truncate pr-1 md:pr-2"
               style={{ direction: 'ltr', textAlign: 'start' }}
             >
-              {hotel.name}
+              {(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}
             </h3>
 
             {/* Stars */}

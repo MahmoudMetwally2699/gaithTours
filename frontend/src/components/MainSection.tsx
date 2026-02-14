@@ -22,6 +22,7 @@ import dayjs from 'dayjs';
 interface AutocompleteSuggestion {
   id: string | number;
   name: string;
+  nameAr?: string;
   type: string;
   hid?: number;
   country_code?: string;
@@ -54,6 +55,7 @@ export const MainSection: React.FC = () => {
   const datePickerRef = useRef<HTMLDivElement>(null);
   const guestPickerRef = useRef<HTMLDivElement>(null);
   const autocompleteRef = useRef<HTMLDivElement>(null);
+  const searchNameRef = useRef<string>(''); // English name for search when Arabic is displayed
 
   // Autocomplete State
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({ hotels: [], regions: [] });
@@ -166,7 +168,10 @@ export const MainSection: React.FC = () => {
   // Handle autocomplete selection
   const handleSelectSuggestion = (suggestion: AutocompleteSuggestion) => {
     hasUserTyped.current = false; // Reset so dropdown doesn't show on focus
-    setDestination(suggestion.name);
+    const displayName = (i18n.language === 'ar' && suggestion.nameAr) ? suggestion.nameAr : suggestion.name;
+    setDestination(displayName);
+    // Store English name for search URL so RateHawk can find it
+    searchNameRef.current = suggestion.name;
     setShowAutocomplete(false);
     setAutocompleteResults({ hotels: [], regions: [] }); // Clear results
     // Auto-open date picker after hotel selection
@@ -228,14 +233,17 @@ export const MainSection: React.FC = () => {
       }
     }
 
+    // Use stored English name if available (from autocomplete selection), otherwise use typed text
+    const searchDest = searchNameRef.current || destination;
+    searchNameRef.current = ''; // Reset after use
     const queryParams = new URLSearchParams({
-      destination,
+      destination: searchDest,
       checkIn: checkInDate ? dayjs(checkInDate).format('YYYY-MM-DD') : '',
       checkOut: checkOutDate ? dayjs(checkOutDate).format('YYYY-MM-DD') : '',
       rooms: guests.rooms.toString(),
       adults: guests.adults.toString(),
       children: guests.childrenAges.length > 0 ? guests.childrenAges.join(',') : '',
-      language: /[\u0600-\u06FF]/.test(destination) ? 'ar' : i18n.language
+      language: /[\u0600-\u06FF]/.test(searchDest) ? 'ar' : i18n.language
     });
     history.push(`/hotels/search?${queryParams.toString()}`);
   };
@@ -457,7 +465,7 @@ export const MainSection: React.FC = () => {
                                 >
                                   <BuildingOffice2Icon className="w-4 h-4 md:w-5 md:h-5 text-gray-500 flex-shrink-0" />
                                   <div className="min-w-0 flex-1">
-                                    <p className="text-gray-800 font-medium text-sm md:text-base truncate">{hotel.name}</p>
+                                    <p className="text-gray-800 font-medium text-sm md:text-base truncate">{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</p>
                                     <p className="text-xs text-gray-400">Hotel</p>
                                   </div>
                                 </button>

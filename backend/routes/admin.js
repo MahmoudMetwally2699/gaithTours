@@ -853,6 +853,288 @@ router.get('/hotel-contact/:hotelId', protect, admin, async (req, res) => {
   }
 });
 
+// ============ HOTEL ARABIC NAMES MANAGEMENT ============
+const HotelContent = require('../models/HotelContent');
+
+/**
+ * @route   GET /api/admin/hotel-arabic-names/search
+ * @desc    Search hotels by name for Arabic name assignment
+ * @access  Admin
+ */
+router.get('/hotel-arabic-names/search', protect, admin, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 2) {
+      return errorResponse(res, 'Search query must be at least 2 characters', 400);
+    }
+
+    // Search by name (English) or nameAr (Arabic) or hid
+    const searchQuery = q.trim();
+    let hotels = [];
+
+    const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    if (/^\d+$/.test(searchQuery)) {
+      // Numeric search - search by hid (indexed, fast)
+      hotels = await HotelContent.find({ hid: parseInt(searchQuery) })
+        .select('hid hotelId name nameAr city country starRating mainImage')
+        .limit(20)
+        .maxTimeMS(10000)
+        .lean();
+    } else {
+      // Strategy 1: Prefix search on name index (name:1 index supports ^prefix efficiently)
+      hotels = await HotelContent.find({
+        name: { $regex: `^${escapedQuery}`, $options: 'i' }
+      })
+        .select('hid hotelId name nameAr city country starRating mainImage')
+        .limit(20)
+        .maxTimeMS(10000)
+        .lean();
+
+      // Strategy 2: If no results from prefix, try nameAr search (indexed field)
+      if (hotels.length === 0) {
+        hotels = await HotelContent.find({
+          nameAr: { $regex: escapedQuery, $options: 'i' }
+        })
+          .select('hid hotelId name nameAr city country starRating mainImage')
+          .limit(20)
+          .maxTimeMS(10000)
+          .lean();
+      }
+    }
+
+    const formatted = hotels.map(h => ({
+      hid: h.hid,
+      hotelId: h.hotelId,
+      name: h.name,
+      nameAr: h.nameAr || '',
+      city: h.city || '',
+      country: h.country || '',
+      starRating: h.starRating || 0,
+      image: h.mainImage?.replace('{size}', '240x240') || null
+    }));
+
+    successResponse(res, { hotels: formatted }, 'Hotels found');
+  } catch (error) {
+    console.error('Hotel Arabic name search error:', error);
+    errorResponse(res, 'Failed to search hotels', 500);
+  }
+});
+
+/**
+ * @route   GET /api/admin/hotel-arabic-names/with-arabic
+ * @desc    Get all hotels that have Arabic names assigned
+ * @access  Admin
+ */
+router.get('/hotel-arabic-names/with-arabic', protect, admin, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+
+    const hotels = await HotelContent.find({
+      nameAr: { $exists: true, $ne: null, $ne: '' }
+    })
+      .select('hid hotelId name nameAr city country starRating mainImage')
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const total = await HotelContent.countDocuments({
+      nameAr: { $exists: true, $ne: null, $ne: '' }
+    });
+
+    const formatted = hotels.map(h => ({
+      hid: h.hid,
+      hotelId: h.hotelId,
+      name: h.name,
+      nameAr: h.nameAr || '',
+      city: h.city || '',
+      country: h.country || '',
+      starRating: h.starRating || 0,
+      image: h.mainImage?.replace('{size}', '240x240') || null
+    }));
+
+    successResponse(res, { hotels: formatted, total }, 'Hotels with Arabic names retrieved');
+  } catch (error) {
+    console.error('Get Arabic named hotels error:', error);
+    errorResponse(res, 'Failed to get hotels with Arabic names', 500);
+  }
+});
+
+/**
+ * @route   PUT /api/admin/hotel-arabic-names/:hid
+ * @desc    Set or update Arabic name for a hotel
+ * @access  Admin
+ */
+router.put('/hotel-arabic-names/:hid', protect, admin, async (req, res) => {
+  try {
+    const hid = parseInt(req.params.hid);
+    const { nameAr } = req.body;
+
+    if (!hid || isNaN(hid)) {
+      return errorResponse(res, 'Valid hotel HID is required', 400);
+    }
+
+    if (!nameAr || nameAr.trim().length < 2) {
+      return errorResponse(res, 'Arabic name must be at least 2 characters', 400);
+    }
+
+    const hotel = await HotelContent.findOneAndUpdate(
+      { hid },
+      { nameAr: nameAr.trim() },
+      { new: true }
+    );
+
+    if (!hotel) {
+      return errorResponse(res, 'Hotel not found', 404);
+    }
+
+    // Trigger searchText regeneration
+    hotel.searchText = [
+      hotel.name,
+      hotel.nameAr,
+      hotel.address,
+      hotel.city,
+      hotel.country,
+      hotel.amenities?.join(' ')
+    ].filter(Boolean).join(' ');
+    await hotel.save();
+
+    console.log(`✅ Arabic name set for HID ${hid}: "${nameAr}"`);
+
+    successResponse(res, {
+      hid: hotel.hid,
+      name: hotel.name,
+      nameAr: hotel.nameAr
+    }, 'Arabic name saved successfully');
+  } catch (error) {
+    console.error('Set Arabic name error:', error);
+    errorResponse(res, 'Failed to save Arabic name', 500);
+  }
+});
+
+/**
+ * @route   DELETE /api/admin/hotel-arabic-names/:hid
+ * @desc    Remove Arabic name from a hotel
+ * @access  Admin
+ */
+router.delete('/hotel-arabic-names/:hid', protect, admin, async (req, res) => {
+  try {
+    const hid = parseInt(req.params.hid);
+
+    if (!hid || isNaN(hid)) {
+      return errorResponse(res, 'Valid hotel HID is required', 400);
+    }
+
+    const hotel = await HotelContent.findOneAndUpdate(
+      { hid },
+      { $unset: { nameAr: '' } },
+      { new: true }
+    );
+
+    if (!hotel) {
+      return errorResponse(res, 'Hotel not found', 404);
+    }
+
+    // Regenerate searchText without Arabic name
+    hotel.searchText = [
+      hotel.name,
+      hotel.address,
+      hotel.city,
+      hotel.country,
+      hotel.amenities?.join(' ')
+    ].filter(Boolean).join(' ');
+    await hotel.save();
+
+    console.log(`🗑️ Arabic name removed for HID ${hid}`);
+
+    successResponse(res, null, 'Arabic name removed successfully');
+  } catch (error) {
+    console.error('Remove Arabic name error:', error);
+    errorResponse(res, 'Failed to remove Arabic name', 500);
+  }
+});
+
+/**
+ * @route   POST /api/admin/hotel-arabic-names/bulk
+ * @desc    Bulk update Arabic names for multiple hotels
+ * @access  Admin
+ * @body    { hotels: [{ hid: number, nameAr: string }, ...] }
+ */
+router.post('/hotel-arabic-names/bulk', protect, admin, async (req, res) => {
+  try {
+    const { hotels } = req.body;
+
+    if (!Array.isArray(hotels) || hotels.length === 0) {
+      return errorResponse(res, 'Please provide an array of hotels with hid and nameAr', 400);
+    }
+
+    if (hotels.length > 500) {
+      return errorResponse(res, 'Maximum 500 hotels per bulk update', 400);
+    }
+
+    const results = { success: 0, failed: 0, errors: [] };
+
+    // Process in batches of 50 for performance
+    const batchSize = 50;
+    for (let i = 0; i < hotels.length; i += batchSize) {
+      const batch = hotels.slice(i, i + batchSize);
+      const bulkOps = [];
+
+      for (const item of batch) {
+        const hid = parseInt(item.hid);
+        const nameAr = (item.nameAr || '').trim();
+
+        if (!hid || isNaN(hid)) {
+          results.failed++;
+          results.errors.push({ hid: item.hid, error: 'Invalid HID' });
+          continue;
+        }
+
+        if (!nameAr || nameAr.length < 2) {
+          results.failed++;
+          results.errors.push({ hid, error: 'Arabic name must be at least 2 characters' });
+          continue;
+        }
+
+        bulkOps.push({
+          updateOne: {
+            filter: { hid },
+            update: { $set: { nameAr } }
+          }
+        });
+      }
+
+      if (bulkOps.length > 0) {
+        const bulkResult = await HotelContent.bulkWrite(bulkOps, { ordered: false });
+        results.success += bulkResult.modifiedCount + bulkResult.upsertedCount;
+        results.failed += (bulkOps.length - bulkResult.modifiedCount - bulkResult.upsertedCount);
+
+        // Also update searchText for modified hotels
+        const modifiedHids = bulkOps.map(op => op.updateOne.filter.hid);
+        const modifiedHotels = await HotelContent.find({ hid: { $in: modifiedHids } });
+        for (const hotel of modifiedHotels) {
+          hotel.searchText = [
+            hotel.name,
+            hotel.nameAr,
+            hotel.address,
+            hotel.city,
+            hotel.country,
+            hotel.amenities?.join(' ')
+          ].filter(Boolean).join(' ');
+          await hotel.save();
+        }
+      }
+    }
+
+    console.log(`📦 Bulk Arabic names: ${results.success} updated, ${results.failed} failed`);
+
+    successResponse(res, results, `Bulk update complete: ${results.success} updated, ${results.failed} failed`);
+  } catch (error) {
+    console.error('Bulk Arabic names error:', error);
+    errorResponse(res, 'Failed to bulk update Arabic names', 500);
+  }
+});
+
 // ============ PARTNER MANAGEMENT ROUTES ============
 const PromoCode = require('../models/PromoCode');
 

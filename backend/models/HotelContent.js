@@ -24,6 +24,12 @@ const HotelContentSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // Arabic name (set by admin for bilingual search)
+  nameAr: {
+    type: String,
+    default: null,
+    index: true
+  },
   address: String,
   city: String,
   // Normalized city name for fast indexed lookups (auto-set via pre-save hook)
@@ -139,7 +145,7 @@ HotelContentSchema.statics.smartSearch = async function(query, limit = 10, langu
       { $text: { $search: normalizedQuery } },
       { score: { $meta: 'textScore' } }
     )
-      .select('hid hotelId name city country starRating mainImage')
+      .select('hid hotelId name nameAr city country starRating mainImage')
       .sort({ score: { $meta: 'textScore' } })
       .limit(limit)
       .maxTimeMS(500) // Timeout after 500ms - never block autocomplete
@@ -152,7 +158,7 @@ HotelContentSchema.statics.smartSearch = async function(query, limit = 10, langu
     try {
       // FALLBACK: Fast indexed city lookup (cityNormalized is indexed)
       results = await this.find({ cityNormalized: normalizedQuery })
-        .select('hid hotelId name city country starRating mainImage')
+        .select('hid hotelId name nameAr city country starRating mainImage')
         .limit(limit)
         .maxTimeMS(500)
         .lean();
@@ -169,6 +175,7 @@ HotelContentSchema.statics.smartSearch = async function(query, limit = 10, langu
     id: hotel.hotelId || `hid_${hotel.hid}`,
     hid: hotel.hid,
     name: hotel.name,
+    nameAr: hotel.nameAr || null,
     type: 'hotel',
     location: `${hotel.city || ''}, ${hotel.country || ''}`.replace(/^, |, $/g, ''),
     city: hotel.city,
@@ -198,9 +205,10 @@ HotelContentSchema.statics.smartSearch = async function(query, limit = 10, langu
 
 // Pre-save hook to generate search text and cityNormalized
 HotelContentSchema.pre('save', function(next) {
-  // Combine searchable fields into one text field
+  // Combine searchable fields into one text field (including Arabic name)
   this.searchText = [
     this.name,
+    this.nameAr,
     this.address,
     this.city,
     this.country,

@@ -20,6 +20,7 @@ import { PartnersTab } from '../components/AdminDashboard/PartnersTab';
 import { BlogTab } from '../components/AdminDashboard/BlogTab';
 import SupportChatTab from '../components/AdminDashboard/SupportChatTab';
 import { HotelContactLookup } from '../components/admin/HotelContactLookup';
+import { HotelArabicNamesTab } from '../components/AdminDashboard/HotelArabicNamesTab';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
 import { ClientDetailModal } from '../components/AdminDashboard/ClientDetailModal';
 import {
@@ -478,6 +479,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'bookings', name: t('admin:dashboard.tabs.bookings'), icon: ClipboardDocumentListIcon },
     { id: 'payments', name: t('admin:dashboard.tabs.payments'), icon: CreditCardIcon },
     { id: 'hotel_lookup', name: t('admin:dashboard.tabs.hotel_lookup'), icon: PhoneIcon },
+    { id: 'hotel_arabic_names', name: t('admin:dashboard.tabs.hotel_arabic_names'), icon: GlobeAltIcon },
     { id: 'analytics', name: t('admin:dashboard.tabs.analytics'), icon: ChartBarIcon },
     { id: 'margins', name: t('admin:dashboard.tabs.margins'), icon: CurrencyDollarIcon },
     { id: 'promo_codes', name: t('admin:dashboard.tabs.promo_codes'), icon: TagIcon },
@@ -956,6 +958,9 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Hotel Lookup Tab */}
           {activeTab === 'hotel_lookup' && (
             <HotelContactLookup />
+          )}{/* Hotel Arabic Names Tab */}
+          {activeTab === 'hotel_arabic_names' && (
+            <HotelArabicNamesTab />
           )}{/* Promo Codes Tab */}
           {activeTab === 'promo_codes' && (
             <PromoCodesTab />

@@ -51,7 +51,7 @@ router.get('/suggested-local', async (req, res) => {
       mainImage: { $exists: true, $ne: null, $ne: '' },
       starRating: { $gte: 3 }
     })
-      .select('hid hotelId name address city country starRating mainImage images')
+      .select('hid hotelId name nameAr address city country starRating mainImage images')
       .sort({ starRating: -1 })
       .limit(limit * 2) // Fetch extra to filter
       .maxTimeMS(1000)
@@ -65,6 +65,7 @@ router.get('/suggested-local', async (req, res) => {
         id: h.hotelId || `hid_${h.hid}`,
         hid: h.hid,
         name: h.name,
+        nameAr: h.nameAr || null,
         address: h.address || h.city,
         city: h.city,
         country: h.country,
@@ -141,7 +142,7 @@ router.get('/popular-local', async (req, res) => {
         starRating: 5,
         mainImage: { $exists: true, $ne: null, $ne: '' },
       })
-        .select('hid hotelId name address city country starRating mainImage')
+        .select('hid hotelId name nameAr address city country starRating mainImage')
         .sort({ starRating: -1 })
         .limit(8)
         .maxTimeMS(1000)
@@ -156,6 +157,7 @@ router.get('/popular-local', async (req, res) => {
         id: h.hotelId || `hid_${h.hid}`,
         hid: h.hid,
         name: h.name,
+        nameAr: h.nameAr || null,
         address: h.address || h.city,
         city: h.city,
         country: h.country,
@@ -801,6 +803,57 @@ router.get('/suggest', async (req, res) => {
     const hotels = [...apiResults.hotels, ...localResults.hotels].slice(0, 10);
     const regions = apiResults.regions.slice(0, 5);
 
+    // Enrich all hotels with Arabic names from local DB
+    try {
+      const HotelContentModel = require('../models/HotelContent');
+      const hids = hotels.map(h => h.hid).filter(Boolean);
+      if (hids.length > 0) {
+        const arabicNames = await HotelContentModel.find(
+          { hid: { $in: hids }, nameAr: { $exists: true, $ne: null, $ne: '' } },
+          { hid: 1, nameAr: 1 }
+        ).lean();
+        const arMap = {};
+        arabicNames.forEach(h => { arMap[h.hid] = h.nameAr; });
+        hotels.forEach(h => {
+          if (h.hid && arMap[h.hid]) {
+            h.nameAr = arMap[h.hid];
+          }
+        });
+      }
+
+      // BONUS: If query is Arabic text and we got few results, also search by nameAr directly
+      if (/[\u0600-\u06FF]/.test(query) && hotels.length < 5) {
+        const arabicResults = await HotelContentModel.find(
+          { nameAr: { $regex: query.trim(), $options: 'i' } }
+        )
+          .select('hid hotelId name nameAr city country starRating mainImage')
+          .limit(10)
+          .maxTimeMS(500)
+          .lean();
+
+        const existingHids = new Set(hotels.map(h => h.hid));
+        for (const hotel of arabicResults) {
+          if (!existingHids.has(hotel.hid)) {
+            existingHids.add(hotel.hid);
+            hotels.push({
+              id: hotel.hotelId || `hid_${hotel.hid}`,
+              hid: hotel.hid,
+              name: hotel.name,
+              nameAr: hotel.nameAr,
+              type: 'hotel',
+              location: `${hotel.city || ''}, ${hotel.country || ''}`.replace(/^, |, $/g, ''),
+              city: hotel.city,
+              country: hotel.country,
+              starRating: hotel.starRating,
+              image: hotel.mainImage?.replace('{size}', '240x240')
+            });
+          }
+        }
+      }
+    } catch (arErr) {
+      console.log('   ⚠️ Arabic name enrichment error (non-fatal):', arErr.message);
+    }
+
     // Add ETG Test Hotel to suggestions if user types "test"
     if (query.toLowerCase().includes('test')) {
       hotels.unshift({
@@ -880,6 +933,33 @@ router.get('/search', async (req, res) => {
       return errorResponse(res, 'Destination is required', 400);
     }
 
+    // ARABIC HOTEL NAME RESOLUTION: If destination is Arabic text,
+    // check if it matches a hotel's nameAr and resolve to the hotel's city
+    let resolvedDestination = destination;
+    if (/[\u0600-\u06FF]/.test(destination)) {
+      try {
+        const HotelContentLookup = require('../models/HotelContent');
+        const arabicMatch = await HotelContentLookup.findOne(
+          { nameAr: { $regex: destination.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+          { name: 1, city: 1, hid: 1 }
+        ).maxTimeMS(500).lean();
+
+        if (arabicMatch && arabicMatch.city) {
+          console.log(`🌐 Arabic hotel name resolved: "${destination}" → city "${arabicMatch.city}" (hotel: ${arabicMatch.name}, hid: ${arabicMatch.hid})`);
+          resolvedDestination = arabicMatch.city;
+        } else {
+          // Also try the translateQuery for city names
+          const translation = translateQuery(destination);
+          if (translation.isTranslated) {
+            console.log(`🌐 Arabic destination translated: "${destination}" → "${translation.translatedQuery}"`);
+            resolvedDestination = translation.translatedQuery;
+          }
+        }
+      } catch (lookupErr) {
+        console.log('   ⚠️ Arabic name lookup error (non-fatal):', lookupErr.message);
+      }
+    }
+
     // Parse pagination parameters first
     const pageNumber = parseInt(page) || 1;
     const limitNumber = parseInt(limit) || 20;
@@ -892,9 +972,9 @@ router.get('/search', async (req, res) => {
     const cancelKey = cancellationPolicyFilter ? `_cancel${cancellationPolicyFilter}` : '';
     const guestKey = guestRatingFilter > 0 ? `_guest${guestRatingFilter}` : '';
     const filterKey = `${starFilterKey}${facilitiesKey}${mealKey}${cancelKey}${guestKey}`;
-    const cacheKey = `v11_${destination}_${checkin}_${checkout}_${adults}_${children}_${currency}${filterKey}`;
+    const cacheKey = `v11_${resolvedDestination}_${checkin}_${checkout}_${adults}_${children}_${currency}${filterKey}`;
 
-    console.log(`📄 Page ${pageNumber}, Limit ${limitNumber} for: ${destination}`);
+    console.log(`📄 Page ${pageNumber}, Limit ${limitNumber} for: ${resolvedDestination}${resolvedDestination !== destination ? ` (from: ${destination})` : ''}`);
 
     // Check cache first - if we have ALL results cached, paginate from cache
     if (hotelSearchCache.has(cacheKey)) {
@@ -1005,7 +1085,7 @@ router.get('/search', async (req, res) => {
     }
 
     // Step 1: Get region and hotel suggestions
-    const suggestions = await rateHawkService.suggest(destination, finalLanguage);
+    const suggestions = await rateHawkService.suggest(resolvedDestination, finalLanguage);
 
     // Check if we found any regions OR hotels
     const hasRegions = suggestions.regions && suggestions.regions.length > 0;
@@ -1077,7 +1157,7 @@ router.get('/search', async (req, res) => {
     }
 
     // Step 3.5: Merge API results with DB hotels
-    const cityName = destination;
+    const cityName = resolvedDestination;
     const cityNormalized = cityName.toLowerCase().trim();
 
     const HotelContent = require('../models/HotelContent');
@@ -1762,6 +1842,7 @@ router.get('/details/:hid', async (req, res) => {
           id: localHotel.hotelId || `hid_${localHotel.hid}`,
           hid: localHotel.hid,
           name: localHotel.name,
+          nameAr: localHotel.nameAr || null,
           address: localHotel.address || '',
           city: localHotel.city || '',
           country: localHotel.country || '',
@@ -1822,6 +1903,7 @@ router.get('/details/:hid', async (req, res) => {
       id: hotelDetails.id,
       hid: hotelDetails.hid,
       name: hotelDetails.name,
+      nameAr: hotelDetails.nameAr || null,
       description: hotelDetails.description,
       address: hotelDetails.address,
       city: hotelDetails.city,
@@ -1845,6 +1927,20 @@ router.get('/details/:hid', async (req, res) => {
       metapolicy_struct: hotelDetails.metapolicy_struct,
       poi_data: poiData
     };
+
+    // Enrich with Arabic name from HotelContent DB
+    try {
+      const HotelContentAr = require('../models/HotelContent');
+      const arContent = await HotelContentAr.findOne(
+        { hid: hotelDetails.hid, nameAr: { $exists: true, $ne: null, $ne: '' } },
+        { nameAr: 1 }
+      ).lean();
+      if (arContent && arContent.nameAr) {
+        formattedHotel.nameAr = arContent.nameAr;
+      }
+    } catch (arErr) {
+      // Non-fatal - Arabic name is optional
+    }
 
     successResponse(res, { hotel: formattedHotel }, 'Hotel details retrieved successfully');
 

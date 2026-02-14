@@ -915,7 +915,7 @@ class RateHawkService {
               // Added 'amenities' field for displaying amenity icons on search cards
               // Added 'latitude' and 'longitude' for distance calculation
               const localHotels = await HotelContent.find({ hid: { $in: batch } })
-                .select('hid hotelId name address city country countryCode starRating mainImage images amenities latitude longitude')
+                .select('hid hotelId name nameAr address city country countryCode starRating mainImage images amenities latitude longitude')
                 .lean();
               console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
 
@@ -941,6 +941,7 @@ class RateHawkService {
                 // Add to content map - include amenities for search card display
                 contentMap.set(hotel.hid, {
                   name: hotel.name,
+                  nameAr: hotel.nameAr || null,
                   address: hotel.address,
                   city: hotel.city,
                   country: countryName,
@@ -958,6 +959,7 @@ class RateHawkService {
                 this.contentCache.set(hotel.hid, {
                   data: {
                     name: hotel.name,
+                    nameAr: hotel.nameAr || null,
                     address: hotel.address,
                     city: hotel.city,
                     country: countryName,
@@ -999,6 +1001,7 @@ class RateHawkService {
           if (content) {
             if (content.image) hotel.image = content.image;
             if (content.name) hotel.name = content.name;
+            if (content.nameAr) hotel.nameAr = content.nameAr;
             if (content.address) hotel.address = content.address;
             if (content.city) hotel.city = content.city;
             if (content.country) hotel.country = content.country;

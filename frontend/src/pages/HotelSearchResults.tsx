@@ -68,6 +68,7 @@ interface SearchFilters {
 interface AutocompleteSuggestion {
   id: string | number;
   name: string;
+  nameAr?: string;
   type: string;
   hid?: number;
   country_code?: string;
@@ -752,10 +753,11 @@ export const HotelSearchResults: React.FC = () => {
   // Handle autocomplete selection
   const handleSelectSuggestion = (suggestion: AutocompleteSuggestion) => {
     hasUserTyped.current = false; // Reset so dropdown doesn't show on next page load
-    setEditableDestination(suggestion.name);
+    const displayName = (i18n.language === 'ar' && suggestion.nameAr) ? suggestion.nameAr : suggestion.name;
+    setEditableDestination(displayName);
     setShowAutocomplete(false);
     setAutocompleteResults({ hotels: [], regions: [] });
-    // Navigate to search with the selected hotel
+    // Navigate to search with the selected hotel - always use English name for API search
     const params = new URLSearchParams(location.search);
     params.set('destination', suggestion.name);
     history.push(`/hotels/search?${params.toString()}`);
@@ -1254,7 +1256,7 @@ export const HotelSearchResults: React.FC = () => {
                                       <BuildingOffice2Icon className="w-4 h-4 text-blue-500 group-hover:text-orange-500 transition-colors" />
                                     </div>
                                     <div>
-                                      <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{hotel.name}</p>
+                                      <p className="text-gray-900 font-semibold text-sm group-hover:text-orange-700 transition-colors">{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</p>
                                       <p className="text-[10px] text-gray-500">Hotel</p>
                                     </div>
                                   </button>
@@ -1474,7 +1476,7 @@ export const HotelSearchResults: React.FC = () => {
                                 <BuildingOffice2Icon className="w-5 h-5 text-blue-500 group-hover:text-blue-600 transition-colors" />
                               </div>
                               <div>
-                                <p className="text-gray-900 font-bold text-sm group-hover:text-blue-700 transition-colors">{hotel.name}</p>
+                                <p className="text-gray-900 font-bold text-sm group-hover:text-blue-700 transition-colors">{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</p>
                                 <p className="text-xs text-gray-500 mt-0.5">Hotel</p>
                               </div>
                             </button>
@@ -1813,7 +1815,7 @@ export const HotelSearchResults: React.FC = () => {
                           >
                             <Popup>
                               <div className="text-sm">
-                                <strong>{hotel.name}</strong>
+                                <strong>{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</strong>
                                 {hotel.price && hotel.price > 0 && (
                                   <div className="text-orange-600 font-bold font-price">
                                     {currency} {hotel.price}
@@ -2180,7 +2182,7 @@ export const HotelSearchResults: React.FC = () => {
                         <div className="flex-1 p-3 flex flex-col min-w-0">
                           {/* Hotel Name */}
                           <h3 className="text-[15px] font-bold text-[#1a1a2e] leading-snug line-clamp-2 mb-1">
-                            {hotel.name}
+                            {(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}
                           </h3>
 
                           {/* Stars Row */}
@@ -2430,7 +2432,7 @@ export const HotelSearchResults: React.FC = () => {
                             <div className="flex justify-between items-start gap-2">
                                 <div className="flex flex-col gap-0.5">
                                     <h3 className="text-lg font-bold text-[#1a1a1a] leading-tight">
-                                        {hotel.name}
+                                        {(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}
                                     </h3>
                                     {/* Stars & Location Row */}
                                     <div className="flex items-center gap-1.5 flex-wrap">
