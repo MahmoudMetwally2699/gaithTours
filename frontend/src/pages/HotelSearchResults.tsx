@@ -1041,7 +1041,7 @@ export const HotelSearchResults: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header - Compact & Modern */}
-      <div className="relative w-full overflow-visible font-sans">
+      <div className="relative w-full overflow-visible font-sans z-40">
         {/* Solid Background Color */}
         <div className="absolute inset-0 z-0 overflow-hidden bg-[#E67915] h-full shadow-md"></div>
 
@@ -1203,7 +1203,7 @@ export const HotelSearchResults: React.FC = () => {
 
                       {/* Autocomplete Dropdown */}
                       {showAutocomplete && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0) && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-64 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-[9999] max-h-64 overflow-y-auto">
                           <div className="p-2">
                             {/* Regions Section */}
                             {autocompleteResults.regions.length > 0 && (
@@ -1423,7 +1423,7 @@ export const HotelSearchResults: React.FC = () => {
 
                 {/* Autocomplete Dropdown */}
                 {showAutocomplete && (autocompleteResults.hotels.length > 0 || autocompleteResults.regions.length > 0) && (
-                  <div className="absolute top-full left-0 right-0 mt-4 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-80 overflow-y-auto animate-fadeIn ring-1 ring-black ring-opacity-5">
+                  <div className="absolute top-full left-0 right-0 mt-4 bg-white rounded-2xl shadow-2xl border border-gray-100 z-[9999] max-h-80 overflow-y-auto animate-fadeIn ring-1 ring-black ring-opacity-5">
                     <div className="p-2">
                       {/* Regions Section */}
                       {autocompleteResults.regions.length > 0 && (

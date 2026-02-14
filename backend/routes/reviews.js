@@ -6,6 +6,65 @@ const HotelReview = require('../models/HotelReview');
 const router = express.Router();
 
 /**
+ * Get top-rated guest reviews for the home page (from TripAdvisor data)
+ * GET /api/reviews/top-reviews
+ * Query: limit (default 8), language (default 'en')
+ */
+router.get('/top-reviews', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 8, 20);
+    const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+
+    // Find hotels that have reviews and high ratings
+    const hotels = await TripAdvisorHotel.find({
+      rating: { $gte: 4 },
+      'reviews.0': { $exists: true },
+      num_reviews: { $ne: '0' }
+    })
+      .select('name city rating num_reviews reviews rating_image_url')
+      .sort({ rating: -1 })
+      .limit(50)
+      .lean();
+
+    // Extract individual reviews with hotel context
+    const allReviews = [];
+    for (const hotel of hotels) {
+      if (!hotel.reviews || hotel.reviews.length === 0) continue;
+      for (const review of hotel.reviews) {
+        if (review.rating >= 4 && review.text && review.text.length > 20) {
+          allReviews.push({
+            id: review.id,
+            hotelName: hotel.name,
+            hotelCity: hotel.city,
+            hotelRating: hotel.rating,
+            hotelReviewCount: hotel.num_reviews,
+            reviewTitle: review.title || '',
+            reviewText: review.text,
+            reviewRating: review.rating,
+            tripType: review.trip_type || '',
+            travelDate: review.travel_date || '',
+            publishedDate: review.published_date || '',
+            author: review.user?.username || 'Guest',
+            authorLocation: review.user?.user_location?.name || '',
+            authorAvatar: review.user?.avatar?.small || review.user?.avatar?.thumbnail || '',
+          });
+        }
+      }
+    }
+
+    // Shuffle and pick top reviews for variety
+    const shuffled = allReviews.sort(() => Math.random() - 0.5);
+    const topReviews = shuffled.slice(0, limit);
+
+    res.set('Cache-Control', 'public, max-age=3600');
+    successResponse(res, { reviews: topReviews }, 'Top reviews retrieved');
+  } catch (error) {
+    console.error('Top reviews error:', error);
+    errorResponse(res, 'Failed to get top reviews', 500);
+  }
+});
+
+/**
  * Get reviews for a specific hotel
  * GET /api/reviews/hotel/:hotelId
  * Query params:

@@ -157,6 +157,7 @@
     "preparingJourney": "جاري تحضير رحلتك..."
   },
   "hotels": {
+    "viewPrices": "عرض الأسعار",
     "perNight": "/ليلة",
     "from": "من",
     "viewDetails": "عرض التفاصيل",

@@ -3,17 +3,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { Hotel } from '../services/api';
-import { useCurrency } from '../contexts/CurrencyContext';
 import { TripAdvisorRating } from '../services/tripadvisorService';
 
 interface HotelCardProps {
   hotel: Hotel & {
-    price?: number;
-    pricePerNight?: number;
-    nights?: number;
-    currency?: string;
-    total_taxes?: number;
-    taxes_currency?: string;
     reviewCount?: number;
     reviewScoreWord?: string;
   };
@@ -23,21 +16,7 @@ interface HotelCardProps {
 
 export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating, onBook }) => {
   const { t, i18n } = useTranslation();
-  const { currency: globalCurrency } = useCurrency();
   const isRTL = i18n.language === 'ar';
-
-  // Helper to format currency - use Arabic locale when in Arabic mode
-  const formatPrice = (price?: number, currency?: string) => {
-    if (!price || price <= 0) return null;
-    const currencyToUse = currency || globalCurrency || 'USD';
-    const locale = isRTL ? 'ar-EG' : 'en-US';
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: currencyToUse,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
 
   // Use TripAdvisor rating if available, fallback to hotel.rating
   const displayRating = taRating?.rating ? taRating.rating : hotel.rating;
@@ -130,37 +109,16 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
           {hotel.address || hotel.city}
         </p>
 
-        {/* Price Section */}
+        {/* CTA Section - No prices, just a call to action */}
         <div className="mt-auto flex flex-col pt-2 md:pt-3 border-t border-gray-50">
-          <div className="flex justify-end items-baseline">
-           {(hotel.pricePerNight && hotel.pricePerNight > 0) ? (
-             <>
-               <span className="text-base sm:text-lg font-bold text-gray-800 font-price">
-                 {formatPrice(hotel.pricePerNight, hotel.currency)}
-               </span>
-               <span className="text-gray-400 text-[10px] sm:text-xs ml-0.5 md:ml-1">{t('hotels.perNight', '/night')}</span>
-             </>
-           ) : (hotel.price && hotel.price > 0 && formatPrice(hotel.price, hotel.currency)) ? (
-             <>
-               <span className="text-gray-400 text-[10px] sm:text-xs ltr:mr-1 ltr:md:mr-1.5 rtl:ml-1 rtl:md:ml-1.5">{t('hotels.from', 'From')}</span>
-               <span className="text-base sm:text-lg font-bold text-gray-800 font-price">
-                 {formatPrice(hotel.price, hotel.currency)}
-               </span>
-             </>
-           ) : (
-             <span className="text-primary-600 font-medium text-xs sm:text-sm">
-               {t('hotels.viewDetails', 'View Details')}
-             </span>
-           )}
+          <div className="flex justify-end items-center">
+            <span className="text-[#FF8C00] font-semibold text-xs sm:text-sm group-hover:underline">
+              {t('hotels.viewPrices', 'View Prices')}
+            </span>
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF8C00] ltr:ml-1 rtl:mr-1 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </div>
-          {/* Taxes Display */}
-          {hotel.total_taxes && hotel.total_taxes > 0 && (
-            <div className="flex justify-end mt-0.5">
-              <span className="text-gray-400 text-[9px] sm:text-[10px]">
-                + {formatPrice(hotel.total_taxes, hotel.taxes_currency || hotel.currency)} {t('hotels.taxesAndFees', 'taxes and fees')}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>

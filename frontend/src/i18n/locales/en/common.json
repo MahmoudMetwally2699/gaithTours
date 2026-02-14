@@ -135,6 +135,7 @@
     "preparingJourney": "Preparing your journey..."
   },
   "hotels": {
+    "viewPrices": "View Prices",
     "perNight": "/night",
     "from": "From",
     "viewDetails": "View Details",

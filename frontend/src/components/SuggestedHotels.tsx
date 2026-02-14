@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { useCurrency } from '../contexts/CurrencyContext';
 import { useUserLocation } from '../hooks/useUserLocation';
 import { HotelCard } from './HotelCard';
 import { useHistory } from 'react-router-dom';
-import { MapPinIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
 import { TripAdvisorRating, getTripAdvisorRatings } from '../services/tripadvisorService';
 
@@ -66,67 +64,48 @@ const buildTaRatingsFromBackend = (hotelList: ExtendedHotel[]): Record<string, T
 export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) => {
   const { t, i18n } = useTranslation('home');
   const { isAuthenticated } = useAuth();
-  const { currency } = useCurrency();
   const history = useHistory();
   const [hotels, setHotels] = useState<ExtendedHotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<string>('');
   const [destinationName, setDestinationName] = useState<string>('');
-  const [lastLocationQuery, setLastLocationQuery] = useState<string | undefined>(undefined);
-  const [searchDates, setSearchDates] = useState<{ checkIn: string; checkOut: string } | null>(null);
   const [taRatings, setTaRatings] = useState<Record<string, TripAdvisorRating>>({});
 
-  // Shared location detection — no more race conditions or duplicate API calls
+  // Shared location detection
   const { city: detectedCity, isDetecting } = useUserLocation(i18n.language);
   const hasFetchedWithCity = useRef(false);
   const hasNotifiedLoaded = useRef(false);
 
-  const fetchSuggestions = useCallback(async (locationQuery?: string, options?: { skipCache?: boolean }) => {
+  const fetchSuggestions = useCallback(async (locationQuery?: string) => {
     try {
-      const cacheKey = `suggestedHotels:${locationQuery || 'default'}:${currency}:${i18n.language}`;
+      const cacheKey = `suggestedLocal:${locationQuery || 'default'}:${i18n.language}`;
 
       // Stale-while-revalidate: serve cached data immediately
-      if (!options?.skipCache) {
-        try {
-          const cached = sessionStorage.getItem(cacheKey);
-          if (cached) {
-            const cachedData = JSON.parse(cached);
-            const age = Date.now() - (cachedData._ts || 0);
-            // Use cache if less than 10 minutes old
-            if (age < 10 * 60 * 1000) {
-              console.log('⚡ SuggestedHotels: serving from sessionStorage cache');
-              setHotels(cachedData.hotels);
-              setSource(cachedData.source);
-              setDestinationName(cachedData.destination);
-              if (cachedData.searchDates) setSearchDates(cachedData.searchDates);
-              setTaRatings(buildTaRatingsFromBackend(cachedData.hotels));
-              setLoading(false);
-              // Still re-fetch in background if cache > 5 min old
-              if (age > 5 * 60 * 1000) {
-                fetchSuggestions(locationQuery, { skipCache: true });
-              }
-              return cachedData;
-            }
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          const age = Date.now() - (cachedData._ts || 0);
+          if (age < 10 * 60 * 1000) {
+            setHotels(cachedData.hotels);
+            setSource(cachedData.source);
+            setDestinationName(cachedData.destination);
+            setTaRatings(buildTaRatingsFromBackend(cachedData.hotels));
+            setLoading(false);
+            return cachedData;
           }
-        } catch { /* sessionStorage unavailable or parse error */ }
-      }
+        }
+      } catch { /* sessionStorage unavailable */ }
 
       setLoading(true);
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
       const token = localStorage.getItem('token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-      // Pass current language to get localized hotel names
-      let url = `${API_URL}/hotels/suggested?currency=${currency}&language=${i18n.language}`;
+      let url = `${API_URL}/hotels/suggested-local?language=${i18n.language}`;
       if (locationQuery) {
-        url += `&location=${encodeURIComponent(locationQuery)}`;
-        setLastLocationQuery(locationQuery);
+        url += `&city=${encodeURIComponent(locationQuery)}`;
       }
 
       const response = await fetch(url, { headers });
@@ -136,30 +115,18 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
         setHotels(data.data.hotels);
         setSource(data.data.source);
         setDestinationName(data.data.destination);
-        // Store the searchDates from the API response
-        if (data.data.searchDates) {
-          setSearchDates(data.data.searchDates);
-        }
-
-        // Build TA ratings from backend-enriched data (no extra API calls!)
         setTaRatings(buildTaRatingsFromBackend(data.data.hotels));
 
-        // Cache to sessionStorage for instant re-visits
         try {
-          sessionStorage.setItem(cacheKey, JSON.stringify({
-            ...data.data,
-            _ts: Date.now()
-          }));
-        } catch { /* quota exceeded or unavailable */ }
-
-        return data.data; // Return for chaining
+          sessionStorage.setItem(cacheKey, JSON.stringify({ ...data.data, _ts: Date.now() }));
+        } catch { /* quota exceeded */ }
       }
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      console.error('Error fetching local suggestions:', error);
     } finally {
       setLoading(false);
     }
-  }, [currency, i18n.language]);
+  }, [i18n.language]);
 
   // Notify parent when content has finished loading (first time only)
   useEffect(() => {
@@ -223,13 +190,13 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotels]);
 
-  // Re-fetch with same location when currency or language changes
+  // Re-fetch when language changes
   useEffect(() => {
-    if (!loading && (hotels.length > 0 || lastLocationQuery)) {
-      fetchSuggestions(lastLocationQuery || DEFAULT_CITY);
+    if (!loading && hotels.length > 0) {
+      fetchSuggestions(detectedCity || DEFAULT_CITY);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency, i18n.language]);
+  }, [i18n.language]);
 
   // Handle "Use my location" button click
   const handleUseMyLocation = () => {
@@ -332,21 +299,14 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {hotels
-            .filter(h => h.price && h.price > 0)
             .slice(0, 8)
             .map((hotel) => {
-              // Use the searchDates from API if available, otherwise fallback to today/tomorrow
-              let checkIn: string, checkOut: string;
-              if (searchDates) {
-                checkIn = searchDates.checkIn;
-                checkOut = searchDates.checkOut;
-              } else {
-                const today = new Date();
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                checkIn = today.toISOString().split('T')[0];
-                checkOut = tomorrow.toISOString().split('T')[0];
-              }
+              // Use today/tomorrow dates for the detail page link
+              const today = new Date();
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const checkIn = today.toISOString().split('T')[0];
+              const checkOut = tomorrow.toISOString().split('T')[0];
 
               return (
                 <HotelCard

@@ -100,5 +100,74 @@
     "ssl": "256-bit SSL",
     "pciCompliant": "PCI DSS Compliant",
     "fraudProtection": "Fraud Protection"
+  },
+  "guestReviews": {
+    "title": "What Our Guests Say",
+    "subtitle": "Real reviews from verified guests",
+    "tripTypes": {
+      "family": "Family",
+      "couples": "Couples",
+      "solo": "Solo",
+      "business": "Business",
+      "friends": "Friends"
+    }
+  },
+  "whyBook": {
+    "title": "Why Book With Gaith Tours?",
+    "subtitle": "Trusted by thousands of travelers across the Middle East",
+    "bestPrice": {
+      "title": "Best Price Guarantee",
+      "desc": "We match or beat any competitor's price. Book with confidence."
+    },
+    "support": {
+      "title": "24/7 Support",
+      "desc": "Our team is available around the clock to help with your bookings."
+    },
+    "freeCancellation": {
+      "title": "Free Cancellation",
+      "desc": "Plans changed? Cancel for free on most bookings up to 24 hours before check-in."
+    },
+    "securePayment": {
+      "title": "Secure Payments",
+      "desc": "Your payment details are protected with bank-level encryption."
+    }
+  },
+  "destinationGuides": {
+    "title": "Destination Guides",
+    "subtitle": "Explore top destinations in Saudi Arabia",
+    "hotels": "hotels",
+    "explore": "Explore Hotels",
+    "cities": {
+      "makkah": {
+        "name": "Makkah",
+        "bestTime": "Year-round",
+        "highlight": "Home to the Holy Masjid Al-Haram and spiritual heart of Islam"
+      },
+      "madinah": {
+        "name": "Madinah",
+        "bestTime": "Oct - Apr",
+        "highlight": "Visit the Prophet's Mosque and explore the historic old city"
+      },
+      "riyadh": {
+        "name": "Riyadh",
+        "bestTime": "Nov - Mar",
+        "highlight": "Modern capital with world-class dining and entertainment"
+      },
+      "jeddah": {
+        "name": "Jeddah",
+        "bestTime": "Oct - Apr",
+        "highlight": "Coastal charm with historic Al-Balad district and Red Sea views"
+      },
+      "alula": {
+        "name": "Al Ula",
+        "bestTime": "Oct - Mar",
+        "highlight": "Ancient Nabataean heritage site and stunning desert landscapes"
+      },
+      "abha": {
+        "name": "Abha",
+        "bestTime": "Jun - Sep",
+        "highlight": "Cool mountain retreat with lush greenery and scenic views"
+      }
+    }
   }
 }

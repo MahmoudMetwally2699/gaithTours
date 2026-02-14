@@ -33,6 +33,175 @@ function setCachedResults(key, data) {
 }
 
 /**
+ * Get hotels for home page from LOCAL DB (no external API calls = instant)
+ * GET /api/hotels/suggested-local?city=Makkah&language=en
+ */
+router.get('/suggested-local', async (req, res) => {
+  try {
+    const city = req.query.city || req.query.location || 'Makkah';
+    const language = req.query.language || 'en';
+    const limit = Math.min(parseInt(req.query.limit) || 8, 20);
+
+    const HotelContent = require('../models/HotelContent');
+    const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+
+    // Fast indexed query on cityNormalized + starRating
+    const hotels = await HotelContent.find({
+      cityNormalized: city.toLowerCase().trim(),
+      mainImage: { $exists: true, $ne: null, $ne: '' },
+      starRating: { $gte: 3 }
+    })
+      .select('hid hotelId name address city country starRating mainImage images')
+      .sort({ starRating: -1 })
+      .limit(limit * 2) // Fetch extra to filter
+      .maxTimeMS(1000)
+      .lean();
+
+    // Format for frontend
+    const formatted = hotels
+      .filter(h => h.mainImage && !h.mainImage.includes('placeholder'))
+      .slice(0, limit)
+      .map(h => ({
+        id: h.hotelId || `hid_${h.hid}`,
+        hid: h.hid,
+        name: h.name,
+        address: h.address || h.city,
+        city: h.city,
+        country: h.country,
+        star_rating: h.starRating,
+        rating: h.starRating ? h.starRating * 2 : 0,
+        image: h.mainImage?.replace('{size}', '640x400'),
+      }));
+
+    // Enrich with TripAdvisor data
+    try {
+      const names = formatted.map(h => h.name);
+      const taResults = await TripAdvisorHotel.findByNamesAndCity(names, city);
+      const taMap = {};
+      taResults.forEach(ta => {
+        taMap[ta.name_normalized] = ta;
+        if (ta.search_names) ta.search_names.forEach(alias => { taMap[alias] = ta; });
+      });
+      formatted.forEach(h => {
+        const ta = taMap[h.name.toLowerCase().trim()];
+        if (ta) {
+          h.tripadvisor_rating = ta.rating;
+          h.tripadvisor_num_reviews = ta.num_reviews;
+          h.tripadvisor_location_id = ta.location_id;
+        }
+      });
+    } catch (taError) {
+      console.error('TA enrichment error (non-fatal):', taError.message);
+    }
+
+    // Determine source
+    let source = 'location';
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (user && user.lastSearchDestination) {
+          source = 'history';
+        }
+      } catch { /* optional auth */ }
+    }
+    if (!req.query.city && !req.query.location) source = 'fallback';
+
+    res.set('Cache-Control', 'public, max-age=3600');
+    successResponse(res, {
+      hotels: formatted,
+      source,
+      destination: city,
+    }, 'Local suggestions retrieved');
+  } catch (error) {
+    console.error('Local suggestions error:', error);
+    errorResponse(res, 'Failed to get local suggestions', 500);
+  }
+});
+
+/**
+ * Get popular 5-star properties from LOCAL DB (no external API calls = instant)
+ * GET /api/hotels/popular-local?language=en
+ */
+router.get('/popular-local', async (req, res) => {
+  try {
+    const language = req.query.language || 'en';
+    const HotelContent = require('../models/HotelContent');
+    const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+
+    const cities = ['Riyadh', 'Jeddah', 'Makkah'];
+
+    const cityPromises = cities.map(city =>
+      HotelContent.find({
+        cityNormalized: city.toLowerCase().trim(),
+        starRating: 5,
+        mainImage: { $exists: true, $ne: null, $ne: '' },
+      })
+        .select('hid hotelId name address city country starRating mainImage')
+        .sort({ starRating: -1 })
+        .limit(8)
+        .maxTimeMS(1000)
+        .lean()
+    );
+
+    const cityResults = await Promise.all(cityPromises);
+    const allHotels = cityResults.flat()
+      .filter(h => h.mainImage && !h.mainImage.includes('placeholder'))
+      .slice(0, 15)
+      .map(h => ({
+        id: h.hotelId || `hid_${h.hid}`,
+        hid: h.hid,
+        name: h.name,
+        address: h.address || h.city,
+        city: h.city,
+        country: h.country,
+        star_rating: h.starRating,
+        rating: h.starRating ? h.starRating * 2 : 0,
+        image: h.mainImage?.replace('{size}', '640x400'),
+      }));
+
+    // Enrich with TripAdvisor data
+    try {
+      const hotelsByCity = {};
+      allHotels.forEach(h => {
+        const c = h.city || 'Saudi Arabia';
+        if (!hotelsByCity[c]) hotelsByCity[c] = [];
+        hotelsByCity[c].push(h);
+      });
+      for (const [c, cityHotels] of Object.entries(hotelsByCity)) {
+        const names = cityHotels.map(h => h.name);
+        const taResults = await TripAdvisorHotel.findByNamesAndCity(names, c);
+        const taMap = {};
+        taResults.forEach(ta => {
+          taMap[ta.name_normalized] = ta;
+          if (ta.search_names) ta.search_names.forEach(alias => { taMap[alias] = ta; });
+        });
+        cityHotels.forEach(h => {
+          const ta = taMap[h.name.toLowerCase().trim()];
+          if (ta) {
+            h.tripadvisor_rating = ta.rating;
+            h.tripadvisor_num_reviews = ta.num_reviews;
+            h.tripadvisor_location_id = ta.location_id;
+          }
+        });
+      }
+    } catch (taError) {
+      console.error('TA enrichment error (non-fatal):', taError.message);
+    }
+
+    res.set('Cache-Control', 'public, max-age=3600');
+    successResponse(res, { hotels: allHotels }, 'Popular local properties retrieved');
+  } catch (error) {
+    console.error('Popular local error:', error);
+    errorResponse(res, 'Failed to get popular local properties', 500);
+  }
+});
+
+/**
  * Get popular 5-star properties (aggregated from multiple Saudi cities)
  * GET /api/hotels/popular-properties?currency=USD&language=en
  *

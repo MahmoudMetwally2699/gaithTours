@@ -9,6 +9,9 @@ import { PopularCitiesWorldwide } from '../components/PopularCitiesWorldwide';
 import { PaymentMethods } from '../components/PaymentMethods';
 import { Preloader } from '../components/Preloader';
 import { LazySection } from '../components/LazySection';
+import { WhyBookWithGaith } from '../components/WhyBookWithGaith';
+import { HomeGuestReviews } from '../components/HomeGuestReviews';
+import { DestinationGuides } from '../components/DestinationGuides';
 
 export const Home: React.FC = () => {
   const [isContentLoaded, setIsContentLoaded] = useState(false);
@@ -29,8 +32,17 @@ export const Home: React.FC = () => {
         <LazySection height="400px" skeleton="hotel-cards">
           <PopularProperties />
         </LazySection>
+        <LazySection height="200px" skeleton="simple">
+          <WhyBookWithGaith />
+        </LazySection>
         <LazySection height="350px" skeleton="city-cards">
           <PopularCities />
+        </LazySection>
+        <LazySection height="350px" skeleton="hotel-cards">
+          <HomeGuestReviews />
+        </LazySection>
+        <LazySection height="400px" skeleton="city-cards">
+          <DestinationGuides />
         </LazySection>
         <LazySection height="350px" skeleton="city-cards">
           <PopularCitiesWorldwide />

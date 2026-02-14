@@ -4,7 +4,6 @@ import { useHistory } from 'react-router-dom';
 import { HotelCard } from './HotelCard';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Hotel } from '../services/api';
-import { useCurrency } from '../contexts/CurrencyContext';
 import { TripAdvisorRating, getTripAdvisorRatings } from '../services/tripadvisorService';
 
 interface ExtendedHotel extends Hotel {
@@ -24,7 +23,6 @@ interface ExtendedHotel extends Hotel {
 export const PopularProperties: React.FC = () => {
   const { t, i18n } = useTranslation('home');
   const history = useHistory();
-  const { currency } = useCurrency();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [hotels, setHotels] = useState<ExtendedHotel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +32,7 @@ export const PopularProperties: React.FC = () => {
     const abortController = new AbortController();
 
     const fetchPopularHotels = async () => {
-      const cacheKey = `popularProperties:${currency}:${i18n.language}`;
+      const cacheKey = `popularLocal:${i18n.language}`;
 
       // Stale-while-revalidate: serve cached data immediately
       try {
@@ -42,34 +40,29 @@ export const PopularProperties: React.FC = () => {
         if (cached) {
           const cachedData = JSON.parse(cached);
           const age = Date.now() - (cachedData._ts || 0);
-          // Use cache if less than 10 minutes old
           if (age < 10 * 60 * 1000) {
-            console.log('⚡ PopularProperties: serving from sessionStorage cache');
             setHotels(cachedData.hotels);
             buildTaRatingsFromBackend(cachedData.hotels);
             setLoading(false);
-            // Background refetch if cache > 5 min old
             if (age <= 5 * 60 * 1000) return;
           }
         }
       } catch { /* sessionStorage unavailable or parse error */ }
 
       try {
-        setLoading(prev => prev); // Keep current loading state (may be false from cache)
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
         const response = await fetch(
-          `${API_URL}/hotels/popular-properties?currency=${currency}&language=${i18n.language}`,
+          `${API_URL}/hotels/popular-local?language=${i18n.language}`,
           { signal: abortController.signal }
         );
         const data = await response.json();
 
         if (data.success && data.data.hotels) {
-          console.log(`✅ Popular properties: ${data.data.hotels.length} 5-star hotels`);
+          console.log(`✅ Popular properties (local): ${data.data.hotels.length} 5-star hotels`);
           setHotels(data.data.hotels);
           buildTaRatingsFromBackend(data.data.hotels);
 
-          // Cache to sessionStorage
           try {
             sessionStorage.setItem(cacheKey, JSON.stringify({
               hotels: data.data.hotels,
@@ -79,7 +72,7 @@ export const PopularProperties: React.FC = () => {
         }
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          console.error('Error fetching popular 5-star properties:', error);
+          console.error('Error fetching popular local properties:', error);
         }
       } finally {
         setLoading(false);
@@ -114,16 +107,14 @@ export const PopularProperties: React.FC = () => {
 
     return () => abortController.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currency, i18n.language]);
+  }, [i18n.language]);
 
   // Fallback: fetch TripAdvisor ratings for hotels not enriched by backend
   useEffect(() => {
     if (hotels.length > 0) {
-      // Find hotels without TA data
       const unenriched = hotels.filter(h => !taRatings[h.name]);
       if (unenriched.length === 0) return;
 
-      // Group by city for efficient fetching
       const hotelsByCity: Record<string, string[]> = {};
       unenriched.forEach(h => {
         const hotelCity = h.address?.split(',').pop()?.trim() || h.city || 'Saudi Arabia';
