@@ -11,6 +11,8 @@ import { Home } from './pages/Home';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminProtectedRoute } from './components/AdminProtectedRoute';
 import { useReferralCapture } from './hooks/useReferralCapture';
+import { useClarity } from './hooks/useClarity';
+import { useAuth } from './contexts/AuthContext';
 import './i18n';
 
 // Lazy-loaded components — only downloaded when needed
@@ -46,9 +48,13 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 const AppContent = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   // Capture referral code from URL (?ref=CODE) and store for checkout
   useReferralCapture();
+
+  // Microsoft Clarity: SPA route tracking + user identification
+  useClarity(user);
 
   const isAdminDashboard = location.pathname.startsWith('/admin/dashboard');
   const isPartnerPage = location.pathname.startsWith('/partner');
