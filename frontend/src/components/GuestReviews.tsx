@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber, formatTextWithNumbers } from '../utils/numberFormatter';
 
 interface Review {
   id: number;
@@ -61,7 +62,7 @@ export const GuestReviews: React.FC<GuestReviewsProps> = ({
   detailedRatings,
   reviews = []
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [expandedReview, setExpandedReview] = useState<number | null>(null);
 
   // Don't render if no rating data
@@ -83,12 +84,12 @@ export const GuestReviews: React.FC<GuestReviewsProps> = ({
       {rating !== null && (
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-[#E67915] text-white px-3 py-2 rounded-lg font-bold text-lg">
-            {rating.toFixed(1)}
+            {formatNumber(rating, i18n.language === 'ar')}
           </div>
           <div>
             <span className="font-bold text-gray-900">{getScoreWord(rating)}</span>
             <span className="text-gray-500 mx-2">·</span>
-            <span className="text-gray-600">{reviewCount.toLocaleString()} reviews</span>
+            <span className="text-gray-600">{formatTextWithNumbers(`${reviewCount.toLocaleString()} reviews`, i18n.language === 'ar')}</span>
           </div>
         </div>
       )}
@@ -111,7 +112,7 @@ export const GuestReviews: React.FC<GuestReviewsProps> = ({
                     />
                   </div>
                   <span className="text-sm font-semibold text-gray-700 w-8 text-right">
-                    {(value as number).toFixed(1)}
+                    {formatNumber(value as number, i18n.language === 'ar')}
                   </span>
                 </div>
               </div>

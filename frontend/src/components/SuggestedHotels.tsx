@@ -76,7 +76,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
   const hasFetchedWithCity = useRef(false);
   const hasNotifiedLoaded = useRef(false);
 
-  const fetchSuggestions = useCallback(async (locationQuery?: string) => {
+  const fetchSuggestions = useCallback(async (locationQuery?: string, isRetry = false): Promise<void> => {
     try {
       const cacheKey = `suggestedLocal:${locationQuery || 'default'}:${i18n.language}`;
 
@@ -87,12 +87,15 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
           const cachedData = JSON.parse(cached);
           const age = Date.now() - (cachedData._ts || 0);
           if (age < 10 * 60 * 1000) {
-            setHotels(cachedData.hotels);
-            setSource(cachedData.source);
-            setDestinationName(cachedData.destination);
-            setTaRatings(buildTaRatingsFromBackend(cachedData.hotels));
-            setLoading(false);
-            return cachedData;
+            // Only use cache if it actually has hotels
+            if (cachedData.hotels && cachedData.hotels.length > 0) {
+              setHotels(cachedData.hotels);
+              setSource(cachedData.source);
+              setDestinationName(cachedData.destination);
+              setTaRatings(buildTaRatingsFromBackend(cachedData.hotels));
+              setLoading(false);
+              return;
+            }
           }
         }
       } catch { /* sessionStorage unavailable */ }
@@ -111,7 +114,7 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
       const response = await fetch(url, { headers });
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.data.hotels && data.data.hotels.length > 0) {
         setHotels(data.data.hotels);
         setSource(data.data.source);
         setDestinationName(data.data.destination);
@@ -120,9 +123,20 @@ export const SuggestedHotels: React.FC<SuggestedHotelsProps> = ({ onLoaded }) =>
         try {
           sessionStorage.setItem(cacheKey, JSON.stringify({ ...data.data, _ts: Date.now() }));
         } catch { /* quota exceeded */ }
+      } else if (!isRetry && locationQuery && locationQuery.toLowerCase() !== DEFAULT_CITY.toLowerCase()) {
+        // No hotels found for detected city — fallback to default city
+        console.log(`⚠️ No hotels found for "${locationQuery}", falling back to ${DEFAULT_CITY}`);
+        await fetchSuggestions(DEFAULT_CITY, true);
+        return;
       }
     } catch (error) {
       console.error('Error fetching local suggestions:', error);
+      // On network/API error, fallback to default city if not already retrying
+      if (!isRetry && locationQuery && locationQuery.toLowerCase() !== DEFAULT_CITY.toLowerCase()) {
+        console.log(`⚠️ API error for "${locationQuery}", falling back to ${DEFAULT_CITY}`);
+        await fetchSuggestions(DEFAULT_CITY, true);
+        return;
+      }
     } finally {
       setLoading(false);
     }

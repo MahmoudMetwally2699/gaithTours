@@ -38,9 +38,20 @@ export function useUserLocation(language: string): UserLocationResult {
             return;
         }
 
-        // If location was previously denied, don't attempt
+        // If location was previously denied, still try IP-based detection
         if (localStorage.getItem(LOCATION_DENIED_KEY)) {
-            setIsDetecting(false);
+            setIsDetecting(true);
+            hasRun.current = true;
+            ipBasedLocation('en')
+                .then((detectedCity) => {
+                    if (detectedCity) {
+                        sessionStorage.setItem(SESSION_CACHE_KEY, detectedCity);
+                        setCity(detectedCity);
+                        console.log(`🌐 IP-based location (denied user): ${detectedCity}`);
+                    }
+                })
+                .catch(() => { /* IP detection failed, will use default */ })
+                .finally(() => setIsDetecting(false));
             return;
         }
 
@@ -82,28 +93,29 @@ export function useUserLocation(language: string): UserLocationResult {
  * 2. If that fails/times out, fall back to IP-based geolocation
  * 3. Reverse geocode coordinates via Nominatim
  */
-async function detectLocation(language: string): Promise<string | null> {
+async function detectLocation(_language: string): Promise<string | null> {
+    // Always detect in English so city names match the DB's cityNormalized field
+    const detectLang = 'en';
     // Try browser geolocation first
     try {
         const coords = await getBrowserCoords();
         console.log(`📍 Browser coordinates: ${coords.lat}, ${coords.lon}`);
-        const city = await reverseGeocode(coords.lat, coords.lon, language);
+        const city = await reverseGeocode(coords.lat, coords.lon, detectLang);
         if (city) return city;
     } catch (browserErr: any) {
         console.log(`⚠️ Browser geolocation failed: ${browserErr?.message || browserErr}`);
 
-        // If user explicitly denied, don't try IP fallback — mark as denied
+        // If user explicitly denied, mark as denied but still try IP fallback below
         if (browserErr?.code === 1) {
             // PERMISSION_DENIED
             localStorage.setItem(LOCATION_DENIED_KEY, 'true');
-            throw browserErr;
         }
     }
 
     // Fallback: IP-based geolocation (works even when browser geolocation times out)
     try {
         console.log('🌐 Trying IP-based geolocation fallback...');
-        const city = await ipBasedLocation(language);
+        const city = await ipBasedLocation(detectLang);
         if (city) return city;
     } catch (ipErr) {
         console.log('⚠️ IP-based geolocation also failed:', ipErr);
@@ -171,24 +183,45 @@ async function reverseGeocode(lat: number, lon: number, language: string): Promi
 }
 
 /**
- * IP-based geolocation fallback using ip-api.com (free, no key needed).
+ * IP-based geolocation fallback.
+ * Tries multiple free HTTPS-compatible services for reliability.
  * Returns city name directly without needing reverse geocoding.
  */
 async function ipBasedLocation(language: string): Promise<string | null> {
-    const response = await fetch(
-        `http://ip-api.com/json/?fields=status,city,regionName,country&lang=${language === 'ar' ? 'ar' : 'en'}`,
-        { headers: { 'Accept': 'application/json' } }
-    );
-
-    if (!response.ok) {
-        throw new Error(`ip-api HTTP ${response.status}`);
+    // Try ipapi.co first (HTTPS, no key needed, 1000/day free)
+    try {
+        const response = await fetch(
+            `https://ipapi.co/json/`,
+            { headers: { 'Accept': 'application/json' } }
+        );
+        if (response.ok) {
+            const data = await response.json();
+            if (data.city) {
+                const city = data.city || data.region || data.country_name || null;
+                console.log(`🌐 IP-based location (ipapi.co): ${city}`);
+                return city;
+            }
+        }
+    } catch (e) {
+        console.log('⚠️ ipapi.co failed, trying fallback...');
     }
 
-    const data = await response.json();
-    if (data.status === 'success') {
-        const city = data.city || data.regionName || data.country || null;
-        console.log(`🌐 IP-based location: ${city}`);
-        return city;
+    // Fallback: ip-api.com (HTTP only — may fail on HTTPS sites due to mixed content)
+    try {
+        const response = await fetch(
+            `http://ip-api.com/json/?fields=status,city,regionName,country&lang=${language === 'ar' ? 'ar' : 'en'}`,
+            { headers: { 'Accept': 'application/json' } }
+        );
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'success') {
+                const city = data.city || data.regionName || data.country || null;
+                console.log(`🌐 IP-based location (ip-api): ${city}`);
+                return city;
+            }
+        }
+    } catch {
+        console.log('⚠️ ip-api.com also failed (likely mixed content on HTTPS)');
     }
 
     return null;

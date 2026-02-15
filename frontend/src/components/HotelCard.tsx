@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { Hotel } from '../services/api';
 import { TripAdvisorRating } from '../services/tripadvisorService';
+import { formatNumber, formatTextWithNumbers } from '../utils/numberFormatter';
 
 interface HotelCardProps {
   hotel: Hotel & {
@@ -63,10 +64,12 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
         {typeof displayRating === 'number' && displayRating > 0 && (
           <div className="absolute -bottom-4 md:-bottom-5 right-3 md:right-4 bg-[#FF8C00] text-white rounded-xl w-9 h-9 md:w-11 md:h-11 flex flex-col items-center justify-center shadow-md z-10">
             <span className="text-sm md:text-base font-bold leading-none">
-              {taRating?.rating
-                ? (taRating.rating * 2).toFixed(1)
-                : Math.min(hotel.rating || 0, 10).toFixed(1)
-              }
+              {formatNumber(
+                taRating?.rating
+                  ? taRating.rating * 2
+                  : Math.min(hotel.rating || 0, 10),
+                isRTL
+              )}
             </span>
           </div>
         )}
@@ -79,7 +82,7 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
              {/* Review info - positioned for LTR always to stay near rating badge */}
              <div className="flex justify-end mb-1">
                 <div className="text-[10px] sm:text-xs text-gray-500 flex flex-col items-end ltr:mr-0.5 ltr:md:mr-1 rtl:ml-0.5 rtl:md:ml-1" style={{ direction: 'ltr', textAlign: 'right' }}>
-                    {displayReviewCount && <span className="truncate">{t('hotels.reviewCount', '{{count}} reviews', { count: displayReviewCount })}</span>}
+                    {displayReviewCount && <span className="truncate">{formatTextWithNumbers(t('hotels.reviewCount', '{{count}} reviews', { count: displayReviewCount }), isRTL)}</span>}
                     <span className="font-medium truncate">{getScoreWord(displayRating)}</span>
                  </div>
              </div>

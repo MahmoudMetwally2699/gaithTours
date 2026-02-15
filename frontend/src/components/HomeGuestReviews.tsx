@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon, StarIcon } from '@heroicons/react/24/solid';
+import { formatNumber } from '../utils/numberFormatter';
 
 interface Review {
   id: string;
@@ -231,7 +232,7 @@ export const HomeGuestReviews: React.FC = () => {
                 <p className="text-gray-400 text-xs truncate">{review.hotelCity}</p>
               </div>
               <div className="bg-[#F7871D] text-white rounded-lg px-2 py-1 ml-2 flex-shrink-0">
-                <span className="text-sm font-bold">{(review.hotelRating * 2).toFixed(1)}</span>
+                <span className="text-sm font-bold">{formatNumber(review.hotelRating * 2, i18n.language === 'ar')}</span>
               </div>
             </div>
           </div>

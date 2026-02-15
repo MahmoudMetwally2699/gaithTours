@@ -37,6 +37,20 @@ const resources = {
     }
 };
 
+// Clean up any stale region-specific language codes from storage (e.g. "en-US" → "en")
+['localStorage', 'sessionStorage'].forEach(storageType => {
+    try {
+        const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
+        const stored = storage.getItem('i18nextLng');
+        if (stored && stored.includes('-')) {
+            const clean = stored.split('-')[0];
+            if (['en', 'ar'].includes(clean)) {
+                storage.setItem('i18nextLng', clean);
+            }
+        }
+    } catch { /* storage unavailable */ }
+});
+
 i18n
     .use(LanguageDetector)
     .use(initReactI18next)
@@ -44,7 +58,9 @@ i18n
         resources,
         fallbackLng: 'en',
         supportedLngs: ['en', 'ar'],
+        load: 'languageOnly', // Always strip region: "en-US" → "en", "ar-SA" → "ar"
         nonExplicitSupportedLngs: true, // Maps "en-US", "en-GB" etc. → "en"
+        cleanCode: true, // Normalize language codes (lowercase, strip region)
         defaultNS: 'common',
         ns: ['common', 'home', 'admin', 'searchResults', 'hotelDetails', 'booking'],
 
@@ -82,10 +98,21 @@ const updateDirection = (lang: string) => {
 };
 
 // Initialize direction based on current language
-updateDirection(i18n.language || 'en');
+// Fix: strip region codes like "en-US" → "en" that the detector may pass through
+const resolvedLang = (i18n.language || 'en').split('-')[0].split('_')[0];
+if (resolvedLang !== i18n.language) {
+    i18n.changeLanguage(resolvedLang);
+}
+updateDirection(resolvedLang);
 
 // Listen for language changes
 i18n.on('languageChanged', (lng) => {
+    // Strip region codes (e.g. "en-US" → "en")
+    const clean = lng.split('-')[0].split('_')[0];
+    if (clean !== lng) {
+        i18n.changeLanguage(clean);
+        return; // Will re-trigger this callback with the clean code
+    }
     updateDirection(lng);
 });
 

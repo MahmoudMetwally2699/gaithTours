@@ -27,11 +27,11 @@ export const Home: React.FC = () => {
       <div className="flex flex-col min-h-screen overflow-x-clip">
         <MainSection />
         <ForNewUsers />
-        <SuggestedHotels onLoaded={handleContentLoaded} />
-        <OffersBanner />
         <LazySection height="400px" skeleton="hotel-cards">
           <PopularProperties />
         </LazySection>
+        <OffersBanner />
+        <SuggestedHotels onLoaded={handleContentLoaded} />
         <LazySection height="200px" skeleton="simple">
           <WhyBookWithGaith />
         </LazySection>

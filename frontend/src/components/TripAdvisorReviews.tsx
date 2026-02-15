@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber, formatTextWithNumbers } from '../utils/numberFormatter';
 import { getTripAdvisorRatings, TripAdvisorRating, TripAdvisorReview } from '../services/tripadvisorService';
 
 interface TripAdvisorReviewsProps {
@@ -139,13 +140,13 @@ export const TripAdvisorReviews: React.FC<TripAdvisorReviewsProps> = ({ hotelNam
           {/* Rating Score */}
           <div className="flex items-center gap-4">
             <div className="bg-[#34E0A1] text-white text-3xl font-bold w-16 h-16 rounded-xl flex items-center justify-center shadow-sm">
-              {taData.rating.toFixed(1)}
+              {formatNumber(taData.rating, i18n.language === 'ar')}
             </div>
             <div>
               <div className="text-lg font-bold text-gray-800">{getRatingText(taData.rating)}</div>
               {renderBubbleRating(taData.rating)}
               <div className="text-sm text-gray-500 mt-1">
-                {Number(taData.num_reviews).toLocaleString()} {t('common:hotels.reviews', 'reviews')}
+                {formatTextWithNumbers(`${Number(taData.num_reviews).toLocaleString()} ${t('common:hotels.reviews', 'reviews')}`, i18n.language === 'ar')}
               </div>
             </div>
           </div>

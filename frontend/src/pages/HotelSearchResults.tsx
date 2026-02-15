@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
@@ -29,8 +29,6 @@ import { faBed, faBedPulse, faUtensils, faWifi, faPersonSwimming, faSquareParkin
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import "../components/DateRangePicker.css";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import { searchHotels } from '../services/hotelService';
 import { Hotel } from '../types/hotel';
 import { useDirection } from '../hooks/useDirection';
@@ -40,18 +38,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { CompareBar } from '../components/CompareHotels';
 import { isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { Link } from 'react-router-dom';
-import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadvisorService';
+import { TripAdvisorRating } from '../services/tripadvisorService';
+import { formatNumber, formatTextWithNumbers } from '../utils/numberFormatter';
 
 // Lazy-loaded components — only downloaded when actually needed
 const CompareHotels = React.lazy(() => import('../components/CompareHotels').then(m => ({ default: m.CompareHotels })));
-
-// Fix for default marker icons in Leaflet with React
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// SearchMapView: contains Leaflet, MapContainer, Marker, Popup (~40KB gzipped) — only loaded on map open
+const SearchMapView = lazy(() => import('../components/SearchMapView'));
+// Sidebar mini-map preview — lazy so Leaflet doesn't block initial render
+const SidebarMapPreview = lazy(() => import('../components/SidebarMapPreview'));
 
 interface SearchFilters {
   priceRange: [number, number];
@@ -288,38 +283,6 @@ const getHotelPosition = (hotel: Hotel, index: number, cityCenter: [number, numb
   return [lat, lng];
 };
 
-/**
- * MapController – lives inside MapContainer and flies to the selected hotel + opens its popup.
- */
-const MapController: React.FC<{
-  selectedHotel: Hotel | null;
-  filteredHotels: Hotel[];
-  cityCenter: [number, number];
-  markerRefs: React.MutableRefObject<Record<string, L.Marker>>;
-}> = ({ selectedHotel, filteredHotels, cityCenter, markerRefs }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!selectedHotel) return;
-    const idx = filteredHotels.findIndex(h => h.id === selectedHotel.id);
-    if (idx === -1) return;
-    const [lat, lng] = getHotelPosition(selectedHotel, idx, cityCenter);
-    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
-
-    // Open the popup after the fly animation completes
-    const hotelKey = String(selectedHotel.id);
-    const timer = setTimeout(() => {
-      const marker = markerRefs.current[hotelKey];
-      if (marker) {
-        marker.openPopup();
-      }
-    }, 900);
-    return () => clearTimeout(timer);
-  }, [selectedHotel, filteredHotels, cityCenter, map, markerRefs]);
-
-  return null;
-};
-
 export const HotelSearchResults: React.FC = () => {
   const { t, i18n } = useTranslation(['searchResults', 'common']);
   const { direction } = useDirection();
@@ -369,12 +332,8 @@ export const HotelSearchResults: React.FC = () => {
   const [totalHotels, setTotalHotels] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [showMap, setShowMap] = useState(false);
   const [fullscreenMap, setFullscreenMap] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
-  const mapCarouselRef = useRef<HTMLDivElement>(null);
-  const markerRefs = useRef<Record<string, L.Marker>>({});
 
   // Toggle body class for fullscreen map (hides chat button)
   useEffect(() => {
@@ -429,7 +388,6 @@ export const HotelSearchResults: React.FC = () => {
   // This useEffect fetches TA data for hotels NOT yet in the backend DB,
   // which also triggers the TripAdvisor API fetch on the server and saves to DB.
   const fetchedTaHotelNamesRef = useRef<Set<string>>(new Set());
-  const taFetchInProgressRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (hotels.length === 0 || !searchQuery.destination) return;
@@ -465,70 +423,36 @@ export const HotelSearchResults: React.FC = () => {
       } catch (e) { /* ignore */ }
     }
 
-    // Now find hotels WITHOUT backend TA data that need API fetch
+    // Also check sessionStorage cache for any hotels without backend TA data (no API calls needed)
     const allHotelNames = hotels.map(h => h.name).filter(Boolean);
     const unfetchedNames = allHotelNames.filter(name => !fetchedTaHotelNamesRef.current.has(name));
 
-    if (unfetchedNames.length === 0 || taFetchInProgressRef.current) return;
-
-    // Check sessionStorage cache first
-    const cacheKey = `ta_ratings_${searchQuery.destination}`;
-    let cachedRatings: Record<string, TripAdvisorRating> = {};
-    try {
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        cachedRatings = JSON.parse(cached);
-      }
-    } catch (e) { /* ignore */ }
-
-    const fromCache: Record<string, TripAdvisorRating> = {};
-    const needFetch: string[] = [];
-    for (const name of unfetchedNames) {
-      if (cachedRatings[name]) {
-        fromCache[name] = cachedRatings[name];
-      } else {
-        needFetch.push(name);
-      }
-    }
-
-    // Apply cached results immediately
-    if (Object.keys(fromCache).length > 0) {
-      setTaRatings(prev => ({ ...prev, ...fromCache }));
-      Object.keys(fromCache).forEach(name => fetchedTaHotelNamesRef.current.add(name));
-    }
-
-    // Fetch remaining from TripAdvisor API in sequential batches of 20
-    if (needFetch.length > 0) {
-      taFetchInProgressRef.current = true;
-      const fetchBatches = async () => {
-        for (let i = 0; i < needFetch.length; i += 20) {
-          const batch = needFetch.slice(i, i + 20);
-          try {
-            const ratings = await getTripAdvisorRatings(batch, searchQuery.destination);
-            setTaRatings(prev => ({ ...prev, ...ratings }));
-            batch.forEach(name => fetchedTaHotelNamesRef.current.add(name));
-            // Cache in sessionStorage
-            try {
-              const existing = sessionStorage.getItem(cacheKey);
-              const merged = existing ? { ...JSON.parse(existing), ...ratings } : ratings;
-              sessionStorage.setItem(cacheKey, JSON.stringify(merged));
-            } catch (e) { /* ignore */ }
-          } catch (err) {
-            console.error('TripAdvisor ratings batch error:', err);
-            // Mark as fetched anyway to avoid retry loop
-            batch.forEach(name => fetchedTaHotelNamesRef.current.add(name));
+    if (unfetchedNames.length > 0) {
+      const cacheKey = `ta_ratings_${searchQuery.destination}`;
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const cachedRatings: Record<string, TripAdvisorRating> = JSON.parse(cached);
+          const fromCache: Record<string, TripAdvisorRating> = {};
+          for (const name of unfetchedNames) {
+            if (cachedRatings[name]) {
+              fromCache[name] = cachedRatings[name];
+              fetchedTaHotelNamesRef.current.add(name);
+            }
+          }
+          if (Object.keys(fromCache).length > 0) {
+            setTaRatings(prev => ({ ...prev, ...fromCache }));
           }
         }
-        taFetchInProgressRef.current = false;
-      };
-      fetchBatches();
+      } catch (e) { /* ignore */ }
+      // No additional API fetch — backend search already enriches TA data
+      // via batch DB lookup + fuzzy matching + background API fetch
     }
   }, [hotels, searchQuery.destination]);
 
   // Reset fetched TA names when destination changes
   useEffect(() => {
     fetchedTaHotelNamesRef.current = new Set();
-    taFetchInProgressRef.current = false;
     setTaRatings({});
   }, [searchQuery.destination]);
 
@@ -959,36 +883,6 @@ export const HotelSearchResults: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotels, filters]);
 
-  // IntersectionObserver: sync carousel scroll with selectedHotel
-  useEffect(() => {
-    if (!fullscreenMap || !mapCarouselRef.current) return;
-    const container = mapCarouselRef.current;
-    const cards = container.querySelectorAll<HTMLElement>('[data-hotel-id]');
-    if (cards.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-            const hotelId = (entry.target as HTMLElement).dataset.hotelId;
-            if (hotelId) {
-              setSelectedHotel(prev => {
-                if (prev && String(prev.id) === hotelId) return prev;
-                const found = filteredHotels.find(h => String(h.id) === hotelId);
-                return found || prev;
-              });
-            }
-          }
-        }
-      },
-      { root: container, threshold: 0.6 }
-    );
-
-    cards.forEach(card => observer.observe(card));
-    return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullscreenMap, filteredHotels]);
-
   // Check if any filters are active (for UI decisions like showing skeletons)
   const hasActiveFilters = useMemo(() => {
     return filters.starRating.length > 0 ||
@@ -1042,16 +936,19 @@ export const HotelSearchResults: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header - Compact & Modern */}
+      {/* Header - Modern Gradient */}
       <div className="relative w-full overflow-visible font-sans z-40">
-        {/* Solid Background Color */}
-        <div className="absolute inset-0 z-0 overflow-hidden bg-[#E67915] h-full shadow-md"></div>
+        {/* Gradient Background */}
+        <div className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-br from-[#E67915] via-[#d4700f] to-[#c2650d] h-full shadow-lg">
+          {/* Subtle pattern overlay */}
+          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+        </div>
 
         {/* Main Content Container */}
         <div className="relative z-10 flex flex-col px-3 sm:px-6 lg:px-16 py-2 sm:py-3 pb-4 sm:pb-6">
 
           {/* Top Bar: Logo & Auth */}
-          <header className="flex flex-row justify-between items-center w-full mb-3 relative z-[60]">
+          <header className="flex flex-row justify-between items-center w-full mb-4 relative z-[60]">
              <div className="flex items-center gap-2">
                  {/* Logo */}
                  <a href="/" className="flex-shrink-0 z-10">
@@ -1145,13 +1042,15 @@ export const HotelSearchResults: React.FC = () => {
               <div className="w-full max-w-5xl mx-auto">
                 <div
                   onClick={() => setIsSearchExpanded(true)}
-                  className="bg-white rounded-lg p-3 shadow-lg border border-orange-500 cursor-pointer hover:shadow-xl transition-all"
+                  className="bg-white/95 backdrop-blur-sm rounded-xl p-3.5 shadow-[0_4px_20px_rgba(0,0,0,0.1)] cursor-pointer hover:shadow-[0_6px_24px_rgba(0,0,0,0.15)] transition-all border border-white/80"
                 >
                   <div className="flex items-center gap-3">
-                    <MagnifyingGlassIcon className="h-4 w-4 text-gray-600 shrink-0" />
+                    <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+                      <MagnifyingGlassIcon className="h-4 w-4 text-[#E67915]" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-sm text-gray-900 truncate">{editableDestination || 'Where to?'}</div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-500 font-medium">
                         {checkInDate && checkOutDate ? (
                           `${checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${checkOutDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • ${guestCounts.adults} Ad.`
                         ) : t('searchResults:searchBar.addDates', 'Add dates')}
@@ -1393,12 +1292,14 @@ export const HotelSearchResults: React.FC = () => {
 
           {/* Desktop Search Bar - Inline (md and above) */}
           <div className="hidden md:block w-full max-w-5xl mx-auto">
-            <div className="bg-white rounded-full p-2 shadow-xl flex items-center relative z-50 gap-0 border border-gray-100">
+            <div className="bg-white/95 backdrop-blur-sm rounded-full p-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] flex items-center relative z-50 gap-0 border border-white/80 ring-1 ring-black/[0.04]">
               {/* Destination */}
-              <div className="flex-[1.5] px-6 py-2 border-r border-gray-100 flex items-center gap-4 relative z-50 hover:bg-gray-50 rounded-full transition-colors cursor-pointer" ref={autocompleteRef}>
-                <MapPinIcon className="h-6 w-6 text-gray-400 shrink-0" />
+              <div className="flex-[1.5] px-6 py-2.5 border-r border-gray-100/80 flex items-center gap-3 relative z-50 hover:bg-orange-50/40 rounded-full transition-all cursor-pointer" ref={autocompleteRef}>
+                <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <MapPinIcon className="h-5 w-5 text-[#E67915]" />
+                </div>
                 <div className="flex flex-col w-full min-w-0">
-                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('searchResults:searchBar.destination', 'Destination')}</span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">{t('searchResults:searchBar.destination', 'Destination')}</span>
                   <input
                     type="text"
                     value={editableDestination}
@@ -1418,7 +1319,7 @@ export const HotelSearchResults: React.FC = () => {
                         handleUpdateSearch();
                       }
                     }}
-                    className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium placeholder-gray-400 focus:ring-0 w-full truncate focus:outline-none"
+                    className="bg-transparent border-none p-0 text-gray-800 text-sm font-semibold placeholder-gray-400 focus:ring-0 w-full truncate focus:outline-none"
                     placeholder="Where are you going?"
                   />
                 </div>
@@ -1489,10 +1390,12 @@ export const HotelSearchResults: React.FC = () => {
               </div>
 
               {/* Dates - Unified Range */}
-              <div className="flex-[2] px-6 py-2 border-r border-gray-100 flex items-center gap-4 hover:bg-gray-50 rounded-full transition-colors cursor-pointer">
-                <ClockIcon className="h-6 w-6 text-gray-400 shrink-0" />
-                <div className="flex flex-col w-full pointer-events-none"> {/* Disable pointer events to let datepicker handle clicks properly via custom input */}
-                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('searchResults:searchBar.checkInCheckOut', 'Check-in - Check-out')}</span>
+              <div className="flex-[2] px-6 py-2.5 border-r border-gray-100/80 flex items-center gap-3 hover:bg-orange-50/40 rounded-full transition-all cursor-pointer">
+                <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <ClockIcon className="h-5 w-5 text-[#E67915]" />
+                </div>
+                <div className="flex flex-col w-full pointer-events-none">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">{t('searchResults:searchBar.checkInCheckOut', 'Check-in - Check-out')}</span>
                   <div className="w-full pointer-events-auto">
                     <div dir="ltr">
                       <DatePicker
@@ -1524,7 +1427,7 @@ export const HotelSearchResults: React.FC = () => {
                             }
                             readOnly
                             placeholder={t('searchResults:searchBar.addDates', 'Add dates')}
-                            className="bg-transparent border-none p-0 text-gray-600 text-sm font-medium w-full focus:ring-0 cursor-pointer placeholder-gray-400 focus:outline-none"
+                            className="bg-transparent border-none p-0 text-gray-800 text-sm font-semibold w-full focus:ring-0 cursor-pointer placeholder-gray-400 focus:outline-none"
                           />
                         }
                       />
@@ -1536,13 +1439,15 @@ export const HotelSearchResults: React.FC = () => {
               {/* Guests */}
               <div className="flex-[1.5] relative">
                 <button
-                  className="w-full px-6 py-2 flex items-center gap-4 text-left hover:bg-gray-50 rounded-full transition-colors"
+                  className="w-full px-6 py-2.5 flex items-center gap-3 text-left hover:bg-orange-50/40 rounded-full transition-all"
                   onClick={() => setShowGuestPopover(!showGuestPopover)}
                 >
-                  <UserIcon className="h-6 w-6 text-gray-400 shrink-0" />
+                  <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="h-5 w-5 text-[#E67915]" />
+                  </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-0.5">{t('searchResults:searchBar.guests', 'Guests')}</span>
-                    <span className="text-gray-600 text-sm font-medium truncate">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">{t('searchResults:searchBar.guests', 'Guests')}</span>
+                    <span className="text-gray-800 text-sm font-semibold truncate">
                       {t('searchResults:searchBar.guestsLabel', {
                         rooms: guestCounts.rooms,
                         adults: guestCounts.adults + guestCounts.children,
@@ -1684,7 +1589,7 @@ export const HotelSearchResults: React.FC = () => {
               <div className="p-1.5 pl-0">
                 <button
                   onClick={handleUpdateSearch}
-                  className="w-14 h-14 bg-[#E67915] text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-all shadow-lg hover:shadow-orange-500/40 hover:scale-105 active:scale-95"
+                  className="w-14 h-14 bg-gradient-to-br from-[#E67915] to-[#d4700f] text-white rounded-full flex items-center justify-center hover:from-[#d4700f] hover:to-[#c2650d] transition-all shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-105 active:scale-95"
                   title="Search"
                 >
                   <MagnifyingGlassIcon className="w-6 h-6 stroke-[3]" />
@@ -1694,16 +1599,16 @@ export const HotelSearchResults: React.FC = () => {
           </div>
 
           {/* Travelling for work checkbox */}
-          <div className="hidden sm:flex items-center gap-3 mt-2">
-            <input type="checkbox" id="business" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-white/30 focus:ring-offset-0 focus:ring-transparent bg-transparent" />
-            <label htmlFor="business" className="text-white text-xs sm:text-sm cursor-pointer hover:text-orange-100 transition-colors">{t('searchResults:searchBar.travelingForWork', "I'm travelling for work")}</label>
+          <div className="hidden sm:flex items-center gap-3 mt-3">
+            <input type="checkbox" id="business" className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded border-white/40 focus:ring-offset-0 focus:ring-white/30 bg-white/10 checked:bg-white checked:border-white text-[#E67915]" />
+            <label htmlFor="business" className="text-white/90 text-xs sm:text-sm cursor-pointer hover:text-white transition-colors font-medium">{t('searchResults:searchBar.travelingForWork', "I'm travelling for work")}</label>
           </div>
         </div>
       </div>
 
       {/* Results Header */}
-      <div className="bg-white border-b sticky top-0 z-30 transition-all duration-300">
-        <div className="px-3 sm:px-6 py-3 sm:py-4">
+      <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/80 sticky top-0 z-30 transition-all duration-300 shadow-sm">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 max-w-7xl mx-auto">
           {/* Mobile Action Buttons - Only show when search is compact on mobile */}
           {!isSearchExpanded && (
             <div className="md:hidden flex items-center justify-center gap-2 mb-2 max-w-md mx-auto">
@@ -1727,7 +1632,7 @@ export const HotelSearchResults: React.FC = () => {
 
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
+              <h1 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900">
                  {t('searchResults:hotelCard.propertiesFoundIn', { count: totalHotels, destination: searchQuery.destination })}
                 {hotels.length > 0 && (
                   <span className="ms-2 text-xs sm:text-sm font-normal text-gray-600">
@@ -1740,7 +1645,7 @@ export const HotelSearchResults: React.FC = () => {
                 <select
                   value={filters.sortBy}
                   onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                  className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500 sm:px-3 sm:py-2 flex-1 sm:flex-none"
+                  className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 sm:px-3 sm:py-2 flex-1 sm:flex-none bg-gray-50 hover:bg-white transition-colors font-medium text-gray-700"
                 >
                   <option value="top_picks">{t('searchResults:sort.top_picks', 'Top picks')}</option>
                   <option value="price_low">{t('searchResults:sort.price_low', 'Price (low)')}</option>
@@ -1758,79 +1663,18 @@ export const HotelSearchResults: React.FC = () => {
           {/* Filters Sidebar - Always visible on desktop */}
           <div className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-24">
-              {/* Show on Map */}
-              {/* Map Preview Card */}
-              <div
-                className="relative h-24 sm:h-32 w-full rounded-xl overflow-hidden mb-6 cursor-pointer group shadow-sm hover:shadow-md transition-shadow border border-gray-200"
-                onClick={() => setFullscreenMap(true)}
-              >
-                {/* Static Map Background */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <MapContainer
-                    center={getCityCoordinates(searchQuery.destination)}
-                    zoom={13}
-                    zoomControl={false}
-                    dragging={false}
-                    scrollWheelZoom={false}
-                    doubleClickZoom={false}
-                    attributionControl={false}
-                    style={{ height: '100%', width: '100%' }}
-                  >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <Marker position={getCityCoordinates(searchQuery.destination)} />
-                  </MapContainer>
+              {/* Live Map Preview — lazy-loaded */}
+              <Suspense fallback={
+                <div className="relative h-24 sm:h-32 w-full rounded-xl overflow-hidden mb-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-gray-200 flex items-center justify-center">
+                  <MapIcon className="h-8 w-8 text-blue-400 animate-pulse" />
                 </div>
-
-                {/* Overlay Button */}
-                <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-colors pointer-events-none">
-                    <MapIcon className="h-4 w-4" />
-                    {t('searchResults:map.showMap', 'Show on map')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Map Preview - Interactive Leaflet Map */}
-              {showMap && (
-                <div className="mb-4 rounded-lg overflow-hidden border border-gray-200">
-                  <MapContainer
-                    center={getCityCoordinates(searchQuery.destination)}
-                    zoom={12}
-                    style={{ height: '200px', width: '100%' }}
-                    scrollWheelZoom={false}
-                  >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    />
-                    {filteredHotels.slice(0, 20).map((hotel) => {
-                      const coords = (hotel as any).coordinates;
-                      if (coords && coords.latitude && coords.longitude) {
-                        return (
-                          <Marker
-                            key={hotel.id}
-                            position={[coords.latitude, coords.longitude]}
-                          >
-                            <Popup>
-                              <div className="text-sm">
-                                <strong>{(i18n.language === 'ar' && (hotel as any).nameAr) ? (hotel as any).nameAr : hotel.name}</strong>
-                                {hotel.price && hotel.price > 0 && (
-                                  <div className="text-orange-600 font-bold font-price">
-                                    {currency} {hotel.price}
-                                  </div>
-                                )}
-                              </div>
-                            </Popup>
-                          </Marker>
-                        );
-                      }
-                      return null;
-                    })}
-                  </MapContainer>
-                </div>
-              )}
+              }>
+                <SidebarMapPreview
+                  center={getCityCoordinates(searchQuery.destination)}
+                  label={String(t('searchResults:map.showMap', 'Show on map'))}
+                  onClick={() => setFullscreenMap(true)}
+                />
+              </Suspense>
 
               {/* Budget Filter with Histogram */}
               <div className="mb-4 border-b border-gray-200 pb-4">
@@ -2090,23 +1934,53 @@ export const HotelSearchResults: React.FC = () => {
             {/* Loading State */}
             {loading && (
               <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      {/* Image Skeleton */}
-                      <div className="w-full sm:w-48 h-48 sm:h-32 bg-gray-200 rounded-lg flex-shrink-0" />
-
-                      {/* Content Skeleton */}
-                      <div className="flex-1 space-y-2 min-w-0">
-                        <div className="h-5 bg-gray-200 rounded w-3/4" />
-                        <div className="h-4 bg-gray-200 rounded w-1/3" />
-                        <div className="h-4 bg-gray-200 rounded w-1/2" />
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden animate-pulse">
+                    {/* Mobile skeleton */}
+                    <div className="sm:hidden flex flex-row min-h-[160px]">
+                      <div className="w-[120px] flex-shrink-0 bg-gray-200" />
+                      <div className="flex-1 p-3 flex flex-col gap-2">
+                        <div className="h-4 bg-gray-200 rounded w-4/5" />
+                        <div className="flex gap-1">
+                          {[1,2,3,4,5].map(s => <div key={s} className="w-3 h-3 bg-gray-200 rounded-sm" />)}
+                        </div>
+                        <div className="h-3 bg-gray-200 rounded w-2/3" />
+                        <div className="mt-auto flex items-end justify-between">
+                          <div>
+                            <div className="h-3 bg-gray-200 rounded w-16 mb-1" />
+                            <div className="h-5 bg-gray-200 rounded w-20" />
+                          </div>
+                          <div className="h-3 bg-gray-200 rounded w-12" />
+                        </div>
                       </div>
-
-                      {/* Price/Action Skeleton */}
-                      <div className="w-full sm:w-32 flex flex-row sm:flex-col justify-between sm:justify-start gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 sm:border-transparent">
-                        <div className="h-6 bg-gray-200 rounded w-20 sm:w-full" />
-                        <div className="h-8 bg-gray-200 rounded w-24 sm:w-full" />
+                    </div>
+                    {/* Desktop skeleton */}
+                    <div className="hidden sm:flex flex-row h-[220px]">
+                      <div className="w-48 md:w-56 lg:w-64 flex-shrink-0 bg-gray-200" />
+                      <div className="flex-1 flex flex-row min-w-0">
+                        <div className="flex-1 p-4 flex flex-col gap-3">
+                          <div className="h-5 bg-gray-200 rounded w-3/4" />
+                          <div className="flex gap-1">
+                            {[1,2,3,4,5].map(s => <div key={s} className="w-4 h-4 bg-gray-200 rounded-sm" />)}
+                            <div className="h-4 bg-gray-200 rounded w-24 ms-2" />
+                          </div>
+                          <div className="flex gap-2 mt-1">
+                            <div className="h-6 bg-gray-200 rounded w-8" />
+                            <div className="h-4 bg-gray-200 rounded w-20 self-center" />
+                          </div>
+                          <div className="flex gap-2 mt-auto">
+                            {[1,2,3].map(f => <div key={f} className="h-5 bg-gray-100 rounded-full w-16" />)}
+                          </div>
+                        </div>
+                        <div className="w-40 p-4 flex flex-col items-end justify-between border-s border-gray-100">
+                          <div className="h-3 bg-gray-200 rounded w-24" />
+                          <div className="text-end">
+                            <div className="h-3 bg-gray-200 rounded w-20 mb-1" />
+                            <div className="h-6 bg-gray-200 rounded w-28" />
+                            <div className="h-3 bg-gray-100 rounded w-24 mt-1" />
+                          </div>
+                          <div className="h-9 bg-gray-200 rounded-lg w-full" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2205,10 +2079,12 @@ export const HotelSearchResults: React.FC = () => {
                               return (
                                 <>
                                   <div className="bg-[#E67915] text-white text-xs font-bold px-1.5 py-1 rounded-tl-md rounded-tr-md rounded-br-md min-w-[28px] text-center">
-                                    {isTripAdvisor
-                                      ? (displayRating! * 2).toFixed(1)
-                                      : Math.min(hotel.rating, 10).toFixed(1)
-                                    }
+                                    {formatNumber(
+                                      isTripAdvisor
+                                        ? displayRating! * 2
+                                        : Math.min(hotel.rating, 10),
+                                      i18n.language === 'ar'
+                                    )}
                                   </div>
                                   <div className="flex flex-col">
                                     <span className="text-xs font-semibold text-[#1a1a2e]">
@@ -2219,8 +2095,8 @@ export const HotelSearchResults: React.FC = () => {
                                     </span>
                                     <span className="text-[10px] text-gray-500">
                                       {displayReviews
-                                        ? `${Number(displayReviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`
-                                        : `${hotel.reviewCount?.toLocaleString() || '0'} ${t('searchResults:hotelCard.reviews', 'reviews')}`
+                                        ? formatTextWithNumbers(`${Number(displayReviews).toLocaleString()} ${t('searchResults:hotelCard.reviews', 'reviews')}`, i18n.language === 'ar')
+                                        : formatTextWithNumbers(`${hotel.reviewCount?.toLocaleString() || '0'} ${t('searchResults:hotelCard.reviews', 'reviews')}`, i18n.language === 'ar')
                                       }
                                     </span>
                                   </div>
@@ -2604,9 +2480,10 @@ export const HotelSearchResults: React.FC = () => {
                                       const taR = taRatings[hotel.name];
                                       const backendTA = (hotel as any).tripadvisor_rating;
                                       const displayRating = taR?.rating || backendTA || null;
-                                      return displayRating
-                                        ? (displayRating * 2).toFixed(1)
-                                        : Math.min(hotel.rating, 10).toFixed(1);
+                                      const ratingValue = displayRating
+                                        ? displayRating * 2
+                                        : Math.min(hotel.rating, 10);
+                                      return formatNumber(ratingValue, i18n.language === 'ar');
                                     })()}
                                 </div>
                             </div>
@@ -2928,273 +2805,34 @@ export const HotelSearchResults: React.FC = () => {
         </div>
       )}
 
-      {/* Fullscreen Map View */}
+      {/* Fullscreen Map View — Lazy-loaded (Leaflet ~40KB saved on initial load) */}
       {fullscreenMap && (
-        <div className="fixed inset-0 z-50 bg-white">
-          {/* Header */}
-          <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setFullscreenMap(false)}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-              >
-                <XMarkIcon className="h-5 w-5" />
-                <span>{t('searchResults:map.closeMap', 'Close map')}</span>
-              </button>
-              <div className="text-sm text-gray-600">
-                {filteredHotels.length} {t('common.properties', 'properties')}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm"
-              >
-                <option value="top_picks">Top picks</option>
-                <option value="price_low">Price (lowest)</option>
-                <option value="price_high">Price (highest)</option>
-                <option value="rating">Best reviewed</option>
-              </select>
+        <Suspense fallback={
+          <div className="fixed inset-0 z-50 bg-white flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">Loading map...</p>
             </div>
           </div>
-
-          {/* Split View: Hotels List + Map */}
-          <div className="flex h-[calc(100vh-57px)]">
-            {/* Hotels List - Left Side */}
-            <div className="hidden md:block w-80 lg:w-96 border-r overflow-y-auto bg-gray-50">
-              {filteredHotels.map((hotel) => (
-                <div
-                  key={hotel.id}
-                  onClick={() => {
-                    setSelectedHotel(hotel);
-                    handleHotelClick(hotel);
-                  }}
-                  onMouseEnter={() => setSelectedHotel(hotel)}
-                  className={`p-3 border-b bg-white hover:bg-blue-50 cursor-pointer transition-colors ${
-                    selectedHotel?.id === hotel.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                  }`}
-                >
-                  <div className="flex gap-3">
-                    {/* Hotel Image */}
-                    <div className="w-24 h-20 flex-shrink-0">
-                      {hotel.image ? (
-                        <img
-                          src={hotel.image}
-                          alt={hotel.name}
-                          className="w-full h-full object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                          <BuildingOfficeIcon className="h-8 w-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hotel Info */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-blue-700 text-sm truncate">
-                        {hotel.name}
-                      </h4>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        {renderStars((hotel as any).star_rating || Math.round(hotel.rating / 2))}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        {(() => {
-                          const taR = taRatings[hotel.name];
-                          const backendTA = (hotel as any).tripadvisor_rating;
-                          const displayRating = taR?.rating || backendTA || null;
-                          const displayReviews = taR?.num_reviews || (hotel as any).tripadvisor_num_reviews || null;
-                          const effectiveRating = displayRating ? displayRating * 2 : hotel.rating;
-                          return (
-                            <>
-                              <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
-                                {Math.min(effectiveRating, 10).toFixed(1)}
-                              </span>
-                              <span className="text-xs text-gray-600">
-                                {getScoreText(effectiveRating, t)}
-                                {displayReviews ? ` (${Number(displayReviews).toLocaleString()})` : ''}
-                              </span>
-                            </>
-                          );
-                        })()}
-                      </div>
-                      {hotel.price && hotel.price > 0 && (
-                        <div className="mt-1.5">
-                          <span className="font-bold text-gray-900 font-price">
-                            {formatPrice(hotel.price)}
-                          </span>
-                          <span className="text-xs text-gray-500 ml-1">per night</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Map - Right Side */}
-            <div className="flex-1 relative">
-              <MapContainer
-                center={getCityCoordinates(searchQuery.destination)}
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-                scrollWheelZoom={true}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                />
-                <MapController
-                  selectedHotel={selectedHotel}
-                  filteredHotels={filteredHotels}
-                  cityCenter={getCityCoordinates(searchQuery.destination)}
-                  markerRefs={markerRefs}
-                />
-                {filteredHotels.map((hotel, index) => {
-                  const coords = (hotel as any).coordinates;
-                  // If no coordinates, generate stable fake ones based on hotel index
-                  const cityCenter = getCityCoordinates(searchQuery.destination);
-                  // Use index-based offset to create stable, spread-out positions
-                  const angle = (index * 137.5) * (Math.PI / 180); // Golden angle for good distribution
-                  const radius = 0.01 + (index % 10) * 0.003; // Varying radius
-                  const lat = coords?.latitude || cityCenter[0] + Math.cos(angle) * radius;
-                  const lng = coords?.longitude || cityCenter[1] + Math.sin(angle) * radius;
-
-                  // Create custom price marker
-                  const priceIcon = L.divIcon({
-                    className: 'custom-price-marker',
-                    html: `<div class="px-2 py-1 rounded-lg text-xs font-bold shadow-lg whitespace-nowrap ${
-                      selectedHotel?.id === hotel.id
-                        ? 'bg-blue-600 text-white scale-110'
-                        : 'bg-white text-gray-900 border border-gray-300'
-                    }" style="transform: translate(-50%, -50%);">
-                      ${hotel.price && hotel.price > 0 ? `${currencySymbol}${Math.round(hotel.price)}` : 'View'}
-                    </div>`,
-                    iconSize: [80, 30],
-                    iconAnchor: [40, 15],
-                  });
-
-                  return (
-                    <Marker
-                      key={hotel.id}
-                      position={[lat, lng]}
-                      icon={priceIcon}
-                      ref={(ref: any) => {
-                        if (ref) markerRefs.current[String(hotel.id)] = ref;
-                      }}
-                      eventHandlers={{
-                        click: () => {
-                          setSelectedHotel(hotel);
-                        },
-                        mouseover: () => {
-                          setSelectedHotel(hotel);
-                        }
-                      }}
-                    >
-                      <Popup>
-                        <div className="w-48">
-                          {hotel.image && (
-                            <img
-                              src={hotel.image}
-                              alt={hotel.name}
-                              className="w-full h-24 object-cover rounded-t"
-                            />
-                          )}
-                          <div className="p-2">
-                            <h4 className="font-bold text-sm text-blue-700">{hotel.name}</h4>
-                            <div className="flex items-center gap-1 mt-1">
-                              {(() => {
-                                const taR = taRatings[hotel.name];
-                                const backendTA = (hotel as any).tripadvisor_rating;
-                                const displayRating = taR?.rating || backendTA || null;
-                                const effectiveRating = displayRating ? displayRating * 2 : hotel.rating;
-                                return (
-                                  <>
-                                    <span className="bg-blue-900 text-white text-xs px-1.5 py-0.5 rounded font-bold">
-                                      {Math.min(effectiveRating, 10).toFixed(1)}
-                                    </span>
-                                    <span className="text-xs text-gray-600">{getScoreText(effectiveRating, t)}</span>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                            {hotel.price && hotel.price > 0 && (
-                              <div className="mt-2 font-bold">
-                                {formatPrice(hotel.price)} <span className="text-xs font-normal text-gray-500">per night</span>
-                              </div>
-                            )}
-                            <button
-                              onClick={() => handleHotelClick(hotel)}
-                              className="mt-2 w-full bg-blue-600 text-white text-xs py-1.5 rounded font-medium"
-                            >
-                              See availability
-                            </button>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  );
-                })}
-              </MapContainer>
-
-              {/* Mobile Hotel Carousel */}
-              <div ref={mapCarouselRef} className="md:hidden absolute bottom-4 left-0 right-0 z-[1000] flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory safe-area-bottom">
-                  {filteredHotels.map((hotel) => (
-                    <div
-                      key={hotel.id}
-                      data-hotel-id={String(hotel.id)}
-                      onClick={() => {
-                        setSelectedHotel(hotel);
-                      }}
-                      className={`min-w-[85%] sm:min-w-[300px] bg-white rounded-xl shadow-xl snap-center flex overflow-hidden border transition-all ${
-                        selectedHotel?.id === hotel.id ? 'border-orange-500 ring-2 ring-orange-500 ring-opacity-50' : 'border-gray-200'
-                      }`}
-                    >
-                      <div className="w-24 bg-gray-200 shrink-0 relative">
-                         {hotel.image ? (
-                           <img src={hotel.image} className="w-full h-full object-cover" loading="lazy" alt={hotel.name} />
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center text-gray-400"><BuildingOfficeIcon className="w-8 h-8"/></div>
-                         )}
-                      </div>
-                      <div className="p-3 flex-1 min-w-0 flex flex-col justify-center relative">
-                         <h4 className="font-bold text-sm text-gray-900 truncate mb-1">{hotel.name}</h4>
-                         <div className="flex items-center gap-1 mb-1">
-                            {(() => {
-                              const taR = taRatings[hotel.name];
-                              const backendTA = (hotel as any).tripadvisor_rating;
-                              const displayRating = taR?.rating || backendTA || null;
-                              const effectiveRating = displayRating ? displayRating * 2 : hotel.rating;
-                              return (
-                                <>
-                                  <span className="bg-blue-900 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{Math.min(effectiveRating, 10).toFixed(1)}</span>
-                                  <span className="text-xs text-gray-500 truncate">{getScoreText(effectiveRating, t)}</span>
-                                </>
-                              );
-                            })()}
-                         </div>
-                         <div className="flex items-center justify-between mt-auto">
-                            <div className="font-bold text-[#E67915] text-lg leading-none">
-                                {formatPrice(hotel.price)}
-                            </div>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleHotelClick(hotel);
-                                }}
-                                className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow-sm"
-                            >
-                                View
-                            </button>
-                         </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        }>
+          <SearchMapView
+            filteredHotels={filteredHotels}
+            selectedHotel={selectedHotel}
+            setSelectedHotel={setSelectedHotel}
+            setFullscreenMap={setFullscreenMap}
+            handleHotelClick={handleHotelClick}
+            sortBy={filters.sortBy}
+            setSortBy={(v) => setFilters(prev => ({ ...prev, sortBy: v }))}
+            destination={searchQuery.destination}
+            currencySymbol={currencySymbol}
+            formatPrice={formatPrice}
+            renderStars={renderStars}
+            taRatings={taRatings}
+            t={t}
+            getScoreText={getScoreText}
+            getCityCoordinates={getCityCoordinates}
+          />
+        </Suspense>
       )}
       {/* Mobile Date Selection Modal - Root Level */}
       {showMobileDateModal && (

@@ -113,6 +113,9 @@ interface HotelDetailsOptions {
 
 const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) => {
     try {
+        // No client-side cache — prices must always be fresh from backend
+        // Backend caches static content (images, reviews) but always fetches live rates
+
         // Get auth token from localStorage (optional for hotel details)
         const token = localStorage.getItem('token');
 
@@ -148,14 +151,14 @@ const getHotelDetails = async (hotelId: string, options?: HotelDetailsOptions) =
 
         const data = await response.json();
 
-        // Debug logging
-
         // Check if the response is successful
         if (!data.success) {
             throw new Error(data.message || 'Failed to get hotel details');
         }
 
-        return data.data.hotel; // Return the hotel object
+        const hotel = data.data.hotel;
+
+        return hotel;
 
     } catch (error) {
         console.error('Error getting hotel details:', error);

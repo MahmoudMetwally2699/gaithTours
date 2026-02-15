@@ -16,6 +16,29 @@ const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 let cityCountCache = new Map();
 const CITY_COUNT_TTL = 60 * 60 * 1000; // 1 hour
 
+// Cache for hotel STATIC content only (images, amenities, description, reviews, POI)
+// Rates/prices are NEVER cached — always fetched fresh from RateHawk
+let hotelStaticCache = new Map();
+const HOTEL_STATIC_CACHE_TTL = 30 * 60 * 1000; // 30 minutes (static data rarely changes)
+
+function getHotelStaticCache(hid) {
+  const cached = hotelStaticCache.get(hid);
+  if (cached && Date.now() - cached.timestamp < HOTEL_STATIC_CACHE_TTL) {
+    return cached.data;
+  }
+  hotelStaticCache.delete(hid); // Clean expired
+  return null;
+}
+
+function setHotelStaticCache(hid, data) {
+  hotelStaticCache.set(hid, { data, timestamp: Date.now() });
+  // Evict oldest entries if cache grows too large (max 300 hotels)
+  if (hotelStaticCache.size > 300) {
+    const oldestKey = hotelStaticCache.keys().next().value;
+    hotelStaticCache.delete(oldestKey);
+  }
+}
+
 // Helper to get/set cache
 function getCachedResults(key) {
   const cached = hotelSearchCache.get(key);
@@ -33,29 +56,93 @@ function setCachedResults(key, data) {
 }
 
 /**
+ * Get hotel count for a city from LOCAL DB
+ * GET /api/hotels/city-count?city=Makkah
+ */
+router.get('/city-count', async (req, res) => {
+  try {
+    const city = req.query.city || 'Makkah';
+    const cityNorm = city.toLowerCase().trim();
+
+    // Check in-memory cache
+    const cacheKey = `cityCount:${cityNorm}`;
+    const cached = cityCountCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CITY_COUNT_TTL) {
+      res.set('Cache-Control', 'public, max-age=3600');
+      return successResponse(res, { count: cached.count, city }, 'City count from cache');
+    }
+
+    const HotelContent = require('../models/HotelContent');
+
+    // Try CityStats first, then countDocuments as fallback
+    let count = 0;
+    try {
+      const CityStats = require('../models/CityStats');
+      count = await CityStats.getCount(cityNorm);
+    } catch {
+      count = await HotelContent.countDocuments({ cityNormalized: cityNorm }).maxTimeMS(3000);
+    }
+
+    cityCountCache.set(cacheKey, { count, timestamp: Date.now() });
+
+    res.set('Cache-Control', 'public, max-age=3600');
+    successResponse(res, { count, city }, 'City count retrieved');
+  } catch (error) {
+    console.error('City count error:', error.message);
+    errorResponse(res, 'Failed to get city count', 500);
+  }
+});
+
+/**
  * Get hotels for home page from LOCAL DB (no external API calls = instant)
  * GET /api/hotels/suggested-local?city=Makkah&language=en
  */
+const suggestedLocalCache = new Map();
+const SUGGESTED_LOCAL_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
 router.get('/suggested-local', async (req, res) => {
   try {
     const city = req.query.city || req.query.location || 'Makkah';
     const language = req.query.language || 'en';
     const limit = Math.min(parseInt(req.query.limit) || 8, 20);
+    const FALLBACK_CITY = 'Makkah';
+
+    // Check in-memory cache first (avoids hitting MongoDB entirely for repeated requests)
+    const memoryCacheKey = `${city.toLowerCase().trim()}:${language}:${limit}`;
+    const memoryCached = suggestedLocalCache.get(memoryCacheKey);
+    if (memoryCached && Date.now() - memoryCached.timestamp < SUGGESTED_LOCAL_CACHE_TTL) {
+      res.set('Cache-Control', 'public, max-age=3600');
+      return successResponse(res, memoryCached.data, 'Local suggestions from memory cache');
+    }
 
     const HotelContent = require('../models/HotelContent');
     const TripAdvisorHotel = require('../models/TripAdvisorHotel');
 
     // Fast indexed query on cityNormalized + starRating
-    const hotels = await HotelContent.find({
-      cityNormalized: city.toLowerCase().trim(),
-      mainImage: { $exists: true, $ne: null, $ne: '' },
+    let cityNorm = city.toLowerCase().trim();
+    let hotels = await HotelContent.find({
+      cityNormalized: cityNorm,
       starRating: { $gte: 3 }
     })
       .select('hid hotelId name nameAr address city country starRating mainImage images')
       .sort({ starRating: -1 })
-      .limit(limit * 2) // Fetch extra to filter
-      .maxTimeMS(1000)
+      .limit(limit * 3) // Fetch extra to filter out missing images
+      .maxTimeMS(3000)
       .lean();
+
+    // Fallback: if no results for detected city, use Makkah (indexed exact match only, no regex on 4M docs)
+    if (hotels.length === 0 && cityNorm !== FALLBACK_CITY.toLowerCase()) {
+      console.log(`⚠️ No hotels for "${city}", falling back to ${FALLBACK_CITY}`);
+      hotels = await HotelContent.find({
+        cityNormalized: FALLBACK_CITY.toLowerCase(),
+        starRating: { $gte: 3 }
+      })
+        .select('hid hotelId name nameAr address city country starRating mainImage images')
+        .sort({ starRating: -1 })
+        .limit(limit * 3)
+        .maxTimeMS(3000)
+        .lean();
+    }
 
     // Format for frontend
     const formatted = hotels
@@ -112,12 +199,17 @@ router.get('/suggested-local', async (req, res) => {
     }
     if (!req.query.city && !req.query.location) source = 'fallback';
 
-    res.set('Cache-Control', 'public, max-age=3600');
-    successResponse(res, {
+    const responseData = {
       hotels: formatted,
       source,
       destination: city,
-    }, 'Local suggestions retrieved');
+    };
+
+    // Cache in memory for next request
+    suggestedLocalCache.set(memoryCacheKey, { data: responseData, timestamp: Date.now() });
+
+    res.set('Cache-Control', 'public, max-age=3600');
+    successResponse(res, responseData, 'Local suggestions retrieved');
   } catch (error) {
     console.error('Local suggestions error:', error);
     errorResponse(res, 'Failed to get local suggestions', 500);
@@ -964,32 +1056,83 @@ router.get('/search', async (req, res) => {
     const pageNumber = parseInt(page) || 1;
     const limitNumber = parseInt(limit) || 20;
 
-    // Generate cache key WITHOUT page number (cache all results together, paginate from cache)
-    // v11: Simplified - no batch logic since RateHawk API returns all results in one call
-    const starFilterKey = starRatingFilter.length > 0 ? `_stars${starRatingFilter.sort().join('')}` : '';
-    const facilitiesKey = facilitiesFilter.length > 0 ? `_fac${facilitiesFilter.sort().join('')}` : '';
-    const mealKey = mealPlanFilter.length > 0 ? `_meal${mealPlanFilter.sort().join('')}` : '';
-    const cancelKey = cancellationPolicyFilter ? `_cancel${cancellationPolicyFilter}` : '';
-    const guestKey = guestRatingFilter > 0 ? `_guest${guestRatingFilter}` : '';
-    const filterKey = `${starFilterKey}${facilitiesKey}${mealKey}${cancelKey}${guestKey}`;
-    const cacheKey = `v11_${resolvedDestination}_${checkin}_${checkout}_${adults}_${children}_${currency}${filterKey}`;
+    // OPTIMIZATION: Base cache key WITHOUT filters — one API call serves ALL filter combinations
+    // Filters are applied post-cache, so changing filters never triggers a new RateHawk API call
+    const baseCacheKey = `v12_${resolvedDestination}_${checkin}_${checkout}_${adults}_${children}_${currency}`;
+
+    // Helper: apply post-API filters to a list of hotels
+    const applyPostFilters = (hotels) => {
+      const needsFilter = starRatingFilter.length > 0 || mealPlanFilter.length > 0 ||
+                          cancellationPolicyFilter || guestRatingFilter > 0 || facilitiesFilter.length > 0;
+      if (!needsFilter) return hotels;
+
+      return hotels.filter(hotel => {
+        if (starRatingFilter.length > 0) {
+          const sr = hotel.star_rating || hotel.starRating || 0;
+          if (!starRatingFilter.includes(sr)) return false;
+        }
+        if (guestRatingFilter > 0) {
+          const rs = hotel.review_score || hotel.reviewScore || hotel.rating || 0;
+          if (rs < guestRatingFilter) return false;
+        }
+        if (cancellationPolicyFilter === 'free_cancellation') {
+          if (hotel.free_cancellation !== true) return false;
+        } else if (cancellationPolicyFilter === 'non_refundable') {
+          if (hotel.free_cancellation === true) return false;
+        }
+        if (mealPlanFilter.length > 0) {
+          const avail = hotel.availableMeals || (hotel.meal ? [hotel.meal] : []);
+          const match = mealPlanFilter.some(fm => avail.some(am => {
+            const m = (am || '').toLowerCase();
+            switch (fm) {
+              case 'breakfast': return m === 'breakfast';
+              case 'half_board': return m === 'halfboard' || m === 'half-board' || m === 'half_board';
+              case 'full_board': return m === 'fullboard' || m === 'full-board' || m === 'full_board';
+              case 'all_inclusive': return m === 'allinclusive' || m === 'all-inclusive' || m === 'all_inclusive';
+              default: return m === fm;
+            }
+          }));
+          if (!match) return false;
+        }
+        if (facilitiesFilter.length > 0) {
+          const sf = (hotel.serp_filters || []).map(f => (f || '').toLowerCase());
+          const am = (hotel.amenities || []).map(a => (a || '').toLowerCase());
+          const ok = facilitiesFilter.every(fac => {
+            switch (fac) {
+              case 'free_breakfast': return ['breakfast','halfboard','fullboard','allinclusive'].includes((hotel.meal||'').toLowerCase());
+              case 'free_cancellation': return hotel.free_cancellation === true;
+              case 'no_prepayment': return hotel.no_prepayment === true;
+              case 'free_wifi': return sf.includes('has_internet') || am.some(a => a.includes('wifi') || a.includes('internet'));
+              case 'parking': return sf.includes('has_parking') || am.some(a => a.includes('parking'));
+              case 'pool': return sf.includes('has_pool') || am.some(a => a.includes('pool'));
+              case 'spa': return sf.includes('has_spa') || am.some(a => a.includes('spa'));
+              case 'gym': return sf.includes('has_fitness') || am.some(a => a.includes('gym') || a.includes('fitness'));
+              default: return true;
+            }
+          });
+          if (!ok) return false;
+        }
+        return true;
+      });
+    };
 
     console.log(`📄 Page ${pageNumber}, Limit ${limitNumber} for: ${resolvedDestination}${resolvedDestination !== destination ? ` (from: ${destination})` : ''}`);
 
-    // Check cache first - if we have ALL results cached, paginate from cache
-    if (hotelSearchCache.has(cacheKey)) {
+    // Check base cache first — apply filters & paginate from cache (instant)
+    if (hotelSearchCache.has(baseCacheKey)) {
       console.log(`📦 Returning from cache for: ${destination} (page ${pageNumber})`);
-      const cached = hotelSearchCache.get(cacheKey);
+      const cached = hotelSearchCache.get(baseCacheKey);
 
-      // Paginate from cached results
-      const startIndex = (pageNumber - 1) * limitNumber;
-      const endIndex = startIndex + limitNumber;
-      const paginatedHotels = cached.hotels.slice(startIndex, endIndex);
-      const totalResults = cached.total || cached.hotels.length || 0;
+      // Apply filters from full cached results (fast — no API call)
+      const filteredHotels = applyPostFilters(cached.hotels);
+      const totalResults = filteredHotels.length;
       const totalPages = Math.ceil(totalResults / limitNumber);
 
-      // Check if there are more hotels to load
-      const hasMore = endIndex < cached.hotels.length;
+      // Paginate filtered results
+      const startIndex = (pageNumber - 1) * limitNumber;
+      const endIndex = startIndex + limitNumber;
+      const paginatedHotels = filteredHotels.slice(startIndex, endIndex);
+      const hasMore = endIndex < filteredHotels.length;
 
       return successResponse(res, {
         hotels: paginatedHotels,
@@ -999,7 +1142,7 @@ router.get('/search', async (req, res) => {
         totalPages: totalPages,
         hasMore: hasMore,
         fromCache: true,
-        hotelsWithRates: cached.hotels.length // Show actual count of hotels with rates
+        hotelsWithRates: totalResults
       }, `Hotels retrieved from cache (page ${pageNumber}/${totalPages})`);
     }
 
@@ -1284,144 +1427,9 @@ router.get('/search', async (req, res) => {
 
     console.log(`   ✅ Total combined: ${allHotels.length} hotels (DB has ${totalHotelsInDB} total)`);
 
-    // Debug: Log sample hotel data structures for filter debugging
-    if (allHotels.length > 0 && (facilitiesFilter.length > 0 || mealPlanFilter.length > 0 || cancellationPolicyFilter)) {
-      const sampleHotel = allHotels[0];
-      console.log(`   🔍 Filter debug - Sample hotel fields:`);
-      console.log(`      star_rating: ${sampleHotel.star_rating}, isEnriched: ${sampleHotel.isEnriched}`);
-      console.log(`      meal: "${sampleHotel.meal}", free_cancellation: ${sampleHotel.free_cancellation}, no_prepayment: ${sampleHotel.no_prepayment}`);
-      console.log(`      serp_filters: ${JSON.stringify(sampleHotel.serp_filters || [])}`);
-      console.log(`      amenities: ${JSON.stringify((sampleHotel.amenities || []).slice(0, 5))}${(sampleHotel.amenities || []).length > 5 ? '...' : ''}`);
-
-      // Log star rating distribution for debugging
-      const starCounts = {};
-      allHotels.forEach(h => {
-        const sr = h.star_rating || 0;
-        starCounts[sr] = (starCounts[sr] || 0) + 1;
-      });
-      console.log(`      Star distribution: ${JSON.stringify(starCounts)}`);
-    }
-
-    // POST-API FILTERING: RateHawk SERP API does NOT support star_rating, meal, or facility filtering
-    // These come from Content API (stored in local DB) and rate data
-    // We must filter all these post-API based on enriched hotel data
-    if (isCitySearch) {
-      const beforeFilter = allHotels.length;
-      const needsPostFilter = starRatingFilter.length > 0 ||
-                               mealPlanFilter.length > 0 ||
-                               cancellationPolicyFilter ||
-                               guestRatingFilter > 0 ||
-                               facilitiesFilter.length > 0;
-
-      if (needsPostFilter) {
-        allHotels = allHotels.filter(hotel => {
-          // Star rating filter - comes from Content API (local DB enrichment)
-          if (starRatingFilter.length > 0) {
-            const hotelStarRating = hotel.star_rating || hotel.starRating || 0;
-            if (!starRatingFilter.includes(hotelStarRating)) return false;
-          }
-
-          // Guest rating filter (review score)
-          if (guestRatingFilter > 0) {
-            const reviewScore = hotel.review_score || hotel.reviewScore || hotel.rating || 0;
-            if (reviewScore < guestRatingFilter) return false;
-          }
-
-          // Cancellation policy filter - from rate data
-          if (cancellationPolicyFilter === 'free_cancellation') {
-            if (hotel.free_cancellation !== true) return false;
-          } else if (cancellationPolicyFilter === 'non_refundable') {
-            if (hotel.free_cancellation === true) return false;
-          }
-
-          // Meal plan filter - from rate data
-          if (mealPlanFilter.length > 0) {
-            // Check availableMeals from all rates (if available), otherwise fallback to single hotel.meal
-            const availableMeals = hotel.availableMeals || (hotel.meal ? [hotel.meal] : []);
-
-            const hasMatchingMeal = mealPlanFilter.some(filterMeal => {
-              return availableMeals.some(availMeal => {
-                const m = (availMeal || '').toLowerCase();
-                // Normalize filter values
-                switch (filterMeal) {
-                  case 'breakfast': return m === 'breakfast';
-                  case 'half_board': return m === 'halfboard' || m === 'half-board' || m === 'half_board';
-                  case 'full_board': return m === 'fullboard' || m === 'full-board' || m === 'full_board';
-                  case 'all_inclusive': return m === 'allinclusive' || m === 'all-inclusive' || m === 'all_inclusive';
-                  default: return m === filterMeal;
-                }
-              });
-            });
-            if (!hasMatchingMeal) return false;
-          }
-
-          // Facilities filter - from rate data and Content API
-          if (facilitiesFilter.length > 0) {
-            const serpFilters = (hotel.serp_filters || []).map(f => (f || '').toLowerCase());
-            const amenitiesLower = (hotel.amenities || []).map(a => (a || '').toLowerCase());
-
-            const hasAllFacilities = facilitiesFilter.every(facility => {
-              switch (facility) {
-                case 'free_breakfast':
-                  const hotelMeal = (hotel.meal || '').toLowerCase();
-                  return hotelMeal === 'breakfast' || hotelMeal === 'halfboard' ||
-                         hotelMeal === 'fullboard' || hotelMeal === 'allinclusive';
-                case 'free_cancellation':
-                  return hotel.free_cancellation === true;
-                case 'no_prepayment':
-                  return hotel.no_prepayment === true;
-                case 'free_wifi':
-                  return serpFilters.includes('has_internet') ||
-                         amenitiesLower.some(a => a.includes('wifi') || a.includes('internet'));
-                case 'parking':
-                  return serpFilters.includes('has_parking') ||
-                         amenitiesLower.some(a => a.includes('parking'));
-                case 'pool':
-                  return serpFilters.includes('has_pool') ||
-                         amenitiesLower.some(a => a.includes('pool'));
-                case 'spa':
-                  return serpFilters.includes('has_spa') ||
-                         amenitiesLower.some(a => a.includes('spa'));
-                case 'gym':
-                  return serpFilters.includes('has_fitness') ||
-                         amenitiesLower.some(a => a.includes('gym') || a.includes('fitness'));
-                default: return true;
-              }
-            });
-            if (!hasAllFacilities) return false;
-          }
-
-          return true;
-        });
-
-        const afterFilter = allHotels.length;
-        const filtersApplied = [];
-        if (starRatingFilter.length > 0) filtersApplied.push(`stars:${starRatingFilter.join(',')}`);
-        if (guestRatingFilter > 0) filtersApplied.push(`rating:${guestRatingFilter}+`);
-        if (cancellationPolicyFilter) filtersApplied.push(`cancel:${cancellationPolicyFilter}`);
-        if (mealPlanFilter.length > 0) filtersApplied.push(`meal:${mealPlanFilter.join(',')}`);
-        if (facilitiesFilter.length > 0) filtersApplied.push(`facilities:${facilitiesFilter.join(',')}`);
-        console.log(`   🔍 Post-API filters: [${filtersApplied.join('] [')}] → ${afterFilter}/${beforeFilter} hotels`);
-      } else {
-        console.log(`   ✅ No filters applied (${allHotels.length} hotels)`);
-      }
-    } else {
-      console.log(`   🏨 Hotel search: Showing all hotels including unrated`);
-    }
-
-    // Calculate realistic total for pagination
-    // For large cities, we can only show hotels from API (we fetch 100 per batch)
-    // For small cities, we show all hotels from DB
-    // Calculate realistic total for pagination
-    // NEW: Always show the full DB total so users see "4500 properties found" instead of "1000"
-    let realisticTotal = Math.max(totalHotelsInDB, allHotels.length);
-
-    if (isLargeCity) {
-      console.log(`   🎯 Large city: Showing accurate DB total ${realisticTotal} (capped at 1000 for API fetching only)`);
-    } else {
-      console.log(`   🎯 Small search: Using max(DB=${totalHotelsInDB}, API=${allHotels.length}) = ${realisticTotal}`);
-    }
-
+    // POST-API FILTERING moved to applyPostFilters() helper — applied at cache read AND final pagination
+    // No inline filtering needed here; allHotels stays unfiltered for caching
+    console.log(`   ✅ ${allHotels.length} hotels ready (filters applied at pagination time)`);
     // If searching for a SPECIFIC HOTEL (not a city/region), prioritize it but show other hotels too
     // IMPORTANT: Only do this for hotel-specific searches, NOT city searches
     // Otherwise city searches would incorrectly highlight random hotels
@@ -1661,40 +1669,44 @@ router.get('/search', async (req, res) => {
       });
     }
 
-    // Cache ALL results (not batches)
-    hotelSearchCache.set(cacheKey, {
+    // Cache ALL unfiltered results (filters applied on read for instant response)
+    hotelSearchCache.set(baseCacheKey, {
       hotels: allHotels,
-      total: allHotels.length, // Use actual count of hotels with rates, not DB count
+      total: allHotels.length,
       timestamp: Date.now(),
       region: regionToSearch
     });
 
     // Auto-clear cache after 10 minutes
     setTimeout(() => {
-      hotelSearchCache.delete(cacheKey);
+      hotelSearchCache.delete(baseCacheKey);
     }, 10 * 60 * 1000);
 
-    // Paginate the results for this specific page
+    // Apply filters then paginate
+    const filteredResults = applyPostFilters(allHotels);
     const startIndex = (pageNumber - 1) * limitNumber;
     const endIndex = startIndex + limitNumber;
-    const paginatedHotels = allHotels.slice(startIndex, endIndex);
-    const totalHotelsWithRates = allHotels.length;
+    const paginatedHotels = filteredResults.slice(startIndex, endIndex);
+    const totalHotelsWithRates = filteredResults.length;
     const finalTotalPages = Math.ceil(totalHotelsWithRates / limitNumber);
-    const hasMoreHotels = endIndex < allHotels.length;
+    const hasMoreHotels = endIndex < filteredResults.length;
 
-    console.log(`   📄 Returning page ${pageNumber}/${finalTotalPages}: hotels ${startIndex + 1}-${Math.min(endIndex, allHotels.length)} of ${allHotels.length} with rates`);
+    console.log(`   📄 Returning page ${pageNumber}/${finalTotalPages}: ${paginatedHotels.length} of ${totalHotelsWithRates} hotels (${allHotels.length} total cached)`);
+
+    // Set Cache-Control for browser caching of search results (30 seconds)
+    res.set('Cache-Control', 'private, max-age=30');
 
     successResponse(res, {
       hotels: paginatedHotels,
-      total: totalHotelsWithRates, // Actual count of hotels with rates
+      total: totalHotelsWithRates,
       page: pageNumber,
       limit: limitNumber,
       totalPages: finalTotalPages,
       hasMore: hasMoreHotels,
-      hotelsWithRates: totalHotelsWithRates, // Explicit count for frontend
+      hotelsWithRates: totalHotelsWithRates,
       region: regionToSearch.name || regionToSearch.region_name || 'Unknown',
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
-    }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} of ${totalHotelsWithRates} hotels with rates`);
+    }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} of ${totalHotelsWithRates} hotels`);
 
   } catch (error) {
     console.error('Hotel search error:', error);
@@ -1708,6 +1720,7 @@ router.get('/search', async (req, res) => {
  */
 router.get('/details/:hid', async (req, res) => {
   try {
+    const startTime = Date.now();
     const { hid } = req.params;
     const {
       checkin,
@@ -1766,19 +1779,28 @@ router.get('/details/:hid', async (req, res) => {
       childrenAges = children.map(age => parseInt(age)).filter(age => !isNaN(age));
     }
 
+    // Check static content cache (images, amenities, POI, reviews — NOT rates)
+    const cachedStatic = getHotelStaticCache(hotelId);
+    if (cachedStatic) {
+      console.log(`⚡ Static cache HIT for HID ${hotelId} (skipping DB queries)`);
+    }
+
     let hotelDetails;
     try {
       // Debug log for currency tracing
       console.log(`💷 Hotel details request: HID=${hotelId}, currency=${currency}, language=${language}`);
 
-      // Try to get hotel details with rates
+      // Try to get hotel details with rates (rates are ALWAYS fetched fresh)
       hotelDetails = await rateHawkService.getHotelDetails(hotelId, {
         ...searchDates,
         adults: parseInt(adults) || 2,
         children: childrenAges,
         match_hash,
         currency,
-        language
+        language,
+        // Pass cached raw DB documents to skip DB queries
+        _cachedStaticContent: cachedStatic?.rawContent || null,
+        _cachedReviewData: cachedStatic?.reviewData || null
       });
     } catch (error) {
       // If hotel not found (no rates), fetch from Local DB first (not Content API)
@@ -1886,16 +1908,22 @@ router.get('/details/:hid', async (req, res) => {
       }
     }
 
-    // Fetch POI data for the hotel
-    let poiData = null;
-    try {
+    // Use cached static data if available, otherwise fetch POI + Arabic name from DB
+    let poiData, arContent;
+    if (cachedStatic) {
+      poiData = cachedStatic.poiData;
+      arContent = cachedStatic.arContent;
+    } else {
+      // Fetch POI data and Arabic name in PARALLEL (saves ~200-500ms)
       const HotelPOI = require('../models/HotelPOI');
-      poiData = await HotelPOI.getGroupedPOI(hotelId);
-      if (poiData) {
-        console.log(`📍 POI data found for hotel ${hotelId}`);
-      }
-    } catch (poiError) {
-      console.error('Error fetching POI data:', poiError.message);
+      const HotelContentAr = require('../models/HotelContent');
+      [poiData, arContent] = await Promise.all([
+        HotelPOI.getGroupedPOI(hotelId).catch(err => { console.error('POI error:', err.message); return null; }),
+        HotelContentAr.findOne(
+          { hid: hotelDetails.hid, nameAr: { $exists: true, $ne: null, $ne: '' } },
+          { nameAr: 1 }
+        ).lean().catch(() => null)
+      ]);
     }
 
     // Format response to match frontend expectations
@@ -1928,20 +1956,26 @@ router.get('/details/:hid', async (req, res) => {
       poi_data: poiData
     };
 
-    // Enrich with Arabic name from HotelContent DB
-    try {
-      const HotelContentAr = require('../models/HotelContent');
-      const arContent = await HotelContentAr.findOne(
-        { hid: hotelDetails.hid, nameAr: { $exists: true, $ne: null, $ne: '' } },
-        { nameAr: 1 }
-      ).lean();
-      if (arContent && arContent.nameAr) {
-        formattedHotel.nameAr = arContent.nameAr;
-      }
-    } catch (arErr) {
-      // Non-fatal - Arabic name is optional
+    // Apply Arabic name if found (fetched in parallel above)
+    if (arContent && arContent.nameAr) {
+      formattedHotel.nameAr = arContent.nameAr;
     }
 
+    // Cache ONLY the raw DB documents (not rates) for future requests
+    // This lets us skip DB queries but always process fresh rates
+    if (!cachedStatic) {
+      setHotelStaticCache(hotelId, {
+        rawContent: hotelDetails._rawStaticContent || null,  // Raw HotelContent doc
+        reviewData: hotelDetails._rawReviewData || null,     // Raw review data
+        poiData: poiData,
+        arContent: arContent
+      });
+    }
+
+    // Short cache for browser — prices are fresh but avoid hammering during same session
+    res.set('Cache-Control', 'private, max-age=30');
+
+    console.log(`✅ Hotel details for ${hid} served in ${Date.now() - startTime}ms`);
     successResponse(res, { hotel: formattedHotel }, 'Hotel details retrieved successfully');
 
   } catch (error) {
@@ -1972,15 +2006,18 @@ router.get('/search-legacy', async (req, res) => {
 router.post('/clear-cache', (req, res) => {
   const cacheSize = hotelSearchCache.size;
   const countCacheSize = cityCountCache.size;
+  const staticCacheSize = hotelStaticCache.size;
 
   hotelSearchCache.clear();
   cityCountCache.clear();
+  hotelStaticCache.clear();
 
   successResponse(res, {
     cleared: true,
     searchCacheCleared: cacheSize,
-    countCacheCleared: countCacheSize
-  }, `Cleared ${cacheSize} search cache entries and ${countCacheSize} count cache entries`);
+    countCacheCleared: countCacheSize,
+    staticCacheCleared: staticCacheSize
+  }, `Cleared ${cacheSize} search, ${countCacheSize} count, ${staticCacheSize} static cache entries`);
 });
 
 /**
@@ -1990,10 +2027,12 @@ router.post('/clear-cache', (req, res) => {
 function clearHotelSearchCache() {
   const cacheSize = hotelSearchCache.size;
   const countCacheSize = cityCountCache.size;
+  const detailsCacheSize = hotelDetailsCache.size;
   hotelSearchCache.clear();
   cityCountCache.clear();
-  console.log(`🗑️  Cleared hotel search cache: ${cacheSize} search entries, ${countCacheSize} count entries`);
-  return { searchCacheCleared: cacheSize, countCacheCleared: countCacheSize };
+  hotelDetailsCache.clear();
+  console.log(`🗑️  Cleared hotel caches: ${cacheSize} search, ${countCacheSize} count, ${detailsCacheSize} details`);
+  return { searchCacheCleared: cacheSize, countCacheCleared: countCacheSize, detailsCacheCleared: detailsCacheSize };
 }
 
 module.exports = router;

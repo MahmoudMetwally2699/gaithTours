@@ -72,6 +72,7 @@ import { getTripAdvisorRatings, TripAdvisorRating } from '../services/tripadviso
 import { SimilarHotels } from '../components/SimilarHotels';
 import { ShareSaveActions, isFavorited, toggleFavoriteWithData } from '../components/ShareSaveActions';
 import { PriceWatchButton } from '../components/PriceWatchButton';
+import { formatNumber } from '../utils/numberFormatter';
 
 // Lazy-loaded components — only downloaded when actually needed
 const LazyMapContainer = React.lazy(() => import('react-leaflet').then(m => ({ default: m.MapContainer })));
@@ -703,7 +704,57 @@ export const HotelDetails: React.FC = () => {
   }, [bookingParams.checkIn, bookingParams.checkOut]);
 
   if (loading) {
-     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div></div>;
+     return (
+       <div className="min-h-screen bg-white">
+         {/* Skeleton Header */}
+         <div className="w-full bg-[#E67915] h-14 md:h-16" />
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 md:mt-8">
+           {/* Skeleton Title */}
+           <div className="mb-6">
+             <div className="h-8 bg-gray-200 rounded-lg w-72 mb-2 animate-pulse" />
+             <div className="h-4 bg-gray-200 rounded w-96 mb-3 animate-pulse" />
+             <div className="flex gap-2">
+               <div className="h-6 w-10 bg-gray-200 rounded animate-pulse" />
+               <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+               <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
+             </div>
+           </div>
+           {/* Skeleton Gallery */}
+           <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-2 h-[300px] md:h-[500px] rounded-xl overflow-hidden mb-8">
+             <div className="bg-gray-200 animate-pulse md:col-span-2 md:row-span-2" />
+             <div className="hidden md:block bg-gray-100 animate-pulse" />
+             <div className="hidden md:block bg-gray-100 animate-pulse" />
+             <div className="hidden md:block bg-gray-100 animate-pulse" />
+             <div className="hidden md:block bg-gray-100 animate-pulse" />
+           </div>
+           {/* Skeleton Description */}
+           <div className="mb-10">
+             <div className="h-7 bg-gray-200 rounded w-56 mb-4 animate-pulse" />
+             <div className="space-y-2">
+               <div className="h-4 bg-gray-100 rounded w-full animate-pulse" />
+               <div className="h-4 bg-gray-100 rounded w-5/6 animate-pulse" />
+               <div className="h-4 bg-gray-100 rounded w-4/6 animate-pulse" />
+             </div>
+           </div>
+           {/* Skeleton Rooms */}
+           <div className="mb-12">
+             <div className="h-7 bg-gray-200 rounded w-48 mb-6 animate-pulse" />
+             {[1,2,3].map(i => (
+               <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 mb-4 animate-pulse">
+                 <div className="flex gap-4">
+                   <div className="w-32 h-24 bg-gray-200 rounded-lg flex-shrink-0" />
+                   <div className="flex-1">
+                     <div className="h-5 bg-gray-200 rounded w-48 mb-2" />
+                     <div className="h-4 bg-gray-100 rounded w-32 mb-3" />
+                     <div className="h-8 bg-gray-200 rounded w-24" />
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </div>
+       </div>
+     );
   }
 
   if (error || !hotel) {
@@ -1192,7 +1243,8 @@ export const HotelDetails: React.FC = () => {
                  {(() => {
                    const taRating = taHeaderRating?.rating;
                    const taReviews = taHeaderRating?.num_reviews ? Number(taHeaderRating.num_reviews) : 0;
-                   const displayScore = taRating ? (taRating * 2).toFixed(1) : (hotel.reviewScore || hotel.rating);
+                   const ratingValue = taRating ? taRating * 2 : (hotel.reviewScore || hotel.rating);
+                   const displayScore = formatNumber(ratingValue, i18n.language === 'ar');
                    const displayReviews = taReviews > 0 ? taReviews : hotel.reviewCount;
                    const hasRating = taRating || hotel.reviewScore || hotel.rating;
 

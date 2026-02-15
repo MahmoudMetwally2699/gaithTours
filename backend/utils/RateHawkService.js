@@ -1169,43 +1169,8 @@ class RateHawkService {
       // Continue without review data - not critical
     }
 
-    // TRIPADVISOR ENRICHMENT: Add TripAdvisor ratings from DB (no API calls, fast)
-    try {
-      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
-      const hotelNames = hotels.filter(h => h.name).map(h => h.name);
-      // Use the city from the first enriched hotel
-      const cityForTA = hotels.find(h => h.city)?.city || '';
-
-      if (hotelNames.length > 0 && cityForTA) {
-        // Batch lookup by normalized names + city
-        const taHotels = await TripAdvisorHotel.findByNamesAndCity(hotelNames, cityForTA);
-        const taMap = new Map();
-        taHotels.forEach(ta => {
-          taMap.set(ta.name_normalized, ta);
-          // Also index by search name aliases for better matching
-          if (ta.search_names) {
-            ta.search_names.forEach(alias => taMap.set(alias, ta));
-          }
-        });
-
-        let taEnrichedCount = 0;
-        hotels.forEach(hotel => {
-          const nameNorm = hotel.name?.toLowerCase().trim();
-          const ta = taMap.get(nameNorm);
-          if (ta && ta.rating) {
-            hotel.tripadvisor_rating = ta.rating;           // 1-5 scale (TripAdvisor bubble rating)
-            hotel.tripadvisor_num_reviews = ta.num_reviews;  // String, e.g. "3946"
-            hotel.tripadvisor_location_id = ta.location_id;
-            taEnrichedCount++;
-          }
-        });
-
-        console.log(`   🏆 TripAdvisor: enriched ${taEnrichedCount}/${hotels.length} hotels from DB`);
-      }
-    } catch (taError) {
-      console.error('⚠️ TripAdvisor enrichment error:', taError.message);
-      // Continue without TripAdvisor data - not critical
-    }
+    // NOTE: TripAdvisor enrichment is handled at the route level (hotels.js /search)
+    // to avoid duplicate DB queries. The route handler does batch + fuzzy + background fetch.
 
     // Refresh prices from hotel details API for top hotels (if requested)
     if (refreshPrices > 0 && hotels.length > 0) {
@@ -1357,7 +1322,9 @@ class RateHawkService {
       residency = 'sa',
       language = 'en',
       currency = 'SAR',
-      match_hash = null
+      match_hash = null,
+      _cachedStaticContent = null, // Pre-cached raw HotelContent document
+      _cachedReviewData = null     // Pre-cached review data
     } = params;
 
     const payload = {
@@ -1378,7 +1345,8 @@ class RateHawkService {
       payload.match_hash = match_hash;
     }
 
-    // OPTIMIZATION: Fetch pricing, static content, AND reviews in PARALLEL (saves ~5-10s)
+    // OPTIMIZATION: Fetch pricing, static content, AND reviews in PARALLEL
+    // If raw DB docs are pre-cached, skip those DB queries (saves ~200-500ms)
     const HotelContent = require('../models/HotelContent');
 
     // When language is not English, fetch English rates in parallel
@@ -1386,13 +1354,16 @@ class RateHawkService {
     const needsEnglishLookup = language !== 'en';
     const enPayload = needsEnglishLookup ? { ...payload, language: 'en' } : null;
 
+    const hasCachedStatic = !!_cachedStaticContent;
+    const hasCachedReviews = !!_cachedReviewData;
+
     const parallelPromises = [
-      // 1. Get pricing and availability from RateHawk API
+      // 1. Get pricing and availability from RateHawk API (ALWAYS fresh)
       this.makeRequest('/search/hp/', 'POST', payload),
-      // 2. Get static content from local DB (faster)
-      HotelContent.findOne({ hid }).lean(),
-      // 3. Get review data with hybrid approach (DB first, API fallback)
-      this.getOrFetchReviews(hid, 'en', 7), // 7 days max age
+      // 2. Get static content from local DB — skip if pre-cached
+      hasCachedStatic ? Promise.resolve(_cachedStaticContent) : HotelContent.findOne({ hid }).lean(),
+      // 3. Get review data — skip if pre-cached
+      hasCachedReviews ? Promise.resolve(_cachedReviewData) : this.getOrFetchReviews(hid, 'en', 7),
       // 4. (optional) English rates for room image matching when language != 'en'
       needsEnglishLookup ? this.makeRequest('/search/hp/', 'POST', enPayload).catch(err => {
         console.log(`⚠️ English room name lookup failed (non-critical): ${err.message}`);
@@ -1421,24 +1392,12 @@ class RateHawkService {
       }
     }
 
-    // Log static content results
+    // Compact logging for static content and reviews
     if (staticContent) {
-      console.log(`✅ Found local content for ${staticContent.name} (loaded in parallel)`);
-      console.log(`   Address: ${staticContent.address || 'NOT FOUND'}`);
-      console.log(`   Images: ${staticContent.images?.length || 0}`);
-    } else {
-      console.log(`⚠️ No local content found for HID: ${hid}`);
+      console.log(`✅ Local content: ${staticContent.name}, ${staticContent.images?.length || 0} imgs`);
     }
-
-    // Log review data results
     if (reviewData) {
-      console.log(`⭐ Review data for HID ${hid}: Rating ${reviewData.overall_rating}, ${reviewData.review_count} reviews`);
-      console.log(`   Overall Rating: ${reviewData.overall_rating}`);
-      console.log(`   Review Count: ${reviewData.review_count}`);
-      console.log(`   Detailed Ratings: ${JSON.stringify(reviewData.detailed_ratings)}`);
-      console.log(`   Reviews: ${reviewData.reviews?.length || 0}`);
-    } else {
-      console.log(`⚠️ No review data found for HID: ${hid} (parseInt: ${parseInt(hid)})`);
+      console.log(`⭐ Reviews: ${reviewData.overall_rating} rating, ${reviewData.review_count} reviews`);
     }
 
     // Extract images from static content
@@ -1933,7 +1892,10 @@ class RateHawkService {
       reviewCount: reviewData?.review_count || 0,
       detailed_ratings: reviewData?.detailed_ratings || null,
       reviews: (reviewData?.reviews || []).slice(0, 10), // Limit to 10 reviews for performance
-      debug: response.debug
+      debug: response.debug,
+      // Attach raw DB docs for route-level caching (not sent to frontend)
+      _rawStaticContent: staticContent || null,
+      _rawReviewData: reviewData || null
     };
   }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber, formatTextWithNumbers } from '../utils/numberFormatter';
 import {
   XMarkIcon,
   CheckIcon,
@@ -37,7 +38,7 @@ export const CompareHotels: React.FC<CompareHotelsProps> = ({
   adults,
   children = 0
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Features to compare
   const features = [
@@ -77,10 +78,10 @@ export const CompareHotels: React.FC<CompareHotelsProps> = ({
               hotel.reviewScore >= 7 ? 'bg-yellow-100 text-yellow-700' :
               'bg-gray-100 text-gray-700'
             }`}>
-              {hotel.reviewScore.toFixed(1)}
+              {formatNumber(hotel.reviewScore, i18n.language === 'ar')}
             </span>
             <span className="text-[10px] md:text-xs text-gray-500 mt-1 truncate max-w-full">
-              {hotel.reviewCount} {t('compare.reviews', 'reviews')}
+              {formatTextWithNumbers(`${hotel.reviewCount} ${t('compare.reviews', 'reviews')}`, i18n.language === 'ar')}
             </span>
           </div>
         ) : (
