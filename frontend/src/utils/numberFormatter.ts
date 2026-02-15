@@ -17,7 +17,8 @@ export const toArabicNumerals = (num: string | number): string => {
  * @param decimals - Number of decimal places (default: 1)
  * @returns Formatted string
  */
-export const formatNumber = (num: number, isArabic: boolean, decimals: number = 1): string => {
+export const formatNumber = (num: number | null | undefined, isArabic: boolean, decimals: number = 1): string => {
+  if (num == null || isNaN(num)) return isArabic ? '٠' : '0';
   const formatted = num.toFixed(decimals);
   return isArabic ? toArabicNumerals(formatted) : formatted;
 };
