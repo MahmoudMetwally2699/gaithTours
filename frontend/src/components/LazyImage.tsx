@@ -136,9 +136,9 @@ export const LazyImage: React.FC<LazyImageProps> = ({
 
   const imageStyle: CSSProperties = {
     objectFit,
-    transition: 'opacity 0.3s ease-in-out, filter 0.3s ease-in-out',
-    opacity: imageLoading ? 0 : 1,
-    filter: imageLoading ? 'blur(10px)' : 'none',
+    transition: priority ? 'none' : 'opacity 0.3s ease-in-out, filter 0.3s ease-in-out',
+    opacity: priority ? 1 : (imageLoading ? 0 : 1),
+    filter: priority ? 'none' : (imageLoading ? 'blur(10px)' : 'none'),
     width: '100%',
     height: '100%'
   };

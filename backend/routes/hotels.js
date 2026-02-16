@@ -983,6 +983,7 @@ router.get('/suggest', async (req, res) => {
  */
 router.get('/search', async (req, res) => {
   try {
+    const searchStartTime = Date.now();
     const {
       destination,
       checkin,
@@ -1228,7 +1229,9 @@ router.get('/search', async (req, res) => {
     }
 
     // Step 1: Get region and hotel suggestions
+    const suggestStart = Date.now();
     const suggestions = await rateHawkService.suggest(resolvedDestination, finalLanguage);
+    console.log(`   ⏱️ Suggest took ${Date.now() - suggestStart}ms`);
 
     // Check if we found any regions OR hotels
     const hasRegions = suggestions.regions && suggestions.regions.length > 0;
@@ -1276,6 +1279,7 @@ router.get('/search', async (req, res) => {
     // The API typically returns 100-500 hotels depending on city availability
     // We cache these results and paginate on our end for the frontend
 
+    const searchApiStart = Date.now();
     const searchResults = await rateHawkService.searchByRegion(regionId, {
       ...searchDates,
       adults: parseInt(adults) || 2,
@@ -1290,6 +1294,7 @@ router.get('/search', async (req, res) => {
       mealFilter: mealPlanFilter.length > 0 ? mealPlanFilter : null,
       facilitiesFilter: facilitiesFilter.length > 0 ? facilitiesFilter : null
     });
+    console.log(`   ⏱️ searchByRegion took ${Date.now() - searchApiStart}ms (${searchResults.hotels?.length || 0} hotels)`);
 
     // Note: Star rating, meal, and facility filters are now applied at API level
     // See RateHawkService.searchByRegion for API-level filtering
@@ -1578,98 +1583,7 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    // Enrich ALL hotels with TripAdvisor data from DB (fast lookup, no API calls)
-    // Step 1: Batch lookup by exact name + city (fast)
-    // Step 2: Individual fuzzy match for unmatched hotels (still DB-only, no API)
-    // Step 3: Trigger background TripAdvisor API fetch for hotels not in DB at all
-    const hotelsWithoutTA = [];
-    try {
-      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
-      const searchCity = destination || 'Saudi Arabia';
-
-      // Step 1: Batch exact match
-      const allNames = allHotels.map(h => h.name).filter(Boolean);
-      if (allNames.length > 0) {
-        const taResults = await TripAdvisorHotel.findByNamesAndCity(allNames, searchCity);
-        const taMap = {};
-        taResults.forEach(ta => {
-          taMap[ta.name_normalized] = ta;
-          if (ta.search_names) {
-            ta.search_names.forEach(alias => { taMap[alias] = ta; });
-          }
-          // Also map by raw name (case-insensitive)
-          if (ta.name) {
-            taMap[ta.name.toLowerCase().trim()] = ta;
-          }
-        });
-
-        allHotels.forEach(h => {
-          if (!h.name) return;
-          const nameNorm = h.name.toLowerCase().trim();
-          const ta = taMap[nameNorm];
-          if (ta && ta.rating) {
-            h.tripadvisor_rating = ta.rating;
-            h.tripadvisor_num_reviews = ta.num_reviews;
-            h.tripadvisor_location_id = ta.location_id;
-          }
-        });
-      }
-
-      // Step 2: Individual fuzzy match for unmatched hotels (DB only, no API calls)
-      const unmatchedHotels = allHotels.filter(h => h.name && !h.tripadvisor_rating);
-      if (unmatchedHotels.length > 0 && unmatchedHotels.length <= 100) {
-        // Only do fuzzy for reasonable batch sizes to avoid slow DB queries
-        const fuzzyPromises = unmatchedHotels.map(async (h) => {
-          try {
-            const found = await TripAdvisorHotel.findByNameAndCity(h.name, searchCity);
-            if (found && found.rating) {
-              h.tripadvisor_rating = found.rating;
-              h.tripadvisor_num_reviews = found.num_reviews;
-              h.tripadvisor_location_id = found.location_id;
-              // Save the alias for future fast lookups
-              TripAdvisorHotel.updateOne(
-                { _id: found._id },
-                { $addToSet: { search_names: h.name.toLowerCase().trim() } }
-              ).catch(() => {});
-            } else {
-              hotelsWithoutTA.push(h.name);
-            }
-          } catch (e) {
-            hotelsWithoutTA.push(h.name);
-          }
-        });
-        await Promise.all(fuzzyPromises);
-      } else if (unmatchedHotels.length > 100) {
-        // Too many to fuzzy match individually — collect names for background fetch
-        unmatchedHotels.forEach(h => hotelsWithoutTA.push(h.name));
-      }
-
-      const enrichedCount = allHotels.filter(h => h.tripadvisor_rating).length;
-      console.log(`   🏷️ TripAdvisor enriched ${enrichedCount}/${allHotels.length} hotels from DB (${hotelsWithoutTA.length} not in DB)`);
-    } catch (taError) {
-      console.error('   ⚠️ TripAdvisor enrichment error (non-fatal):', taError.message);
-    }
-
-    // Step 3: Background fetch from TripAdvisor API for hotels not in DB
-    // This is fire-and-forget — results won't appear in THIS response but will be
-    // available for future searches and when user clicks into hotel details
-    if (hotelsWithoutTA.length > 0) {
-      const bgCity = destination || 'Saudi Arabia';
-      // Limit background fetch to first 20 hotels to avoid excessive API usage
-      const toFetch = hotelsWithoutTA.slice(0, 20);
-      console.log(`   🌐 Background TripAdvisor fetch queued for ${toFetch.length}/${hotelsWithoutTA.length} hotels`);
-      // Fire and forget — don't await, don't block the response
-      setImmediate(async () => {
-        try {
-          await tripadvisorService.getHotelRatings(toFetch, bgCity);
-          console.log(`   ✅ Background TripAdvisor fetch completed for ${toFetch.length} hotels in "${bgCity}"`);
-        } catch (bgErr) {
-          console.error(`   ⚠️ Background TripAdvisor fetch error: ${bgErr.message}`);
-        }
-      });
-    }
-
-    // Cache ALL unfiltered results (filters applied on read for instant response)
+    // Cache ALL unfiltered results IMMEDIATELY (TripAdvisor added in background)
     hotelSearchCache.set(baseCacheKey, {
       hotels: allHotels,
       total: allHotels.length,
@@ -1691,7 +1605,9 @@ router.get('/search', async (req, res) => {
     const finalTotalPages = Math.ceil(totalHotelsWithRates / limitNumber);
     const hasMoreHotels = endIndex < filteredResults.length;
 
+    const totalSearchTime = Date.now() - searchStartTime;
     console.log(`   📄 Returning page ${pageNumber}/${finalTotalPages}: ${paginatedHotels.length} of ${totalHotelsWithRates} hotels (${allHotels.length} total cached)`);
+    console.log(`   ⏱️ TOTAL search time: ${totalSearchTime}ms`);
 
     // Set Cache-Control for browser caching of search results (30 seconds)
     res.set('Cache-Control', 'private, max-age=30');
@@ -1708,6 +1624,86 @@ router.get('/search', async (req, res) => {
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
     }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} of ${totalHotelsWithRates} hotels`);
 
+    // BACKGROUND: TripAdvisor enrichment (non-blocking, updates cache in-place)
+    setImmediate(async () => {
+      const taStart = Date.now();
+      const hotelsWithoutTA = [];
+      try {
+        const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+        const searchCity = destination || 'Saudi Arabia';
+
+        // Step 1: Batch exact match
+        const allNames = allHotels.map(h => h.name).filter(Boolean);
+        if (allNames.length > 0) {
+          const taResults = await TripAdvisorHotel.findByNamesAndCity(allNames, searchCity);
+          const taMap = {};
+          taResults.forEach(ta => {
+            taMap[ta.name_normalized] = ta;
+            if (ta.search_names) {
+              ta.search_names.forEach(alias => { taMap[alias] = ta; });
+            }
+            if (ta.name) {
+              taMap[ta.name.toLowerCase().trim()] = ta;
+            }
+          });
+
+          allHotels.forEach(h => {
+            if (!h.name) return;
+            const nameNorm = h.name.toLowerCase().trim();
+            const ta = taMap[nameNorm];
+            if (ta && ta.rating) {
+              h.tripadvisor_rating = ta.rating;
+              h.tripadvisor_num_reviews = ta.num_reviews;
+              h.tripadvisor_location_id = ta.location_id;
+            }
+          });
+        }
+
+        // Step 2: Individual fuzzy match for unmatched hotels (DB only)
+        const unmatchedHotels = allHotels.filter(h => h.name && !h.tripadvisor_rating);
+        if (unmatchedHotels.length > 0 && unmatchedHotels.length <= 100) {
+          const fuzzyPromises = unmatchedHotels.map(async (h) => {
+            try {
+              const found = await TripAdvisorHotel.findByNameAndCity(h.name, searchCity);
+              if (found && found.rating) {
+                h.tripadvisor_rating = found.rating;
+                h.tripadvisor_num_reviews = found.num_reviews;
+                h.tripadvisor_location_id = found.location_id;
+                TripAdvisorHotel.updateOne(
+                  { _id: found._id },
+                  { $addToSet: { search_names: h.name.toLowerCase().trim() } }
+                ).catch(() => {});
+              } else {
+                hotelsWithoutTA.push(h.name);
+              }
+            } catch (e) {
+              hotelsWithoutTA.push(h.name);
+            }
+          });
+          await Promise.all(fuzzyPromises);
+        } else if (unmatchedHotels.length > 100) {
+          unmatchedHotels.forEach(h => hotelsWithoutTA.push(h.name));
+        }
+
+        const enrichedCount = allHotels.filter(h => h.tripadvisor_rating).length;
+        console.log(`   🏷️ [BG] TripAdvisor enriched ${enrichedCount}/${allHotels.length} hotels (${Date.now() - taStart}ms)`);
+      } catch (taError) {
+        console.error('   ⚠️ [BG] TripAdvisor enrichment error:', taError.message);
+      }
+
+      // Step 3: Background fetch from TripAdvisor API for hotels not in DB
+      if (hotelsWithoutTA.length > 0) {
+        const bgCity = destination || 'Saudi Arabia';
+        const toFetch = hotelsWithoutTA.slice(0, 20);
+        try {
+          await tripadvisorService.getHotelRatings(toFetch, bgCity);
+          console.log(`   ✅ [BG] TripAdvisor API fetch done for ${toFetch.length} hotels`);
+        } catch (bgErr) {
+          console.error(`   ⚠️ [BG] TripAdvisor API error: ${bgErr.message}`);
+        }
+      }
+    });
+
   } catch (error) {
     console.error('Hotel search error:', error);
     errorResponse(res, 'Failed to search hotels', 500);
@@ -1721,6 +1717,9 @@ router.get('/search', async (req, res) => {
 router.get('/details/:hid', async (req, res) => {
   try {
     const startTime = Date.now();
+    console.log('\n' + '═'.repeat(60));
+    console.log('🏨 HOTEL DETAILS REQUEST');
+    console.log('═'.repeat(60));
     const { hid } = req.params;
     const {
       checkin,
@@ -1731,6 +1730,7 @@ router.get('/details/:hid', async (req, res) => {
       currency = 'USD',
       language = 'en'
     } = req.query;
+    console.log(`   HID: ${hid}, dates: ${checkin}→${checkout}, currency: ${currency}, lang: ${language}`);
 
     // Validate hid - support both numeric hid and string hotelId formats
     let hotelId = parseInt(hid);
@@ -1780,17 +1780,39 @@ router.get('/details/:hid', async (req, res) => {
     }
 
     // Check static content cache (images, amenities, POI, reviews — NOT rates)
+    const staticCacheStart = Date.now();
     const cachedStatic = getHotelStaticCache(hotelId);
     if (cachedStatic) {
-      console.log(`⚡ Static cache HIT for HID ${hotelId} (skipping DB queries)`);
+      console.log(`   ⚡ Static cache HIT for HID ${hotelId} (skipping DB queries)`);
+    } else {
+      console.log(`   ❄️ Static cache MISS for HID ${hotelId}`);
     }
+    console.log(`   ⏱️ Static cache check: ${Date.now() - staticCacheStart}ms`);
 
     let hotelDetails;
+    // Start POI + Arabic name fetch IN PARALLEL with the API call (saves ~400ms)
+    // These only need hotelId which we already have
+    let poiPromise, arPromise;
+    if (cachedStatic) {
+      poiPromise = Promise.resolve(cachedStatic.poiData);
+      arPromise = Promise.resolve(cachedStatic.arContent);
+      console.log(`   ⚡ POI+Arabic will come from static cache`);
+    } else {
+      const HotelPOI = require('../models/HotelPOI');
+      const HotelContentAr = require('../models/HotelContent');
+      poiPromise = HotelPOI.getGroupedPOI(hotelId).catch(err => { console.error('POI error:', err.message); return null; });
+      arPromise = HotelContentAr.findOne(
+        { hid: hotelId, nameAr: { $exists: true, $ne: null, $ne: '' } },
+        { nameAr: 1 }
+      ).lean().catch(() => null);
+      console.log(`   🚀 POI+Arabic fetch started in parallel with API`);
+    }
     try {
       // Debug log for currency tracing
-      console.log(`💷 Hotel details request: HID=${hotelId}, currency=${currency}, language=${language}`);
+      console.log(`   💷 Currency: ${currency}, Language: ${language}`);
 
       // Try to get hotel details with rates (rates are ALWAYS fetched fresh)
+      const apiStart = Date.now();
       hotelDetails = await rateHawkService.getHotelDetails(hotelId, {
         ...searchDates,
         adults: parseInt(adults) || 2,
@@ -1802,6 +1824,7 @@ router.get('/details/:hid', async (req, res) => {
         _cachedStaticContent: cachedStatic?.rawContent || null,
         _cachedReviewData: cachedStatic?.reviewData || null
       });
+      console.log(`   ⏱️ getHotelDetails (API+DB+reviews) took ${Date.now() - apiStart}ms`);
     } catch (error) {
       // If hotel not found (no rates), fetch from Local DB first (not Content API)
       console.log(`⚠️ Hotel ${hotelId} not found with rates, fetching from Local DB...`);
@@ -1909,21 +1932,10 @@ router.get('/details/:hid', async (req, res) => {
     }
 
     // Use cached static data if available, otherwise fetch POI + Arabic name from DB
-    let poiData, arContent;
-    if (cachedStatic) {
-      poiData = cachedStatic.poiData;
-      arContent = cachedStatic.arContent;
-    } else {
-      // Fetch POI data and Arabic name in PARALLEL (saves ~200-500ms)
-      const HotelPOI = require('../models/HotelPOI');
-      const HotelContentAr = require('../models/HotelContent');
-      [poiData, arContent] = await Promise.all([
-        HotelPOI.getGroupedPOI(hotelId).catch(err => { console.error('POI error:', err.message); return null; }),
-        HotelContentAr.findOne(
-          { hid: hotelDetails.hid, nameAr: { $exists: true, $ne: null, $ne: '' } },
-          { nameAr: 1 }
-        ).lean().catch(() => null)
-      ]);
+    const poiStart = Date.now();
+    const [poiData, arContent] = await Promise.all([poiPromise, arPromise]);
+    if (!cachedStatic) {
+      console.log(`   ⏱️ POI + Arabic name: ${Date.now() - poiStart}ms (ran in parallel — actual wait only for remaining time)`);
     }
 
     // Format response to match frontend expectations
@@ -1975,7 +1987,10 @@ router.get('/details/:hid', async (req, res) => {
     // Short cache for browser — prices are fresh but avoid hammering during same session
     res.set('Cache-Control', 'private, max-age=30');
 
-    console.log(`✅ Hotel details for ${hid} served in ${Date.now() - startTime}ms`);
+    const totalTime = Date.now() - startTime;
+    console.log('─'.repeat(60));
+    console.log(`   ✅ TOTAL hotel details for HID ${hid}: ${totalTime}ms`);
+    console.log('═'.repeat(60) + '\n');
     successResponse(res, { hotel: formattedHotel }, 'Hotel details retrieved successfully');
 
   } catch (error) {

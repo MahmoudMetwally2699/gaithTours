@@ -256,6 +256,11 @@ export const MainSection: React.FC = () => {
           src="/new-design/header-photo-background.webp"
           alt="Background"
           className="w-full h-full object-cover object-center"
+          width={1920}
+          height={300}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
       </div>
 
@@ -267,7 +272,7 @@ export const MainSection: React.FC = () => {
 
           {/* Logo - First on Mobile */}
           <Link to="/" className="flex-shrink-0 order-1">
-            <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-10 sm:h-12 md:h-14 w-auto drop-shadow-lg" />
+            <img src="/new-design/logo.svg" alt="Gaith Tours" className="h-10 sm:h-12 md:h-14 w-auto drop-shadow-lg" width={160} height={56} />
           </Link>
 
           {/* Contact & Settings - Desktop Only */}

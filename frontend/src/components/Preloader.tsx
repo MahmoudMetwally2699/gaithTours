@@ -11,15 +11,15 @@ interface PreloaderProps {
 
 export const Preloader: React.FC<PreloaderProps> = ({
   isLoading,
-  minDisplayTime = 1500,
-  maxDisplayTime = 15000 // Maximum time to show preloader (failsafe)
+  minDisplayTime = 600,
+  maxDisplayTime = 4000 // Reduced from 15s to 4s to avoid blocking LCP
 }) => {
   const { t: translate } = useTranslation();
   const [showPreloader, setShowPreloader] = useState(true);
   const [hasMinTimePassed, setHasMinTimePassed] = useState(false);
   const [forceHide, setForceHide] = useState(false);
 
-  // Ensure minimum display time for smooth UX
+  // Ensure minimum display time for smooth UX (reduced from 1500ms to 600ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       setHasMinTimePassed(true);
@@ -44,7 +44,7 @@ export const Preloader: React.FC<PreloaderProps> = ({
       // Small delay for exit animation
       const hideTimer = setTimeout(() => {
         setShowPreloader(false);
-      }, 300);
+      }, 200);
       return () => clearTimeout(hideTimer);
     }
   }, [isLoading, hasMinTimePassed, forceHide]);

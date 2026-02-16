@@ -109,10 +109,11 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         src={currentSrc}
         alt={alt}
         loading={priority ? 'eager' : 'lazy'}
+        {...(priority && { fetchPriority: 'high' as const })}
         onLoad={handleLoad}
         onError={handleError}
         className={`
-          w-full h-full object-cover transition-opacity duration-500
+          w-full h-full object-cover transition-opacity duration-200
           ${isLoaded ? 'opacity-100' : 'opacity-0'}
           ${className}
         `}

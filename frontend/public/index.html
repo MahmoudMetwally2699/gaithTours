@@ -14,6 +14,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <!-- Preload hero image for LCP -->
+    <link rel="preload" as="image" href="%PUBLIC_URL%/new-design/header-photo-background.webp" type="image/webp" fetchpriority="high">
+    <!-- Preload logo SVG -->
+    <link rel="preload" as="image" href="%PUBLIC_URL%/new-design/logo.svg" type="image/svg+xml">
+    <!-- Non-render-blocking Google Fonts (moved from CSS @import) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@400;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta

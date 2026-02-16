@@ -50,8 +50,21 @@ export const ForNewUsers: React.FC = () => {
     }
   };
 
-  // Don't render anything if loading or no banners
-  if (loading || banners.length === 0) {
+  // Reserve space while loading to prevent CLS, hide when no banners available
+  if (loading) {
+    return (
+      <section className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-16 md:pt-20 pb-6 md:pb-8">
+        <div className="h-7 bg-gray-200 rounded w-48 mb-3 md:mb-4 animate-pulse" />
+        <div className="flex gap-4 overflow-hidden">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="flex-shrink-0 w-[280px] sm:w-[320px] md:w-[380px] rounded-xl bg-gray-100 animate-pulse aspect-[16/9]" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (banners.length === 0) {
     return null;
   }
 
@@ -100,6 +113,8 @@ export const ForNewUsers: React.FC = () => {
                   alt={banner.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  width={380}
+                  height={214}
                 />
               </div>
             </div>

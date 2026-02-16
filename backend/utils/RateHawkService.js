@@ -40,9 +40,12 @@ class RateHawkService {
     // Rate limiting and circuit breaker
     this.requestQueue = [];
     this.isProcessingQueue = false;
-    // RateHawk limit: 10 requests per 60 seconds = 1 request per 6 seconds minimum
-    this.requestDelay = 6000; // 6 seconds between requests to stay under rate limit
-    this.lastRequestTime = 0;
+    // RateHawk rate limit: 10 requests per 60 seconds
+    // Using sliding window instead of fixed delay — allows bursts when under limit
+    this.rateLimitWindow = 60000; // 60 second window
+    this.rateLimitMax = 10; // max requests per window
+    this.requestTimestamps = []; // sliding window of request timestamps
+    this.lastRequestTime = 0; // kept for backward compatibility
 
     // Circuit breaker pattern
     this.circuitBreaker = {
@@ -533,12 +536,21 @@ class RateHawkService {
    * @param {number} retries - Number of retries left
    */
   async makeRequest(endpoint, method = 'POST', data = null, customBaseUrl = null, retries = 3) {
-    // Rate limiting: Ensure minimum delay between requests
+    // Rate limiting: Sliding window (10 requests per 60 seconds)
     const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.requestDelay) {
-      await this.sleep(this.requestDelay - timeSinceLastRequest);
+    // Remove timestamps older than the window
+    this.requestTimestamps = this.requestTimestamps.filter(t => now - t < this.rateLimitWindow);
+
+    if (this.requestTimestamps.length >= this.rateLimitMax) {
+      // Window is full — wait until the oldest request expires
+      const oldestInWindow = this.requestTimestamps[0];
+      const waitTime = this.rateLimitWindow - (now - oldestInWindow) + 100; // +100ms safety
+      console.log(`⏰ Rate limit: ${this.requestTimestamps.length}/${this.rateLimitMax} calls in window, waiting ${(waitTime/1000).toFixed(1)}s`);
+      await this.sleep(waitTime);
+      this.requestTimestamps = this.requestTimestamps.filter(t => Date.now() - t < this.rateLimitWindow);
     }
+
+    this.requestTimestamps.push(Date.now());
     this.lastRequestTime = Date.now();
 
     try {
@@ -752,6 +764,7 @@ class RateHawkService {
       */
 
       const response = await this.makeRequest('/search/serp/region/', 'POST', apiPayload);
+      console.log(`   ⏱️ RateHawk SERP API responded in ${Date.now() - now}ms with ${response.data?.hotels?.length || 0} hotels`);
 
       // Calculate number of nights for per-night pricing
       const checkinDate = new Date(checkin);
@@ -859,7 +872,21 @@ class RateHawkService {
         // ETG serp_filters for facility filtering (e.g., 'has_bathroom', 'has_internet', 'has_parking')
         serp_filters: lowestRate?.serp_filters || [],
         // Room amenities data for filtering
-        amenities_data: lowestRate?.amenities_data || []
+        amenities_data: lowestRate?.amenities_data || [],
+        // PERF: Derive amenities from serp_filters so we don't need to fetch from DB
+        amenities: (() => {
+          const filters = lowestRate?.serp_filters || [];
+          const mapped = [];
+          if (filters.includes('has_internet')) mapped.push('WiFi');
+          if (filters.includes('has_pool')) mapped.push('Swimming Pool');
+          if (filters.includes('has_parking')) mapped.push('Parking');
+          if (filters.includes('has_fitness')) mapped.push('Gym');
+          if (filters.includes('has_spa')) mapped.push('Spa');
+          if (filters.includes('has_restaurant')) mapped.push('Restaurant');
+          if (filters.includes('has_conditioning')) mapped.push('Air Conditioning');
+          if (filters.includes('has_bathroom')) mapped.push('Private Bathroom');
+          return mapped;
+        })()
       };
     });
 
@@ -869,11 +896,25 @@ class RateHawkService {
       hotels = hotels.slice(0, maxResults);
     }
 
+    const enrichStart = Date.now();
+
     // Fetch images for hotels using Content API (max 100 per request)
     let hotelHids = hotels.map(h => h.hid).filter(hid => hid);
 
+    // OPTIMIZATION: Start review query + margin rules fetch IN PARALLEL with DB enrichment
+    // These are independent DB queries — no reason to run them sequentially
+    const HotelReviewParallel = require('../models/HotelReview');
+    const reviewPromise = hotelHids.length > 0
+      ? HotelReviewParallel.find({ hid: { $in: hotelHids }, language: 'en' })
+          .select('hid overall_rating review_count average_rating').lean()
+          .catch(err => { console.error('⚠️ Review pre-fetch error:', err.message); return []; })
+      : Promise.resolve([]);
+    const marginRulesPromise = MarginService.getCachedRules()
+      .catch(err => { console.error('⚠️ Margin rules pre-fetch error:', err.message); return []; });
+
     // LOCAL DB ENRICHMENT: No rate limits, so always enrich all hotels
     // The enrichmentLimit parameter is kept for backward compatibility but ignored
+    const dbStart = Date.now();
     console.log(`📍 Fetching location/image data for ${hotelHids.length} hotels using Local DB`);
 
     if (hotelHids.length > 0) {
@@ -901,25 +942,49 @@ class RateHawkService {
           console.log(`   📍 Fetching data for ${uncachedHids.length} hotels from Local DB`);
           const HotelContent = require('../models/HotelContent');
 
-          // Split into batches of 100 to avoid huge DB queries (though Mongo handles thousands easily)
+          // Split into batches to avoid huge DB queries
           const batchSize = 500;
           const batches = [];
           for (let i = 0; i < uncachedHids.length; i += batchSize) {
             batches.push(uncachedHids.slice(i, i + batchSize));
           }
 
-          for (let i = 0; i < batches.length; i++) {
-            const batch = batches[i];
+          // PERF: Run ALL batches in parallel instead of sequentially
+          const batchResults = await Promise.all(batches.map(async (batch, i) => {
             try {
               // Query Local DB - OPTIMIZED: Only fetch fields we actually use
-              // Added 'amenities' field for displaying amenity icons on search cards
-              // Added 'latitude' and 'longitude' for distance calculation
-              const localHotels = await HotelContent.find({ hid: { $in: batch } })
-                .select('hid hotelId name nameAr address city country countryCode starRating mainImage images amenities latitude longitude')
-                .lean();
+              // PERF: Use $slice to fetch only first image instead of entire images array
+              // PERF: Fetch only fields we actually use (+amenities for search card icons)
+              const localHotels = await HotelContent.find(
+                { hid: { $in: batch } },
+                {
+                  hid: 1, hotelId: 1, name: 1, nameAr: 1, address: 1,
+                  city: 1, country: 1, countryCode: 1, starRating: 1,
+                  mainImage: 1, amenities: 1, latitude: 1, longitude: 1,
+                  images: { $slice: 1 }
+                }
+              ).lean();
               console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
+              return { hotels: localHotels, batch, index: i };
+            } catch (error) {
+              console.error(`   ⚠️ Batch ${i + 1} failed:`, error.message);
+              return { hotels: [], batch, index: i, error };
+            }
+          }));
 
-              localHotels.forEach(hotel => {
+          // Process all batch results
+          for (const result of batchResults) {
+            if (result.error?.response?.status === 429) {
+              result.batch.forEach(hid => {
+                const cached = this.contentCache.get(hid);
+                if (cached && (now - cached.timestamp) < this.staleCacheTTL) {
+                  contentMap.set(hid, cached.data);
+                }
+              });
+              continue;
+            }
+
+            result.hotels.forEach(hotel => {
                 // Map local DB structure to match what the frontend expects
                 let imageUrl = null;
                 // Prioritize images array structure from local DB
@@ -939,57 +1004,29 @@ class RateHawkService {
                 }
 
                 // Add to content map - include amenities for search card display
-                contentMap.set(hotel.hid, {
+                const contentData = {
                   name: hotel.name,
                   nameAr: hotel.nameAr || null,
                   address: hotel.address,
                   city: hotel.city,
                   country: countryName,
-                  image: imageUrl, // Explicitly set single image for compatibility
+                  image: imageUrl,
                   images: imageUrl ? [imageUrl] : [],
                   star_rating: hotel.starRating,
-                  kind: 'Hotel', // Default
+                  kind: 'Hotel',
                   hid: hotel.hid,
-                  amenities: hotel.amenities || [], // Include amenities for frontend display
+                  amenities: hotel.amenities || [],
                   latitude: hotel.latitude || null,
                   longitude: hotel.longitude || null
-                });
+                };
+                contentMap.set(hotel.hid, contentData);
 
-                // Update internal cache with proper data structure
+                // Update internal cache
                 this.contentCache.set(hotel.hid, {
-                  data: {
-                    name: hotel.name,
-                    nameAr: hotel.nameAr || null,
-                    address: hotel.address,
-                    city: hotel.city,
-                    country: countryName,
-                    image: imageUrl,
-                    images: imageUrl ? [imageUrl] : [],
-                    star_rating: hotel.starRating,
-                    kind: 'Hotel',
-                    hid: hotel.hid,
-                    amenities: hotel.amenities || [], // Include amenities for frontend display
-                    latitude: hotel.latitude || null,
-                    longitude: hotel.longitude || null
-                  },
+                  data: contentData,
                   timestamp: now
                 });
               });
-            } catch (error) {
-              console.error(`   ⚠️ Batch ${i + 1} failed:`, error.message);
-
-              // On rate limit (429), try to use stale cache as fallback
-              if (error.response?.status === 429) {
-                console.log(`⏰ Rate limit hit, checking for stale cache...`);
-                batch.forEach(hid => {
-                  const cached = this.contentCache.get(hid);
-                  if (cached && (now - cached.timestamp) < this.staleCacheTTL) {
-                    console.log(`   ✅ Using stale cache for HID ${hid} (${Math.round((now - cached.timestamp) / (1000 * 60 * 60))}h old)`);
-                    contentMap.set(hid, cached.data);
-                  }
-                });
-              }
-            }
           }
         }
 
@@ -1009,8 +1046,16 @@ class RateHawkService {
             // rating = review score (1-10) from Search API - keep it unchanged!
             if (content.star_rating) hotel.star_rating = content.star_rating;
 
-            // Add amenities to the hotel object
-            if (content.amenities) hotel.amenities = content.amenities;
+            // Merge DB amenities with API-derived amenities (serp_filters)
+            // API gives rate-level amenities, DB gives hotel-level amenities — combine both
+            if (content.amenities && content.amenities.length > 0) {
+              const existing = new Set((hotel.amenities || []).map(a => a.toLowerCase()));
+              for (const a of content.amenities) {
+                if (!existing.has(a.toLowerCase())) {
+                  hotel.amenities.push(a);
+                }
+              }
+            }
             if (content.facilities) hotel.facilities = content.facilities;
 
             // Add coordinates for distance calculation
@@ -1031,14 +1076,17 @@ class RateHawkService {
       }
     }
 
+    console.log(`   ⏱️ DB enrichment phase took ${Date.now() - dbStart}ms`);
+
     // Apply dynamic margins based on margin rules
     // Now that hotels have country/city/star_rating from enrichment, we can match rules
+    const marginStart = Date.now();
     console.log(`💰 Applying dynamic margins to ${hotels.length} hotels...`);
     const HotelContent = require('../models/HotelContent');
     const MarginRule = require('../models/MarginRule');
 
-    // OPTIMIZATION: Use cached rules from MarginService (avoids DB query if cached)
-    const allRules = await MarginService.getCachedRules();
+    // OPTIMIZATION: Margin rules were pre-fetched in parallel with DB enrichment
+    const allRules = await marginRulesPromise;
 
     // OPTIMIZATION: Collect stats for batched update instead of per-hotel updates
     const ruleStats = new Map();
@@ -1126,20 +1174,15 @@ class RateHawkService {
       MarginRule.bulkWrite(bulkOps).catch(() => {}); // Fire and forget
     }
 
-    // PERFORMANCE OPTIMIZATION: Only use DB-cached reviews (skip API fetching)
-    // API review fetching was taking 0-3 seconds per search
-    // Reviews will be fetched on hotel details page instead
+    console.log(`   ⏱️ Margin application took ${Date.now() - marginStart}ms`);
+
+    // PERFORMANCE OPTIMIZATION: Reviews were pre-fetched in parallel with DB enrichment
+    // No additional DB query needed — just await the result started earlier
+    const reviewStart = Date.now();
     try {
-      const HotelReview = require('../models/HotelReview');
-      const hotelHidsForReviews = hotels.map(h => h.hid).filter(hid => hid);
+      const reviewSummaries = await reviewPromise;
 
-      if (hotelHidsForReviews.length > 0) {
-        // Only query DB - no API calls (saves 0-3 seconds)
-        const reviewSummaries = await HotelReview.find({
-          hid: { $in: hotelHidsForReviews },
-          language: 'en'
-        }).select('hid overall_rating review_count average_rating').lean();
-
+      if (reviewSummaries.length > 0) {
         // Create lookup map
         const reviewMap = new Map();
         reviewSummaries.forEach(review => {
@@ -1162,12 +1205,14 @@ class RateHawkService {
           }
         });
 
-        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings (DB only - fast)`);
+        console.log(`   ⭐ Enriched ${enrichedCount}/${hotels.length} hotels with review ratings (parallel fetch)`);
       }
     } catch (reviewError) {
       console.error('⚠️ Error enriching hotels with review ratings:', reviewError.message);
       // Continue without review data - not critical
     }
+
+    console.log(`   ⏱️ Review enrichment took ${Date.now() - reviewStart}ms`);
 
     // NOTE: TripAdvisor enrichment is handled at the route level (hotels.js /search)
     // to avoid duplicate DB queries. The route handler does batch + fuzzy + background fetch.
@@ -1244,6 +1289,8 @@ class RateHawkService {
       total: response.data?.total_hotels || hotels.length,
       debug: response.debug
     };
+
+    console.log(`   ⏱️ Post-API enrichment took ${Date.now() - enrichStart}ms for ${hotels.length} hotels`);
 
     // Cache the search result for future use
     this.searchCache.set(cacheKey, {
@@ -1338,7 +1385,7 @@ class RateHawkService {
     };
 
     // Debug: Log the currency being sent to RateHawk API
-    console.log(`💱 RateHawk API request: HID=${hid}, currency=${currency}, checkin=${checkin}, checkout=${checkout}`);
+    console.log(`   💱 RateHawk HP API: HID=${hid}, currency=${currency}, dates=${checkin}→${checkout}`);
 
     // Include match_hash if provided (for rate matching)
     if (match_hash) {
@@ -1357,22 +1404,40 @@ class RateHawkService {
     const hasCachedStatic = !!_cachedStaticContent;
     const hasCachedReviews = !!_cachedReviewData;
 
-    const parallelPromises = [
-      // 1. Get pricing and availability from RateHawk API (ALWAYS fresh)
-      this.makeRequest('/search/hp/', 'POST', payload),
-      // 2. Get static content from local DB — skip if pre-cached
-      hasCachedStatic ? Promise.resolve(_cachedStaticContent) : HotelContent.findOne({ hid }).lean(),
-      // 3. Get review data — skip if pre-cached
-      hasCachedReviews ? Promise.resolve(_cachedReviewData) : this.getOrFetchReviews(hid, 'en', 7),
-      // 4. (optional) English rates for room image matching when language != 'en'
-      needsEnglishLookup ? this.makeRequest('/search/hp/', 'POST', enPayload).catch(err => {
-        console.log(`⚠️ English room name lookup failed (non-critical): ${err.message}`);
+    console.log(`   🚀 Fetching in PARALLEL: [HP API${hasCachedStatic ? '' : ' + DB content'}${hasCachedReviews ? '' : ' + Reviews'}${needsEnglishLookup ? ' + EN rates' : ''}]`);
+    const parallelStart = Date.now();
+
+    // Wrap each with individual timers
+    const hpApiPromise = this.makeRequest('/search/hp/', 'POST', payload).then(r => {
+      console.log(`      ⏱️ HP API (rates): ${Date.now() - parallelStart}ms — ${r.data?.hotels?.[0]?.rates?.length || 0} rates`);
+      return r;
+    });
+    const dbContentPromise = hasCachedStatic
+      ? Promise.resolve(_cachedStaticContent).then(r => { console.log(`      ⚡ DB content: from cache (0ms)`); return r; })
+      : HotelContent.findOne({ hid }).lean().then(r => {
+        console.log(`      ⏱️ DB content: ${Date.now() - parallelStart}ms — ${r?.images?.length || 0} imgs, ${r?.amenityGroups?.length || 0} amenity groups`);
+        return r;
+      });
+    const reviewPromise = hasCachedReviews
+      ? Promise.resolve(_cachedReviewData).then(r => { console.log(`      ⚡ Reviews: from cache (0ms)`); return r; })
+      : this.getOrFetchReviews(hid, 'en', 7).then(r => {
+        console.log(`      ⏱️ Reviews: ${Date.now() - parallelStart}ms — rating ${r?.overall_rating || 'N/A'}, ${r?.review_count || 0} reviews`);
+        return r;
+      });
+    const enRatesPromise = needsEnglishLookup
+      ? this.makeRequest('/search/hp/', 'POST', enPayload).then(r => {
+        console.log(`      ⏱️ EN rates (room names): ${Date.now() - parallelStart}ms`);
+        return r;
+      }).catch(err => {
+        console.log(`      ⚠️ EN rates failed (non-critical): ${err.message}`);
         return null;
-      }) : Promise.resolve(null)
-    ];
+      })
+      : Promise.resolve(null);
 
-    const [response, staticContent, reviewData, enResponse] = await Promise.all(parallelPromises);
-
+    const [response, staticContent, reviewData, enResponse] = await Promise.all([
+      hpApiPromise, dbContentPromise, reviewPromise, enRatesPromise
+    ]);
+    console.log(`   ⏱️ Parallel fetch phase TOTAL: ${Date.now() - parallelStart}ms`);
     const hotelData = response.data?.hotels?.[0];
     if (!hotelData) {
       throw new Error('Hotel not found');
@@ -1452,9 +1517,10 @@ class RateHawkService {
       console.log(`   ⚠️ No amenity_groups in static content`);
     }
 
-    console.log(`📊 Extracted: ${images.length} images, ${amenities.length} amenities`);
+    console.log(`   📊 Extracted: ${images.length} images, ${amenities.length} amenities`);
 
     // Extract room images and amenities from room_groups
+    const roomProcessStart = Date.now();
     const roomImagesMap = new Map();
     const roomAmenitiesMap = new Map();
 
@@ -1522,12 +1588,10 @@ class RateHawkService {
 
         if (roomImages.length > 0) {
           roomImagesMap.set(normalizedName, roomImages);
-          console.log(`      ✅ ${roomName} → "${normalizedName}": ${roomImages.length} images`);
         }
 
         if (roomAmenities.length > 0) {
           roomAmenitiesMap.set(normalizedName, roomAmenities);
-          console.log(`      🧹 ${roomName} → "${normalizedName}": ${roomAmenities.length} amenities`);
         }
       });
 
@@ -1536,6 +1600,7 @@ class RateHawkService {
     } else {
       console.log(`   ⚠️  No room_groups in static content`);
     }
+    console.log(`   ⏱️ Room group processing: ${Date.now() - roomProcessStart}ms`);
 
     // Prepare context for margin rules
     // Map country code to name if needed (must match search results logic)
@@ -1550,13 +1615,16 @@ class RateHawkService {
       customerType: params.customerType || 'b2c'
     };
 
-    console.log(`💡 Hotel details margin context: country="${countryName}", city="${staticContent?.city}", stars=${context.starRating}`);
+    console.log(`   💡 Margin context: country="${countryName}", city="${staticContent?.city}", stars=${context.starRating}`);
 
     // OPTIMIZATION: Use cached rules from MarginService (avoids DB query if cached)
+    const marginFetchStart = Date.now();
     const MarginRule = require('../models/MarginRule');
     const allRules = await MarginService.getCachedRules();
+    console.log(`   ⏱️ Margin rules fetch: ${Date.now() - marginFetchStart}ms (${allRules.length} rules)`);
 
     // Extract rates with book_hash and detailed room data
+    const rateProcessStart = Date.now();
     const rates = (hotelData.rates || []).map(rate => {
       const paymentType = rate.payment_options?.payment_types?.[0];
 
@@ -1739,62 +1807,45 @@ class RateHawkService {
         // Room amenities from Content API room_groups (with fuzzy matching)
         // FIX: Use English room name (via match_hash) for matching when language != 'en'
         room_amenities: (() => {
-          // Use English room name for matching if available (room_groups in DB are English)
           const enRoomName = matchHashToEnName.get(rate.match_hash);
           const roomKey = normalizeRoomName(enRoomName || rate.room_name);
           let matchedAmenities = roomAmenitiesMap.get(roomKey);
 
-          // Fuzzy matching fallback: try to find a room group that this rate starts with
           if (!matchedAmenities) {
             for (const [groupName, amenities] of roomAmenitiesMap.entries()) {
               if (roomKey.startsWith(groupName)) {
                 matchedAmenities = amenities;
-                console.log(`      🔍 Fuzzy matched amenities: "${rate.room_name}" → "${groupName}" (${amenities.length} amenities)`);
                 break;
               }
             }
           }
 
-          // Fallback to rate.room_data.room_amenities if still no match
           return matchedAmenities || rate.room_data?.room_amenities || [];
         })(),
 
         // Room images from Content API room_groups
         // FIX: Use English room name (via match_hash) for matching when language != 'en'
         room_images: (() => {
-          // Use English room name for matching if available (room_groups in DB are English)
           const enRoomName = matchHashToEnName.get(rate.match_hash);
           const roomKey = normalizeRoomName(enRoomName || rate.room_name);
           let matchedImages = roomImagesMap.get(roomKey);
 
-          // Fuzzy matching fallback: try to find a room group that this rate starts with
           if (!matchedImages) {
             for (const [groupName, imgs] of roomImagesMap.entries()) {
               if (roomKey.startsWith(groupName)) {
                 matchedImages = imgs;
-                console.log(`      🔍 Fuzzy matched: "${enRoomName || rate.room_name}" → "${groupName}" (${imgs.length} images)`);
                 break;
               }
             }
           }
 
-          // Debug logging
-          if (!matchedImages) {
-            console.log(`      ⚠️  No match for rate: "${rate.room_name}"${enRoomName ? ` (EN: "${enRoomName}")` : ''} → "${roomKey}"`);
-          } else {
-            console.log(`      ✅ Matched: "${rate.room_name}"${enRoomName ? ` (via EN: "${enRoomName}")` : ''} → ${matchedImages.length} images`);
-          }
-
-          // Fallback to hotel images if no room-specific images
           return matchedImages || (images.length > 0 ? [images[0].replace('1024x768', '170x154')] : []);
         })(),
         room_image_count: (() => {
-          // Use English room name for matching if available
           const enRoomName = matchHashToEnName.get(rate.match_hash);
           const roomKey = normalizeRoomName(enRoomName || rate.room_name);
           let matchedImages = roomImagesMap.get(roomKey);
 
-          // Fuzzy matching fallback
           if (!matchedImages) {
             for (const [groupName, imgs] of roomImagesMap.entries()) {
               if (roomKey.startsWith(groupName)) {
@@ -1859,6 +1910,7 @@ class RateHawkService {
         amenities: rate.amenities_data || []
       };
     });
+    console.log(`   ⏱️ Rate processing (${rates.length} rates, margins+taxes): ${Date.now() - rateProcessStart}ms`);
 
     return {
       id: hotelData.id,
