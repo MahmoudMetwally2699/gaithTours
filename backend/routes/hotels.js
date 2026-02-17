@@ -2169,12 +2169,12 @@ router.post('/clear-cache', (req, res) => {
 function clearHotelSearchCache() {
   const cacheSize = hotelSearchCache.size;
   const countCacheSize = cityCountCache.size;
-  const detailsCacheSize = hotelDetailsCache.size;
+  const staticCacheSize = hotelStaticCache.size;
   hotelSearchCache.clear();
   cityCountCache.clear();
-  hotelDetailsCache.clear();
-  console.log(`🗑️  Cleared hotel caches: ${cacheSize} search, ${countCacheSize} count, ${detailsCacheSize} details`);
-  return { searchCacheCleared: cacheSize, countCacheCleared: countCacheSize, detailsCacheCleared: detailsCacheSize };
+  hotelStaticCache.clear();
+  console.log(`🗑️  Cleared hotel caches: ${cacheSize} search, ${countCacheSize} count, ${staticCacheSize} static`);
+  return { searchCacheCleared: cacheSize, countCacheCleared: countCacheSize, staticCacheCleared: staticCacheSize };
 }
 
 module.exports = router;
