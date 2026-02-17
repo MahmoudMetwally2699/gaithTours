@@ -1129,9 +1129,9 @@ class RateHawkService {
         isDefault: true
       };
 
-      // UPDATED: Apply margin to (base price + booking taxes) instead of just base price
-      // This ensures margin is calculated on the total amount paid at booking time
-      const marginBase = (hotel.price || 0) + (hotel.booking_taxes || 0);
+      // UPDATED: Apply margin to (base price + included taxes) to match the hotel details flow
+      // This ensures search results show the same margin-adjusted price as the details page
+      const marginBase = (hotel.price || 0) + (hotel.included_taxes || 0);
       const priceResult = MarginService.applyMargin(marginBase, marginInfo);
 
       // Calculate the margin percentage to apply to taxes
