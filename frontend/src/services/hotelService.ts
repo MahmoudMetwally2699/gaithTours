@@ -268,5 +268,48 @@ const suggestHotels = async (query: string, language?: string) => {
     }
 };
 
-export { searchHotels, getHotelDetails, getPopularDestinations, searchDestinations, suggestHotels };
+/**
+ * Get hotel static content from DB (fast — no rates)
+ * Returns hotel info, images, amenities, reviews immediately
+ * while rates are fetched separately via getHotelDetails
+ */
+const getHotelContent = async (hotelId: string, language?: string) => {
+    try {
+        const token = localStorage.getItem('token');
+
+        const requestOptions: RequestInit = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+        };
+
+        let url = `${API_BASE_URL}/hotels/content/${hotelId}`;
+        if (language) {
+            url += `?language=${language}`;
+        }
+
+        const response = await fetch(url, requestOptions);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to get hotel content');
+        }
+
+        return data.data.hotel;
+
+    } catch (error) {
+        console.error('Error getting hotel content:', error);
+        throw error;
+    }
+};
+
+export { searchHotels, getHotelDetails, getHotelContent, getPopularDestinations, searchDestinations, suggestHotels };
 export default searchHotels;

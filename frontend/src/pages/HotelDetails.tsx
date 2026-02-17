@@ -55,7 +55,7 @@ import { format } from "date-fns";
 import ar from 'date-fns/locale/ar-SA';
 import en from 'date-fns/locale/en-US';
 import { Hotel } from '../types/hotel';
-import { getHotelDetails } from '../services/hotelService';
+import { getHotelDetails, getHotelContent } from '../services/hotelService';
 import { RoomCard } from '../components/RoomCard';
 import { PriceBreakdownCard } from '../components/PriceBreakdownCard';
 import { CancellationPolicyCard } from '../components/CancellationPolicyCard';
@@ -322,6 +322,7 @@ export const HotelDetails: React.FC = () => {
 
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roomsLoading, setRoomsLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -431,22 +432,93 @@ export const HotelDetails: React.FC = () => {
     return <CheckIcon className={className} />;
   };
 
-   // Fetch real hotel data from API
-  useEffect(() => {
-    const fetchHotelDetails = async () => {
-      // Scroll to top when fetching new data
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Helper to transform API response to Hotel interface
+  const transformHotelData = (hotelData: any, includeRates: boolean = true): Hotel & { detailed_ratings?: any; reviews?: any[]; poi_data?: any } => {
+    return {
+      id: hotelData.id || hotelId,
+      hid: hotelData.hid,
+      name: hotelData.name || t('hotelDetails:hotel.nameUnavailable', 'Hotel Name Not Available'),
+      nameAr: hotelData.nameAr || null,
+      address: hotelData.address || t('hotelDetails:location.addressUnavailable', 'Address not available'),
+      city: hotelData.city || bookingParams.destination || '',
+      country: hotelData.country || t('hotelDetails:location.saudiArabia', 'Saudi Arabia'),
+      price: 0,
+      currency: currency,
+      rating: hotelData.rating || hotelData.reviewScore || null,
+      image: hotelData.images?.[0] || hotelData.mainImage || null,
+      images: hotelData.images || (hotelData.mainImage ? [hotelData.mainImage] : []),
+      description: hotelData.description || '',
+      reviewScore: hotelData.reviewScore || hotelData.rating || null,
+      reviewCount: hotelData.reviewCount || 0,
+      amenities: hotelData.amenities || [],
+      facilities: hotelData.facilities || [],
+      propertyClass: hotelData.star_rating || hotelData.propertyClass || 0,
+      reviewScoreWord: hotelData.reviewScoreWord || null,
+      isPreferred: hotelData.isPreferred || false,
+      checkIn: hotelData.check_in_time || hotelData.checkInTime || null,
+      checkOut: hotelData.check_out_time || hotelData.checkOutTime || null,
+      coordinates: hotelData.coordinates || { latitude: 0, longitude: 0 },
+      rates: includeRates ? (hotelData.rates || []) : [],
+      metapolicy_extra_info: hotelData.metapolicy_extra_info || '',
+      metapolicy_struct: hotelData.metapolicy_struct || null,
+      poi_data: hotelData.poi_data || null,
+      detailed_ratings: hotelData.detailed_ratings || null,
+      reviews: hotelData.reviews || []
+    } as Hotel & { detailed_ratings?: any; reviews?: any[]; poi_data?: any };
+  };
 
+  // Phase 1: Fetch static hotel content from DB (fast — no rates)
+  useEffect(() => {
+    const fetchHotelContent = async () => {
       if (!hotelId) {
         setError(t('hotelDetails:error.idRequired', 'Hotel ID is required'));
         setLoading(false);
         return;
       }
 
+      // Scroll to top when fetching new data
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       setLoading(true);
       setError('');
-        try {
-        // Use the service function with date parameters
+
+      try {
+        const contentData = await getHotelContent(hotelId, i18n.language);
+        const transformedHotel = transformHotelData(contentData, false);
+        setHotel(transformedHotel);
+        setEditableDestination(bookingParams.destination || transformedHotel.city || '');
+
+        // Preload hotel images
+        const imagesToPreload = transformedHotel.images || [];
+        if (imagesToPreload.length > 0) {
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+              smartPreload(imagesToPreload, { maxImages: 10, respectDataSaver: true });
+            });
+          } else {
+            setTimeout(() => {
+              smartPreload(imagesToPreload, { maxImages: 10, respectDataSaver: true });
+            }, 100);
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch hotel content:', err);
+        // Don't set error yet — the full details fetch might still work
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHotelContent();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotelId, i18n.language]);
+
+  // Phase 2: Fetch full hotel details with rates (slower — includes live pricing)
+  useEffect(() => {
+    const fetchHotelRates = async () => {
+      if (!hotelId) return;
+
+      setRoomsLoading(true);
+      try {
         const hotelData = await getHotelDetails(hotelId, {
           checkin: bookingParams.checkIn,
           checkout: bookingParams.checkOut,
@@ -456,74 +528,22 @@ export const HotelDetails: React.FC = () => {
           language: i18n.language
         });
 
-        // Transform the API response to match our Hotel interface
-        const transformedHotel: Hotel = {
-          id: hotelData.id || hotelId,
-          hid: hotelData.hid, // Numeric hotel ID for API calls (fetching contact info, etc.)
-          name: hotelData.name || t('hotelDetails:hotel.nameUnavailable', 'Hotel Name Not Available'),
-          nameAr: hotelData.nameAr || null,
-          address: hotelData.address || t('hotelDetails:location.addressUnavailable', 'Address not available'),
-          city: hotelData.city || bookingParams.destination || '',
-          country: hotelData.country || t('hotelDetails:location.saudiArabia', 'Saudi Arabia'),
-          price: 0,
-          currency: currency,
-          rating: hotelData.rating || hotelData.reviewScore || null,
-          image: hotelData.images?.[0] || hotelData.mainImage || null,
-          images: hotelData.images || (hotelData.mainImage ? [hotelData.mainImage] : []),
-          description: hotelData.description || '',
-          reviewScore: hotelData.reviewScore || hotelData.rating || null,
-          reviewCount: hotelData.reviewCount || 0,
-          amenities: hotelData.amenities || [],
-          facilities: hotelData.facilities || [],
-          propertyClass: hotelData.star_rating || hotelData.propertyClass || 0,
-          reviewScoreWord: hotelData.reviewScoreWord || null,
-          isPreferred: hotelData.isPreferred || false,
-          checkIn: hotelData.check_in_time || hotelData.checkInTime || null,
-          checkOut: hotelData.check_out_time || hotelData.checkOutTime || null,
-          coordinates: hotelData.coordinates || { latitude: 0, longitude: 0 },
-          rates: hotelData.rates || [],
-          metapolicy_extra_info: hotelData.metapolicy_extra_info || '',
-          metapolicy_struct: hotelData.metapolicy_struct || null,
-          poi_data: hotelData.poi_data || null,
-          // Review data from hotel_reviews collection
-          detailed_ratings: hotelData.detailed_ratings || null,
-          reviews: hotelData.reviews || []
-        } as Hotel & { detailed_ratings?: any; reviews?: any[]; poi_data?: any };
-
+        const transformedHotel = transformHotelData(hotelData, true);
         setHotel(transformedHotel);
-
-        // Initialize editable destination
-        setEditableDestination(bookingParams.destination || transformedHotel.city || '');
-
-        // Preload hotel images for better performance
-        const imagesToPreload = transformedHotel.images || [];
-        if (imagesToPreload.length > 0) {
-          // Use requestIdleCallback or setTimeout to avoid blocking main thread
-          if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => {
-              smartPreload(imagesToPreload, {
-                maxImages: 10,
-                respectDataSaver: true
-              });
-            });
-          } else {
-            setTimeout(() => {
-              smartPreload(imagesToPreload, {
-                maxImages: 10,
-                respectDataSaver: true
-              });
-            }, 100);
-          }
-        }
+        setEditableDestination(prev => prev || bookingParams.destination || transformedHotel.city || '');
       } catch (err: any) {
-        console.error('Failed to fetch hotel details:', err);
-        setError(err.message || t('hotelDetails:error.loadFailed', 'Failed to load hotel details'));
+        console.error('Failed to fetch hotel rates:', err);
+        // If we already have content from Phase 1, don't show full error
+        // Just leave rooms empty
+        if (!hotel) {
+          setError(err.message || t('hotelDetails:error.loadFailed', 'Failed to load hotel details'));
+        }
       } finally {
-        setLoading(false);
+        setRoomsLoading(false);
       }
     };
 
-    fetchHotelDetails();
+    fetchHotelRates();
   }, [hotelId, bookingParams.checkIn, bookingParams.checkOut, bookingParams.adults, bookingParams.children, bookingParams.destination, currency, i18n.language]);
 
   // Fetch TripAdvisor rating for header display
@@ -1309,8 +1329,15 @@ export const HotelDetails: React.FC = () => {
               </div>
            </div>
 
-           {/* Price & Book Button (Right Side) - Only show if rates available */}
-           {hotel.rates && hotel.rates.length > 0 && (
+           {/* Price & Book Button (Right Side) - Show loading or price */}
+           {roomsLoading ? (
+           <div className="hidden md:flex flex-col items-end">
+              <div className="flex items-center gap-2 mb-2">
+                 <div className="h-8 w-28 bg-gray-200 rounded animate-pulse" />
+              </div>
+              <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse" />
+           </div>
+           ) : hotel.rates && hotel.rates.length > 0 ? (
            <div className="hidden md:flex flex-col items-end">
               <div className="flex items-baseline mb-2">
                  <span className="text-gray-500 text-lg ltr:mr-2 rtl:ml-2">{t('common:hotels.from', 'From')}</span>
@@ -1330,7 +1357,7 @@ export const HotelDetails: React.FC = () => {
                  {t('common:hotels.selectRoom', 'Select a room')}
               </button>
            </div>
-           )}
+           ) : null}
         </div>
 
         {/* Gallery Section - New Design */}
@@ -1666,7 +1693,40 @@ export const HotelDetails: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-800">{t('common:hotels.availableRooms', 'Available Rooms')}</h2>
            </div>
 
-           {Object.keys(groupedRates).length > 0 ? (
+           {roomsLoading ? (
+              <div className="space-y-4">
+                 {/* Loading spinner and skeleton rooms */}
+                 <div className="flex flex-col items-center justify-center py-8">
+                    <div className="relative w-16 h-16 mb-4">
+                       {/* Spinning wheel */}
+                       <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+                       <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+                    </div>
+                    <p className="text-gray-600 font-medium text-sm">{t('hotels.loadingRooms', 'Loading available rooms & prices...')}</p>
+                    <p className="text-gray-400 text-xs mt-1">{t('hotels.loadingRoomsSubtitle', 'Fetching the best rates for you')}</p>
+                 </div>
+                 {/* Skeleton room cards */}
+                 {[1, 2, 3].map(i => (
+                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 animate-pulse">
+                       <div className="flex gap-4">
+                          <div className="w-20 sm:w-32 h-20 sm:h-24 bg-gray-200 rounded-lg flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                             <div className="h-5 bg-gray-200 rounded w-3/4 max-w-[12rem] mb-2" />
+                             <div className="h-4 bg-gray-100 rounded w-1/2 max-w-[8rem] mb-3" />
+                             <div className="flex gap-2">
+                                <div className="h-3 bg-gray-100 rounded w-16" />
+                                <div className="h-3 bg-gray-100 rounded w-20" />
+                             </div>
+                             <div className="mt-3 flex justify-between items-center">
+                                <div className="h-6 bg-gray-200 rounded w-24" />
+                                <div className="h-8 bg-orange-200 rounded w-20" />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           ) : Object.keys(groupedRates).length > 0 ? (
               <div className="space-y-6">
                  {Object.keys(groupedRates).map((roomName) => (
                     <RoomCard

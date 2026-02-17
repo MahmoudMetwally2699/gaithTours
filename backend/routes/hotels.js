@@ -1711,6 +1711,119 @@ router.get('/search', async (req, res) => {
 });
 
 /**
+ * Get hotel static content from DB (fast — no rate lookup)
+ * Used to instantly show hotel info while rooms/rates load separately
+ * GET /api/hotels/content/:hid
+ */
+router.get('/content/:hid', async (req, res) => {
+  try {
+    const { hid } = req.params;
+    const { language = 'en' } = req.query;
+    console.log(`📄 Hotel content request for HID: ${hid}`);
+
+    // Validate hid
+    let numericHid = parseInt(hid);
+    const HotelContent = require('../models/HotelContent');
+
+    if (!numericHid || isNaN(numericHid)) {
+      const localHotel = await HotelContent.findOne({ hotelId: hid }).lean();
+      if (localHotel && localHotel.hid) {
+        numericHid = localHotel.hid;
+      } else {
+        return errorResponse(res, 'Hotel not found', 404);
+      }
+    }
+
+    // Fetch static content + POI + reviews in parallel
+    const HotelPOI = require('../models/HotelPOI');
+    const [staticContent, poiData, reviewData] = await Promise.all([
+      HotelContent.findOne({ hid: numericHid }).lean(),
+      HotelPOI.getGroupedPOI(numericHid).catch(() => null),
+      rateHawkService.getOrFetchReviews(numericHid, 'en', 7).catch(() => null)
+    ]);
+
+    if (!staticContent) {
+      return errorResponse(res, 'Hotel not found in database', 404);
+    }
+
+    // Process images
+    let hotelImages = [];
+    if (staticContent.images && staticContent.images.length > 0) {
+      hotelImages = staticContent.images.map(img => {
+        const imgUrl = typeof img === 'string' ? img : img.url;
+        return imgUrl?.replace('{size}', '1024x768');
+      }).filter(Boolean);
+    } else if (staticContent.mainImage) {
+      hotelImages = [staticContent.mainImage.replace('{size}', '1024x768')];
+    }
+
+    // Extract amenities
+    const amenities = [];
+    if (staticContent.amenityGroups) {
+      staticContent.amenityGroups.forEach(group => {
+        if (group.amenities) {
+          group.amenities.forEach(amenity => {
+            const amenityName = typeof amenity === 'string' ? amenity : amenity.name;
+            if (amenityName) amenities.push(amenityName);
+          });
+        }
+      });
+    } else if (staticContent.amenities) {
+      amenities.push(...staticContent.amenities);
+    }
+
+    // Build description
+    let description = '';
+    if (staticContent.descriptionStruct) {
+      description = staticContent.descriptionStruct.map(d => d.paragraphs?.join(' ')).join('\n\n') || '';
+    } else if (staticContent.description) {
+      description = staticContent.description;
+    }
+
+    const formattedHotel = {
+      id: staticContent.hotelId || `hid_${staticContent.hid}`,
+      hid: staticContent.hid,
+      name: staticContent.name,
+      nameAr: staticContent.nameAr || null,
+      description,
+      address: staticContent.address || '',
+      city: staticContent.city || '',
+      country: staticContent.country || '',
+      coordinates: { latitude: staticContent.latitude || 0, longitude: staticContent.longitude || 0 },
+      images: hotelImages,
+      mainImage: hotelImages[0] || null,
+      star_rating: staticContent.starRating || 0,
+      amenities,
+      facts: staticContent.facts || [],
+      check_in_time: staticContent.checkInTime || null,
+      check_out_time: staticContent.checkOutTime || null,
+      metapolicy_extra_info: staticContent.metapolicyExtraInfo || null,
+      metapolicy_struct: staticContent.metapolicyStruct || null,
+      poi_data: poiData,
+      // Review data
+      rating: reviewData?.overall_rating || null,
+      reviewScore: reviewData?.overall_rating || null,
+      reviewCount: reviewData?.review_count || 0,
+      detailed_ratings: reviewData?.detailed_ratings || null,
+      reviews: (reviewData?.reviews || []).slice(0, 10),
+      // Flag that rates are not included
+      rates: null,
+      isContentOnly: true
+    };
+
+    // Long cache — static content rarely changes
+    res.set('Cache-Control', 'private, max-age=300');
+
+    console.log(`✅ Hotel content for HID ${hid}: ${staticContent.name} (${hotelImages.length} imgs, ${amenities.length} amenities)`);
+    successResponse(res, { hotel: formattedHotel }, 'Hotel content retrieved successfully');
+
+  } catch (error) {
+    console.error('Hotel content error:', error);
+    errorResponse(res, 'Failed to get hotel content', 500);
+  }
+});
+
+/**
  * Get hotel details by HID (RateHawk Hotel ID)
  * GET /api/hotels/details/:hid?checkin=2025-01-15&checkout=2025-01-18&adults=2
  */
