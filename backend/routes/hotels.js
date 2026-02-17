@@ -1583,7 +1583,74 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    // Cache ALL unfiltered results IMMEDIATELY (TripAdvisor added in background)
+    // SYNCHRONOUS TripAdvisor enrichment from DB (fast — runs BEFORE response)
+    // This ensures the first response already has TA ratings for hotels in our DB
+    const hotelsWithoutTA = [];
+    try {
+      const taEnrichStart = Date.now();
+      const TripAdvisorHotel = require('../models/TripAdvisorHotel');
+      const searchCity = destination || 'Saudi Arabia';
+
+      // Step 1: Batch exact match from DB
+      const allNames = allHotels.map(h => h.name).filter(Boolean);
+      if (allNames.length > 0) {
+        const taResults = await TripAdvisorHotel.findByNamesAndCity(allNames, searchCity);
+        const taMap = {};
+        taResults.forEach(ta => {
+          taMap[ta.name_normalized] = ta;
+          if (ta.search_names) {
+            ta.search_names.forEach(alias => { taMap[alias] = ta; });
+          }
+          if (ta.name) {
+            taMap[ta.name.toLowerCase().trim()] = ta;
+          }
+        });
+
+        allHotels.forEach(h => {
+          if (!h.name) return;
+          const nameNorm = h.name.toLowerCase().trim();
+          const ta = taMap[nameNorm];
+          if (ta && ta.rating) {
+            h.tripadvisor_rating = ta.rating;
+            h.tripadvisor_num_reviews = ta.num_reviews;
+            h.tripadvisor_location_id = ta.location_id;
+          }
+        });
+      }
+
+      // Step 2: Individual fuzzy match for unmatched hotels (DB only)
+      const unmatchedHotels = allHotels.filter(h => h.name && !h.tripadvisor_rating);
+      if (unmatchedHotels.length > 0 && unmatchedHotels.length <= 100) {
+        const fuzzyPromises = unmatchedHotels.map(async (h) => {
+          try {
+            const found = await TripAdvisorHotel.findByNameAndCity(h.name, searchCity);
+            if (found && found.rating) {
+              h.tripadvisor_rating = found.rating;
+              h.tripadvisor_num_reviews = found.num_reviews;
+              h.tripadvisor_location_id = found.location_id;
+              TripAdvisorHotel.updateOne(
+                { _id: found._id },
+                { $addToSet: { search_names: h.name.toLowerCase().trim() } }
+              ).catch(() => {});
+            } else {
+              hotelsWithoutTA.push(h.name);
+            }
+          } catch (e) {
+            hotelsWithoutTA.push(h.name);
+          }
+        });
+        await Promise.all(fuzzyPromises);
+      } else if (unmatchedHotels.length > 100) {
+        unmatchedHotels.forEach(h => hotelsWithoutTA.push(h.name));
+      }
+
+      const enrichedCount = allHotels.filter(h => h.tripadvisor_rating).length;
+      console.log(`   🏷️ TripAdvisor enriched ${enrichedCount}/${allHotels.length} hotels from DB (${Date.now() - taEnrichStart}ms)`);
+    } catch (taError) {
+      console.error('   ⚠️ TripAdvisor DB enrichment error:', taError.message);
+    }
+
+    // Cache ALL unfiltered results (now already enriched with TA from DB)
     hotelSearchCache.set(baseCacheKey, {
       hotels: allHotels,
       total: allHotels.length,
@@ -1624,85 +1691,32 @@ router.get('/search', async (req, res) => {
       searchedHotel: hasHotels ? suggestions.hotels[0].name : null
     }, `Page ${pageNumber}/${finalTotalPages} - Showing ${paginatedHotels.length} of ${totalHotelsWithRates} hotels`);
 
-    // BACKGROUND: TripAdvisor enrichment (non-blocking, updates cache in-place)
-    setImmediate(async () => {
-      const taStart = Date.now();
-      const hotelsWithoutTA = [];
-      try {
-        const TripAdvisorHotel = require('../models/TripAdvisorHotel');
-        const searchCity = destination || 'Saudi Arabia';
-
-        // Step 1: Batch exact match
-        const allNames = allHotels.map(h => h.name).filter(Boolean);
-        if (allNames.length > 0) {
-          const taResults = await TripAdvisorHotel.findByNamesAndCity(allNames, searchCity);
-          const taMap = {};
-          taResults.forEach(ta => {
-            taMap[ta.name_normalized] = ta;
-            if (ta.search_names) {
-              ta.search_names.forEach(alias => { taMap[alias] = ta; });
-            }
-            if (ta.name) {
-              taMap[ta.name.toLowerCase().trim()] = ta;
-            }
-          });
-
-          allHotels.forEach(h => {
-            if (!h.name) return;
-            const nameNorm = h.name.toLowerCase().trim();
-            const ta = taMap[nameNorm];
-            if (ta && ta.rating) {
-              h.tripadvisor_rating = ta.rating;
-              h.tripadvisor_num_reviews = ta.num_reviews;
-              h.tripadvisor_location_id = ta.location_id;
-            }
-          });
-        }
-
-        // Step 2: Individual fuzzy match for unmatched hotels (DB only)
-        const unmatchedHotels = allHotels.filter(h => h.name && !h.tripadvisor_rating);
-        if (unmatchedHotels.length > 0 && unmatchedHotels.length <= 100) {
-          const fuzzyPromises = unmatchedHotels.map(async (h) => {
-            try {
-              const found = await TripAdvisorHotel.findByNameAndCity(h.name, searchCity);
-              if (found && found.rating) {
-                h.tripadvisor_rating = found.rating;
-                h.tripadvisor_num_reviews = found.num_reviews;
-                h.tripadvisor_location_id = found.location_id;
-                TripAdvisorHotel.updateOne(
-                  { _id: found._id },
-                  { $addToSet: { search_names: h.name.toLowerCase().trim() } }
-                ).catch(() => {});
-              } else {
-                hotelsWithoutTA.push(h.name);
-              }
-            } catch (e) {
-              hotelsWithoutTA.push(h.name);
-            }
-          });
-          await Promise.all(fuzzyPromises);
-        } else if (unmatchedHotels.length > 100) {
-          unmatchedHotels.forEach(h => hotelsWithoutTA.push(h.name));
-        }
-
-        const enrichedCount = allHotels.filter(h => h.tripadvisor_rating).length;
-        console.log(`   🏷️ [BG] TripAdvisor enriched ${enrichedCount}/${allHotels.length} hotels (${Date.now() - taStart}ms)`);
-      } catch (taError) {
-        console.error('   ⚠️ [BG] TripAdvisor enrichment error:', taError.message);
-      }
-
-      // Step 3: Background fetch from TripAdvisor API for hotels not in DB
-      if (hotelsWithoutTA.length > 0) {
+    // BACKGROUND: Fetch TripAdvisor API for hotels NOT in our DB (slow, non-blocking)
+    // This saves new hotels to DB so they'll be available on subsequent searches
+    if (hotelsWithoutTA.length > 0) {
+      setImmediate(async () => {
         const bgCity = destination || 'Saudi Arabia';
         const toFetch = hotelsWithoutTA.slice(0, 20);
         try {
-          await tripadvisorService.getHotelRatings(toFetch, bgCity);
-          console.log(`   ✅ [BG] TripAdvisor API fetch done for ${toFetch.length} hotels`);
+          const apiResults = await tripadvisorService.getHotelRatings(toFetch, bgCity);
+          // Update the cached allHotels in-place so next request from cache has TA data
+          if (apiResults && Object.keys(apiResults).length > 0) {
+            allHotels.forEach(h => {
+              if (!h.name || h.tripadvisor_rating) return;
+              const taData = apiResults[h.name];
+              if (taData && taData.rating) {
+                h.tripadvisor_rating = taData.rating;
+                h.tripadvisor_num_reviews = taData.num_reviews;
+                h.tripadvisor_location_id = taData.location_id;
+              }
+            });
+            console.log(`   ✅ [BG] TripAdvisor API fetch done for ${toFetch.length} hotels, updated cache in-place`);
+          }
         } catch (bgErr) {
           console.error(`   ⚠️ [BG] TripAdvisor API error: ${bgErr.message}`);
         }
-      }
-    });
+      });
+    }
 
   } catch (error) {
     console.error('Hotel search error:', error);

@@ -109,7 +109,8 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         src={currentSrc}
         alt={alt}
         loading={priority ? 'eager' : 'lazy'}
-        {...(priority && { fetchPriority: 'high' as const })}
+        // @ts-ignore – valid HTML attribute
+        {...(priority && { fetchpriority: 'high' as const })}
         onLoad={handleLoad}
         onError={handleError}
         className={`

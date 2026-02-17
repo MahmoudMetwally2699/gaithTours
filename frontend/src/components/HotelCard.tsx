@@ -52,6 +52,7 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
           src={hotel.image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={hotel.name}
           loading="lazy"
+          decoding="async"
           width={400}
           height={240}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

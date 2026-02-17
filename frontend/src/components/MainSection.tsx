@@ -260,7 +260,8 @@ export const MainSection: React.FC = () => {
           height={300}
           loading="eager"
           decoding="async"
-          fetchPriority="high"
+          // @ts-ignore – valid HTML attribute
+          fetchpriority="high"
         />
       </div>
 

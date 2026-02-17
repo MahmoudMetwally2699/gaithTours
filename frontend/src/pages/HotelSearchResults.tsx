@@ -2019,7 +2019,10 @@ export const HotelSearchResults: React.FC = () => {
                           ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-[2px] shadow-lg shadow-orange-200/50 ring-2 ring-orange-400/30'
                           : 'bg-white shadow-sm hover:shadow-md border border-gray-200'
                       }`}
-                      style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}
+                      style={{
+                        animationDelay: `${Math.min(index, 10) * 30}ms`,
+                        ...(index > 5 ? { contentVisibility: 'auto' as any, containIntrinsicSize: 'auto 220px' as any } : {})
+                      }}
                       onClick={() => handleHotelClick(hotel)}
                     >
                       <div className={(hotel as any).isSearchedHotel ? 'bg-white rounded-[6px]' : ''}>
@@ -2029,9 +2032,14 @@ export const HotelSearchResults: React.FC = () => {
                         <div className="relative w-[120px] flex-shrink-0">
                           {hotel.image ? (
                             <img
-                              src={hotel.image}
+                              src={hotel.image.replace(/\d+x\d+/, '240x240')}
                               alt={hotel.name}
-                              loading="lazy"
+                              loading={index < 3 ? 'eager' : 'lazy'}
+                              // @ts-ignore – valid HTML attribute, React types lag behind
+                              fetchpriority={index < 3 ? 'high' : 'auto'}
+                              decoding="async"
+                              width={120}
+                              height={160}
                               className="w-full h-full object-cover rounded-s-lg"
                             />
                           ) : (
@@ -2285,7 +2293,12 @@ export const HotelSearchResults: React.FC = () => {
                             <img
                               src={hotel.image}
                               alt={hotel.name}
-                              loading="lazy"
+                              loading={index < 3 ? 'eager' : 'lazy'}
+                              // @ts-ignore – valid HTML attribute, React types lag behind
+                              fetchpriority={index < 3 ? 'high' : 'auto'}
+                              decoding="async"
+                              width={256}
+                              height={220}
                               className="w-full h-full object-cover rounded-l-lg"
                             />
                           ) : (
