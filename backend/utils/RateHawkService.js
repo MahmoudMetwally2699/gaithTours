@@ -823,23 +823,27 @@ class RateHawkService {
       let basePrice = showAmount;
       let totalTaxes = 0;
 
-      if (paymentType?.tax_data?.taxes) {
-        // Calculate ALL taxes (both included and pay at hotel)
-        totalTaxes = paymentType.tax_data.taxes
-          .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+      let includedTaxesAmount = 0;
+      let payAtHotelCurrency = null;
 
-        // Calculate included taxes to get base price
-        const includedTaxes = paymentType.tax_data.taxes
-          .filter(t => t.included_by_supplier)
-          .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-        basePrice = showAmount - includedTaxes;
+      if (paymentType?.tax_data?.taxes) {
+        // Calculate included taxes (e.g. VAT) to get base price
+        // These are already inside show_amount, so subtract them for the base price
+        const includedTaxesArr = paymentType.tax_data.taxes.filter(t => t.included_by_supplier);
+        includedTaxesAmount = includedTaxesArr.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        basePrice = showAmount - includedTaxesAmount;
+
+        // total_taxes = pay-at-hotel taxes only (not included by supplier)
+        const payAtHotelArr = paymentType.tax_data.taxes.filter(t => !t.included_by_supplier);
+        totalTaxes = payAtHotelArr.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+        if (payAtHotelArr.length > 0) {
+          payAtHotelCurrency = payAtHotelArr[0].currency_code || payAtHotelArr[0].currency || null;
+        }
       }
 
-      const bookingTaxes = paymentType?.tax_data?.taxes
-        ? paymentType.tax_data.taxes
-            .filter(t => t.included_by_supplier)
-            .reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
-        : 0;
+      // booking_taxes = 0 because included taxes are already in the base price
+      // They should not be shown as additional charges
+      const bookingTaxes = 0;
 
 
       const totalPrice = basePrice; // No markup yet - will be applied dynamically after enrichment
@@ -857,9 +861,11 @@ class RateHawkService {
         pricePerNight: pricePerNight, // New field for per-night display
         nights: nights, // Include nights for reference
         currency: paymentType?.show_currency_code || currency,
-        total_taxes: Math.round(totalTaxes), // Total taxes amount (to be displayed separately)
-        booking_taxes: bookingTaxes, // Taxes included in booking (pay now)
+        total_taxes: Math.round(totalTaxes), // Pay-at-hotel taxes only
+        included_taxes: Math.round(includedTaxesAmount), // Included taxes (VAT) - already in show_amount
+        booking_taxes: bookingTaxes, // Always 0 - included taxes are in the price
         taxes_currency: paymentType?.show_currency_code || currency,
+        pay_at_hotel_currency: payAtHotelCurrency, // Currency for pay-at-hotel taxes (e.g. SAR)
         image: placeholderImage,
         match_hash: lowestRate?.match_hash,
         meal: lowestRate?.meal,
@@ -1137,10 +1143,14 @@ class RateHawkService {
       hotel.pricePerNight = hotel.nights > 0 ? Math.round(priceResult.finalPrice / hotel.nights) : priceResult.finalPrice;
 
       // Apply margin to tax display amounts as well
+      // total_taxes now only contains pay-at-hotel taxes — no margin should be applied to those
+      // booking_taxes is 0 (included taxes are already in the price)
       const originalTotalTaxes = hotel.total_taxes;
       const originalBookingTaxes = hotel.booking_taxes;
-      hotel.total_taxes = Math.round((hotel.total_taxes || 0) * marginMultiplier);
-      hotel.booking_taxes = Math.round((hotel.booking_taxes || 0) * marginMultiplier);
+      // Pay-at-hotel taxes are NOT adjusted by margin (they are paid separately at hotel)
+      // hotel.total_taxes stays as-is (only pay-at-hotel taxes)
+      // hotel.booking_taxes stays as 0
+      hotel.booking_taxes = 0;
 
       // Debug: Log first hotel margin application
       if (hotels.indexOf(hotel) === 0) {
@@ -1641,15 +1651,20 @@ class RateHawkService {
       let totalTaxes = 0;
       let taxData = null;
       let includedTaxesTotal = 0;
+      let payAtHotelTaxesOnly = 0;
 
       if (paymentType?.tax_data) {
         taxData = paymentType.tax_data;
         if (taxData.taxes && taxData.taxes.length > 0) {
-           // Sum up all taxes
+           // Sum up all taxes (for margin base calculation)
            totalTaxes = taxData.taxes.reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0);
-           // Sum up included taxes
+           // Sum up included taxes (e.g. VAT - already in show_amount)
            includedTaxesTotal = taxData.taxes
              .filter(tax => tax.included_by_supplier)
+             .reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0);
+           // Pay-at-hotel taxes only (NOT included in the price)
+           payAtHotelTaxesOnly = taxData.taxes
+             .filter(tax => !tax.included_by_supplier)
              .reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0);
         }
       }
@@ -1705,23 +1720,18 @@ class RateHawkService {
       // Apply the same margin percentage to BOOKING taxes only (NOT pay-at-hotel taxes)
       const marginMultiplier = marginBase > 0 ? priceResult.finalPrice / marginBase : 1;
 
-      // Separate pay-at-hotel taxes (no margin) from booking taxes (margin applied)
-      const payAtHotelTaxesTotal = taxData?.taxes
-        ? taxData.taxes
-            .filter(tax => !tax.included_by_supplier)
-            .reduce((sum, tax) => sum + parseFloat(tax.amount || 0), 0)
-        : 0;
-      const bookingTaxesTotal = totalTaxes - payAtHotelTaxesTotal;
-      // Display taxes = margin-adjusted booking taxes + original pay-at-hotel taxes
-      const displayTaxes = (bookingTaxesTotal > 0 ? Math.round(bookingTaxesTotal * marginMultiplier) : 0) + Math.round(payAtHotelTaxesTotal);
+      // total_taxes should ONLY show pay-at-hotel taxes
+      // Included taxes (like VAT) are already part of the price and should NOT be shown as additional charges
+      // Pay-at-hotel taxes are NOT adjusted by margin (they are paid separately at the hotel)
+      const displayTaxes = Math.round(payAtHotelTaxesOnly);
 
       // Debug: Log tax transformation for first rate
       if (hotelData.rates.indexOf(rate) === 0) {
-        console.log(`   🧾 Tax margin: marginMultiplier=${marginMultiplier.toFixed(4)}, originalTaxes=${totalTaxes}, bookingTaxes=${bookingTaxesTotal}, payAtHotelTaxes=${payAtHotelTaxesTotal}, displayTaxes=${displayTaxes}`);
+        console.log(`   🧾 Tax info: marginMultiplier=${marginMultiplier.toFixed(4)}, includedTaxes=${includedTaxesTotal} (in price), payAtHotelTaxes=${payAtHotelTaxesOnly} (separate), displayTaxes=${displayTaxes}`);
         if (taxData?.taxes) {
           taxData.taxes.forEach(t => {
             const isPayAtHotel = !t.included_by_supplier;
-            console.log(`      ${t.name}: $${t.amount} → $${isPayAtHotel ? t.amount + ' (pay-at-hotel, no margin)' : (parseFloat(t.amount) * marginMultiplier).toFixed(2)}`);
+            console.log(`      ${t.name}: $${t.amount} → ${isPayAtHotel ? 'pay-at-hotel (shown separately)' : 'included in price (not shown again)'}`);
           });
         }
       }
@@ -1748,27 +1758,20 @@ class RateHawkService {
           isDefault: marginInfo.isDefault
         },
 
-        // Tax Data - ensure each tax has the correct currency AND margin applied (only to booking taxes)
+        // Tax Data - total_taxes is ONLY pay-at-hotel taxes (included taxes are already in the price)
         total_taxes: displayTaxes,
         taxes_currency: paymentType?.show_currency_code || currency,
-        // Map taxes to use the correct currency for display AND apply margin ONLY to booking taxes
+        // Map taxes: keep original amounts, no margin on any tax
+        // Included taxes (VAT) are informational only - already in the price
+        // Pay-at-hotel taxes (city_tax) are the only ones shown as extra charges
         tax_data: taxData ? (() => {
           const mappedTaxes = taxData.taxes?.map(tax => {
             const originalAmount = parseFloat(tax.amount || 0);
             const isPayAtHotel = !tax.included_by_supplier;
-            // Only apply margin to booking taxes, NOT pay-at-hotel taxes
-            const adjustedAmount = isPayAtHotel
-              ? Math.round(originalAmount * 100) / 100
-              : Math.round(originalAmount * marginMultiplier * 100) / 100;
-
-            // Debug log for first rate
-            if (hotelData.rates.indexOf(rate) === 0) {
-              console.log(`      📊 Tax mapping: ${tax.name}: original=${originalAmount} → adjusted=${adjustedAmount} (${isPayAtHotel ? 'pay-at-hotel, NO margin' : `multiplier=${marginMultiplier.toFixed(4)}`})`);
-            }
 
             return {
               ...tax,
-              amount: adjustedAmount, // Return as number, not string
+              amount: Math.round(originalAmount * 100) / 100,
               currency: isPayAtHotel ? (tax.currency_code || tax.currency || paymentType?.currency_code || currency) : (paymentType?.currency_code || currency)
             };
           }) || [];
@@ -1778,14 +1781,12 @@ class RateHawkService {
             taxes: mappedTaxes
           };
         })() : null,
-        // Also provide a simplified taxes array with margin applied only to booking taxes
+        // Simplified taxes array - amounts unchanged, included flag preserved
         taxes: taxData?.taxes?.map(tax => {
           const isPayAtHotel = !tax.included_by_supplier;
           return {
             name: tax.name,
-            amount: isPayAtHotel
-              ? Math.round(parseFloat(tax.amount || 0) * 100) / 100
-              : Math.round(parseFloat(tax.amount || 0) * marginMultiplier * 100) / 100,
+            amount: Math.round(parseFloat(tax.amount || 0) * 100) / 100,
             currency: isPayAtHotel ? (tax.currency_code || tax.currency || paymentType?.currency_code || currency) : (paymentType?.currency_code || currency),
             included: tax.included_by_supplier || false
           };

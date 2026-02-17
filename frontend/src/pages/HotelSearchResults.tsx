@@ -299,10 +299,10 @@ export const HotelSearchResults: React.FC = () => {
   }, [location.pathname, location.search]);
 
   // Helper to format currency
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number, overrideCurrency?: string) => {
     return new Intl.NumberFormat(isRTL ? 'ar-EG' : 'en-US', {
       style: 'currency',
-      currency: currency || 'USD',
+      currency: overrideCurrency || currency || 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
@@ -2262,8 +2262,13 @@ export const HotelSearchResults: React.FC = () => {
                                       </span>
                                     </div>
                                     <span className="text-[10px] text-gray-500">
-                                      <span className="inter-700">+{formatPrice(Math.round((hotel as any).booking_taxes || 0))}</span> {t('common:hotels.taxesAndFees', 'ضرائب ورسوم')}
+                                      <span className="inter-700">+{formatPrice(Math.round((hotel as any).included_taxes || 0))}</span> {t('common:hotels.taxesAndFees', 'ضرائب ورسوم')}
                                     </span>
+                                    {((hotel as any).total_taxes || 0) > 0 && (
+                                      <span className="text-[9px] text-orange-600">
+                                        🏨 {t('common:hotels.payAtHotel', 'Pay at Hotel')}: {formatPrice(Math.round((hotel as any).total_taxes || 0), (hotel as any).pay_at_hotel_currency)}
+                                      </span>
+                                    )}
                                   </>
                                 )}
                               </div>
@@ -2510,8 +2515,13 @@ export const HotelSearchResults: React.FC = () => {
                                             {formatPrice(hotel.price)}
                                         </div>
                                         <div className="text-[10px] text-gray-500 font-medium mb-1 font-price">
-                                            {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).booking_taxes || 0)))}
+                                            {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).included_taxes || 0)))}
                                         </div>
+                                        {((hotel as any).total_taxes || 0) > 0 && (
+                                            <div className="text-[9px] text-orange-600 font-medium mb-1">
+                                                🏨 {t('common:hotels.payAtHotel', 'Pay at Hotel')}: {formatPrice(Math.round((hotel as any).total_taxes || 0), (hotel as any).pay_at_hotel_currency)}
+                                            </div>
+                                        )}
                                     </>
                                 )}
                                 {/* Compare Checkbox */}

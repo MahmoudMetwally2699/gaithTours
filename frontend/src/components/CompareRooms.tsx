@@ -261,14 +261,17 @@ export const CompareRooms: React.FC<CompareRoomsProps> = ({
                                   {feature.key === 'price' ? (
                                     <div className="flex flex-col items-center w-full min-w-0">
                                        <div className="flex items-baseline gap-1 flex-wrap justify-center">
-                                          <span className="text-lg md:text-2xl font-bold text-gray-900 truncate max-w-full font-price">{currencySymbol}{room.price.toLocaleString()}</span>
-                                          {room.original_price && room.original_price > room.price && (
-                                             <span className="text-xs md:text-sm text-gray-400 line-through decoration-gray-300 truncate max-w-full font-price">{currencySymbol}{room.original_price.toLocaleString()}</span>
-                                          )}
+                                          <span className="text-lg md:text-2xl font-bold text-gray-900 truncate max-w-full font-price">{currencySymbol}{(room.original_price || room.price).toLocaleString()}</span>
                                        </div>
+                                       {/* Included taxes (VAT) = price - original_price */}
+                                       {room.original_price && room.price > room.original_price && (
+                                          <span className="text-[10px] md:text-xs text-gray-500 mt-0.5 truncate max-w-full">
+                                            +{currencySymbol}{Math.round(room.price - room.original_price).toLocaleString()} {t('common:hotels.taxesAndFees', 'taxes')}
+                                          </span>
+                                       )}
                                        {(room.total_taxes || 0) > 0 && (
-                                          <span className="text-[10px] md:text-xs text-gray-500 mt-1 truncate max-w-full">
-                                            + {currencySymbol}{Math.round(room.total_taxes || 0).toLocaleString()} {t('common:hotels.taxesAndFees', 'taxes')}
+                                          <span className="text-[10px] md:text-xs text-orange-500 mt-0.5 truncate max-w-full">
+                                            🏨 {t('common:hotels.payAtHotel', 'Pay at Hotel')}: {currencySymbol}{Math.round(room.total_taxes || 0).toLocaleString()}
                                           </span>
                                        )}
                                     </div>

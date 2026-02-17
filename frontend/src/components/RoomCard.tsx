@@ -239,23 +239,26 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   };
 
   const renderTaxTooltip = (rate: RoomRate, isMobile = false) => {
-    if (!rate.total_taxes || rate.total_taxes <= 0) {
-      if (!rate.tax_data?.taxes?.length) {
-         return (
-            <div className={`text-[10px] md:text-xs text-gray-500 mt-1 ${isMobile ? 'text-right' : ''}`}>
-               {t('common:hotels.taxesIncluded', 'Taxes included')}
-            </div>
-         );
+    const allTaxes = rate.tax_data?.taxes || [];
+    const payAtHotelTaxes = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
+    const includedTaxes = allTaxes.filter((tax: TaxItem) => tax.included_by_supplier || tax.included);
+    const payAtHotelTotal = payAtHotelTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
+    const payAtHotelCurrency = payAtHotelTaxes.length > 0 ? (payAtHotelTaxes[0].currency_code || payAtHotelTaxes[0].currency) : undefined;
+    const includedTaxesTotal = includedTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
+
+    // If no pay-at-hotel taxes and no total_taxes, show "taxes included"
+    if (payAtHotelTotal <= 0 && (!rate.total_taxes || rate.total_taxes <= 0)) {
+      if (!allTaxes.length) {
+        return (
+          <div className={`text-[10px] md:text-xs text-gray-500 mt-1 ${isMobile ? 'text-right' : ''}`}>
+             {t('common:hotels.taxesIncluded', 'Taxes included')}
+          </div>
+        );
       }
     }
 
-    const allTaxes = rate.tax_data?.taxes || [];
-    const payAtHotelTaxes = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
-    const payAtHotelTotal = payAtHotelTaxes.reduce((sum: number, tax: TaxItem) => sum + Number(tax.amount || 0), 0);
-    const payAtHotelCurrency = payAtHotelTaxes.length > 0 ? (payAtHotelTaxes[0].currency_code || payAtHotelTaxes[0].currency) : undefined;
-    const paidAtBookingTotal = (rate.total_taxes || 0) - payAtHotelTotal;
-    // Taxes shown on the summary line and total should EXCLUDE pay-at-hotel taxes
-    const displayTaxes = Math.round(paidAtBookingTotal > 0 ? paidAtBookingTotal : (rate.total_taxes || 0) - payAtHotelTotal);
+    // Display taxes = only included taxes (VAT) since pay-at-hotel is shown separately
+    const displayTaxes = Math.round(includedTaxesTotal);
 
     const isRTL = i18n.language === 'ar';
     const tooltipPosition = isRTL ? 'left-0' : 'right-0';
@@ -264,42 +267,49 @@ export const RoomCard: React.FC<RoomCardProps> = ({
 
     return (
       <div className={`text-[10px] md:text-xs text-gray-500 mt-1 relative group cursor-help w-fit ${isMobile ? 'ml-auto' : ''}`}>
-         <span className="border-b border-dotted border-gray-400">
-           +{formatPrice(displayTaxes)} {t('common:hotels.taxesAndFees', 'taxes')}
-         </span>
+         {displayTaxes > 0 ? (
+           <span className="border-b border-dotted border-gray-400">
+             +{formatPrice(displayTaxes)} {t('common:hotels.taxesAndFees', 'taxes and fees')}
+           </span>
+         ) : (
+           <span className="text-green-600">
+             {t('common:hotels.taxesIncluded', 'Taxes included')}
+           </span>
+         )}
 
          <div className={`absolute bottom-full mb-2 w-64 bg-white shadow-xl rounded-lg p-3 text-xs z-50 invisible group-hover:visible border border-gray-200 ${textAlign} ${tooltipPosition}`}>
             <div className={`absolute top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white ${arrowPosition}`}></div>
 
             <div className="font-bold text-gray-800 mb-2 border-b pb-1">{t('common:hotels.priceBreakdown', 'Price Breakdown')}</div>
             <div className="space-y-1">
-               <div className="flex justify-between"><span>{t('common:hotels.basePrice', 'Base Price')}:</span> <span>{formatPrice(Number(rate.price))}</span></div>
+               {/* Show original price (before VAT) */}
+               <div className="flex justify-between text-gray-600">
+                 <span>{t('common:hotels.roomRate', 'Room Rate')}:</span>
+                 <span>{formatPrice(rate.original_price || (Number(rate.price) - includedTaxesTotal))}</span>
+               </div>
 
-               {paidAtBookingTotal > 0 && (
+               {/* Show included taxes (VAT) as a separate line */}
+               {includedTaxesTotal > 0 && (
                    <div className="flex justify-between text-gray-600">
-                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes')} ({t('common:hotels.paidAtBooking', 'Paid at Booking')})</span>
-                       <span className="whitespace-nowrap">+{formatPrice(paidAtBookingTotal)}</span>
+                       <span className="truncate pr-2">{t('common:hotels.vat', 'VAT')} ({t('common:hotels.includedInPrice', 'included')}):</span>
+                       <span className="whitespace-nowrap">+{formatPrice(includedTaxesTotal)}</span>
                    </div>
                )}
 
+               {/* Pay at hotel taxes shown separately */}
                {payAtHotelTotal > 0 && (
                    <div className="flex justify-between text-orange-600">
-                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes')} ({t('common:hotels.payAtHotel', 'Pay at Hotel')})</span>
+                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes')} ({t('common:hotels.payAtHotel', 'Pay at Hotel')}):</span>
                        <span className="whitespace-nowrap">+{formatPrice(payAtHotelTotal, payAtHotelCurrency)}</span>
                    </div>
                )}
 
-               {paidAtBookingTotal <= 0 && payAtHotelTotal <= 0 && (rate.total_taxes || 0) > 0 && (
-                   <div className="flex justify-between text-gray-600">
-                       <span className="truncate pr-2">{t('common:hotels.taxesAndFees', 'Taxes and fees')}</span>
-                       <span className="whitespace-nowrap">+{formatPrice(rate.total_taxes || 0)}</span>
-                   </div>
-               )}
-
-               <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>{t('common:hotels.total', 'Total')}:</span> <span>{formatPrice(Number(rate.price) + displayTaxes)}</span></div>
+               {/* Total = original + VAT (pay-at-hotel NOT included) */}
+               <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>{t('common:hotels.total', 'Total')}:</span> <span>{formatPrice((rate.original_price || (Number(rate.price) - includedTaxesTotal)) + includedTaxesTotal)}</span></div>
                {payAtHotelTotal > 0 && (
-                   <div className="flex justify-between text-[10px] text-orange-500 italic">
-                       <span>+ {formatPrice(payAtHotelTotal, payAtHotelCurrency)} {t('common:hotels.payAtHotel', 'Pay at Hotel')}</span>
+                   <div className="flex justify-between text-[10px] text-orange-600 mt-1 bg-orange-50 p-1 rounded">
+                       <span>🏨 {t('common:hotels.payAtHotel', 'Pay at Hotel')}:</span>
+                       <span>{formatPrice(payAtHotelTotal, payAtHotelCurrency)}</span>
                    </div>
                )}
             </div>
@@ -470,16 +480,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                   )}
                 </div>
 
-                {/* Price Column */}
+                {/* Price Column - Show original price (before VAT) */}
                 <div className={`${index === 0 ? '' : 'col-start-9'} col-span-2 p-3 border-r border-gray-200 flex flex-col justify-center`}>
-                  {rate.original_price && Number(rate.price) < Number(rate.original_price) && (
-                    <div className="text-sm text-red-500 line-through">{formatPrice(Number(rate.original_price))}</div>
-                  )}
-                  <div className="text-xl font-bold text-gray-900">{formatPrice(Number(rate.price))}</div>
+                  <div className="text-xl font-bold text-gray-900">{formatPrice(rate.original_price || Number(rate.price))}</div>
                   {renderTaxTooltip(rate, false)}
                   {nights > 1 && (
                     <div className="text-xs text-gray-500">
-                      {formatPrice(Math.round(Number(rate.price) / nights))}/{t('common:hotels.night', 'night')}
+                      {formatPrice(Math.round((rate.original_price || Number(rate.price)) / nights))}/{t('common:hotels.night', 'night')}
                     </div>
                   )}
                 </div>
@@ -634,10 +641,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 </div>
 
                 <div className="text-right">
-                  {rate.original_price && Number(rate.price) < Number(rate.original_price) && (
-                    <div className="text-sm text-red-500 line-through">{formatPrice(Number(rate.original_price))}</div>
-                  )}
-                  <div className="text-xl font-bold text-gray-900">{formatPrice(Number(rate.price))}</div>
+                  <div className="text-xl font-bold text-gray-900">{formatPrice(rate.original_price || Number(rate.price))}</div>
                   {renderTaxTooltip(rate, true)}
                 </div>
               </div>

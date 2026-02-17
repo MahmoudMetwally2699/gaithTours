@@ -707,10 +707,10 @@ export const HotelDetails: React.FC = () => {
     return [];
   }, [hotel]);
 
-  // Calculate lowest price for header
+  // Calculate lowest price for header (show original_price = before VAT)
   const lowestPrice = useMemo(() => {
      if (!hotel || !hotel.rates || hotel.rates.length === 0) return 0;
-     return Math.min(...hotel.rates.map((r: any) => Number(r.price)));
+     return Math.min(...hotel.rates.map((r: any) => Number(r.original_price || r.price)));
   }, [hotel]);
 
   // Calculate number of nights for display

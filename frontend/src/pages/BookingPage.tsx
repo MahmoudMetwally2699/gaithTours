@@ -226,21 +226,11 @@ export const BookingPage: React.FC = () => {
 
 
   // Helper to calculate only taxes paid at booking
+  // Included taxes (VAT) are already part of the price - they are NOT additional charges
+  // Only pay-at-hotel taxes are extra, and those are shown separately
   const calculateBookingTaxes = (rate: any, numberOfRooms: number) => {
-    if (rate.tax_data && rate.tax_data.taxes && rate.tax_data.taxes.length > 0) {
-       // Filter for taxes that are EITHER 'included_by_supplier' OR 'included'
-       const bookingTaxes = rate.tax_data.taxes.filter((t: any) => t.included_by_supplier || t.included);
-       const bookingTaxAmount = bookingTaxes.reduce((sum: number, t: any) => sum + parseFloat(t.amount || 0), 0);
-       return bookingTaxAmount * numberOfRooms;
-    }
-
-    // Fallback if no breakdown
-    if (rate.total_taxes && Number(rate.total_taxes) > 0) {
-        return Number(rate.total_taxes) * numberOfRooms;
-    }
-
-    // Fallback to 14%
-    return Number(rate.price) * numberOfRooms * 0.14;
+    // Included taxes (VAT) are already in the base price, so booking taxes = 0
+    return 0;
   };
 
   const handleUpdateSearch = () => {

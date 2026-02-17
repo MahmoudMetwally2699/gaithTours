@@ -25,13 +25,14 @@ interface RoomRate {
   match_hash: string;
   room_name: string;
   price: number;
+  original_price?: number; // Price before included taxes (e.g. before VAT)
   currency: string;
   meal?: string;
   count?: number; // Number of this room type
   meal_data?: {
     breakfast_included?: boolean;
   };
-  total_taxes?: number; // Actual taxes from RateHawk API
+  total_taxes?: number; // Pay-at-hotel taxes only
   taxes_currency?: string;
   tax_data?: {
     taxes?: TaxItem[];
@@ -117,37 +118,25 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
   // Helper to get tax breakdown from a room rate
   const getTaxBreakdown = (room: RoomRate) => {
     const allTaxes = room.tax_data?.taxes || room.taxes || [];
-    const paidAtBooking = allTaxes.filter((tax: TaxItem) => tax.included_by_supplier || tax.included);
+    // Included taxes (VAT) are already in the price - they are NOT additional charges
+    const includedInPrice = allTaxes.filter((tax: TaxItem) => tax.included_by_supplier || tax.included);
+    // Pay-at-hotel taxes are separate charges NOT included in the price
     const payAtHotel = allTaxes.filter((tax: TaxItem) => !tax.included_by_supplier && !tax.included);
 
     return {
-      paidAtBooking,
+      includedInPrice,
       payAtHotel,
-      paidAtBookingTotal: paidAtBooking.reduce((sum, tax) => sum + Number(tax.amount || 0), 0),
+      includedInPriceTotal: includedInPrice.reduce((sum, tax) => sum + Number(tax.amount || 0), 0),
       payAtHotelTotal: payAtHotel.reduce((sum, tax) => sum + Number(tax.amount || 0), 0)
     };
   };
 
-  // Calculate taxes - ONLY include taxes that are paid at booking, NOT pay-at-hotel taxes
+  // Calculate taxes - included taxes (VAT) are already in the price, so booking taxes = 0
+  // Only pay-at-hotel taxes are additional charges
   const calculateTaxes = () => {
-    if (selectedRooms && selectedRooms.length > 0) {
-      // Sum taxes for all selected rooms
-      return selectedRooms.reduce((sum, room) => {
-        const breakdown = getTaxBreakdown(room);
-        const roomCount = room.count || 1;
-        // ONLY include taxes paid at booking in the total
-        return sum + (breakdown.paidAtBookingTotal * roomCount);
-      }, 0);
-    }
-
-    // Single room
-    const breakdown = getTaxBreakdown(selectedRate);
-    if (breakdown.paidAtBookingTotal > 0) {
-      return breakdown.paidAtBookingTotal * Math.max(rooms, 1);
-    }
-
-    // Fallback to 14% if no tax data available
-    return totalPrice * 0.14;
+    // Included taxes are NOT additional charges - they're already in the base price
+    // Return 0 as the "booking taxes" amount
+    return 0;
   };
 
   // Calculate pay at hotel taxes (for display only, not included in total)
@@ -345,7 +334,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                     {room.room_name} x{room.count || 1} ({nights}n)
                   </span>
                   <span className="font-medium">
-                    {currencySymbol} {(Number(room.price) * (room.count || 1)).toFixed(2)}
+                    {currencySymbol} {((room.original_price || Number(room.price)) * (room.count || 1)).toFixed(2)}
                   </span>
                 </div>
               ))
@@ -356,19 +345,35 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                   {selectedRate.room_name || 'Room'} x{totalRooms} ({nights}n)
                 </span>
                 <span className="font-medium">
-                  {currencySymbol} {totalPrice.toFixed(2)}
+                  {currencySymbol} {((selectedRate.original_price || Number(selectedRate.price)) * Math.max(totalRooms, 1)).toFixed(2)}
                 </span>
               </div>
             )}
 
-            <div className="flex justify-between text-sm text-green-700">
-              <span>
-                ✓ {t('booking:taxesAtBooking', 'Taxes (paid at booking)')}{taxPercentage ? ` (${taxPercentage})` : ''}
-              </span>
-              <span className="font-medium">
-                {currencySymbol} {taxes.toFixed(2)}
-              </span>
-            </div>
+            {/* Show original price + VAT breakdown */}
+            {(() => {
+              const room = selectedRooms?.[0] || selectedRate;
+              const allTaxes = room.tax_data?.taxes || room.taxes || [];
+              const includedTaxes = allTaxes.filter((tax: TaxItem) => tax.included_by_supplier || tax.included);
+              const includedTotal = includedTaxes.reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
+              const origPrice = room.original_price || (Number(room.price) - includedTotal);
+              return includedTotal > 0 ? (
+                <>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>{t('booking:roomRate', 'Room Rate')}</span>
+                    <span>{currencySymbol} {(origPrice * Math.max(totalRooms, 1)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-green-700">
+                    <span>✓ {t('booking:vatIncluded', 'VAT (included)')}</span>
+                    <span>{currencySymbol} {(includedTotal * Math.max(totalRooms, 1)).toFixed(2)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between text-sm text-green-700">
+                  <span>✓ {t('booking:taxesIncluded', 'Taxes included in price')}</span>
+                </div>
+              );
+            })()}
 
             {/* Pay at Hotel Taxes - shown separately */}
             {payAtHotelTaxes > 0 && (
@@ -405,10 +410,9 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 {t('booking:totalNow', 'Total to pay now')}
               </span>
               <span className="text-2xl font-bold text-orange-600 font-price">
-                {currencySymbol} {(
-                  promoCodeResult?.valid && promoCodeResult.finalValue
+                {currencySymbol} {(promoCodeResult?.valid && promoCodeResult.finalValue
                     ? promoCodeResult.finalValue
-                    : (totalPrice + taxes)
+                    : totalPrice
                 ).toFixed(2)}
               </span>
             </div>
