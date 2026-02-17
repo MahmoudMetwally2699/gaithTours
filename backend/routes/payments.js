@@ -270,6 +270,35 @@ async function createRateHawkBooking(reservationParam, orderId) {
       } catch (whatsappError) {
         console.error('WhatsApp error:', whatsappError.message);
       }
+
+      // Send hotel confirmation email to hotel
+      if (reservation.hotel.email) {
+        try {
+          await sendHotelConfirmationEmail({
+            hotelEmail: reservation.hotel.email,
+            hotelName: reservation.hotel.name,
+            guestName: reservation.touristName,
+            guestEmail: reservation.email,
+            guestPhone: reservation.phone,
+            nationality: reservation.nationality || '',
+            checkInDate: reservation.checkInDate,
+            checkOutDate: reservation.checkOutDate,
+            roomType: reservation.roomType,
+            numberOfGuests: reservation.numberOfAdults + (reservation.numberOfChildren || 0),
+            numberOfRooms: reservation.numberOfRooms || 1,
+            meal: reservation.meal || 'nomeal',
+            specialRequests: reservation.specialRequests || '',
+            reservationId: reservation.kashierOrderId || reservation._id,
+            totalPrice: reservation.totalPrice,
+            currency: reservation.currency
+          });
+          console.log('📧 Hotel confirmation email sent successfully to:', reservation.hotel.email);
+        } catch (hotelEmailError) {
+          console.error('Hotel email error:', hotelEmailError.message);
+        }
+      } else {
+        console.log('⚠️ No hotel email available - skipping hotel confirmation email');
+      }
     } else if (bookingStatus.status === 'error') {
       // Check if this is a test hotel
       console.log('🔍 Booking failed with error status. Full Details:', JSON.stringify(bookingStatus, null, 2));

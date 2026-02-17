@@ -2159,7 +2159,7 @@ class RateHawkService {
     try {
       console.log(`🔍 Getting cancellation info for order: ${partnerOrderId}`);
 
-      const response = await this.makeRequest('/hotel/order/cancel/info/', 'POST', {
+      const response = await this.makeRequest('/hotel/order/info/', 'POST', {
         partner_order_id: partnerOrderId
       });
 
