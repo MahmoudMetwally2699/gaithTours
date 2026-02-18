@@ -2266,7 +2266,7 @@ export const HotelSearchResults: React.FC = () => {
                                     </span>
                                     <div className="flex items-baseline gap-1">
                                       <span className="text-lg font-bold text-[#1a1a2e] inter-700">
-                                        {formatPrice(hotel.price)}
+                                        {formatPrice((hotel as any).original_price || hotel.price)}
                                       </span>
                                     </div>
                                     <span className="text-[10px] text-gray-500">
@@ -2525,10 +2525,10 @@ export const HotelSearchResults: React.FC = () => {
                                 ) : (
                                     <>
                                         <div className="text-2xl font-bold text-gray-900 leading-none font-price inter-700">
-                                            {formatPrice(hotel.price)}
+                                            {formatPrice((hotel as any).original_price || hotel.price)}
                                         </div>
                                         <div className="text-[10px] text-gray-500 font-medium mb-1 font-price">
-                                            {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price + ((hotel as any).included_taxes || 0)))}
+                                            {t('searchResults:hotelCard.totalWithTaxes', 'Total (incl. taxes & fees)')}: {formatPrice(Math.round(hotel.price))}
                                         </div>
                                         {((hotel as any).total_taxes || 0) > 0 && (
                                             <div className="text-[9px] text-orange-600 font-medium mb-1">

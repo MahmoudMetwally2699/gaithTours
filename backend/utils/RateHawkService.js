@@ -1137,10 +1137,16 @@ class RateHawkService {
       // Calculate the margin percentage to apply to taxes
       const marginMultiplier = marginBase > 0 ? priceResult.finalPrice / marginBase : 1;
 
-      // The final price includes the margin on (price + booking_taxes)
-      // We need to separate it back: final_price = original_price + margin_on_total
-      hotel.price = priceResult.finalPrice; // Total price with margin (includes booking taxes)
+      // Store the margined BASE price (excluding included taxes) — matches details page's original_price
+      // hotel.price before this point = basePrice (showAmount - includedTaxes)
+      const originalBasePrice = hotel.price; // base price before margin (excl. included taxes)
+      hotel.original_price = Math.round(originalBasePrice * marginMultiplier); // Margined base price (excl taxes) for display
+      hotel.price = priceResult.finalPrice; // Full margined amount (base + included taxes) — used for sorting/filtering
       hotel.pricePerNight = hotel.nights > 0 ? Math.round(priceResult.finalPrice / hotel.nights) : priceResult.finalPrice;
+
+      // Update included_taxes with margined amount so frontend shows accurate tax breakdown
+      // original_price + included_taxes should equal hotel.price (the full margined amount)
+      hotel.included_taxes = Math.round((hotel.included_taxes || 0) * marginMultiplier);
 
       // Apply margin to tax display amounts as well
       // total_taxes now only contains pay-at-hotel taxes — no margin should be applied to those
