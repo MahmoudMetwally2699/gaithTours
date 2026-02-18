@@ -1747,8 +1747,8 @@ class RateHawkService {
         price: priceResult.finalPrice, // Total stay price with margin
         price_per_night: priceResult.finalPrice / numberOfNights, // Average per night (for display)
         currency: paymentType?.show_currency_code || currency,
-        original_price: totalStayPrice, // Store original total for comparison
-        original_price_per_night: perNightPrice, // Original per-night average
+        original_price: totalStayPrice * marginMultiplier, // Base price with margin (before VAT) — displayed to customer
+        original_price_per_night: (totalStayPrice * marginMultiplier) / numberOfNights, // Per-night with margin
         margin_applied: {
           ruleName: matchingRule?.name || 'Default',
           marginType: marginInfo.marginType,
@@ -1769,9 +1769,11 @@ class RateHawkService {
             const originalAmount = parseFloat(tax.amount || 0);
             const isPayAtHotel = !tax.included_by_supplier;
 
+            // Apply margin to included taxes (VAT), NOT to pay-at-hotel taxes
+            const finalAmount = isPayAtHotel ? originalAmount : originalAmount * marginMultiplier;
             return {
               ...tax,
-              amount: Math.round(originalAmount * 100) / 100,
+              amount: Math.round(finalAmount * 100) / 100,
               currency: isPayAtHotel ? (tax.currency_code || tax.currency || paymentType?.currency_code || currency) : (paymentType?.currency_code || currency)
             };
           }) || [];
@@ -1781,12 +1783,14 @@ class RateHawkService {
             taxes: mappedTaxes
           };
         })() : null,
-        // Simplified taxes array - amounts unchanged, included flag preserved
+        // Simplified taxes array - margin applied to included taxes, pay-at-hotel unchanged
         taxes: taxData?.taxes?.map(tax => {
           const isPayAtHotel = !tax.included_by_supplier;
+          const rawAmount = parseFloat(tax.amount || 0);
+          const finalAmount = isPayAtHotel ? rawAmount : rawAmount * marginMultiplier;
           return {
             name: tax.name,
-            amount: Math.round(parseFloat(tax.amount || 0) * 100) / 100,
+            amount: Math.round(finalAmount * 100) / 100,
             currency: isPayAtHotel ? (tax.currency_code || tax.currency || paymentType?.currency_code || currency) : (paymentType?.currency_code || currency),
             included: tax.included_by_supplier || false
           };
