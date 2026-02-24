@@ -958,18 +958,17 @@ class RateHawkService {
           // PERF: Run ALL batches in parallel instead of sequentially
           const batchResults = await Promise.all(batches.map(async (batch, i) => {
             try {
-              // Query Local DB - OPTIMIZED: Only fetch fields we actually use
-              // PERF: Use $slice to fetch only first image instead of entire images array
-              // PERF: Fetch only fields we actually use (+amenities for search card icons)
+              // Query Local DB - OPTIMIZED: Minimal projection, no $slice (which forces full doc read)
+              // Only fetch the lightweight fields we need for search cards
               const localHotels = await HotelContent.find(
                 { hid: { $in: batch } },
                 {
                   hid: 1, hotelId: 1, name: 1, nameAr: 1, address: 1,
                   city: 1, country: 1, countryCode: 1, starRating: 1,
                   mainImage: 1, amenities: 1, latitude: 1, longitude: 1,
-                  images: { $slice: 1 }
+                  _id: 0  // Exclude _id to reduce transfer
                 }
-              ).lean();
+              ).hint({ hid: 1 }).maxTimeMS(8000).lean();
               console.log(`   ✅ Found ${localHotels.length}/${batch.length} hotels in local DB (Batch ${i+1})`);
               return { hotels: localHotels, batch, index: i };
             } catch (error) {
