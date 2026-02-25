@@ -257,7 +257,9 @@ class DumpProcessor {
   }
 
   /**
-   * Import hotels from a gzipped dump file
+   * Import hotels from a zstd-compressed dump file.
+   * Uses the system `zstd` CLI for streaming decompression (low memory),
+   * falls back to JS-based fzstd if zstd CLI is not available.
    */
   async importDump(filepath) {
     console.log('📦 Importing dump file...');
@@ -265,12 +267,35 @@ class DumpProcessor {
 
     this.stats.startTime = Date.now();
 
-    // Create read stream with decompression
-    const fileStream = fs.createReadStream(filepath);
-    const decompressStream = new ZstdDecompressStream();
+    let inputStream;
+
+    // Try to use system zstd command (much lower memory usage)
+    try {
+      const { execSync } = require('child_process');
+      execSync('zstd --version', { stdio: 'ignore' });
+
+      // zstd CLI is available — use it for streaming decompression
+      console.log('   Using system zstd for decompression (memory-efficient)');
+      const { spawn } = require('child_process');
+      const zstdProcess = spawn('zstd', ['-d', '-c', filepath], {
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      zstdProcess.stderr.on('data', (data) => {
+        console.error(`   zstd stderr: ${data.toString().trim()}`);
+      });
+
+      inputStream = zstdProcess.stdout;
+    } catch (e) {
+      // zstd CLI not available, fall back to JS library
+      console.log('   zstd CLI not found, using JS decompressor (higher memory)');
+      const fileStream = fs.createReadStream(filepath);
+      const decompressStream = new ZstdDecompressStream();
+      inputStream = fileStream.pipe(decompressStream);
+    }
 
     const rl = readline.createInterface({
-      input: fileStream.pipe(decompressStream),
+      input: inputStream,
       crlfDelay: Infinity
     });
 
