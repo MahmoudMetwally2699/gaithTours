@@ -30,8 +30,9 @@ const ZstdDecompressStream = require('./ZstdDecompressStream');
 
 // Configuration
 const CONFIG = {
-  // V3 Dump endpoint
+  // V3 Dump endpoints
   dumpUrl: 'https://api.worldota.net/api/b2b/v3/hotel/info/dump/',
+  incrementalDumpUrl: 'https://api.worldota.net/api/b2b/v3/hotel/info/incremental_dump/',
   downloadDir: path.join(__dirname, '../data/dumps'),
   batchSize: 1000, // Hotels per batch for import
   keyId: process.env.RATEHAWK_KEY_ID,
@@ -52,7 +53,7 @@ class DumpProcessor {
    * Get the download URL for the hotel dump
    */
   async getDumpUrl(language = 'en') {
-    console.log('📥 Requesting dump URL from ETG...');
+    console.log('📥 Requesting full dump URL from ETG...');
 
     const response = await axios.post(
       CONFIG.dumpUrl,
@@ -76,9 +77,37 @@ class DumpProcessor {
   }
 
   /**
+   * Get the download URL for the incremental hotel dump (changes from previous day)
+   */
+  async getIncrementalDumpUrl(language = 'en') {
+    console.log('📥 Requesting incremental dump URL from ETG...');
+
+    const response = await axios.post(
+      CONFIG.incrementalDumpUrl,
+      { language, inventory: 'all' },
+      {
+        auth: {
+          username: CONFIG.keyId,
+          password: CONFIG.apiKey
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (!response.data?.data?.url) {
+      throw new Error('Failed to get incremental dump URL from ETG API');
+    }
+
+    console.log(`   Last update: ${response.data.data.last_update}`);
+    return response.data.data.url;
+  }
+
+  /**
    * Download the dump file
    */
-  async downloadDump(url) {
+  async downloadDump(url, type = 'full') {
     console.log('⬇️  Downloading dump file...');
     console.log(`   URL: ${url}`);
 
@@ -87,7 +116,8 @@ class DumpProcessor {
       fs.mkdirSync(CONFIG.downloadDir, { recursive: true });
     }
 
-    const filename = `hotel_dump_${new Date().toISOString().split('T')[0]}.jsonl.zst`;
+    const prefix = type === 'incremental' ? 'hotel_incremental_dump' : 'hotel_dump';
+    const filename = `${prefix}_${new Date().toISOString().split('T')[0]}.jsonl.zst`;
     const filepath = path.join(CONFIG.downloadDir, filename);
 
     const response = await axios({
@@ -290,32 +320,40 @@ class DumpProcessor {
    * Run the full download and import process
    */
   async run(options = {}) {
-    const { download = false, import: doImport = false } = options;
+    const { download = false, import: doImport = false, incremental = false } = options;
 
     try {
       let filepath;
 
-      if (download) {
-        const url = await this.getDumpUrl();
-        filepath = await this.downloadDump(url);
-      }
-
-      if (doImport) {
-        if (!filepath) {
-          // Find the most recent dump file
-          const files = fs.readdirSync(CONFIG.downloadDir)
-            .filter(f => f.endsWith('.jsonl.zst'))
-            .sort()
-            .reverse();
-
-          if (files.length === 0) {
-            throw new Error('No dump files found. Run with --download first.');
-          }
-
-          filepath = path.join(CONFIG.downloadDir, files[0]);
+      if (incremental) {
+        // Incremental mode: download and import daily changes
+        console.log('\n🔄 Running INCREMENTAL dump (daily changes only)...');
+        const url = await this.getIncrementalDumpUrl();
+        filepath = await this.downloadDump(url, 'incremental');
+        await this.importDump(filepath);
+      } else {
+        if (download) {
+          const url = await this.getDumpUrl();
+          filepath = await this.downloadDump(url);
         }
 
-        await this.importDump(filepath);
+        if (doImport) {
+          if (!filepath) {
+            // Find the most recent dump file
+            const files = fs.readdirSync(CONFIG.downloadDir)
+              .filter(f => f.endsWith('.jsonl.zst'))
+              .sort()
+              .reverse();
+
+            if (files.length === 0) {
+              throw new Error('No dump files found. Run with --download first.');
+            }
+
+            filepath = path.join(CONFIG.downloadDir, files[0]);
+          }
+
+          await this.importDump(filepath);
+        }
       }
 
       console.log('\n🎉 Done!');
@@ -331,14 +369,16 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const options = {
     download: args.includes('--download') || args.includes('--all'),
-    import: args.includes('--import') || args.includes('--all')
+    import: args.includes('--import') || args.includes('--all'),
+    incremental: args.includes('--incremental')
   };
 
-  if (!options.download && !options.import) {
+  if (!options.download && !options.import && !options.incremental) {
     console.log('Usage: node dumpProcessor.js [options]');
-    console.log('  --download   Download the latest hotel dump');
-    console.log('  --import     Import the downloaded dump to MongoDB');
-    console.log('  --all        Download and import');
+    console.log('  --download      Download the latest full hotel dump');
+    console.log('  --import        Import the downloaded dump to MongoDB');
+    console.log('  --all           Download and import full dump');
+    console.log('  --incremental   Download and import incremental dump (daily changes only)');
     process.exit(0);
   }
 

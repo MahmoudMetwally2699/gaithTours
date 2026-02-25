@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
+const cron = require('node-cron');
 const { initializeSocket } = require('./socket');
 require('dotenv').config();
 
@@ -420,5 +421,21 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
       console.log('🌡️  Starting cache warmer...');
       cacheWarmer.startPeriodicWarmup();
     }
+
+    // Schedule daily incremental hotel dump at 3:00 AM
+    cron.schedule('0 3 * * *', async () => {
+      console.log('\n⏰ [CRON] Starting daily incremental hotel dump...');
+      try {
+        const DumpProcessor = require('./utils/dumpProcessor');
+        const processor = new DumpProcessor();
+        await processor.run({ incremental: true });
+        console.log('✅ [CRON] Daily incremental dump completed successfully');
+      } catch (err) {
+        console.error('❌ [CRON] Daily incremental dump failed:', err.message);
+      }
+    }, {
+      timezone: 'Africa/Cairo' // UTC+2 (Egypt timezone)
+    });
+    console.log('⏰ Scheduled daily incremental hotel dump at 3:00 AM (Cairo time)');
   });
 }
