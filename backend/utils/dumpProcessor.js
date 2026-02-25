@@ -207,13 +207,25 @@ class DumpProcessor {
       });
     }
 
+    const city = rawHotel.region?.name || '';
+    const name = rawHotel.name || '';
+    const address = rawHotel.address || '';
+    const country = rawHotel.region?.country_name || '';
+
+    // Generate cityNormalized and searchText here because
+    // Mongoose pre('save') hooks do NOT run on bulkWrite/updateOne
+    const cityNormalized = city ? city.toLowerCase().trim() : undefined;
+    const searchText = [name, address, city, country, amenities.join(' ')].filter(Boolean).join(' ');
+
     return {
       hid: rawHotel.hid,
       hotelId: rawHotel.id,
-      name: rawHotel.name,
-      address: rawHotel.address,
-      city: rawHotel.region?.name,
-      country: rawHotel.region?.country_name,
+      name: name,
+      address: address,
+      city: city || undefined,
+      cityNormalized: cityNormalized,
+      searchText: searchText,
+      country: country || undefined,
       countryCode: rawHotel.region?.country_code,
       // Full region object for detailed location display
       region: rawHotel.region ? {
