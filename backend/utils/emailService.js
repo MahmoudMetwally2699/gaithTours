@@ -1427,3 +1427,145 @@ const sendHotelConfirmationEmail = async (hotelConfirmationData) => {
 
 // Add the hotel confirmation email to exports
 module.exports.sendHotelConfirmationEmail = sendHotelConfirmationEmail;
+
+// Send partnership outreach email to hotels
+const sendPartnershipEmail = async ({ hotelName, hotelEmail }) => {
+  try {
+    const transporter = createTransporter();
+
+    console.log(`📧 Sending partnership email to: ${hotelEmail} (${hotelName})`);
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: hotelEmail,
+      subject: `🤝 Partnership Opportunity – Gaith Tours & ${hotelName}`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Partnership Opportunity</title>
+        </head>
+        <body style="margin: 0; padding: 20px; background-color: #f5f5f5; font-family: Arial, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+
+            <!-- Header with Logo -->
+            <div style="background: #ffffff; padding: 30px; text-align: center; border-bottom: 4px solid #FF6B00;">
+              <img src="cid:gaithtours-logo" alt="Gaith Tours" style="height: 120px; width: auto;" />
+            </div>
+
+            <!-- Orange Accent Bar -->
+            <div style="background: linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%); padding: 20px 30px; text-align: center;">
+              <h1 style="color: #ffffff; font-size: 22px; font-weight: 700; margin: 0; letter-spacing: 0.5px;">Partnership Opportunity</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 8px 0 0 0;">Building Strong Partnerships for Mutual Growth</p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 30px;">
+
+              <!-- Greeting -->
+              <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                Dear <strong>${hotelName}</strong> Management Team,
+              </p>
+
+              <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                Greetings from <strong>Gaith Tours</strong>! We are a leading travel agency specializing in hotel bookings across the Middle East and beyond. We are reaching out to express our interest in establishing a <strong>direct partnership</strong> with your esteemed property.
+              </p>
+
+              <!-- Why Partner Section -->
+              <div style="background: #FFF7ED; border-left: 4px solid #FF6B00; border-radius: 0 8px 8px 0; padding: 20px; margin: 25px 0;">
+                <h3 style="color: #9a3412; font-size: 16px; font-weight: 700; margin: 0 0 12px 0;">Why Partner With Gaith Tours?</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 30px; color: #FF6B00; font-size: 16px;">✅</td>
+                    <td style="padding: 8px 0; color: #78350F; font-size: 14px; line-height: 1.5;"><strong>Increased Bookings</strong> — We drive a high volume of guests to our partner hotels through our platform and network.</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 30px; color: #FF6B00; font-size: 16px;">✅</td>
+                    <td style="padding: 8px 0; color: #78350F; font-size: 14px; line-height: 1.5;"><strong>Competitive Rates</strong> — A direct partnership allows us to offer your property at the most competitive prices, driving even more bookings.</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 30px; color: #FF6B00; font-size: 16px;">✅</td>
+                    <td style="padding: 8px 0; color: #78350F; font-size: 14px; line-height: 1.5;"><strong>Reliable Payment</strong> — We ensure timely payments and clear financial processes for all our partners.</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; vertical-align: top; width: 30px; color: #FF6B00; font-size: 16px;">✅</td>
+                    <td style="padding: 8px 0; color: #78350F; font-size: 14px; line-height: 1.5;"><strong>Long-Term Relationship</strong> — We value long-term partnerships built on trust and mutual growth.</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- What We're Looking For -->
+              <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+                We believe that a direct partnership would be mutually beneficial. By working together, we can offer your guests competitive rates while increasing occupancy at your property. We would love to discuss:
+              </p>
+
+              <div style="background: #F0F9FF; border-radius: 8px; padding: 15px 20px; margin: 0 0 25px 0;">
+                <ul style="margin: 0; padding: 0 0 0 20px; color: #1e40af;">
+                  <li style="padding: 5px 0; font-size: 14px;">Negotiated direct rates for our booking platform</li>
+                  <li style="padding: 5px 0; font-size: 14px;">Seasonal and promotional rate agreements</li>
+                  <li style="padding: 5px 0; font-size: 14px;">Dedicated allotment arrangements</li>
+                  <li style="padding: 5px 0; font-size: 14px;">Terms and conditions for our collaboration</li>
+                </ul>
+              </div>
+
+              <!-- Call to Action -->
+              <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 25px 0;">
+                We would be delighted to schedule a call or meeting at your convenience to discuss this opportunity further. Please do not hesitate to reach out to us.
+              </p>
+
+              <!-- Contact Card -->
+              <div style="background: linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%); border-radius: 10px; padding: 20px; text-align: center; margin: 0 0 25px 0;">
+                <p style="color: #ffffff; font-size: 16px; font-weight: 700; margin: 0 0 10px 0;">Get in Touch</p>
+                <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0 0 5px 0;">📧 partners@gaithtours.com</p>
+                <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0 0 5px 0;">📞 +966 549 412 412</p>
+                <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 0;">🌐 www.gaithtours.com</p>
+              </div>
+
+              <!-- Reply CTA -->
+              <div style="text-align: center; margin-bottom: 20px;">
+                <a href="mailto:partners@gaithtours.com?subject=Re:%20Partnership%20Opportunity%20–%20${encodeURIComponent(hotelName)}" style="display: inline-block; background: #FF6B00; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: bold; font-size: 15px;">📧 Reply to This Email</a>
+              </div>
+
+              <!-- Closing -->
+              <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0 0 5px 0;">
+                We look forward to hearing from you and exploring this exciting partnership opportunity.
+              </p>
+              <p style="color: #374151; font-size: 15px; line-height: 1.7; margin: 0;">
+                Warm regards,<br/>
+                <strong>Gaith Tours Team</strong><br/>
+                <span style="color: #6b7280; font-size: 13px;">Your Trusted Travel Partner</span>
+              </p>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #1f2937; padding: 20px; text-align: center;">
+              <p style="color: rgba(255,255,255,0.7); font-size: 12px; margin: 0 0 5px 0;">Gaith Tours | www.gaithtours.com</p>
+              <p style="color: rgba(255,255,255,0.4); font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Gaith Tours. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      attachments: [
+        {
+          filename: 'logo.png',
+          path: path.join(__dirname, '../public/logo.png'),
+          cid: 'gaithtours-logo'
+        }
+      ]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Partnership email sent successfully to ${hotelEmail}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`❌ Partnership email error for ${hotelEmail}:`, error);
+    throw new Error('Partnership email could not be sent: ' + error.message);
+  }
+};
+
+// Add the partnership email to exports
+module.exports.sendPartnershipEmail = sendPartnershipEmail;

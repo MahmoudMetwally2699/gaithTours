@@ -51,6 +51,10 @@ export const adminAPI = {
     validateInvitation: (token: string) => api.get(`/admin/invitation/${token}`),
     acceptInvitation: (data: { token: string; name: string; password: string; phone: string }) =>
         api.post('/admin/invitation/accept', data),
+
+    // Partnership Emails
+    sendPartnershipEmails: (data: { hotels: Array<{ name: string; email: string }> }) =>
+        api.post('/admin/partnership-emails', data)
 };
 
 export default adminAPI;

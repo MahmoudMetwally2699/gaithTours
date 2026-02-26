@@ -18,6 +18,7 @@ import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalB
 import { LoyaltyTab } from '../components/AdminDashboard/LoyaltyTab';
 import { PartnersTab } from '../components/AdminDashboard/PartnersTab';
 import { BlogTab } from '../components/AdminDashboard/BlogTab';
+import { HotelPartnershipTab } from '../components/AdminDashboard/HotelPartnershipTab';
 import SupportChatTab from '../components/AdminDashboard/SupportChatTab';
 import { HotelContactLookup } from '../components/admin/HotelContactLookup';
 import { HotelArabicNamesTab } from '../components/AdminDashboard/HotelArabicNamesTab';
@@ -38,6 +39,7 @@ import {
   TagIcon,
   PhotoIcon,
   PhoneIcon,
+  EnvelopeIcon,
   TrophyIcon,
   UsersIcon,
   NewspaperIcon
@@ -485,6 +487,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'promo_codes', name: t('admin:dashboard.tabs.promo_codes'), icon: TagIcon },
     { id: 'promotional_banners', name: t('admin:dashboard.tabs.promotional_banners'), icon: PhotoIcon },
     { id: 'loyalty', name: t('admin:dashboard.tabs.loyalty'), icon: TrophyIcon },
+    { id: 'hotel_partnership', name: t('admin:dashboard.tabs.hotel_partnership', 'Partnership Emails'), icon: EnvelopeIcon },
     { id: 'partners', name: t('admin:dashboard.tabs.partners', 'Partners'), icon: UsersIcon },
     { id: 'blog', name: t('admin:dashboard.tabs.blog', 'Blog'), icon: NewspaperIcon },
     { id: 'whatsapp', name: t('admin:dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
@@ -958,6 +961,9 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Hotel Lookup Tab */}
           {activeTab === 'hotel_lookup' && (
             <HotelContactLookup />
+          )}{/* Hotel Partnership Tab */}
+          {activeTab === 'hotel_partnership' && (
+            <HotelPartnershipTab />
           )}{/* Hotel Arabic Names Tab */}
           {activeTab === 'hotel_arabic_names' && (
             <HotelArabicNamesTab />

@@ -1489,4 +1489,63 @@ router.delete('/partners/:id', protect, admin, async (req, res) => {
   }
 });
 
+// ============ PARTNERSHIP EMAIL ROUTES ============
+const { sendPartnershipEmail } = require('../utils/emailService');
+
+/**
+ * @route   POST /api/admin/partnership-emails
+ * @desc    Send partnership outreach emails to multiple hotels
+ * @access  Admin
+ * @body    { hotels: [{ name: string, email: string }, ...] }
+ */
+router.post('/partnership-emails', protect, admin, async (req, res) => {
+  try {
+    const { hotels } = req.body;
+
+    if (!Array.isArray(hotels) || hotels.length === 0) {
+      return errorResponse(res, 'Please provide an array of hotels with name and email', 400);
+    }
+
+    if (hotels.length > 50) {
+      return errorResponse(res, 'Maximum 50 hotels per batch', 400);
+    }
+
+    // Validate each hotel entry
+    for (const hotel of hotels) {
+      if (!hotel.name || !hotel.email) {
+        return errorResponse(res, 'Each hotel must have a name and email', 400);
+      }
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(hotel.email)) {
+        return errorResponse(res, `Invalid email address: ${hotel.email}`, 400);
+      }
+    }
+
+    console.log(`🤝 Sending partnership emails to ${hotels.length} hotel(s)...`);
+
+    const results = { success: 0, failed: 0, errors: [] };
+
+    for (const hotel of hotels) {
+      try {
+        await sendPartnershipEmail({
+          hotelName: hotel.name,
+          hotelEmail: hotel.email
+        });
+        results.success++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push({ name: hotel.name, email: hotel.email, error: error.message });
+      }
+    }
+
+    console.log(`📊 Partnership emails: ${results.success} sent, ${results.failed} failed`);
+
+    successResponse(res, results, `Partnership emails sent: ${results.success} successful, ${results.failed} failed`);
+  } catch (error) {
+    console.error('Partnership emails error:', error);
+    errorResponse(res, 'Failed to send partnership emails', 500);
+  }
+});
+
 module.exports = router;

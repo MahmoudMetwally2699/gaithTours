@@ -459,6 +459,23 @@
         "emptyTitle": "Search for a Hotel",
         "emptySubtitle": "Start typing a hotel name above to find contact information"
       },
+      "partnership": {
+        "title": "Hotel Partnership Outreach",
+        "subtitle": "Search hotels and send direct partnership proposals",
+        "searchHotel": "Search Hotel",
+        "searchPlaceholder": "Type hotel name...",
+        "emailPreview": "Email Preview",
+        "previewDesc": "The selected hotels will receive a professional partnership proposal containing the Gaith Tours logo, our system advantages, and a call-to-action to establish direct rates.",
+        "selectedHotels": "Selected Hotels",
+        "sendEmails": "Send Emails",
+        "noSelection": "Search and select hotels to add to the list",
+        "emailPlaceholder": "hotel@example.com",
+        "alreadySelected": "Hotel already selected",
+        "invalidEmails": "Please provide valid email addresses for all selected hotels",
+        "partialSuccess": "{{success}} sent, {{failed}} failed",
+        "success": "Partnership emails sent successfully",
+        "error": "Failed to send partnership emails"
+      },
       "hotelArabicNames": {
         "title": "Hotel Arabic Names",
         "subtitle": "Set Arabic names for hotels so users can search in Arabic",
