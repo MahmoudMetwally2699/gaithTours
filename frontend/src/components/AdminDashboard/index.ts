@@ -7,5 +7,6 @@ export { AdminBookingModal } from './AdminBookingModal';
 export { AnalyticsTab } from './AnalyticsTab';
 export { PromoCodesTab } from './PromoCodesTab';
 export { PromotionalBannersTab } from './PromotionalBannersTab';
+export { BestPricesTab } from './BestPricesTab';
 export { LoyaltyTab } from './LoyaltyTab';
 export { HotelPartnershipTab } from './HotelPartnershipTab';

@@ -264,6 +264,14 @@ try {
   console.error('Error loading blog admin routes:', error);
 }
 
+// Best price deals routes
+try {
+  app.use('/api/best-prices', require('./routes/best-prices'));
+  console.log('✅ Best price deals routes loaded');
+} catch (error) {
+  console.error('Error loading best price deals routes:', error);
+}
+
 // Support chat routes
 try {
   app.use('/api/support-chat', require('./routes/support-chat'));

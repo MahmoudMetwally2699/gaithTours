@@ -42,6 +42,7 @@ const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m 
 const AcceptInvitation = React.lazy(() => import('./pages/AcceptInvitation').then(m => ({ default: m.AcceptInvitation })));
 const PartnerLogin = React.lazy(() => import('./pages/PartnerLogin').then(m => ({ default: m.PartnerLogin })));
 const PartnerDashboard = React.lazy(() => import('./pages/PartnerDashboard').then(m => ({ default: m.PartnerDashboard })));
+const BestPriceDeals = React.lazy(() => import('./pages/BestPriceDeals').then(m => ({ default: m.BestPriceDeals })));
 
 // Google OAuth Client ID - Replace with your actual client ID from Google Cloud Console
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
@@ -122,6 +123,8 @@ const AppContent = () => {
           {/* Partner Routes */}
           <Route path="/partner/login" component={PartnerLogin} />
           <Route path="/partner/dashboard" component={PartnerDashboard} />
+          {/* Best Prices Routes */}
+          <Route path="/best-prices/:id" component={BestPriceDeals} />
           {/* Blog Routes */}
           <Route exact path="/blog" component={Blog} />
           <Route path="/blog/:slug" component={BlogPostPage} />

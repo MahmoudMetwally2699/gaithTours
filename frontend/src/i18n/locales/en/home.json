@@ -132,6 +132,11 @@
       "desc": "Your payment details are protected with bank-level encryption."
     }
   },
+  "bestPrices": {
+    "title": "Best Prices",
+    "subtitle": "Handpicked deals with the best rates",
+    "viewDeals": "View Deals"
+  },
   "destinationGuides": {
     "title": "Destination Guides",
     "subtitle": "Explore top destinations in Saudi Arabia",

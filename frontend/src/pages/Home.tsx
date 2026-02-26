@@ -12,6 +12,7 @@ import { LazySection } from '../components/LazySection';
 import { WhyBookWithGaith } from '../components/WhyBookWithGaith';
 import { HomeGuestReviews } from '../components/HomeGuestReviews';
 import { DestinationGuides } from '../components/DestinationGuides';
+import { BestPricesSection } from '../components/BestPricesSection';
 
 export const Home: React.FC = () => {
   const [isContentLoaded, setIsContentLoaded] = useState(false);
@@ -31,6 +32,9 @@ export const Home: React.FC = () => {
           <PopularProperties />
         </LazySection>
         <OffersBanner />
+        <LazySection height="350px" skeleton="hotel-cards">
+          <BestPricesSection />
+        </LazySection>
         <SuggestedHotels onLoaded={handleContentLoaded} />
         <LazySection height="200px" skeleton="simple">
           <WhyBookWithGaith />

@@ -3,6 +3,7 @@ import { Link, useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
+import { CurrencySelector } from './CurrencySelector';
 
 import {
   Bars3Icon,
@@ -92,6 +93,9 @@ export const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+
+            {/* Currency Selector */}
+            <CurrencySelector variant="dark" />
 
             {/* Language Toggle */}
             <button
@@ -232,6 +236,11 @@ export const Navbar: React.FC = () => {
                   {i18n.language === 'en' ? 'العربية' : 'English'}
                 </span>
               </button>
+
+              {/* Currency Selector */}
+              <div className="px-4 py-2">
+                <CurrencySelector variant="dark" />
+              </div>
 
               <div className="border-t border-gray-100 my-2 pt-2">
                 {user ? (

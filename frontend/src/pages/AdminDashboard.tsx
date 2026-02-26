@@ -15,6 +15,7 @@ import { AdminManagementTab } from '../components/AdminDashboard/AdminManagement
 import { AnalyticsTab } from '../components/AdminDashboard/AnalyticsTab';
 import { PromoCodesTab } from '../components/AdminDashboard/PromoCodesTab';
 import { PromotionalBannersTab } from '../components/AdminDashboard/PromotionalBannersTab';
+import { BestPricesTab } from '../components/AdminDashboard/BestPricesTab';
 import { LoyaltyTab } from '../components/AdminDashboard/LoyaltyTab';
 import { PartnersTab } from '../components/AdminDashboard/PartnersTab';
 import { BlogTab } from '../components/AdminDashboard/BlogTab';
@@ -42,7 +43,8 @@ import {
   EnvelopeIcon,
   TrophyIcon,
   UsersIcon,
-  NewspaperIcon
+  NewspaperIcon,
+  FireIcon
 } from '@heroicons/react/24/outline';
 import { WhatsAppNotificationListener } from '../components/WhatsApp/WhatsAppNotificationListener';
 import NotificationBell from '../components/NotificationBell';
@@ -486,6 +488,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'margins', name: t('admin:dashboard.tabs.margins'), icon: CurrencyDollarIcon },
     { id: 'promo_codes', name: t('admin:dashboard.tabs.promo_codes'), icon: TagIcon },
     { id: 'promotional_banners', name: t('admin:dashboard.tabs.promotional_banners'), icon: PhotoIcon },
+    { id: 'best_prices', name: t('admin:dashboard.tabs.best_prices', 'Best Prices'), icon: FireIcon },
     { id: 'loyalty', name: t('admin:dashboard.tabs.loyalty'), icon: TrophyIcon },
     { id: 'hotel_partnership', name: t('admin:dashboard.tabs.hotel_partnership', 'Partnership Emails'), icon: EnvelopeIcon },
     { id: 'partners', name: t('admin:dashboard.tabs.partners', 'Partners'), icon: UsersIcon },
@@ -973,6 +976,9 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Promotional Banners Tab */}
           {activeTab === 'promotional_banners' && (
             <PromotionalBannersTab />
+          )}{/* Best Prices Tab */}
+          {activeTab === 'best_prices' && (
+            <BestPricesTab />
           )}{/* WhatsApp Messages Tab */}
           {activeTab === 'whatsapp' && (
             <WhatsAppTab />

@@ -12,10 +12,12 @@ interface HotelCardProps {
     reviewScoreWord?: string;
   };
   taRating?: TripAdvisorRating | null;
+  price?: number;
+  currency?: string;
   onBook: () => void;
 }
 
-export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating, onBook }) => {
+export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating, price, currency, onBook }) => {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
 
@@ -124,16 +126,35 @@ export const HotelCard: React.FC<HotelCardProps> = React.memo(({ hotel, taRating
           {hotel.address || hotel.city}
         </p>
 
-        {/* CTA Section - No prices, just a call to action */}
+        {/* CTA Section */}
         <div className="mt-auto flex flex-col pt-2 md:pt-3 border-t border-gray-50">
-          <div className="flex justify-end items-center">
-            <span className="text-[#FF8C00] font-semibold text-xs sm:text-sm group-hover:underline">
-              {t('hotels.viewPrices', 'View Prices')}
-            </span>
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF8C00] ltr:ml-1 rtl:mr-1 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+          {price && price > 0 ? (
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col">
+                <span className="text-[10px] sm:text-xs text-gray-400">{t('hotels.from', 'From')}</span>
+                <span className="text-sm sm:text-base font-bold text-[#FF8C00]">
+                  {formatNumber(Math.round(price), isRTL)} <span className="text-[10px] sm:text-xs font-normal text-gray-500">{currency || 'SAR'}</span>
+                </span>
+              </div>
+              <div className="flex items-center">
+                <span className="text-[#FF8C00] font-semibold text-xs sm:text-sm group-hover:underline">
+                  {t('hotels.viewPrices', 'View Prices')}
+                </span>
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF8C00] ltr:ml-1 rtl:mr-1 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end items-center">
+              <span className="text-[#FF8C00] font-semibold text-xs sm:text-sm group-hover:underline">
+                {t('hotels.viewPrices', 'View Prices')}
+              </span>
+              <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FF8C00] ltr:ml-1 rtl:mr-1 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          )}
         </div>
       </div>
     </div>
