@@ -254,6 +254,22 @@ const reservationSchema = new mongoose.Schema({
     required: false,
     min: [0, 'Total price cannot be negative']
   },
+  // Original price before any discounts
+  originalPrice: {
+    type: Number,
+    required: false,
+    min: [0, 'Original price cannot be negative']
+  },
+  // Tax data from RateHawk
+  taxData: {
+    type: [{
+      name: { type: String },
+      amount: { type: String },
+      currency_code: { type: String },
+      included_by_supplier: { type: Boolean }
+    }],
+    default: []
+  },
   currency: {
     type: String,
     required: false,

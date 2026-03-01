@@ -590,7 +590,9 @@ export const BookingPage: React.FC = () => {
           currency: selectedRate.currency || 'USD',
           // Cancellation policy fields - important for Profile page display
           isRefundable: selectedRate.is_free_cancellation === true,
-          freeCancellationBefore: selectedRate.free_cancellation_before || null
+          freeCancellationBefore: selectedRate.free_cancellation_before || null,
+          // Tax data for admin display
+          taxData: selectedRate.tax_data?.taxes || []
         }
       };
 

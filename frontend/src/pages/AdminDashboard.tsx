@@ -115,6 +115,19 @@ interface Booking {
   notes?: string;
   status: string;
   createdAt: string;
+  totalPrice?: number;
+  currency?: string;
+  originalPrice?: number;
+  discountAmount?: number;
+  promoCode?: string;
+  actualPaymentAmount?: number;
+  actualPaymentCurrency?: string;
+  taxData?: Array<{
+    name: string;
+    amount: string;
+    currency_code: string;
+    included_by_supplier: boolean;
+  }>;
 }
 
 interface Invoice {
@@ -1375,6 +1388,92 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Payment Information */}
+              <div className="mb-6">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-5">
+                  <h5 className="font-semibold text-gray-800 border-b border-green-200 pb-2 mb-4 flex items-center gap-2">
+                    <span className="text-green-600">💳</span>
+                    {t('admin:dashboard.bookings.details.paymentInfo', 'Payment Information')}
+                  </h5>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {/* Total Price Paid */}
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                        {t('admin:dashboard.bookings.details.totalPaid', 'Total Amount Paid')}
+                      </p>
+                      <p className="text-2xl font-bold text-green-700">
+                        {selectedBooking.totalPrice?.toLocaleString() || '—'} <span className="text-sm font-medium text-gray-500">{selectedBooking.currency || 'EGP'}</span>
+                      </p>
+                    </div>
+
+                    {/* RateHawk Cost (actual payment amount in USD) */}
+                    {selectedBooking.actualPaymentAmount && (
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                          {t('admin:dashboard.bookings.details.ratehawkCost', 'RateHawk Cost')}
+                        </p>
+                        <p className="text-2xl font-bold text-blue-700">
+                          {selectedBooking.actualPaymentAmount?.toLocaleString() || '—'} <span className="text-sm font-medium text-gray-500">{selectedBooking.actualPaymentCurrency || 'USD'}</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Discount */}
+                    {(selectedBooking.discountAmount ?? 0) > 0 && (
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                          {t('admin:dashboard.bookings.details.discount', 'Discount Applied')}
+                        </p>
+                        <p className="text-xl font-bold text-orange-600">
+                          -{selectedBooking.discountAmount?.toLocaleString()} <span className="text-sm font-medium text-gray-500">{selectedBooking.currency || 'EGP'}</span>
+                        </p>
+                        {selectedBooking.promoCode && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {t('admin:dashboard.bookings.details.promoCode', 'Promo Code')}: <span className="font-mono font-medium text-orange-700">{selectedBooking.promoCode}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Original Price (before discount) */}
+                    {selectedBooking.originalPrice && selectedBooking.originalPrice !== selectedBooking.totalPrice && (
+                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                          {t('admin:dashboard.bookings.details.originalPrice', 'Original Price')}
+                        </p>
+                        <p className="text-xl font-bold text-gray-400 line-through">
+                          {selectedBooking.originalPrice?.toLocaleString()} <span className="text-sm font-medium">{selectedBooking.currency || 'EGP'}</span>
+                        </p>
+                      </div>
+                    )}
+                    {/* Taxes */}
+                    {selectedBooking.taxData && selectedBooking.taxData.length > 0 && (
+                      <div className="md:col-span-2 bg-white rounded-lg p-3 shadow-sm">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+                          {t('admin:dashboard.bookings.details.taxes', 'Taxes & Fees')}
+                        </p>
+                        <div className="space-y-1">
+                          {selectedBooking.taxData.map((tax, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-sm">
+                              <span className="text-gray-700">{tax.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900">
+                                  {Number(tax.amount).toLocaleString()} {tax.currency_code}
+                                </span>
+                                {tax.included_by_supplier && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                    {t('admin:dashboard.bookings.details.included', 'Included')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
               {/* Personal Information */}
               <div className="mb-6">
                 <h5 className="font-semibold text-gray-800 border-b pb-2 mb-4">{t('admin:dashboard.bookings.details.personalInfo')}</h5>
