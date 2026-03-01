@@ -130,6 +130,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   >
                     <option value="">{t('admin:dashboard.bookings.allStatus')}</option>
                     <option value="pending">{t('admin:dashboard.status.pending')}</option>
+                    <option value="pending_approval">{t('admin:dashboard.status.pending_approval', 'Pending Approval')}</option>
                     <option value="approved">{t('admin:dashboard.status.approved')}</option>
                     <option value="denied">{t('admin:dashboard.status.denied')}</option>
                     <option value="invoiced">{t('admin:dashboard.status.invoiced')}</option>
@@ -227,7 +228,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                       >
                         <EyeIcon className="w-4 h-4" />
                       </button>
-                      {booking.status === 'pending' && (
+                      {['pending', 'pending_approval'].includes(booking.status) && (
                         <>
                           <button
                             onClick={() => {
@@ -314,7 +315,7 @@ export const BookingsTab: React.FC<BookingsTabProps> = ({
                   <EyeIcon className="w-4 h-4" />
                   <span className="text-xs font-medium">{t('admin:dashboard.bookings.details.view')}</span>
                 </button>
-                {booking.status === 'pending' && (
+                {['pending', 'pending_approval'].includes(booking.status) && (
                   <>
                     <button
                       onClick={() => {

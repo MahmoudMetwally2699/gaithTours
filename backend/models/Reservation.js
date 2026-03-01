@@ -311,7 +311,7 @@ const reservationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'pending_payment', 'payment_confirmed', 'payment_failed', 'approved', 'denied', 'invoiced', 'paid', 'confirmed', 'cancelled', 'completed', 'failed'],
+    enum: ['pending', 'pending_payment', 'payment_confirmed', 'payment_failed', 'pending_approval', 'approved', 'denied', 'invoiced', 'paid', 'confirmed', 'cancelled', 'completed', 'failed'],
     default: 'pending'
   },
   notes: {

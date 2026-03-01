@@ -5,6 +5,7 @@ const Reservation = require('../models/Reservation');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const WhatsAppMessage = require('../models/WhatsAppMessage');
+const SystemSettings = require('../models/SystemSettings');
 const { protect, admin } = require('../middleware/auth');
 const { successResponse, errorResponse, sanitizeInput } = require('../utils/helpers');
 const { sendInvoiceEmail, sendBookingDenialEmail, sendBookingConfirmationEmail, sendReservationConfirmation, sendAgencyNotification } = require('../utils/emailService');
@@ -24,6 +25,7 @@ router.get('/stats', protect, admin, async (req, res) => {
     const totalClients = await User.countDocuments({ role: 'user' });
     const totalBookings = await Reservation.countDocuments();
     const pendingBookings = await Reservation.countDocuments({ status: 'pending' });
+    const pendingApprovalBookings = await Reservation.countDocuments({ status: 'pending_approval' });
     const failedBookings = await Reservation.countDocuments({ status: 'failed' });
     const totalInvoices = await Invoice.countDocuments();
     const paidInvoices = await Invoice.countDocuments({ status: 'paid' });
@@ -36,16 +38,21 @@ router.get('/stats', protect, admin, async (req, res) => {
     const totalWhatsAppMessages = await WhatsAppMessage.countDocuments();
     const unreadWhatsAppMessages = await WhatsAppMessage.countDocuments({ isRead: false, direction: 'incoming' });
 
+    // System settings
+    const systemSettings = await SystemSettings.getSettings();
+
     const stats = {
       totalClients,
       totalBookings,
       pendingBookings,
+      pendingApprovalBookings,
       failedBookings,
       totalInvoices,
       paidInvoices,
       totalRevenue: totalRevenue[0]?.total || 0,
       totalWhatsAppMessages,
-      unreadWhatsAppMessages
+      unreadWhatsAppMessages,
+      requireBookingApproval: systemSettings.requireBookingApproval
     };
 
     successResponse(res, { stats }, 'Dashboard stats retrieved successfully');
@@ -244,6 +251,9 @@ router.get('/bookings', protect, admin, async (req, res) => {
     let query = {};
     if (status) {
       query.status = status;
+    } else {
+      // By default, exclude pending_payment bookings (payment not yet completed)
+      query.status = { $ne: 'pending_payment' };
     }
 
     const bookings = await Reservation.find(query)
@@ -277,9 +287,12 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
       return errorResponse(res, 'Booking not found', 404);
     }
 
-    if (booking.status !== 'pending') {
+    // Accept both 'pending' (legacy manual bookings) and 'pending_approval' (paid, awaiting approval)
+    if (!['pending', 'pending_approval'].includes(booking.status)) {
       return errorResponse(res, 'Booking cannot be approved', 400);
     }
+
+    const wasPendingApproval = booking.status === 'pending_approval';
 
     // Ensure required fields have default values if missing
     if (!booking.roomType) {
@@ -291,6 +304,182 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
     if (!booking.paymentMethod) {
       booking.paymentMethod = 'pending'; // Default payment method
     }
+
+    // ============================================
+    // PENDING_APPROVAL FLOW: Client already paid, now trigger RateHawk booking
+    // ============================================
+    if (wasPendingApproval) {
+      console.log('🎯 Admin approving paid booking - triggering RateHawk booking...');
+      console.log('   Reservation ID:', booking._id);
+      console.log('   Hotel:', booking.hotel.name);
+
+      const matchHash = booking.hotel.rateHawkMatchHash;
+
+      if (!matchHash) {
+        console.error('❌ No match hash found in reservation');
+        booking.status = 'approved';
+        booking.ratehawkStatus = 'hash_missing';
+        await booking.save();
+        return successResponse(res, { booking }, 'Booking approved but no RateHawk hash found - manual booking required');
+      }
+
+      try {
+        // Step 1: Prebook
+        console.log('🔄 Step 1: Prebooking...');
+        const prebookResult = await rateHawkService.prebook(matchHash, 'en');
+
+        if (!prebookResult.success || !prebookResult.book_hash) {
+          console.error('❌ Prebook failed');
+          booking.status = 'approved';
+          booking.ratehawkStatus = 'prebook_failed';
+          await booking.save();
+          return successResponse(res, { booking }, 'Booking approved but rate expired - manual booking required');
+        }
+
+        const bookHash = prebookResult.book_hash;
+        console.log('✅ Prebook successful');
+
+        // Step 2: Create booking form
+        console.log('📝 Step 2: Creating booking form...');
+        const { v4: uuidv4 } = require('uuid');
+        const partnerOrderId = booking.ratehawkOrderId || booking.kashierOrderId || uuidv4();
+
+        const bookingFormResult = await rateHawkService.createBooking(bookHash, {
+          partner_order_id: partnerOrderId,
+          user_ip: req.ip || '0.0.0.0',
+          language: 'en'
+        });
+
+        if (!bookingFormResult.success) {
+          if (bookingFormResult.sandbox_mode) {
+            console.log('⚠️ Sandbox mode - simulating booking');
+            booking.status = 'confirmed';
+            booking.ratehawkStatus = 'sandbox';
+            await booking.save();
+
+            // Send confirmation email
+            try {
+              const { sendPaymentConfirmationEmail } = require('../utils/emailService');
+              await sendPaymentConfirmationEmail({
+                email: booking.email,
+                name: booking.touristName,
+                invoice: { hotelName: booking.hotel.name, total: booking.totalPrice },
+                payment: { status: 'completed' }
+              });
+            } catch (emailError) {
+              console.error('Email error:', emailError.message);
+            }
+
+            return successResponse(res, { booking }, 'Booking approved and confirmed (sandbox)');
+          }
+
+          booking.status = 'approved';
+          booking.ratehawkStatus = 'booking_form_failed';
+          await booking.save();
+          return successResponse(res, { booking }, 'Booking approved but RateHawk form creation failed - manual booking required');
+        }
+
+        // Step 3: Start booking with guest details
+        console.log('🚀 Step 3: Starting booking...');
+        const nameParts = (booking.touristName || 'Guest User').split(' ');
+        const firstName = nameParts[0] || 'Guest';
+        const lastName = nameParts.slice(1).join(' ') || 'User';
+
+        await rateHawkService.startBooking(partnerOrderId, {
+          user: {
+            email: booking.email,
+            phone: booking.phone,
+            comment: booking.specialRequests || ''
+          },
+          supplier_data: {
+            first_name_original: firstName,
+            last_name_original: lastName,
+            phone: booking.phone,
+            email: booking.email
+          },
+          rooms: [{
+            guests: [{ first_name: firstName, last_name: lastName }]
+          }],
+          language: 'en',
+          payment_type: {
+            type: 'deposit',
+            amount: Number(booking.totalPrice).toFixed(2),
+            currency_code: booking.currency
+          }
+        });
+
+        // Step 4: Poll for booking status
+        console.log('⏳ Step 4: Checking booking status...');
+        let bookingStatus;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          bookingStatus = await rateHawkService.checkBookingStatus(partnerOrderId);
+          console.log(`   Status check ${attempts + 1}/${maxAttempts}:`, bookingStatus.status);
+
+          if (bookingStatus.status === 'ok' || bookingStatus.status === 'error') {
+            break;
+          }
+          attempts++;
+        }
+
+        if (bookingStatus.status === 'ok') {
+          console.log('✅ RateHawk booking confirmed!');
+          booking.status = 'confirmed';
+          booking.ratehawkSystemOrderId = bookingStatus.order_id;
+          booking.ratehawkOrderId = booking.ratehawkOrderId || partnerOrderId;
+          booking.ratehawkStatus = 'confirmed';
+          await booking.save();
+
+          // Send confirmation notifications
+          try {
+            const { sendPaymentConfirmationEmail } = require('../utils/emailService');
+            await sendPaymentConfirmationEmail({
+              email: booking.email,
+              name: booking.touristName,
+              invoice: { hotelName: booking.hotel.name, total: booking.totalPrice, currency: booking.currency },
+              payment: { status: 'completed' },
+              booking: booking
+            });
+          } catch (emailError) {
+            console.error('Email error:', emailError.message);
+          }
+
+          try {
+            await whatsappService.sendBookingConfirmation({
+              touristName: booking.touristName,
+              phone: booking.phone,
+              hotel: { name: booking.hotel.name },
+              checkIn: booking.checkInDate,
+              checkOut: booking.checkOutDate
+            }, { status: 'completed', amount: booking.totalPrice });
+          } catch (whatsappError) {
+            console.error('WhatsApp error:', whatsappError.message);
+          }
+
+          return successResponse(res, { booking }, 'Booking approved and confirmed with RateHawk successfully');
+        } else {
+          console.error('❌ RateHawk booking failed:', bookingStatus.status);
+          booking.status = 'approved';
+          booking.ratehawkStatus = 'booking_failed';
+          await booking.save();
+          return successResponse(res, { booking }, 'Booking approved but RateHawk booking failed - manual intervention required');
+        }
+
+      } catch (rateHawkError) {
+        console.error('❌ RateHawk booking error:', rateHawkError.message);
+        booking.status = 'approved';
+        booking.ratehawkStatus = 'error';
+        await booking.save();
+        return successResponse(res, { booking }, 'Booking approved but RateHawk error occurred - manual intervention required');
+      }
+    }
+
+    // ============================================
+    // LEGACY PENDING FLOW: Standard manual booking approval (no payment yet)
+    // ============================================
 
     // Update booking status
     booking.status = 'approved';
@@ -366,7 +555,7 @@ router.patch('/bookings/:id/deny', protect, admin, [
       return errorResponse(res, 'Booking not found', 404);
     }
 
-    if (booking.status !== 'pending') {
+    if (!['pending', 'pending_approval'].includes(booking.status)) {
       return errorResponse(res, 'Booking cannot be denied', 400);
     }
 
@@ -395,6 +584,43 @@ router.patch('/bookings/:id/deny', protect, admin, [
     successResponse(res, { booking }, 'Booking denied successfully');
   } catch (error) {
     errorResponse(res, 'Failed to deny booking', 500);
+  }
+});
+
+// ============================================
+// SYSTEM SETTINGS ENDPOINTS
+// ============================================
+
+// Get system settings
+router.get('/settings', protect, admin, async (req, res) => {
+  try {
+    const settings = await SystemSettings.getSettings();
+    successResponse(res, { settings }, 'System settings retrieved successfully');
+  } catch (error) {
+    console.error('Get settings error:', error);
+    errorResponse(res, 'Failed to get system settings', 500);
+  }
+});
+
+// Update system settings
+router.put('/settings', protect, admin, async (req, res) => {
+  try {
+    const { requireBookingApproval } = req.body;
+
+    const settings = await SystemSettings.getSettings();
+
+    if (typeof requireBookingApproval === 'boolean') {
+      settings.requireBookingApproval = requireBookingApproval;
+    }
+
+    await settings.save();
+
+    console.log(`⚙️ System settings updated: requireBookingApproval = ${settings.requireBookingApproval}`);
+
+    successResponse(res, { settings }, 'System settings updated successfully');
+  } catch (error) {
+    console.error('Update settings error:', error);
+    errorResponse(res, 'Failed to update system settings', 500);
   }
 });
 

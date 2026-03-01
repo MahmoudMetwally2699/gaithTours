@@ -54,7 +54,11 @@ export const adminAPI = {
 
     // Partnership Emails
     sendPartnershipEmails: (data: { hotels: Array<{ name: string; email: string }> }) =>
-        api.post('/admin/partnership-emails', data)
+        api.post('/admin/partnership-emails', data),
+
+    // System Settings
+    getSettings: () => api.get('/admin/settings'),
+    updateSettings: (data: any) => api.put('/admin/settings', data),
 };
 
 export default adminAPI;

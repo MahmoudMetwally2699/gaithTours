@@ -53,12 +53,14 @@ interface DashboardStats {
   totalClients: number;
   totalBookings: number;
   pendingBookings: number;
+  pendingApprovalBookings: number;
   failedBookings: number;
   totalInvoices: number;
   paidInvoices: number;
   totalRevenue: number;
   totalWhatsAppMessages: number;
   unreadWhatsAppMessages: number;
+  requireBookingApproval: boolean;
 }
 
 interface Client {
@@ -242,11 +244,39 @@ export const AdminDashboard: React.FC = () => {
   const [showInvoiceDetailsModal, setShowInvoiceDetailsModal] = useState(false);
   const [showPaymentDetailsModal, setShowPaymentDetailsModal] = useState(false);
   const [denialReason, setDenialReason] = useState('');
-  const [approvalAmount, setApprovalAmount] = useState('1000');  const fetchStats = useCallback(async () => {
+  const [approvalAmount, setApprovalAmount] = useState('1000');
+
+  // Booking approval toggle state
+  const [bookingApprovalEnabled, setBookingApprovalEnabled] = useState(false);
+  const [togglingApproval, setTogglingApproval] = useState(false);
+
+  const handleToggleBookingApproval = async () => {
+    try {
+      setTogglingApproval(true);
+      const newValue = !bookingApprovalEnabled;
+      await adminAPI.updateSettings({ requireBookingApproval: newValue });
+      setBookingApprovalEnabled(newValue);
+      toast.success(
+        newValue
+          ? t('admin:dashboard.settings.approvalEnabled', 'Booking approval mode enabled')
+          : t('admin:dashboard.settings.approvalDisabled', 'Direct booking mode enabled')
+      );
+    } catch (error) {
+      toast.error(t('admin:dashboard.settings.toggleFailed', 'Failed to update booking mode'));
+    } finally {
+      setTogglingApproval(false);
+    }
+  };
+
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       const response = await adminAPI.getStats();
       setStats(response.data.data.stats);
+      // Sync booking approval toggle from stats
+      if (response.data.data.stats.requireBookingApproval !== undefined) {
+        setBookingApprovalEnabled(response.data.data.stats.requireBookingApproval);
+      }
     } catch (error) {
       toast.error(t('admin:dashboard.messages.fetchStatsFailed'));
     } finally {
@@ -425,6 +455,8 @@ export const AdminDashboard: React.FC = () => {
     const statusClasses = {
       booking: {
         pending: 'bg-yellow-100 text-yellow-800',
+        pending_approval: 'bg-amber-100 text-amber-800',
+        payment_confirmed: 'bg-blue-100 text-blue-800',
         approved: 'bg-blue-100 text-blue-800',
         denied: 'bg-red-100 text-red-800',
         invoiced: 'bg-purple-100 text-purple-800',
@@ -703,7 +735,65 @@ export const AdminDashboard: React.FC = () => {
                     <span className="text-gray-700 font-medium">{t('admin:dashboard.header.systemOnline')}</span>
                   </div>
                 </div>
-              </div>              {/* Modern Stats Grid */}
+              </div>
+
+              {/* Booking Approval Toggle Card */}
+              <div className="max-w-2xl mx-auto">
+                <div className={`bg-white rounded-2xl p-5 shadow-lg border transition-all duration-500 ${
+                  bookingApprovalEnabled
+                    ? 'border-amber-300 shadow-amber-100'
+                    : 'border-gray-200'
+                }`}>
+                  <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <div className={`p-3 rounded-xl transition-all duration-300 ${
+                        bookingApprovalEnabled
+                          ? 'bg-gradient-to-r from-amber-100 to-orange-100'
+                          : 'bg-gray-100'
+                      }`}>
+                        <ClipboardDocumentListIcon className={`w-6 h-6 transition-colors duration-300 ${
+                          bookingApprovalEnabled ? 'text-amber-600' : 'text-gray-400'
+                        }`} />
+                      </div>
+                      <div className={isRTL ? 'text-right' : ''}>
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          {t('admin:dashboard.settings.bookingApproval', 'Booking Approval Mode')}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {bookingApprovalEnabled
+                            ? t('admin:dashboard.settings.approvalDesc', 'Bookings require admin approval after payment')
+                            : t('admin:dashboard.settings.directDesc', 'Bookings are confirmed directly after payment')
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      {bookingApprovalEnabled && stats?.pendingApprovalBookings ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 animate-pulse">
+                          {stats.pendingApprovalBookings} {t('admin:dashboard.settings.pending', 'pending')}
+                        </span>
+                      ) : null}
+                      <button
+                        onClick={handleToggleBookingApproval}
+                        disabled={togglingApproval}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          bookingApprovalEnabled
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 focus:ring-amber-400'
+                            : 'bg-gray-300 focus:ring-gray-400'
+                        } ${togglingApproval ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-all duration-300 ${
+                            bookingApprovalEnabled ? (isRTL ? 'translate-x-1' : 'translate-x-6') : (isRTL ? 'translate-x-6' : 'translate-x-1')
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modern Stats Grid */}
               {stats && (                <div
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 >
@@ -1007,25 +1097,46 @@ export const AdminDashboard: React.FC = () => {
       {showApprovalModal && selectedBooking && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
           <div className="relative top-4 lg:top-20 mx-auto p-5 border w-full max-w-md lg:max-w-lg shadow-lg rounded-md bg-white">
-            <div className="mt-3">              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('admin:dashboard.bookings.approvalModal.title')}</h3>
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">{t('admin:dashboard.bookings.approvalModal.title')}</h3>
               <p className="text-sm text-gray-600 mb-4">
                 {t('admin:dashboard.bookings.approvalModal.description', {
                   touristName: selectedBooking.touristName,
                   hotelName: selectedBooking.hotel.name
                 })}
               </p>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('admin:dashboard.bookings.approvalModal.amount')}
-                </label>
-                <input
-                  type="number"
-                  value={approvalAmount}
-                  onChange={(e) => setApprovalAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder={t('admin:dashboard.bookings.approvalModal.amount')}
-                />
-              </div>
+
+              {/* Show paid badge for pending_approval bookings */}
+              {selectedBooking.status === 'pending_approval' && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-800">
+                      {t('admin:dashboard.settings.paymentReceived', 'Payment already received')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    {t('admin:dashboard.settings.approveToBook', 'Approving will trigger the hotel booking on RateHawk')}
+                  </p>
+                </div>
+              )}
+
+              {/* Show amount input only for old-style pending bookings */}
+              {selectedBooking.status !== 'pending_approval' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('admin:dashboard.bookings.approvalModal.amount')}
+                  </label>
+                  <input
+                    type="number"
+                    value={approvalAmount}
+                    onChange={(e) => setApprovalAmount(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder={t('admin:dashboard.bookings.approvalModal.amount')}
+                  />
+                </div>
+              )}
+
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowApprovalModal(false)}

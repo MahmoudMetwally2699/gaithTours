@@ -128,6 +128,8 @@
     },
     "status": {
       "pending": "قيد الانتظار",
+      "pending_approval": "بانتظار الموافقة",
+      "payment_confirmed": "تم تأكيد الدفع",
       "approved": "تمت الموافقة",
       "denied": "مرفوض",
       "invoiced": "مفوتر",
@@ -139,6 +141,17 @@
       "processing": "قيد المعالجة",
       "unpaid": "غير مدفوع",
       "refunded": "تم استرداد المبلغ"
+    },
+    "settings": {
+      "bookingApproval": "وضع الموافقة على الحجز",
+      "approvalDesc": "الحجوزات تتطلب موافقة المسؤول بعد الدفع",
+      "directDesc": "الحجوزات يتم تأكيدها مباشرة بعد الدفع",
+      "approvalEnabled": "تم تفعيل وضع الموافقة على الحجز - الحجوزات الجديدة ستتطلب موافقتك",
+      "approvalDisabled": "تم تفعيل وضع الحجز المباشر - سيتم تأكيد الحجوزات تلقائياً",
+      "toggleFailed": "فشل تحديث وضع الحجز",
+      "pending": "معلقة",
+      "paymentReceived": "تم استلام الدفع بالفعل",
+      "approveToBook": "الموافقة ستقوم بتفعيل حجز الفندق على RateHawk"
     },
     "quickActions": {
       "title": "إجراءات سريعة",

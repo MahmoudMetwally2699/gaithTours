@@ -128,6 +128,8 @@
     },
     "status": {
       "pending": "Pending",
+      "pending_approval": "Pending Approval",
+      "payment_confirmed": "Payment Confirmed",
       "approved": "Approved",
       "denied": "Denied",
       "invoiced": "Invoiced",
@@ -139,6 +141,17 @@
       "processing": "Processing",
       "unpaid": "Unpaid",
       "refunded": "Refunded"
+    },
+    "settings": {
+      "bookingApproval": "Booking Approval Mode",
+      "approvalDesc": "Bookings require admin approval after payment",
+      "directDesc": "Bookings are confirmed directly after payment",
+      "approvalEnabled": "Booking approval mode enabled - new bookings will require your approval",
+      "approvalDisabled": "Direct booking mode enabled - bookings will be confirmed automatically",
+      "toggleFailed": "Failed to update booking mode",
+      "pending": "pending",
+      "paymentReceived": "Payment already received",
+      "approveToBook": "Approving will trigger the hotel booking on RateHawk"
     },
     "quickActions": {
       "title": "Quick Actions",

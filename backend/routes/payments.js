@@ -1263,6 +1263,50 @@ router.post('/kashier/webhook', express.json(), async (req, res) => {
       }
     }
 
+    // ============================================
+    // CHECK BOOKING APPROVAL TOGGLE
+    // If requireBookingApproval is enabled, pause here and wait for admin approval
+    // The RateHawk booking will be triggered when admin approves
+    // ============================================
+    const SystemSettings = require('../models/SystemSettings');
+    const systemSettings = await SystemSettings.getSettings();
+
+    if (systemSettings.requireBookingApproval) {
+      console.log('🔒 Booking approval mode is ON - setting reservation to pending_approval');
+      reservation.status = 'pending_approval';
+      reservation.ratehawkStatus = 'awaiting_admin_approval';
+      await reservation.save();
+
+      // Emit socket notification to admin dashboard
+      try {
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('new_pending_approval', {
+            reservationId: reservation._id,
+            touristName: reservation.touristName,
+            hotelName: reservation.hotel.name,
+            totalPrice: reservation.totalPrice,
+            currency: reservation.currency
+          });
+          console.log('📡 Socket notification sent to admin dashboard');
+        }
+      } catch (socketError) {
+        console.error('Socket notification error:', socketError.message);
+      }
+
+      // Send notification to admin via WhatsApp (optional)
+      try {
+        const whatsappService = require('../utils/whatsappService');
+        // Notify admin about the pending approval booking
+        console.log('📱 New booking awaiting admin approval:', reservation._id);
+      } catch (notifyError) {
+        console.error('Admin notification error:', notifyError.message);
+      }
+
+      console.log('✅ Reservation saved as pending_approval - awaiting admin decision');
+      return res.json({ received: true, processed: true, pendingApproval: true });
+    }
+
     // Create RateHawk booking
     try {
       const matchHash = reservation.hotel.rateHawkMatchHash;
@@ -1666,10 +1710,43 @@ router.get('/kashier/order/:orderId', async (req, res) => {
               console.log(`   ⚠️ No user attached to reservation`);
             }
 
-            // Trigger RateHawk booking asynchronously (only once when status changes from pending_payment)
-            createRateHawkBooking(reservation, orderId).catch(err => {
-              console.error('❌ Background RateHawk booking failed:', err.message);
-            });
+            // ============================================
+            // CHECK BOOKING APPROVAL TOGGLE
+            // If requireBookingApproval is enabled, pause here and wait for admin approval
+            // ============================================
+            const SystemSettings = require('../models/SystemSettings');
+            const systemSettings = await SystemSettings.getSettings();
+
+            if (systemSettings.requireBookingApproval) {
+              console.log('🔒 Booking approval mode is ON - setting reservation to pending_approval');
+              reservation.status = 'pending_approval';
+              reservation.ratehawkStatus = 'awaiting_admin_approval';
+              await reservation.save();
+
+              // Emit socket notification to admin dashboard
+              try {
+                const io = req.app.get('io');
+                if (io) {
+                  io.emit('new_pending_approval', {
+                    reservationId: reservation._id,
+                    touristName: reservation.touristName,
+                    hotelName: reservation.hotel.name,
+                    totalPrice: reservation.totalPrice,
+                    currency: reservation.currency
+                  });
+                  console.log('📡 Socket notification sent to admin dashboard');
+                }
+              } catch (socketError) {
+                console.error('Socket notification error:', socketError.message);
+              }
+
+              console.log('✅ Reservation saved as pending_approval - awaiting admin decision');
+            } else {
+              // Trigger RateHawk booking asynchronously (only once when status changes from pending_payment)
+              createRateHawkBooking(reservation, orderId).catch(err => {
+                console.error('❌ Background RateHawk booking failed:', err.message);
+              });
+            }
           }
         } else {
           // Return cached/mock payment status to avoid excessive Kashier API calls
