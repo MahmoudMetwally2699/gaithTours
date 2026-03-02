@@ -337,6 +337,18 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
         }
 
         const bookHash = prebookResult.book_hash;
+
+        // Extract the actual RateHawk payment amount from prebook data
+        // This is the USD deposit amount RateHawk expects, NOT the customer's display price
+        const prebookPaymentType = prebookResult.data?.hotels?.[0]?.rates?.[0]?.payment_options?.payment_types?.[0];
+        const rateHawkPaymentAmount = prebookPaymentType?.amount
+          || booking.hotel.prebookPaymentAmount   // saved from original booking
+          || Number(booking.actualPaymentAmount); // fallback: what we actually charged RateHawk
+        const rateHawkPaymentCurrency = prebookPaymentType?.currency_code
+          || booking.hotel.prebookPaymentCurrency
+          || booking.actualPaymentCurrency
+          || 'USD';
+
         console.log('✅ Prebook successful');
 
         // Step 2: Create booking form
@@ -403,10 +415,12 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
           language: 'en',
           payment_type: {
             type: 'deposit',
-            amount: Number(booking.totalPrice).toFixed(2),
-            currency_code: booking.currency
+            amount: Number(rateHawkPaymentAmount).toFixed(2),
+            currency_code: rateHawkPaymentCurrency
           }
         });
+
+        console.log(`   💰 RateHawk payment: ${rateHawkPaymentAmount} ${rateHawkPaymentCurrency} (customer paid: ${booking.totalPrice} ${booking.currency})`);
 
         // Step 4: Poll for booking status
         console.log('⏳ Step 4: Checking booking status...');
