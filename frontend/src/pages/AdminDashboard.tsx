@@ -431,15 +431,31 @@ export const AdminDashboard: React.FC = () => {
 
     try {
       setLoading(true);
-      await adminAPI.approveBooking(selectedBooking._id, {
+      // Use 90s timeout — RateHawk booking polling can take ~20s
+      const response = await adminAPI.approveBooking(selectedBooking._id, {
         amount: parseFloat(approvalAmount)
       });
-      toast.success(t('admin:dashboard.messages.bookingApproved'));
+      const booking = response?.data?.data?.booking;
+      const finalStatus = booking?.status;
+
+      if (finalStatus === 'confirmed') {
+        toast.success(t('admin:dashboard.messages.bookingApprovedConfirmed', 'Booking approved and confirmed with hotel!'));
+      } else {
+        toast.success(t('admin:dashboard.messages.bookingApproved'));
+      }
       setShowApprovalModal(false);
       setSelectedBooking(null);
       fetchBookings();
-    } catch (error) {
-      toast.error(t('admin:dashboard.messages.bookingApprovalFailed'));
+    } catch (error: any) {
+      // Check if it's a timeout — backend may have still succeeded
+      if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+        toast.success(t('admin:dashboard.messages.bookingApproved') + ' (processing...)');
+        setShowApprovalModal(false);
+        setSelectedBooking(null);
+        setTimeout(() => fetchBookings(), 5000); // Refresh after delay
+      } else {
+        toast.error(t('admin:dashboard.messages.bookingApprovalFailed'));
+      }
     } finally {
       setLoading(false);
     }

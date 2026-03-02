@@ -53,7 +53,11 @@ export const PaymentCallbackPage: React.FC = () => {
         const { reservation, payment: _payment } = response.data;
 
         // Check reservation status
-        if (reservation.status === 'confirmed' || reservation.ratehawkStatus === 'sandbox') {
+        if (
+          reservation.status === 'confirmed' ||
+          reservation.status === 'pending_approval' ||
+          reservation.ratehawkStatus === 'sandbox'
+        ) {
           setState({
             status: 'success',
             reservation: {
@@ -119,6 +123,28 @@ export const PaymentCallbackPage: React.FC = () => {
   const renderContent = () => {
     switch (state.status) {
       case 'loading':
+        return (
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-6">
+              <ClockIcon className="h-8 w-8 text-yellow-600 animate-pulse" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              {t('payment.processing', 'Processing Your Payment')}
+            </h1>
+            <p className="text-gray-600 mb-6">
+              {t('payment.pleaseWait', 'Please wait while we confirm your payment and create your booking...')}
+            </p>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+            </div>
+            {pollCount > 5 && (
+              <p className="text-sm text-gray-500 mt-4">
+                {t('payment.takingLonger', 'This is taking longer than expected. Please do not close this page.')}
+              </p>
+            )}
+          </div>
+        );
+
       case 'pending':
         return (
           <div className="text-center">
