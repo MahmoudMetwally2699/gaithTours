@@ -384,9 +384,10 @@ router.post('/create', async (req, res) => {
 
     console.log(`   👥 Preparing booking for ${roomsCount} room(s)`);
 
+    const B2B_BOOKING_EMAIL = 'b2binvoices@gaithtours.com';
     const startBookingResult = await rateHawkService.startBooking(partnerOrderId, {
       user: {
-        email: guestEmail || req.user?.email,
+        email: B2B_BOOKING_EMAIL,
         phone: cleanPhone,
         comment: specialRequests || ''
       },
@@ -394,7 +395,7 @@ router.post('/create', async (req, res) => {
         first_name_original: firstName,
         last_name_original: lastName,
         phone: cleanPhone,
-        email: guestEmail || req.user?.email
+        email: B2B_BOOKING_EMAIL
       },
       rooms: roomsPayload, // Use the constructed array
       language: 'en',
@@ -870,7 +871,7 @@ router.post('/create-multi', async (req, res) => {
           partner_order_id: partnerOrderId,
           book_hash: bookHash,
           user: {
-            email: guestEmail,
+            email: 'b2binvoices@gaithtours.com',
             phone: guestPhone || '+1234567890'
           },
           rooms: roomsPayload,
