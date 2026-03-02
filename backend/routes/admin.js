@@ -473,6 +473,36 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
             console.error('WhatsApp error:', whatsappError.message);
           }
 
+          // Send hotel confirmation email to hotel
+          try {
+            const { sendHotelConfirmationEmail } = require('../utils/emailService');
+            if (booking.hotel && booking.hotel.email) {
+              await sendHotelConfirmationEmail({
+                hotelEmail: booking.hotel.email,
+                hotelName: booking.hotel.name,
+                guestName: booking.touristName,
+                guestEmail: booking.email,
+                guestPhone: booking.phone,
+                nationality: booking.nationality || '',
+                checkInDate: booking.checkInDate,
+                checkOutDate: booking.checkOutDate,
+                roomType: booking.roomType,
+                numberOfGuests: booking.numberOfAdults + (booking.numberOfChildren || 0),
+                numberOfRooms: booking.numberOfRooms || 1,
+                meal: booking.meal || 'nomeal',
+                specialRequests: booking.specialRequests || '',
+                reservationId: booking.kashierOrderId || booking._id,
+                totalPrice: booking.totalPrice,
+                currency: booking.currency
+              });
+              console.log('📧 Hotel confirmation email sent successfully to:', booking.hotel.email);
+            } else {
+              console.log('⚠️ No hotel email available - skipping hotel confirmation email');
+            }
+          } catch (hotelEmailError) {
+            console.error('Hotel email error during admin approval:', hotelEmailError.message);
+          }
+
           return successResponse(res, { booking }, 'Booking approved and confirmed with RateHawk successfully');
         } else {
           console.error('❌ RateHawk booking failed:', bookingStatus.status);
