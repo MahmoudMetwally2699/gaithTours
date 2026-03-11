@@ -52,7 +52,8 @@ function buildSystemPrompt(contextData) {
 ${contextData || 'No specific hotel data retrieved for this query.'}
 
 ## Important Rules
-- Do NOT make up specific prices or hotel names that aren't in the provided data
+- ONLY mention hotel names that appear in the "Relevant Data" section above. NEVER invent, guess, or recall hotel names from your training data.
+- If no hotels are listed in the data, say "please search on our website" instead of guessing names.
 - If you don't have specific information, suggest the customer use the search on our website or contact human support
 - Keep responses concise and helpful (2-4 sentences usually)
 - Never share internal system details or API keys
@@ -67,24 +68,40 @@ ${contextData || 'No specific hotel data retrieved for this query.'}
 }
 
 // Map Arabic city names to English for DB lookup
+// Includes informal spellings (without ال, ه instead of ة, etc.)
 const ARABIC_CITY_MAP = {
-  'القاهرة': 'cairo',
+  // Egypt
+  'القاهرة': 'cairo', 'القاهره': 'cairo', 'قاهرة': 'cairo', 'قاهره': 'cairo', 'مصر': 'cairo',
+  'الإسكندرية': 'alexandria', 'الاسكندرية': 'alexandria', 'اسكندريه': 'alexandria', 'اسكندرية': 'alexandria',
+  'الغردقة': 'hurghada', 'الغردقه': 'hurghada', 'غردقة': 'hurghada', 'غردقه': 'hurghada',
+  'شرم الشيخ': 'sharm el sheikh', 'شرم': 'sharm el sheikh',
+  'الأقصر': 'luxor', 'الاقصر': 'luxor', 'اقصر': 'luxor', 'لوكسور': 'luxor',
+  'أسوان': 'aswan', 'اسوان': 'aswan',
+  // Saudi Arabia
+  'الرياض': 'riyadh', 'رياض': 'riyadh',
+  'جدة': 'jeddah', 'جده': 'jeddah',
+  'مكة': 'mecca', 'مكه': 'mecca', 'مكة المكرمة': 'mecca', 'مكه المكرمه': 'mecca',
+  'المدينة': 'medina', 'المدينه': 'medina', 'المدينة المنورة': 'medina', 'المدينه المنوره': 'medina',
+  'الدمام': 'dammam', 'دمام': 'dammam',
+  'الطائف': 'taif', 'طائف': 'taif', 'الطايف': 'taif',
+  'أبها': 'abha', 'ابها': 'abha',
+  'تبوك': 'tabuk',
+  'ينبع': 'yanbu',
+  'الخبر': 'khobar', 'خبر': 'khobar',
+  // Gulf
   'دبي': 'dubai',
-  'الرياض': 'riyadh',
-  'جدة': 'jeddah',
-  'مكة': 'mecca',
-  'المدينة': 'medina',
-  'الإسكندرية': 'alexandria',
-  'أبوظبي': 'abu dhabi',
-  'الكويت': 'kuwait city',
-  'بيروت': 'beirut',
-  'عمّان': 'amman',
+  'أبوظبي': 'abu dhabi', 'ابوظبي': 'abu dhabi', 'ابو ظبي': 'abu dhabi',
+  'الكويت': 'kuwait city', 'كويت': 'kuwait city',
+  'الدوحة': 'doha', 'الدوحه': 'doha', 'دوحة': 'doha', 'دوحه': 'doha',
+  'المنامة': 'manama', 'المنامه': 'manama', 'منامة': 'manama', 'منامه': 'manama',
   'مسقط': 'muscat',
-  'الدوحة': 'doha',
-  'المنامة': 'manama',
+  // Levant
+  'بيروت': 'beirut',
+  'عمّان': 'amman', 'عمان': 'amman',
+  // Other
   'تونس': 'tunis',
   'مراكش': 'marrakech',
-  'إسطنبول': 'istanbul',
+  'إسطنبول': 'istanbul', 'اسطنبول': 'istanbul',
   'لندن': 'london',
   'باريس': 'paris',
   'نيويورك': 'new york',
@@ -94,8 +111,9 @@ const ARABIC_CITY_MAP = {
 function extractCityFromMessage(message) {
   const lower = message.toLowerCase();
 
-  // Check Arabic city names
-  for (const [arabic, english] of Object.entries(ARABIC_CITY_MAP)) {
+  // Check Arabic city names (check longer keys first to avoid partial matches)
+  const sortedEntries = Object.entries(ARABIC_CITY_MAP).sort((a, b) => b[0].length - a[0].length);
+  for (const [arabic, english] of sortedEntries) {
     if (message.includes(arabic)) return english;
   }
 
@@ -104,10 +122,67 @@ function extractCityFromMessage(message) {
     'cairo', 'dubai', 'riyadh', 'jeddah', 'mecca', 'medina',
     'alexandria', 'abu dhabi', 'kuwait', 'beirut', 'amman',
     'muscat', 'doha', 'manama', 'tunis', 'marrakech', 'istanbul',
-    'london', 'paris', 'new york', 'tokyo', 'bangkok', 'hong kong'
+    'london', 'paris', 'new york', 'tokyo', 'bangkok', 'hong kong',
+    'sharm el sheikh', 'hurghada', 'luxor', 'aswan', 'tabuk',
+    'dammam', 'taif', 'abha', 'khobar', 'yanbu'
   ];
   for (const city of englishCities) {
     if (lower.includes(city)) return city;
+  }
+
+  return null;
+}
+
+// Extract hotel name keywords from user message
+// Recognizes patterns like: "Sofitel Mecca", "فندق هيلتون", "Hilton hotel", etc.
+function extractHotelNameFromMessage(message) {
+  const lower = message.toLowerCase();
+
+  // Known hotel brand names — match these FIRST (highest priority, most reliable)
+  const hotelBrands = [
+    'hilton', 'marriott', 'sheraton', 'sofitel', 'novotel', 'ibis',
+    'hyatt', 'radisson', 'movenpick', 'mövenpick', 'four seasons',
+    'ritz carlton', 'ritz-carlton', 'intercontinental', 'crowne plaza',
+    'holiday inn', 'le meridien', 'westin', 'w hotel', 'conrad',
+    'fairmont', 'kempinski', 'swissotel', 'pullman', 'raffles',
+    'rotana', 'millennium', 'jumeirah', 'anantara', 'shangri-la',
+    'هيلتون', 'ماريوت', 'شيراتون', 'سوفيتيل', 'نوفوتيل',
+    'حياة', 'حياط', 'راديسون', 'موفنبيك', 'فور سيزونز',
+    'ريتز كارلتون', 'كراون بلازا', 'هوليداي إن', 'ويستن',
+    'كونراد', 'فيرمونت', 'كمبينسكي', 'روتانا', 'ميلينيوم',
+    'جميرا', 'شانغريلا', 'رافلز', 'بولمان', 'دار التوحيد'
+  ];
+  for (const brand of hotelBrands) {
+    if (lower.includes(brand) || message.includes(brand)) {
+      return brand;
+    }
+  }
+
+  // Arabic hotel name patterns: "فندق X" — but ONLY if X is a proper name, not "في مدينة"
+  const arabicHotelMatch = message.match(/فندق\s+([^\s,،.؟?]+(?:\s+[^\s,،.؟?]+)*?)(?:\s+في|\s+ب|\s+عايز|\s+اريد|\s+ابي|\s*[,،.؟?]|$)/i);
+  if (arabicHotelMatch && arabicHotelMatch[1]) {
+    const candidate = arabicHotelMatch[1].trim();
+    // Reject if candidate is just a city name, a common word, or starts with في/ب
+    const rejectWords = ['في', 'ب', 'من', 'احسن', 'أحسن', 'كويس', 'حلو', 'رخيص', 'غالي', 'قريب', 'جديد'];
+    const isCity = extractCityFromMessage(candidate) !== null;
+    const isRejectWord = rejectWords.some(w => candidate.startsWith(w));
+    if (!isCity && !isRejectWord && candidate.length > 2) {
+      return candidate;
+    }
+  }
+
+  // English hotel name patterns
+  const englishHotelPatterns = [
+    /(?:hotel|hotels)\s+(.+?)(?:\s+in\s|\s+at\s|\s*[,?.!]|$)/i,
+    /(.+?)\s+(?:hotel|resort|inn|suites?)(?:\s+in\s|\s*[,?.!]|$)/i,
+  ];
+  for (const pattern of englishHotelPatterns) {
+    const match = lower.match(pattern);
+    if (match && match[1] && match[1].trim().length > 2) {
+      const candidate = match[1].trim();
+      if (['the', 'a', 'best', 'good', 'cheap', 'nice', 'any', 'suggest', 'recommend'].includes(candidate)) continue;
+      return candidate;
+    }
   }
 
   return null;
@@ -121,35 +196,70 @@ async function fetchRelevantContext(message) {
 
     const contextParts = [];
     const city = extractCityFromMessage(message);
+    const hotelName = extractHotelNameFromMessage(message);
     const lower = message.toLowerCase();
 
-    // 1. If user mentions a specific city, fetch hotels in that city
-    if (city) {
-      const cityNormalized = city.toLowerCase().trim();
+    // 1. If user mentions a specific hotel name, search by name
+    if (hotelName) {
+      // Build a regex to search hotel name (case-insensitive, partial match)
+      const escapedName = hotelName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const nameQuery = { name: { $regex: escapedName, $options: 'i' } };
 
-      // Get city stats (total hotel count)
-      const cityStats = await CityStats.findOne({ cityNormalized }).lean().catch(() => null);
-      if (cityStats) {
-        contextParts.push(`Hotels available in ${cityStats.cityDisplay}, ${cityStats.country}.`);
+      // If city is also mentioned, narrow by city too
+      if (city) {
+        nameQuery.cityNormalized = city.toLowerCase().trim();
       }
 
-      // Get sample hotels in that city
-      const hotels = await HotelContent.find(
-        { cityNormalized },
-        'name starRating checkInTime checkOutTime amenities'
-      ).sort({ starRating: -1 }).limit(5).lean().catch(() => []);
+      const matchedHotels = await HotelContent.find(
+        nameQuery,
+        'name city country starRating amenities checkInTime checkOutTime'
+      ).limit(10).lean().catch(() => []);
 
-      if (hotels.length > 0) {
-        const hotelList = hotels.map(h =>
-          `${h.name} (${h.starRating || '?'}★)${h.checkInTime ? `, Check-in: ${h.checkInTime}` : ''}`
-        ).join('; ');
-        contextParts.push(`Sample hotels in ${city}: ${hotelList}`);
+      // Also try Arabic name field
+      if (matchedHotels.length === 0) {
+        const arMatched = await HotelContent.find(
+          { nameAr: { $regex: escapedName, $options: 'i' }, ...(city ? { cityNormalized: city.toLowerCase().trim() } : {}) },
+          'name nameAr city country starRating amenities checkInTime checkOutTime'
+        ).limit(10).lean().catch(() => []);
+        matchedHotels.push(...arMatched);
+      }
+
+      if (matchedHotels.length > 0) {
+        const hotelList = matchedHotels.map(h =>
+          `${h.name} — ${h.starRating || '?'}★, ${h.city || 'Unknown City'}, ${h.country || ''}${h.checkInTime ? `, Check-in: ${h.checkInTime}` : ''}`
+        ).join('\n');
+        contextParts.push(`Hotels matching "${hotelName}" in our database:\n${hotelList}`);
+      } else {
+        contextParts.push(`We could not find a hotel named "${hotelName}" in our database. The customer should try searching on our website for the most up-to-date availability.`);
       }
     }
 
-    // 2. If user asks about destinations/cities in general
+    // 2. If user mentions a city, fetch hotels in that city
+    if (city) {
+      const cityNormalized = city.toLowerCase().trim();
+
+      // Get city stats
+      const cityStats = await CityStats.findOne({ cityNormalized }).lean().catch(() => null);
+      if (cityStats) {
+        contextParts.push(`We have hotels available in ${cityStats.cityDisplay}, ${cityStats.country}.`);
+      }
+
+      // Get real hotels in that city (more samples = less hallucination)
+      const hotels = await HotelContent.find(
+        { cityNormalized },
+        'name starRating'
+      ).sort({ starRating: -1 }).limit(20).lean().catch(() => []);
+
+      if (hotels.length > 0) {
+        const hotelList = hotels.map(h => `${h.name} (${h.starRating || '?'}★)`).join(', ');
+        contextParts.push(`Real hotels we have in ${city}: ${hotelList}`);
+        contextParts.push(`IMPORTANT: Only mention hotels from this list. Do NOT invent or guess hotel names.`);
+      }
+    }
+
+    // 3. If user asks about destinations/cities in general
     const destinationKeywords = ['destination', 'city', 'cities', 'where', 'country', 'countries', 'available', 'offer', 'وجهة', 'مدن', 'دول', 'متاح', 'نوفر'];
-    if (!city && destinationKeywords.some(k => lower.includes(k))) {
+    if (!city && !hotelName && destinationKeywords.some(k => lower.includes(k))) {
       const topCities = await CityStats.find({}, 'cityDisplay country totalHotels')
         .sort({ totalHotels: -1 })
         .limit(12)
@@ -162,13 +272,13 @@ async function fetchRelevantContext(message) {
       }
     }
 
-    // 3. If user asks about amenities or specific hotel features
+    // 4. If user asks about amenities or specific hotel features
     const amenityKeywords = ['pool', 'wifi', 'gym', 'spa', 'breakfast', 'parking', 'حمام سباحة', 'إنترنت', 'مسبح'];
     if (amenityKeywords.some(k => lower.includes(k))) {
       contextParts.push('Many of our hotels include amenities like free WiFi, swimming pools, gyms, spas, and breakfast options. Filter by amenity on our search page for exact matches.');
     }
 
-    return contextParts.length > 0 ? contextParts.join('\n') : null;
+    return contextParts.length > 0 ? contextParts.join('\n\n') : null;
   } catch (err) {
     console.error('Context fetch error (non-fatal):', err.message);
     return null;
@@ -177,17 +287,56 @@ async function fetchRelevantContext(message) {
 
 
 // Fetch hotel cards for visual display (separate from context text)
-async function fetchHotelCards(message) {
+// Now intelligently matches by hotel name first, falls back to city
+// Detects "show more" intent and excludes already-shown hotels
+async function fetchHotelCards(message, shownHotelIds = []) {
   try {
     const HotelContent = require('../models/HotelContent');
     const city = extractCityFromMessage(message);
-    if (!city) return null;
+    const hotelName = extractHotelNameFromMessage(message);
 
-    const cityNormalized = city.toLowerCase().trim();
-    const hotels = await HotelContent.find(
-      { cityNormalized },
-      'hotelId name city country starRating mainImage amenities checkInTime checkOutTime'
-    ).sort({ starRating: -1 }).limit(6).lean().catch(() => []);
+    // Detect "show more" intent — user wants different hotels
+    const moreKeywords = ['more', 'other', 'else', 'different', 'another',
+      'تاني', 'تانيه', 'تانية', 'غيرها', 'غيرهم', 'كمان', 'زيادة', 'زياده',
+      'اخرى', 'أخرى', 'ثاني', 'ثانيه', 'ثانية', 'المزيد', 'بعد'];
+    const isMoreRequest = moreKeywords.some(k => message.toLowerCase().includes(k) || message.includes(k));
+
+    // Build exclusion filter for already-shown hotels
+    const excludeFilter = shownHotelIds.length > 0
+      ? { hotelId: { $nin: shownHotelIds } }
+      : {};
+
+    let hotels = [];
+
+    // Priority 1: If user asked about a specific hotel, show THAT hotel
+    if (hotelName && !isMoreRequest) {
+      const escapedName = hotelName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const nameQuery = { name: { $regex: escapedName, $options: 'i' }, ...excludeFilter };
+      if (city) nameQuery.cityNormalized = city.toLowerCase().trim();
+
+      hotels = await HotelContent.find(
+        nameQuery,
+        'hotelId name city country starRating mainImage amenities checkInTime checkOutTime'
+      ).limit(6).lean().catch(() => []);
+
+      // Also try Arabic name
+      if (hotels.length === 0) {
+        hotels = await HotelContent.find(
+          { nameAr: { $regex: escapedName, $options: 'i' }, ...excludeFilter, ...(city ? { cityNormalized: city.toLowerCase().trim() } : {}) },
+          'hotelId name city country starRating mainImage amenities checkInTime checkOutTime'
+        ).limit(6).lean().catch(() => []);
+      }
+    }
+
+    // Priority 2: Top hotels in the city (skip already shown if "more" request)
+    if (hotels.length === 0 && city) {
+      const cityNormalized = city.toLowerCase().trim();
+      const skipCount = isMoreRequest && shownHotelIds.length === 0 ? 6 : 0;
+      hotels = await HotelContent.find(
+        { cityNormalized, ...excludeFilter },
+        'hotelId name city country starRating mainImage amenities checkInTime checkOutTime'
+      ).sort({ starRating: -1 }).skip(skipCount).limit(6).lean().catch(() => []);
+    }
 
     if (!hotels.length) return null;
 
@@ -220,7 +369,7 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    const { message, history = [] } = req.body;
+    const { message, history = [], shownHotelIds = [] } = req.body;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return res.status(400).json({
@@ -237,10 +386,15 @@ router.post('/chat', async (req, res) => {
     }
 
     // Fetch context text + hotel cards in parallel
+    const city = extractCityFromMessage(message);
+    const hotelName = extractHotelNameFromMessage(message);
+    console.log(`🤖 AI Chat: "${message}" → city=${city}, hotelName=${hotelName}, shownIds=${shownHotelIds.length}`);
+
     const [contextData, hotelCards] = await Promise.all([
       fetchRelevantContext(message),
-      fetchHotelCards(message),
+      fetchHotelCards(message, shownHotelIds),
     ]);
+    console.log(`   📋 Context length: ${contextData?.length || 0}, Hotel cards: ${hotelCards?.length || 0}`);
 
     const systemPrompt = buildSystemPrompt(contextData);
 

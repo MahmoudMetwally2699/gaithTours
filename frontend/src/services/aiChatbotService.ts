@@ -24,12 +24,13 @@ export interface AIChatResponse {
 
 export async function sendAIChatMessage(
   message: string,
-  history: ChatMessage[]
+  history: ChatMessage[],
+  shownHotelIds: string[] = []
 ): Promise<AIChatResponse> {
   const res = await fetch(`${API_URL}/ai-chatbot/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, shownHotelIds }),
   });
 
   const data = await res.json();

@@ -50,6 +50,7 @@ const AIChatbot: React.FC = () => {
   const [isPricingLoading, setIsPricingLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [nights, setNights] = useState<number>(0);
+  const [shownHotelIds, setShownHotelIds] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -96,7 +97,7 @@ const AIChatbot: React.FC = () => {
         .slice(-8)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const result = await sendAIChatMessage(text, history);
+      const result = await sendAIChatMessage(text, history, shownHotelIds);
 
       // Extract city from message for price fetching later
       const newIdx = messages.length + 1; // index after both user + assistant messages
@@ -112,8 +113,10 @@ const AIChatbot: React.FC = () => {
         },
       ]);
 
-      // If cards are shown, set which message needs pricing
+      // If cards are shown, track their IDs and set pricing state
       if (hasCards) {
+        const newIds = result.hotelCards!.map(c => c.hotelId);
+        setShownHotelIds(prev => [...prev, ...newIds]);
         setPriceMsgIdx(messages.length + 1);
         setPriceMap({});
         setPriceError(null);
