@@ -59,6 +59,13 @@ export const adminAPI = {
     // System Settings
     getSettings: () => api.get('/admin/settings'),
     updateSettings: (data: any) => api.put('/admin/settings', data),
+
+    // Settings OTP verification
+    requestSettingsOtp: (data: { setting: string; desiredValue: boolean }) =>
+        api.post('/admin/settings/request-otp', data),
+    verifySettingsOtp: (data: { otp: string; setting: string; desiredValue: boolean }) =>
+        api.post('/admin/settings/verify-otp', data),
+
 };
 
 export default adminAPI;

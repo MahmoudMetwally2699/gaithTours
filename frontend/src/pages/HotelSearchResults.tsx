@@ -21,7 +21,8 @@ import {
   CheckIcon,
   FireIcon,
   GlobeAltIcon,
-  HeartIcon
+  HeartIcon,
+  ChatBubbleLeftEllipsisIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, BuildingOffice2Icon, HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -986,7 +987,16 @@ export const HotelSearchResults: React.FC = () => {
                    </div>
                 </div>
 
-                {!user ? (
+                 {/* Live Support Button */}
+                 <button
+                   onClick={() => (window as any).__openSupportChat?.()}
+                   className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full text-sm font-medium transition-all border border-white/30 shrink-0"
+                 >
+                   <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+                   <span className="hidden lg:inline">{i18n.language === 'ar' ? 'الدعم' : 'Support'}</span>
+                 </button>
+
+                 {!user ? (
                    <>
                       {/* Sign in - Hidden on mobile */}
                       <Link

@@ -1569,3 +1569,100 @@ const sendPartnershipEmail = async ({ hotelName, hotelEmail }) => {
 
 // Add the partnership email to exports
 module.exports.sendPartnershipEmail = sendPartnershipEmail;
+
+// Send Settings OTP Email
+const sendSettingsOtpEmail = async ({ otp, settingDescription, desiredValue }) => {
+  try {
+    const transporter = createTransporter();
+    const CONTACT_EMAIL = 'contact@gaithtours.com';
+
+    const actionText = desiredValue
+      ? '🟢 ENABLE Booking Approval Mode'
+      : '🔴 DISABLE Booking Approval Mode (Direct Booking)';
+
+    const actionColor = desiredValue ? '#16a34a' : '#dc2626';
+    const actionBg = desiredValue ? '#dcfce7' : '#fee2e2';
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: CONTACT_EMAIL,
+      subject: `🔐 Admin Settings Verification Code - ${desiredValue ? 'Enable' : 'Disable'} Booking Approval`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Settings Verification</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body style="margin:0;padding:20px;background:linear-gradient(135deg,#f97316 0%,#b45309 100%);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+          <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25);">
+
+            <!-- Header -->
+            <div style="background:linear-gradient(135deg,#f97316 0%,#b45309 100%);padding:50px 30px;text-align:center;position:relative;">
+              <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.07);"></div>
+              <div style="position:relative;z-index:1;">
+                <div style="width:70px;height:70px;background:rgba(255,255,255,0.2);border-radius:20px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:36px;">🔐</div>
+                <h1 style="color:#ffffff;font-size:28px;font-weight:800;margin:0 0 8px;letter-spacing:-0.5px;">Admin Settings Change</h1>
+                <p style="color:rgba(255,255,255,0.85);font-size:16px;margin:0;font-weight:500;">Verification Required — Gaith Tours</p>
+              </div>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:45px 35px;">
+
+              <!-- Action Badge -->
+              <div style="background:${actionBg};border-radius:14px;padding:18px 24px;margin-bottom:32px;border-left:5px solid ${actionColor};text-align:center;">
+                <p style="color:${actionColor};font-size:16px;font-weight:700;margin:0;">${actionText}</p>
+                <p style="color:#6b7280;font-size:13px;margin:6px 0 0;">${settingDescription || 'Booking Approval Mode toggle'}</p>
+              </div>
+
+              <p style="color:#374151;font-size:16px;line-height:1.7;margin:0 0 28px;">
+                An admin is attempting to change a system setting from the Gaith Tours Admin Dashboard.
+                Use the 6-digit verification code below to authorize this change.
+              </p>
+
+              <!-- OTP Code Box -->
+              <div style="text-align:center;margin:36px 0;">
+                <p style="color:#6b7280;font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin:0 0 16px;">Your Verification Code</p>
+                <div style="display:inline-block;background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);border:2px solid #f97316;border-radius:16px;padding:22px 50px;">
+                  <span style="font-size:44px;font-weight:800;letter-spacing:10px;color:#c2410c;font-family:monospace;">${otp}</span>
+                </div>
+                <p style="color:#9ca3af;font-size:13px;margin:14px 0 0;">⏱️ This code expires in <strong>10 minutes</strong></p>
+              </div>
+
+              <!-- Warning -->
+              <div style="background:#fef9c3;border-radius:12px;padding:16px 20px;margin-top:28px;border-left:4px solid #eab308;">
+                <p style="color:#713f12;font-size:14px;margin:0;font-weight:500;">
+                  ⚠️ If you did not request this change, please ignore this email. The setting will <strong>not</strong> be changed.
+                </p>
+              </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#f8fafc;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
+              <p style="color:#9ca3af;font-size:12px;margin:0;">
+                © ${new Date().getFullYear()} Gaith Tours · Automated Security Notification
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`🔐 Settings OTP email sent to ${CONTACT_EMAIL} — messageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Settings OTP email error:', error);
+    throw new Error('OTP email could not be sent: ' + error.message);
+  }
+};
+
+module.exports.sendSettingsOtpEmail = sendSettingsOtpEmail;

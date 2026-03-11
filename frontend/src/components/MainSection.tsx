@@ -11,7 +11,8 @@ import {
   MagnifyingGlassIcon,
   PhoneIcon,
   ChevronDownIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  ChatBubbleLeftEllipsisIcon
 } from '@heroicons/react/24/outline';
 import { HomeIcon, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import { DateRangePicker } from './DateRangePicker';
@@ -293,6 +294,15 @@ export const MainSection: React.FC = () => {
               <span className="uppercase">{i18n.language}</span>
               <ChevronDownIcon className="w-3 h-3" />
             </button>
+
+            {/* Support Chat Button */}
+            <button
+              onClick={() => (window as any).__openSupportChat?.()}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full backdrop-blur-sm text-sm font-medium transition-all border border-white/30"
+            >
+              <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+              <span>{i18n.language === 'ar' ? 'الدعم' : 'Live Support'}</span>
+            </button>
           </div>
 
           {/* Auth Buttons - Compact on Mobile */}
@@ -348,6 +358,14 @@ export const MainSection: React.FC = () => {
           >
             <GlobeAltIcon className="w-4 h-4" />
             <span className="uppercase">{i18n.language}</span>
+          </button>
+          {/* Mobile Support Chat */}
+          <button
+            onClick={() => (window as any).__openSupportChat?.()}
+            className="flex items-center gap-1 text-white bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-sm backdrop-blur-sm border border-white/30"
+          >
+            <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+            <span>{i18n.language === 'ar' ? 'الدعم' : 'Support'}</span>
           </button>
         </div>
 

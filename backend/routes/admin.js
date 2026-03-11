@@ -397,9 +397,10 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
         const firstName = nameParts[0] || 'Guest';
         const lastName = nameParts.slice(1).join(' ') || 'User';
 
+        const B2B_BOOKING_EMAIL = 'b2binvoices@gaithtours.com';
         await rateHawkService.startBooking(partnerOrderId, {
           user: {
-            email: booking.email,
+            email: B2B_BOOKING_EMAIL,
             phone: booking.phone,
             comment: booking.specialRequests || ''
           },
@@ -407,7 +408,7 @@ router.patch('/bookings/:id/approve', protect, admin, async (req, res) => {
             first_name_original: firstName,
             last_name_original: lastName,
             phone: booking.phone,
-            email: booking.email
+            email: B2B_BOOKING_EMAIL
           },
           rooms: [{
             guests: [{ first_name: firstName, last_name: lastName }]
@@ -635,6 +636,92 @@ router.patch('/bookings/:id/deny', protect, admin, [
 // SYSTEM SETTINGS ENDPOINTS
 // ============================================
 
+// In-memory OTP store (keyed by admin userId, expires after 10 minutes)
+const settingsOtpStore = new Map();
+
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// Request OTP for settings change
+router.post('/settings/request-otp', protect, admin, async (req, res) => {
+  try {
+    const { setting, desiredValue } = req.body;
+
+    if (!setting || typeof desiredValue === 'undefined') {
+      return errorResponse(res, 'Setting name and desired value are required', 400);
+    }
+
+    const otp = generateOtp();
+    const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    const adminId = req.user._id.toString();
+    settingsOtpStore.set(adminId, { otp, setting, desiredValue, expiry });
+
+    // Send OTP email to contact address
+    const { sendSettingsOtpEmail } = require('../utils/emailService');
+    const settingDescription = setting === 'requireBookingApproval'
+      ? desiredValue
+        ? 'Bookings will require admin approval after payment'
+        : 'Bookings will be confirmed directly after payment'
+      : setting;
+
+    await sendSettingsOtpEmail({ otp, settingDescription, desiredValue });
+
+    console.log(`🔐 OTP requested by admin ${adminId} for setting "${setting}" → ${desiredValue}`);
+    successResponse(res, { sentTo: 'contact@gaithtours.com' }, 'Verification code sent to contact@gaithtours.com');
+  } catch (error) {
+    console.error('Request OTP error:', error);
+    errorResponse(res, 'Failed to send verification code: ' + error.message, 500);
+  }
+});
+
+// Verify OTP and apply settings change
+router.post('/settings/verify-otp', protect, admin, async (req, res) => {
+  try {
+    const { otp, setting, desiredValue } = req.body;
+
+    if (!otp || !setting || typeof desiredValue === 'undefined') {
+      return errorResponse(res, 'OTP, setting name, and desired value are required', 400);
+    }
+
+    const adminId = req.user._id.toString();
+    const stored = settingsOtpStore.get(adminId);
+
+    if (!stored) {
+      return errorResponse(res, 'No pending verification found. Please request a new code.', 400);
+    }
+
+    if (Date.now() > stored.expiry) {
+      settingsOtpStore.delete(adminId);
+      return errorResponse(res, 'Verification code has expired. Please request a new one.', 400);
+    }
+
+    if (stored.otp !== otp.toString().trim()) {
+      return errorResponse(res, 'Invalid verification code. Please try again.', 400);
+    }
+
+    if (stored.setting !== setting || stored.desiredValue !== desiredValue) {
+      return errorResponse(res, 'OTP mismatch with requested change.', 400);
+    }
+
+    // OTP valid — apply the settings change
+    settingsOtpStore.delete(adminId);
+
+    const settings = await SystemSettings.getSettings();
+
+    if (setting === 'requireBookingApproval' && typeof desiredValue === 'boolean') {
+      settings.requireBookingApproval = desiredValue;
+    }
+
+    await settings.save();
+
+    console.log(`✅ Settings change applied by admin ${adminId}: ${setting} = ${desiredValue}`);
+    successResponse(res, { settings }, 'Settings updated successfully');
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    errorResponse(res, 'Failed to verify code', 500);
+  }
+});
+
 // Get system settings
 router.get('/settings', protect, admin, async (req, res) => {
   try {
@@ -646,7 +733,7 @@ router.get('/settings', protect, admin, async (req, res) => {
   }
 });
 
-// Update system settings
+// Update system settings (direct, no OTP — kept for legacy/internal use)
 router.put('/settings', protect, admin, async (req, res) => {
   try {
     const { requireBookingApproval } = req.body;
@@ -667,6 +754,8 @@ router.put('/settings', protect, admin, async (req, res) => {
     errorResponse(res, 'Failed to update system settings', 500);
   }
 });
+
+
 
 // Get all invoices
 router.get('/invoices', protect, admin, async (req, res) => {

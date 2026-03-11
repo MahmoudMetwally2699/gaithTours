@@ -45,7 +45,8 @@ import {
   LockClosedIcon,
   ScaleIcon,
   KeyIcon,
-  PrinterIcon
+  PrinterIcon,
+  ChatBubbleLeftEllipsisIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid, HeartIcon as HeartIconSolid, BuildingOffice2Icon } from '@heroicons/react/24/solid';
 import DatePicker from 'react-datepicker';
@@ -796,11 +797,20 @@ export const HotelDetails: React.FC = () => {
                </a>
 
                {/* Mobile Auth & Lang Controls (Visible only on Mobile) */}
-               <div className="flex md:hidden items-center gap-3">
+               <div className="flex md:hidden items-center gap-2">
                  <CurrencySelector variant="light" />
                  <div className="flex items-center gap-1 text-white/90" onClick={toggleLanguage}>
                     <span className="text-xs font-bold">{i18n.language.toUpperCase()}</span>
                  </div>
+                 <div className="h-4 w-px bg-white/20"></div>
+                 {/* Mobile Live Support */}
+                 <button
+                   onClick={() => (window as any).__openSupportChat?.()}
+                   className="flex items-center gap-1 text-white bg-white/20 hover:bg-white/30 px-2 py-1 rounded-full text-xs backdrop-blur-sm border border-white/30"
+                 >
+                   <ChatBubbleLeftEllipsisIcon className="w-3.5 h-3.5" />
+                   <span>{i18n.language === 'ar' ? 'الدعم' : 'Support'}</span>
+                 </button>
                  <div className="h-4 w-px bg-white/20"></div>
                  {!user ? (
                    <Link to="/login" className="text-sm font-bold text-white hover:text-orange-100">{t('common:nav.login', 'Sign In')}</Link>
@@ -1045,6 +1055,15 @@ export const HotelDetails: React.FC = () => {
                         title={t('common:common.search', 'Update Search')}
                       >
                          <MagnifyingGlassIcon className="w-5 h-5 stroke-[2.5]" />
+                      </button>
+
+                      {/* Live Support Button */}
+                      <button
+                        onClick={() => (window as any).__openSupportChat?.()}
+                        className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-full text-sm font-medium transition-all border border-white/30 ml-1 shrink-0"
+                      >
+                        <ChatBubbleLeftEllipsisIcon className="w-4 h-4" />
+                        <span className="hidden xl:inline">{i18n.language === 'ar' ? 'الدعم' : 'Support'}</span>
                       </button>
                    </div>
                 </div>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirection } from '../hooks/useDirection';
 import { CurrencySelector } from './CurrencySelector';
+import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 import {
   Bars3Icon,
@@ -96,6 +97,15 @@ export const Navbar: React.FC = () => {
 
             {/* Currency Selector */}
             <CurrencySelector variant="dark" />
+
+            {/* Support Chat Button */}
+            <button
+              onClick={() => (window as any).__openSupportChat?.()}
+              className="group flex items-center gap-1.5 px-4 py-2 rounded-full bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white hover:border-orange-600 transition-all duration-200 font-medium text-sm"
+            >
+              <ChatBubbleLeftEllipsisIcon className="h-4 w-4" />
+              <span>{i18n.language === 'ar' ? 'الدعم' : 'Live Support'}</span>
+            </button>
 
             {/* Language Toggle */}
             <button
@@ -241,6 +251,18 @@ export const Navbar: React.FC = () => {
               <div className="px-4 py-2">
                 <CurrencySelector variant="dark" />
               </div>
+
+              {/* Support Chat in mobile menu */}
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  (window as any).__openSupportChat?.();
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-orange-50 text-orange-600 font-medium"
+              >
+                <ChatBubbleLeftEllipsisIcon className="h-5 w-5" />
+                <span>{i18n.language === 'ar' ? 'الدعم المباشر' : 'Live Support Chat'}</span>
+              </button>
 
               <div className="border-t border-gray-100 my-2 pt-2">
                 {user ? (

@@ -105,6 +105,12 @@ const ChatWidget: React.FC = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Register a global function so any button (Navbar, page headers) can open this widget
+    useEffect(() => {
+        (window as any).__openSupportChat = () => setIsOpen(true);
+        return () => { delete (window as any).__openSupportChat; };
+    }, []);
+
     // Load chats when widget opens
     const loadChats = useCallback(async () => {
         try {
@@ -232,22 +238,8 @@ const ChatWidget: React.FC = () => {
         return date.toLocaleDateString();
     };
 
-    // Hide for admins only
-    if (isAdmin) return null;
-
     return (
         <>
-            {/* Floating Trigger Button */}
-            <button
-                className="chat-widget-trigger"
-                onClick={() => setIsOpen(!isOpen)}
-                aria-label={t('supportChat.title', 'Support Chat')}
-            >
-                {isOpen ? '✕' : '💬'}
-                {totalUnread > 0 && !isOpen && (
-                    <span className="chat-badge">{totalUnread}</span>
-                )}
-            </button>
 
             {/* Chat Panel */}
             {isOpen && (

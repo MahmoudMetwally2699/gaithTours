@@ -17,6 +17,7 @@ import './i18n';
 
 // Lazy-loaded components — only downloaded when needed
 const ChatWidget = React.lazy(() => import('./components/ChatWidget'));
+const AIChatbot = React.lazy(() => import('./components/AIChatbot'));
 const NotificationPrompt = React.lazy(() => import('./components/NotificationPrompt'));
 const Footer = React.lazy(() => import('./components/Footer').then(module => ({ default: module.Footer })));
 
@@ -135,6 +136,7 @@ const AppContent = () => {
         <Suspense fallback={null}>
           {!isAdminDashboard && !isPartnerPage && <Footer />}
           {!isAdminDashboard && !isPartnerPage && <ChatWidget />}
+          {!isAdminDashboard && !isPartnerPage && <AIChatbot />}
           {!isAdminDashboard && !isPartnerPage && <NotificationPrompt />}
         </Suspense>
       )}

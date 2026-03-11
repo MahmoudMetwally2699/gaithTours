@@ -21,6 +21,7 @@ import { PartnersTab } from '../components/AdminDashboard/PartnersTab';
 import { BlogTab } from '../components/AdminDashboard/BlogTab';
 import { HotelPartnershipTab } from '../components/AdminDashboard/HotelPartnershipTab';
 import SupportChatTab from '../components/AdminDashboard/SupportChatTab';
+import { SettingsTab } from '../components/AdminDashboard/SettingsTab';
 import { HotelContactLookup } from '../components/admin/HotelContactLookup';
 import { HotelArabicNamesTab } from '../components/AdminDashboard/HotelArabicNamesTab';
 import { ClientFormData } from '../components/AdminDashboard/AddClientModal';
@@ -44,7 +45,8 @@ import {
   TrophyIcon,
   UsersIcon,
   NewspaperIcon,
-  FireIcon
+  FireIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { WhatsAppNotificationListener } from '../components/WhatsApp/WhatsAppNotificationListener';
 import NotificationBell from '../components/NotificationBell';
@@ -556,7 +558,8 @@ export const AdminDashboard: React.FC = () => {
     { id: 'blog', name: t('admin:dashboard.tabs.blog', 'Blog'), icon: NewspaperIcon },
     { id: 'whatsapp', name: t('admin:dashboard.tabs.whatsapp'), icon: ChatBubbleLeftRightIcon },
     { id: 'support_chat', name: t('admin:dashboard.tabs.support_chat', 'Support Chat'), icon: ChatBubbleLeftRightIcon },
-    { id: 'admin_management', name: t('admin:dashboard.tabs.admin_management'), icon: ShieldExclamationIcon, superAdminOnly: true }
+    { id: 'admin_management', name: t('admin:dashboard.tabs.admin_management'), icon: ShieldExclamationIcon, superAdminOnly: true },
+    { id: 'settings', name: t('admin:dashboard.tabs.settings', 'Settings'), icon: Cog6ToothIcon }
   ];
 
   // Filter tabs based on user role and permissions
@@ -766,61 +769,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Booking Approval Toggle Card */}
-              <div className="max-w-2xl mx-auto">
-                <div className={`bg-white rounded-2xl p-5 shadow-lg border transition-all duration-500 ${
-                  bookingApprovalEnabled
-                    ? 'border-amber-300 shadow-amber-100'
-                    : 'border-gray-200'
-                }`}>
-                  <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                    <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div className={`p-3 rounded-xl transition-all duration-300 ${
-                        bookingApprovalEnabled
-                          ? 'bg-gradient-to-r from-amber-100 to-orange-100'
-                          : 'bg-gray-100'
-                      }`}>
-                        <ClipboardDocumentListIcon className={`w-6 h-6 transition-colors duration-300 ${
-                          bookingApprovalEnabled ? 'text-amber-600' : 'text-gray-400'
-                        }`} />
-                      </div>
-                      <div className={isRTL ? 'text-right' : ''}>
-                        <h3 className="font-semibold text-gray-900 text-sm">
-                          {t('admin:dashboard.settings.bookingApproval', 'Booking Approval Mode')}
-                        </h3>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {bookingApprovalEnabled
-                            ? t('admin:dashboard.settings.approvalDesc', 'Bookings require admin approval after payment')
-                            : t('admin:dashboard.settings.directDesc', 'Bookings are confirmed directly after payment')
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      {bookingApprovalEnabled && stats?.pendingApprovalBookings ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 animate-pulse">
-                          {stats.pendingApprovalBookings} {t('admin:dashboard.settings.pending', 'pending')}
-                        </span>
-                      ) : null}
-                      <button
-                        onClick={handleToggleBookingApproval}
-                        disabled={togglingApproval}
-                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                          bookingApprovalEnabled
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 focus:ring-amber-400'
-                            : 'bg-gray-300 focus:ring-gray-400'
-                        } ${togglingApproval ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
-                      >
-                        <span
-                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-all duration-300 ${
-                            bookingApprovalEnabled ? (isRTL ? 'translate-x-1' : 'translate-x-6') : (isRTL ? 'translate-x-6' : 'translate-x-1')
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Modern Stats Grid */}
               {stats && (                <div
@@ -1107,7 +1056,15 @@ export const AdminDashboard: React.FC = () => {
           )}{/* Admin Management Tab - Super Admin Only */}
           {activeTab === 'admin_management' && isSuperAdmin && (
             <AdminManagementTab isRTL={isRTL} />
+          )}{/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <SettingsTab
+              bookingApprovalEnabled={bookingApprovalEnabled}
+              onApprovalToggled={(newValue: boolean) => setBookingApprovalEnabled(newValue)}
+              isRTL={isRTL}
+            />
           )}{/* Analytics Tab */}
+
           {activeTab === 'analytics' && (
             <AnalyticsTab />
           )}{/* Loyalty Program Tab */}

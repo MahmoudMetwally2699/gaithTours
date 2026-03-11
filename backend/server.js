@@ -280,6 +280,14 @@ try {
   console.error('Error loading support chat routes:', error);
 }
 
+// AI Chatbot routes (Gemini powered)
+try {
+  app.use('/api/ai-chatbot', require('./routes/ai-chatbot'));
+  console.log('✅ AI Chatbot routes loaded');
+} catch (error) {
+  console.error('Error loading AI chatbot routes:', error);
+}
+
 // Push notification routes
 try {
   app.use('/api/push', require('./routes/push-notifications'));
